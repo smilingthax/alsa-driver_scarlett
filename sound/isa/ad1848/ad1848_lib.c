@@ -928,7 +928,7 @@ int snd_ad1848_pcm(ad1848_t *chip, int device, snd_pcm_t **rpcm)
 static int snd_ad1848_info_mux(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
 {
 	static char *texts[4] = {
-		"Line1", "Aux", "Line2", "Mix"
+		"Line", "Aux0", "Mic", "Mix"
 	};
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
@@ -1105,7 +1105,7 @@ AD1848_DOUBLE("Aux Playback Switch", 0, AD1848_AUX1_LEFT_INPUT, AD1848_AUX1_RIGH
 AD1848_DOUBLE("Aux Playback Volume", 0, AD1848_AUX1_LEFT_INPUT, AD1848_AUX1_RIGHT_INPUT, 0, 0, 31, 1),
 AD1848_DOUBLE("Aux Playback Switch", 1, AD1848_AUX2_LEFT_INPUT, AD1848_AUX2_RIGHT_INPUT, 7, 7, 1, 1),
 AD1848_DOUBLE("Aux Playback Volume", 1, AD1848_AUX2_LEFT_INPUT, AD1848_AUX2_RIGHT_INPUT, 0, 0, 31, 1),
-AD1848_DOUBLE("Capture Volume", 0, AD1848_LEFT_INPUT, AD1848_LEFT_INPUT, 0, 0, 15, 0),
+AD1848_DOUBLE("Capture Volume", 0, AD1848_LEFT_INPUT, AD1848_RIGHT_INPUT, 0, 0, 15, 0),
 {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "Capture Source",

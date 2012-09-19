@@ -47,8 +47,8 @@ MODULE_DEVICES("{{C-Media,CMI8738},"
 static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable switches */
-static int snd_enable_midi[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 0};
-static int snd_enable_fm[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 0};
+static int snd_enable_midi[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS-1)] = 0};
+static int snd_enable_fm[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS-1)] = 0};
 static long snd_mpu_port[SNDRV_CARDS] = {0x330, [1 ... (SNDRV_CARDS-1)]=-1};
 static long snd_fm_port[SNDRV_CARDS] = {0x388, [1 ... (SNDRV_CARDS-1)]=-1};
 
@@ -302,17 +302,19 @@ MODULE_PARM_SYNTAX(snd_fm_port, "enable:(snd_enable_fm),allows:{{0x388},{0x3c8},
 /*
  */
 
+#define CM_CH_PLAY	1	/* use ch1 for playback */
+#define CM_CH_CAPT	0	/* use ch0 for capture */
+
 #define CM_OPEN_NONE	0
-#define CM_OPEN_CH0	1
-#define CM_OPEN_CH1	2
+#define CM_OPEN_CH_MASK	0x01
 #define CM_OPEN_DAC	0x10
 #define CM_OPEN_ADC	0x20
 #define CM_OPEN_SPDIF	0x40
-#define CM_OPEN_PLAYBACK	(CM_OPEN_CH0 | CM_OPEN_DAC)
-#define CM_OPEN_PLAYBACK2	(CM_OPEN_CH1 | CM_OPEN_DAC)
-#define CM_OPEN_CAPTURE		(CM_OPEN_CH1 | CM_OPEN_ADC)
-#define CM_OPEN_SPDIF_PLAYBACK	(CM_OPEN_CH0 | CM_OPEN_DAC | CM_OPEN_SPDIF)
-#define CM_OPEN_SPDIF_CAPTURE	(CM_OPEN_CH1 | CM_OPEN_ADC | CM_OPEN_SPDIF)
+#define CM_OPEN_PLAYBACK	(CM_CH_PLAY | CM_OPEN_DAC)
+#define CM_OPEN_PLAYBACK2	(CM_CH_CAPT | CM_OPEN_DAC)
+#define CM_OPEN_CAPTURE		(CM_CH_CAPT | CM_OPEN_ADC)
+#define CM_OPEN_SPDIF_PLAYBACK	(CM_CH_PLAY | CM_OPEN_DAC | CM_OPEN_SPDIF)
+#define CM_OPEN_SPDIF_CAPTURE	(CM_CH_CAPT | CM_OPEN_ADC | CM_OPEN_SPDIF)
 
 typedef struct snd_stru_cmipci cmipci_t;
 typedef struct snd_stru_cmipci_pcm cmipci_pcm_t;
@@ -335,14 +337,14 @@ struct snd_stru_cmipci_pcm {
 
 /* mixer elements toggled/resumed during ac3 playback */
 struct cmipci_mixer_auto_switches {
-	const char *name;
-	int toggle_on;
+	const char *name;	/* switch to toggle */
+	int toggle_on;		/* value to change when ac3 mode */
 };
 static const struct cmipci_mixer_auto_switches cm_saved_mixer[] = {
 	{"PCM Playback Switch", 0},
 	{"IEC958 Output Switch", 1},
 	{"IEC958 DAC To Out", 0},
-	{"IEC958 Out To DAC", 0},
+	{"IEC958 Out To DAC", 1},
 	{"IEC958 Loop", 0},
 };
 #define CM_SAVED_MIXERS		(sizeof(cm_saved_mixer)/sizeof(cm_saved_mixer[0]))
@@ -716,20 +718,20 @@ static snd_pcm_uframes_t snd_cmipci_pcm_pointer(cmipci_t *cm, cmipci_pcm_t *rec,
 static int snd_cmipci_playback_prepare(snd_pcm_substream_t *substream)
 {
 	cmipci_t *cm = snd_pcm_substream_chip(substream);
-	return snd_cmipci_pcm_prepare(cm, &cm->channel[0], substream);
+	return snd_cmipci_pcm_prepare(cm, &cm->channel[CM_CH_PLAY], substream);
 }
 
 static int snd_cmipci_playback_trigger(snd_pcm_substream_t *substream,
 				       int cmd)
 {
 	cmipci_t *cm = snd_pcm_substream_chip(substream);
-	return snd_cmipci_pcm_trigger(cm, &cm->channel[0], substream, cmd);
+	return snd_cmipci_pcm_trigger(cm, &cm->channel[CM_CH_PLAY], substream, cmd);
 }
 
 static snd_pcm_uframes_t snd_cmipci_playback_pointer(snd_pcm_substream_t *substream)
 {
 	cmipci_t *cm = snd_pcm_substream_chip(substream);
-	return snd_cmipci_pcm_pointer(cm, &cm->channel[0], substream);
+	return snd_cmipci_pcm_pointer(cm, &cm->channel[CM_CH_PLAY], substream);
 }
 
 
@@ -741,20 +743,20 @@ static snd_pcm_uframes_t snd_cmipci_playback_pointer(snd_pcm_substream_t *substr
 static int snd_cmipci_capture_prepare(snd_pcm_substream_t *substream)
 {
 	cmipci_t *cm = snd_pcm_substream_chip(substream);
-	return snd_cmipci_pcm_prepare(cm, &cm->channel[1], substream);
+	return snd_cmipci_pcm_prepare(cm, &cm->channel[CM_CH_CAPT], substream);
 }
 
 static int snd_cmipci_capture_trigger(snd_pcm_substream_t *substream,
 				     int cmd)
 {
 	cmipci_t *cm = snd_pcm_substream_chip(substream);
-	return snd_cmipci_pcm_trigger(cm, &cm->channel[1], substream, cmd);
+	return snd_cmipci_pcm_trigger(cm, &cm->channel[CM_CH_CAPT], substream, cmd);
 }
 
 static snd_pcm_uframes_t snd_cmipci_capture_pointer(snd_pcm_substream_t *substream)
 {
 	cmipci_t *cm = snd_pcm_substream_chip(substream);
-	return snd_cmipci_pcm_pointer(cm, &cm->channel[1], substream);
+	return snd_cmipci_pcm_pointer(cm, &cm->channel[CM_CH_CAPT], substream);
 }
 
 /*
@@ -826,7 +828,7 @@ static int snd_cmipci_ac3_copy(snd_pcm_substream_t *subs, int channel,
 	snd_pcm_uframes_t offset;
 	snd_pcm_runtime_t *runtime = subs->runtime;
 
-	if (! cm->channel[0].ac3_shift)
+	if (! cm->channel[CM_CH_PLAY].ac3_shift)
 		return copy_from_user(runtime->dma_area + frames_to_bytes(runtime, pos),
 				      src, frames_to_bytes(runtime, count));
 
@@ -834,7 +836,7 @@ static int snd_cmipci_ac3_copy(snd_pcm_substream_t *subs, int channel,
 		return -EFAULT;
 
 	/* frame = 16bit stereo */
-	offset = (pos << 1) % (cm->channel[0].dma_size << 2);
+	offset = (pos << 1) % (cm->channel[CM_CH_PLAY].dma_size << 2);
 	dst = (u32*)(runtime->dma_area + offset);
 
 	count /= 2;
@@ -856,12 +858,12 @@ static int snd_cmipci_ac3_silence(snd_pcm_substream_t *subs, int channel,
 	snd_pcm_uframes_t offset;
 	snd_pcm_runtime_t *runtime = subs->runtime;
 
-	if (! cm->channel[0].ac3_shift)
+	if (! cm->channel[CM_CH_PLAY].ac3_shift)
 		return snd_pcm_format_set_silence(runtime->format,
 						  runtime->dma_area + frames_to_bytes(runtime, pos), count);
 	
 	/* frame = 16bit stereo */
-	offset = (pos << 1) % (cm->channel[0].dma_size << 2);
+	offset = (pos << 1) % (cm->channel[CM_CH_PLAY].dma_size << 2);
 	dst = (u32*)(subs->runtime->dma_area + offset);
 
 	count /= 2;
@@ -1020,36 +1022,51 @@ static int snd_cmipci_playback_spdif_hw_free(snd_pcm_substream_t *subs)
 
 	spin_lock_irqsave(&cm->reg_lock, flags);
 	//snd_cmipci_clear_bit(cm, CM_REG_LEGACY_CTRL, CM_ENSPDOUT);
+#if CM_CH_PLAY == 1
+	snd_cmipci_clear_bit(cm, CM_REG_FUNCTRL1, CM_SPDF_1);
+#else
 	snd_cmipci_clear_bit(cm, CM_REG_FUNCTRL1, CM_SPDF_0);
+#endif
 	snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_AC3EN1);
 	snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_AC3EN2);
 	if (cm->can_ac3_hw)
 		snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_SPD24SEL);
 	else {
 		snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_SPD32SEL);
+#if CM_CH_PLAY == 1
 		snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_CH1_SRATE_176K);
+#else
+		snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_CH0_SRATE_176K);
+#endif
 	}
 	spin_unlock_irqrestore(&cm->reg_lock, flags);
 
 	if (cm->mixer_insensitive) {
+		/* restore mixer status */
 		int i;
-		cm->mixer_insensitive = 0;
+		cm->mixer_insensitive = 0; /* at first clear this;
+					      otherwise the changes will be ignored */
 		for (i = 0; i < CM_SAVED_MIXERS; i++) {
 			snd_kcontrol_t *ctl = cm->mixer_res_ctl[i];
 			if (ctl) {
 				snd_ctl_elem_value_t val;
+				int event;
+
 				memset(&val, 0, sizeof(val));
+				ctl->access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
 				ctl->get(ctl, &val);
+				event = SNDRV_CTL_EVENT_MASK_INFO;
 				if (val.value.integer.value[0] != cm->mixer_res_status[i]) {
 					val.value.integer.value[0] = cm->mixer_res_status[i];
 					ctl->put(ctl, &val);
-					snd_ctl_notify(cm->card, SNDRV_CTL_EVENT_MASK_VALUE, &ctl->id);
+					event |= SNDRV_CTL_EVENT_MASK_VALUE;
 				}
+				snd_ctl_notify(cm->card, event, &ctl->id);
 			}
 		}
 	}
 
-	cm->channel[0].ac3_shift = 0;
+	cm->channel[CM_CH_PLAY].ac3_shift = 0;
 
 	return snd_cmipci_hw_free(subs);
 }
@@ -1061,7 +1078,11 @@ static int snd_cmipci_capture_spdif_hw_params(snd_pcm_substream_t *subs,
 	unsigned long flags;
 
 	spin_lock_irqsave(&cm->reg_lock, flags);
+#if CM_CH_CAPT == 1
 	snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_SPDF_1);
+#else
+	snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_SPDF_0);
+#endif
 	spin_unlock_irqrestore(&cm->reg_lock, flags);
 
 	return snd_cmipci_hw_params(subs, hw_params); /* call default hw_params */
@@ -1073,7 +1094,11 @@ static int snd_cmipci_capture_spdif_hw_free(snd_pcm_substream_t *subs)
 	unsigned long flags;
 
 	spin_lock_irqsave(&cm->reg_lock, flags);
+#if CM_CH_CAPT == 1
 	snd_cmipci_clear_bit(cm, CM_REG_FUNCTRL1, CM_SPDF_1);
+#else
+	snd_cmipci_clear_bit(cm, CM_REG_FUNCTRL1, CM_SPDF_0);
+#endif
 	spin_unlock_irqrestore(&cm->reg_lock, flags);
 
 	return snd_cmipci_hw_free(subs);
@@ -1094,17 +1119,24 @@ static int snd_cmipci_playback_spdif_prepare(snd_pcm_substream_t *subs)
 	do_ac3 = (cm->dig_pcm_status & IEC958_AES0_NONAUDIO);
 
 	if (do_ac3 && !cm->mixer_insensitive) {
+		/* save mixer setting and mute */
 		int i;
 		for (i = 0; i < CM_SAVED_MIXERS; i++) {
 			snd_kcontrol_t *ctl = cm->mixer_res_ctl[i];
 			if (ctl) {
 				snd_ctl_elem_value_t val;
+				int event;
 				memset(&val, 0, sizeof(val));
 				ctl->get(ctl, &val);
 				cm->mixer_res_status[i] = val.value.integer.value[0];
 				val.value.integer.value[0] = cm_saved_mixer[i].toggle_on;
-				if (cm->mixer_res_status[i] != val.value.integer.value[0])
+				event = SNDRV_CTL_EVENT_MASK_INFO;
+				if (cm->mixer_res_status[i] != val.value.integer.value[0]) {
 					ctl->put(ctl, &val); /* toggle */
+					event |= SNDRV_CTL_EVENT_MASK_VALUE;
+				}
+				ctl->access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+				snd_ctl_notify(cm->card, event, &ctl->id);
 			}
 		}
 		cm->mixer_insensitive = 1;
@@ -1113,9 +1145,13 @@ static int snd_cmipci_playback_spdif_prepare(snd_pcm_substream_t *subs)
 	spin_lock_irqsave(&cm->reg_lock, flags);
 
 	//snd_cmipci_set_bit(cm, CM_REG_LEGACY_CTRL, CM_ENSPDOUT);
+#if CM_CH_PLAY == 1
+	snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_SPDF_1);
+#else
 	snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_SPDF_0);
+#endif
 
-	cm->channel[0].ac3_shift = 0;
+	cm->channel[CM_CH_PLAY].ac3_shift = 0;
 	cm->spdif_counter = 0;
 
 	if (do_ac3) {
@@ -1134,12 +1170,17 @@ static int snd_cmipci_playback_spdif_prepare(snd_pcm_substream_t *subs)
 			snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_SPD32SEL);
 			/* set 176K sample rate to fix 033 HW bug */
 			if (cm->chip_version == 33) {
-				if (rate >= 48000)
+				if (rate >= 48000) {
+					
+#if CM_CH_PLAY == 1
 					snd_cmipci_set_bit(cm, CM_REG_CHFORMAT, CM_CH1_SRATE_176K);
-				else
+#else
+					snd_cmipci_set_bit(cm, CM_REG_CHFORMAT, CM_CH0_SRATE_176K);
+#endif
+				} else
 					snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_CH1_SRATE_176K);
 			}
-			cm->channel[0].ac3_shift = 1; /* use 32bit */
+			cm->channel[CM_CH_PLAY].ac3_shift = 1; /* use 32bit */
 		}
 
 	} else {
@@ -1153,7 +1194,11 @@ static int snd_cmipci_playback_spdif_prepare(snd_pcm_substream_t *subs)
 				snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_SPD24SEL);
 		else {
 			snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_SPD32SEL);
+#if CM_CH_PLAY == 1
 			snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_CH1_SRATE_176K);
+#else
+			snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_CH0_SRATE_176K);
+#endif
 		}
 	}
 
@@ -1162,7 +1207,7 @@ static int snd_cmipci_playback_spdif_prepare(snd_pcm_substream_t *subs)
 	else
 		snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_SPDIF48K | CM_SPDF_AC97);
 	spin_unlock_irqrestore(&cm->reg_lock, flags);
-	return snd_cmipci_pcm_prepare(cm, &cm->channel[0], subs);
+	return snd_cmipci_pcm_prepare(cm, &cm->channel[CM_CH_PLAY], subs);
 }
 
 /*
@@ -1310,7 +1355,7 @@ static snd_pcm_hardware_t snd_cmipci_capture_spdif =
 static int open_device_check(cmipci_t *cm, int mode, snd_pcm_substream_t *subs)
 {
 	unsigned long flags;
-	int ch = (mode & CM_OPEN_CH0) ? 0 : 1;
+	int ch = mode & CM_OPEN_CH_MASK;
 
 	/* FIXME: a file should wait until the device becomes free
 	 * when it's opened on blocking mode.  however, since the current
@@ -1345,7 +1390,7 @@ static int open_device_check(cmipci_t *cm, int mode, snd_pcm_substream_t *subs)
 
 static void close_device_check(cmipci_t *cm, int mode)
 {
-	int ch = (mode & CM_OPEN_CH0) ? 0 : 1;
+	int ch = mode & CM_OPEN_CH_MASK;
 
 	down(&cm->open_mutex);
 	if (cm->opened[ch] == mode) {
@@ -1414,10 +1459,6 @@ static int snd_cmipci_playback_spdif_open(snd_pcm_substream_t *substream)
 	if ((err = open_device_check(cm, CM_OPEN_SPDIF_PLAYBACK, substream)) < 0) /* use channel A */
 		return err;
 	runtime->hw = snd_cmipci_playback_spdif;
-#if 1 /* FIXME: workaround */
-	if (cm->max_channels == 6)
-		runtime->hw.formats = SNDRV_PCM_FMTBIT_U16_LE;
-#endif
 	if (cm->can_ac3_hw) {
 		runtime->hw.info |= SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID;
 		//runtime->hw.formats |= SNDRV_PCM_FMTBIT_S24_LE;
@@ -1436,10 +1477,6 @@ static int snd_cmipci_capture_spdif_open(snd_pcm_substream_t * substream)
 	if ((err = open_device_check(cm, CM_OPEN_SPDIF_CAPTURE, substream)) < 0) /* use channel B */
 		return err;
 	runtime->hw = snd_cmipci_capture_spdif;
-#if 1 /* FIXME: workaround */
-	if (cm->max_channels == 6)
-		runtime->hw.formats = SNDRV_PCM_FMTBIT_U16_LE;
-#endif
 	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_BUFFER_SIZE, 0, 0x40000);
 	return 0;
 }
@@ -1934,12 +1971,7 @@ static int snd_cmipci_put_native_mixer(snd_kcontrol_t * kcontrol, snd_ctl_elem_v
  */
 static int snd_cmipci_get_native_mixer_sensitive(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	cmipci_t *cm = snd_kcontrol_chip(kcontrol);
-	if (cm->mixer_insensitive) {
-		ucontrol->value.integer.value[0] = 0;
-		ucontrol->value.integer.value[1] = 0;
-		return 0;
-	}
+	//cmipci_t *cm = snd_kcontrol_chip(kcontrol);
 	return snd_cmipci_get_native_mixer(kcontrol, ucontrol);
 }
 
@@ -2403,9 +2435,8 @@ static int __init snd_cmipci_create(snd_card_t *card,
 	cm->irq = -1;
 	cm->iobase = pci_resource_start(pci, 0);
 	cm->channel[0].ch = 0;
-	cm->channel[0].is_dac = 1;
 	cm->channel[1].ch = 1;
-	cm->channel[1].is_dac = 0;
+	cm->channel[CM_CH_PLAY].is_dac = 1;
 
 	if ((cm->res_iobase = request_region(cm->iobase, CM_EXTENT_CODEC, card->driver)) == NULL) {
 		snd_printk("unable to grab ports 0x%lx-0x%lx\n", cm->iobase, cm->iobase + CM_EXTENT_CODEC - 1);
@@ -2434,7 +2465,11 @@ static int __init snd_cmipci_create(snd_card_t *card,
 	cm->dig_status = SNDRV_PCM_DEFAULT_CON_SPDIF;
 	cm->dig_pcm_status = SNDRV_PCM_DEFAULT_CON_SPDIF;
 
+#if CM_CH_PLAY == 1
+	cm->ctrl = CM_CHADC0;	/* default FUNCNTRL0 */
+#else
 	cm->ctrl = CM_CHADC1;	/* default FUNCNTRL0 */
+#endif
 
 	/* initialize codec registers */
 	snd_cmipci_write(cm, CM_REG_INT_HLDCLR, 0);	/* disable ints */
@@ -2515,8 +2550,9 @@ static int __init snd_cmipci_create(snd_card_t *card,
 	if (enable_midi) {
 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_CMIPCI,
 					       iomidi, 0,
-					       cm->irq, 0, &cm->rmidi)) < 0)
-			goto __error;
+					       cm->irq, 0, &cm->rmidi)) < 0) {
+			snd_printk("cmipci: no UART401 device at 0x%lx\n", iomidi);
+		}
 	}
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, cm, &ops)) < 0) {

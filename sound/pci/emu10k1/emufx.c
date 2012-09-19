@@ -1258,15 +1258,15 @@ int snd_emu10k1_init_efx(emu10k1_t *emu)
 
 	/* 0c: */ OP(icode, &ptr, iANDXOR, GPR(tmp + 0), ETRAM_DATA(ipcm->etram[0]), GPR(gpr + 0), C_00000000);
 	/* 0d: */ OP(icode, &ptr, iLOG, GPR(tmp + 0), GPR(tmp + 0), GPR(gpr + 3), C_00000000);
-	/* 0e: */ OP(icode, &ptr, iANDXOR, GPR(8), GPR(tmp + 0), C_ffffffff, GPR(gpr + 2));
+	/* 0e: */ OP(icode, &ptr, iANDXOR, GPR(8), GPR(tmp + 0), GPR(gpr + 1), GPR(gpr + 2));
 	/* 0f: */ OP(icode, &ptr, iSKIP, C_00000000, GPR_COND, CC_REG_MINUS, C_00000001);
-	/* 10: */ OP(icode, &ptr, iANDXOR, GPR(8), GPR(8), C_ffffffff, GPR(gpr + 2));
+	/* 10: */ OP(icode, &ptr, iANDXOR, GPR(8), GPR(8), GPR(gpr + 1), GPR(gpr + 2));
 
 	/* 11: */ OP(icode, &ptr, iANDXOR, GPR(tmp + 0), ETRAM_DATA(ipcm->etram[1]), GPR(gpr + 0), C_00000000);
 	/* 12: */ OP(icode, &ptr, iLOG, GPR(tmp + 0), GPR(tmp + 0), GPR(gpr + 3), C_00000000);
-	/* 13: */ OP(icode, &ptr, iANDXOR, GPR(9), GPR(tmp + 0), C_ffffffff, GPR(gpr + 2));
+	/* 13: */ OP(icode, &ptr, iANDXOR, GPR(9), GPR(tmp + 0), GPR(gpr + 1), GPR(gpr + 2));
 	/* 14: */ OP(icode, &ptr, iSKIP, C_00000000, GPR_COND, CC_REG_MINUS, C_00000001);
-	/* 15: */ OP(icode, &ptr, iANDXOR, GPR(9), GPR(9), C_ffffffff, GPR(gpr + 2));
+	/* 15: */ OP(icode, &ptr, iANDXOR, GPR(9), GPR(9), GPR(gpr + 1), GPR(gpr + 2));
 
 	/* 16: */ OP(icode, &ptr, iACC3, GPR(tmp + 0), GPR(ipcm->gpr_ptr), C_00000001, C_00000000);
 	/* 17: */ OP(icode, &ptr, iMACINT0, C_00000000, GPR(tmp + 0), C_ffffffff, GPR(ipcm->gpr_size));
