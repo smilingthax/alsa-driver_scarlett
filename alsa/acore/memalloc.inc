@@ -9,6 +9,7 @@
 
 #include <linux/pci.h>
 #include "config.h"
+#undef CONFIG_SND_DEBUG_MEMORY
 #include "adriver.h"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0) && defined(CONFIG_PROC_FS)
@@ -24,6 +25,10 @@ static inline struct proc_dir_entry *create_proc_read_entry(const char *name,
 	}
 	return res;
 }
+#ifndef CONFIG_HAVE_SNPRINTF
+#define snprintf(buf, size, fmt, args...)  sprintf(buf, fmt, ##args)
+#define CONFIG_HAVE_SNPRINTF 1
+#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)

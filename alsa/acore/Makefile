@@ -5,11 +5,17 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-clean-files := info.c pcm_native.c control.c hwdep.c init.c rawmidi.c sound.c timer.c memalloc.c
+clean-files := info.c pcm_native.c control.c hwdep.c init.c rawmidi.c sound.c timer.c memalloc.c \
+	misc.c
 
 export-objs := sound.o pcm.o pcm_lib.o rawmidi.o timer.o hwdep.o memalloc.o
+
 include $(SND_TOPDIR)/alsa-kernel/core/Makefile
 
+snd-objs += wrappers.o
+ifeq ($(CONFIG_SND_DEBUG_MEMORY),y)
+snd-objs += memory_debug.o
+endif
 snd-page-alloc-objs += memory_wrapper.o
 snd-hpet-objs := hpetimer.o
 
@@ -27,3 +33,4 @@ rawmidi.c: rawmidi.patch $(SND_TOPDIR)/alsa-kernel/core/rawmidi.c
 sound.c: sound.patch $(SND_TOPDIR)/alsa-kernel/core/sound.c
 timer.c: timer.patch $(SND_TOPDIR)/alsa-kernel/core/timer.c
 memalloc.c: memalloc.patch memalloc.inc memalloc.inc1 $(SND_TOPDIR)/alsa-kernel/core/memalloc.c
+misc.c: misc.patch misc.inc $(SND_TOPDIR)/alsa-kernel/core/misc.c

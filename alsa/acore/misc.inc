@@ -1,5 +1,3 @@
-#define __NO_VERSION__
-#include "../alsa-kernel/core/misc.c"
 #include <linux/smp_lock.h>
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
