@@ -1,38 +1,33 @@
---- ../../alsa-kernel/pci/hda/hda_codec.c	2006-07-01 16:43:21.000000000 +0200
-+++ hda_codec.c	2006-07-01 18:38:41.000000000 +0200
-@@ -232,6 +232,8 @@
- }
+--- ../../alsa-kernel/pci/hda/hda_codec.c	2006-07-27 12:53:14.000000000 +0200
++++ hda_codec.c	2006-07-27 15:43:15.000000000 +0200
+@@ -260,7 +260,10 @@
+ 	unsol->queue[wp] = res;
+ 	unsol->queue[wp + 1] = res_ex;
  
- 
++/* 2.4 kernels seem to have a problem with workq wrapper... */
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
-+
- /**
-  * snd_hda_queue_unsol_event - add an unsolicited event to queue
-  * @bus: the BUS
-@@ -316,6 +318,22 @@
+ 	queue_work(unsol->workq, &unsol->work);
++#endif
+ 
+ 	return 0;
+ }
+@@ -296,6 +299,7 @@
+  */
+ static int init_unsol_queue(struct hda_bus *bus)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+ 	struct hda_bus_unsolicited *unsol;
+ 
+ 	if (bus->unsol) /* already initialized */
+@@ -314,6 +318,7 @@
+ 	}
+ 	INIT_WORK(&unsol->work, process_unsol_events, bus);
+ 	bus->unsol = unsol;
++#endif
  	return 0;
  }
  
-+#else
-+/* 2.4 kernels seem to have a problem with workq wrapper... */
-+int snd_hda_queue_unsol_event(struct hda_bus *bus, u32 res, u32 res_ex)
-+{
-+	return 0;
-+}
-+
-+EXPORT_SYMBOL(snd_hda_queue_unsol_event);
-+
-+static int init_unsol_queue(struct hda_bus *bus)
-+{
-+	return 0;
-+}
-+#endif
-+
-+
- /*
-  * destructor
-  */
-@@ -328,7 +346,9 @@
+@@ -329,7 +334,9 @@
  	if (! bus)
  		return 0;
  	if (bus->unsol) {

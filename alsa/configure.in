@@ -1092,6 +1092,7 @@ EOF
     KLD="ld -m elf_x86_64 -e stext"
     c_opts="-mno-red-zone -mcmodel=kernel -fno-reorder-blocks -fno-strength-reduce -finline-limit=2000"
     CONFIG_SND_BIT32_EMUL=m
+    CONFIG_X86_64=y
     CONFIG_X86=y
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
@@ -1144,6 +1145,7 @@ case "$processor" in
     if $KCC -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-mpreferred-stack-boundary=2 $c_opts"
       CONFIG_X86=y
+      CONFIG_X86_32=y
     fi
     mach_dir=""
     if test -d $CONFIG_SND_KERNELDIR/include/asm-i386/mach-default; then
@@ -1253,6 +1255,8 @@ AC_SUBST(processor)
 AC_SUBST(ARCH)
 AC_SUBST(KLD)
 AC_SUBST(CONFIG_X86)
+AC_SUBST(CONFIG_X86_32)
+AC_SUBST(CONFIG_X86_64)
 AC_SUBST(CONFIG_ALPHA)
 AC_SUBST(CONFIG_L3)
 AC_SUBST(CONFIG_ARM)
@@ -1279,7 +1283,10 @@ else
 fi
 AC_SUBST(msmp)
 
-KERNEL_CHECK_CFLAGS="-Wall -fno-strict-aliasing $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include -D\"KBUILD_STR(s)=#s\" -D\"KBUILD_BASENAME=KBUILD_STR(dummy)\""
+KERNEL_CHECK_CFLAGS="-Wall -fno-strict-aliasing $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+if test "$NEW_KBUILD" = "y"; then
+  KERNEL_CHECK_CFLAGS="$KERNEL_CHECK_CFLAGS -DKBUILD_STR(s)=#s -DKBUILD_BASENAME=KBUILD_STR(dummy)"
+fi
 
 dnl Check for video device support... (2.2 kernels excluded due to API incompatibility)
 if test $kpatchlevel -gt 2; then

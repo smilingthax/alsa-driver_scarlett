@@ -598,4 +598,6 @@ static inline int abs(int val)
 #define cpu_relax()
 #endif
 
+static inline void might_sleep(void)	{ return 0; }
+
 #endif /* <2.3.0 */
