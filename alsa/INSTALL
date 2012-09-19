@@ -282,14 +282,6 @@ Information about Additional Modules
     This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
-  Module snd-pcsp
-  ---------------
-
-    Module for PC-Speaker driver.
-
-    For X86 only.  The kernel patch is required in advance, found in
-    utils/patches/pcsp-kernel-2.6.10-03.diff
-
 
 Trouble Shooting
 ================
