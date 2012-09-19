@@ -108,7 +108,7 @@ static int control_put(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
-static struct snd_kcontrol_new kcontrol_template = {
+static struct snd_kcontrol_new kcontrol_template __devinitdata = {
 	.iface = SNDRV_CTL_ELEM_IFACE_HWDEP,
 	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
 	.index = 0,
@@ -247,7 +247,7 @@ static struct caiaq_controller a8dj_controller[] = {
 	{ "Software lock", 			40 		}
 };
 
-int snd_usb_caiaq_control_init(struct snd_usb_caiaqdev *dev)
+int __devinit snd_usb_caiaq_control_init(struct snd_usb_caiaqdev *dev)
 {
 	int i;
 	struct snd_kcontrol *kc;
