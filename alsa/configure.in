@@ -337,8 +337,8 @@ AC_DEFUN([MODIFY_KERNEL_HEADER], [
 ])
 
 dnl Check kernel configurations
-AC_DEFUN([CHECK_KERNEL_CONFIG], [
-  boolvar=$1
+AC_DEFUN([CHECK_KERNEL_CONFIG_BUILTIN], [
+  boolvar="$1"
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
@@ -361,13 +361,39 @@ int main( void ) {
   eval $boolvar="$boolchk"
 ])
 
+dnl Check kernel configurations
+AC_DEFUN([CHECK_KERNEL_CONFIG], [
+  boolvar="$1"
+  boolvar1="$1_MODULE"
+  AC_MSG_CHECKING(for $2)
+  ac_save_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+  boolchk=""
+  AC_TRY_RUN([
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+int main( void ) {
+#if !defined($boolvar) && !defined($boolvar1)
+  exit(1);
+#else
+  exit(0);
+#endif
+}
+],
+    AC_MSG_RESULT("yes");boolchk="y",
+    AC_MSG_RESULT("no");boolchk="",
+    AC_MSG_RESULT("unknown");boolchk=""
+  )
+  CFLAGS="$ac_save_CFLAGS"
+  eval $boolvar="$boolchk"
+])
+
 if test "$kversion.$kpatchlevel" = "2.6"; then
   NEW_KBUILD=y
   AC_SUBST(NEW_KBUILD)
 fi
 
 dnl Check builtin ALSA on 2.6 kernel
-CHECK_KERNEL_CONFIG(CONFIG_SND, [built-in ALSA])
+CHECK_KERNEL_CONFIG_BUILTIN(CONFIG_SND, [built-in ALSA])
 if test "$CONFIG_SND" = "y"; then
   AC_MSG_ERROR(You have built-in ALSA in your kernel.)
 fi
@@ -892,6 +918,10 @@ else
   msmp=""
 fi
 AC_SUBST(msmp)
+
+dnl Check for video device support...
+CHECK_KERNEL_CONFIG(CONFIG_VIDEO_DEV, [Video device support in kernel])
+AC_SUBST(CONFIG_VIDEO_DEV)
 
 dnl Check for ISA PnP driver in kernel...
 AC_MSG_CHECKING(for ISA PnP driver in kernel)

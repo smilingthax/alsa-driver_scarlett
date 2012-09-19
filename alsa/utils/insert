@@ -304,7 +304,17 @@ case "$1" in
     insert snd-ac97-codec.o
     insert snd-mpu401-uart.o 
     insert snd-opl3-lib.o
+    insert snd-tea575x-tuner.o
     insert snd-fm801.o
+    restore fm801.conf
+    ;;
+  fm801-radio)
+    basic
+    insert snd-ac97-codec.o
+    insert snd-mpu401-uart.o 
+    insert snd-opl3-lib.o
+    insert snd-tea575x-tuner.o
+    insert snd-fm801.o tea575x_tuner=1
     restore fm801.conf
     ;;
   es1938|solo1)
