@@ -40,6 +40,7 @@ acore/seq/seq_clientmgr.c
 acore/seq/seq_memory.c
 acore/sound.c
 acore/timer.c
+arm/sa11xx-uda1341.c
 drivers/mpu401/mpu401.c
 drivers/mts64.c
 drivers/portman2x4.c
