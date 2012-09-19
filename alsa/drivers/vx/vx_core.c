@@ -73,6 +73,7 @@ void snd_vx_delay(vx_core_t *chip, int xmsec)
 int snd_vx_check_reg_bit(vx_core_t *chip, int reg, int mask, int bit, int time)
 {
 	long end_time = jiffies + (time * HZ + 999) / 1000;
+#ifdef CONFIG_SND_DEBUG
 	static char *reg_names[VX_REG_MAX] = {
 		"ICR", "CVR", "ISR", "IVR", "RXH", "RXM", "RXL",
 		"DMA", "CDSP", "RFREQ", "RUER/V2", "DATA", "MEMIRQ",
@@ -80,6 +81,7 @@ int snd_vx_check_reg_bit(vx_core_t *chip, int reg, int mask, int bit, int time)
 		"MIC3", "INTCSR", "CNTRL", "GPIOC",
 		"LOFREQ", "HIFREQ", "CSUER", "RUER"
 	};
+#endif
 	do {
 		if ((snd_vx_inb(chip, reg) & mask) == bit)
 			return 0;
@@ -520,6 +522,10 @@ static void vx_interrupt(unsigned long private_data)
 	if (vx_test_irq_src(chip, &events) < 0)
 		return;
     
+#if 0
+	if (events & 0x000800)
+		printk(KERN_ERR "DSP Stream underrun ! IRQ events = 0x%x\n", events);
+#endif
 	// printk(KERN_DEBUG "IRQ events = 0x%x\n", events);
 
 	/* We must prevent any application using this DSP
@@ -535,7 +541,7 @@ static void vx_interrupt(unsigned long private_data)
 	 * received by the board is equal to one of those given to it).
 	 */
 	if (events & TIME_CODE_EVENT_PENDING)
-		;
+		; /* so far, nothing to do yet */
 
 	/* The frequency has changed on the board (UER mode). */
 	if (events & FREQUENCY_CHANGE_EVENT_PENDING)
@@ -741,6 +747,7 @@ vx_core_t *snd_vx_create(snd_card_t *card, struct snd_vx_hardware *hw,
 	chip->ops = ops;
 	tasklet_init(&chip->tq, vx_interrupt, (unsigned long)chip);
 	init_MUTEX(&chip->mixer_mutex);
+	init_MUTEX(&chip->outpipe_ref_mutex);
 
 	chip->card = card;
 	card->private_data = chip;

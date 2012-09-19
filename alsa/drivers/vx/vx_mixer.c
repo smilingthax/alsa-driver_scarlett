@@ -250,10 +250,12 @@ static int vx_adjust_audio_level(vx_core_t *chip, int audio, int capture,
 			rmh.Cmd[2] |= AUDIO_IO_HAS_MUTE_LEVEL;
 	}
 	if (info->has_monitor_mute) {
-		rmh.Cmd[0] |= VALID_AUDIO_IO_MUTE_MONITORING_1;
+		/* validate flag for M2 at least to unmute it */ 
+		rmh.Cmd[0] |=  VALID_AUDIO_IO_MUTE_MONITORING_1 | VALID_AUDIO_IO_MUTE_MONITORING_2;
 		if (info->monitor_mute)
 			rmh.Cmd[2] |= AUDIO_IO_HAS_MUTE_MONITORING_1;
 	}
+
 	return vx_send_msg(chip, &rmh);
 }
 
@@ -284,8 +286,9 @@ static int vx_read_audio_level(vx_core_t *chip, int audio, int capture,
 
 /*
  * set the monitoring level and mute state of the given audio
+ * no more static, because must be called from vx_pcm to demute monitoring
  */
-static int vx_set_monitor_level(vx_core_t *chip, int audio, int level, int active)
+int vx_set_monitor_level(vx_core_t *chip, int audio, int level, int active)
 {
 	struct vx_audio_level info;
 

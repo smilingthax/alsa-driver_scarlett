@@ -80,6 +80,9 @@ struct vx_pipe {
 	int align;		/* size of alignment */
 	u64 cur_count;		/* current sample position (for playback) */
 
+	unsigned int references;     /* an output pipe may be used for monitoring and/or playback */
+	vx_pipe_t *monitoring_pipe;  /* pointer to the monitoring pipe (capture pipe only)*/
+
 	struct tasklet_struct start_tq;
 };
 
@@ -331,6 +334,7 @@ void vx_pcm_update_intr(vx_core_t *chip, unsigned int events);
 int snd_vx_mixer_new(vx_core_t *chip);
 void vx_toggle_dac_mute(vx_core_t *chip, int mute);
 int vx_sync_audio_source(vx_core_t *chip);
+int vx_set_monitor_level(vx_core_t *chip, int audio, int level, int active);
 
 /*
  * IEC958 & clock stuff
