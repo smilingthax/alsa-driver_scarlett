@@ -179,7 +179,7 @@ static void choose_default_id(snd_card_t *card)
       			strcpy(card->id, card->proc_root->name);
       			return;
       		}
-	      	if (snd_info_check_reserved_words(id))
+	      	if (!snd_info_check_reserved_words(id))
       			goto __change;
 		for (i = 0; i < snd_ecards_limit; i++) {
 			if (snd_cards[i] && !strcmp(snd_cards[i]->id, id))
