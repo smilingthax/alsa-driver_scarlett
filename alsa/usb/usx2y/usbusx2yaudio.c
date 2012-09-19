@@ -13,7 +13,7 @@
 
 #ifdef OLD_USB
 #define snd_usb_complete_callback(x) __old_ ## x
-static void i_usX2Y_urb_complete__old_(struct urb *urb);
+static void __old_i_usX2Y_urb_complete(struct urb *urb);
 #endif
 
 #include "../../alsa-kernel/usb/usx2y/usbusx2yaudio.c"
@@ -22,7 +22,7 @@ static void i_usX2Y_urb_complete__old_(struct urb *urb);
  * compatible layers
  */
 #ifdef OLD_USB
-static void i_usX2Y_urb_complete__old_(struct urb *urb)
+static void __old_i_usX2Y_urb_complete(struct urb *urb)
 {
 	i_usX2Y_urb_complete(urb, NULL);
 }

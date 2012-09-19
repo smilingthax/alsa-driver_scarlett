@@ -1,5 +1,5 @@
---- tea575x-tuner.c.old	2004-01-30 12:25:34.000000000 +0100
-+++ tea575x-tuner.c	2004-01-30 23:23:05.000000000 +0100
+--- tea575x-tuner.c.old	Thu Aug  5 09:48:25 2004
++++ tea575x-tuner.c	Thu Aug  5 10:24:38 2004
 @@ -54,6 +54,19 @@
  #define TEA575X_BIT_DUMMY	(1<<15)		/* buffer */
  #define TEA575X_BIT_FREQ_MASK	0x7fff
@@ -20,7 +20,7 @@
  /*
   * lowlevel part
   */
-@@ -85,10 +98,27 @@
+@@ -85,12 +98,32 @@
   * Linux Video interface
   */
  
@@ -36,33 +36,24 @@
 +#endif
 +
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
- static int snd_tea575x_do_ioctl(struct inode *inode, struct file *file,
- 			        unsigned int cmd, void *arg)
+ static int snd_tea575x_ioctl(struct inode *inode, struct file *file,
+ 			     unsigned int cmd, unsigned long data)
 +#else
-+static int snd_tea575x_ioctl(struct video_device *dev, unsigned int cmd, void *arg)
++static int snd_tea575x_ioctl(struct video_device *dev,
++			     unsigned int cmd, void __user *arg)
 +#endif
  {
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
  	struct video_device *dev = video_devdata(file);
 +#endif
  	tea575x_t *tea = video_get_drvdata(dev);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
+ 	void __user *arg = (void __user *)data;
++#endif
  	
  	switch(cmd) {
-@@ -167,11 +197,13 @@
- 	}
- }
- 
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
- static int snd_tea575x_ioctl(struct inode *inode, struct file *file,
- 			     unsigned int cmd, unsigned long arg)
- {
- 	return video_usercopy(inode, file, cmd, arg, snd_tea575x_do_ioctl);
- }
-+#endif
- 
- /*
-  * initialize all the tea575x chips
-@@ -192,11 +224,17 @@
+ 		case VIDIOCGCAP:
+@@ -187,11 +220,17 @@
  	tea->vd.type = VID_TYPE_TUNER;
  	tea->vd.hardware = VID_HARDWARE_RTRACK;	/* FIXME: assign new number */
  	video_set_drvdata(&tea->vd, tea);
