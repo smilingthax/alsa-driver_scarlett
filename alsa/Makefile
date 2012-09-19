@@ -123,7 +123,11 @@ endif
 
 .PHONY: install-modules
 install-modules: compile
+ifeq ($(moddir_tree),y)
+	rm -rf $(DESTDIR)$(moddir)
+else
 	rm -f $(DESTDIR)$(moddir)/snd*.o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
+endif
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d modules_install; then exit 1; fi; done
 ifeq ($(DESTDIR),)
 	-/sbin/depmod -a $(kaversion) $(SYSTEM_MAP_OPT)
