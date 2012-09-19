@@ -4,7 +4,7 @@ dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>
 
 AC_INIT(acore/sound.c)
 AC_PREFIX_DEFAULT(/usr)
-CONFIG_SND_VERSION="0.9.0rc2"
+CONFIG_SND_VERSION="0.9.0rc3"
 
 dnl Checks for programs.
 AC_PROG_CC

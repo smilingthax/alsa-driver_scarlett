@@ -808,37 +808,37 @@ static int snd_msnd_dev_free( snd_device_t *device){
 
 static snd_pcm_hardware_t snd_msnd_playback =
 {
-	info:			( SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_MMAP_VALID),
-	formats:		( SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE),
-	rates:			SNDRV_PCM_RATE_KNOT | SNDRV_PCM_RATE_8000_48000,
-	rate_min:		8000,
-	rate_max:		48000,
-	channels_min:		1,
-	channels_max:		2,
-	buffer_bytes_max:	0x3000,
-	period_bytes_min:	0x40,
-	period_bytes_max:	0x1800,
-	periods_min:		2,
-	periods_max:		3,
-	fifo_size:		0,
+	.info =			( SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_MMAP_VALID),
+	.formats =		( SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE),
+	.rates =			SNDRV_PCM_RATE_KNOT | SNDRV_PCM_RATE_8000_48000,
+	.rate_min =		8000,
+	.rate_max =		48000,
+	.channels_min =		1,
+	.channels_max =		2,
+	.buffer_bytes_max =	0x3000,
+	.period_bytes_min =	0x40,
+	.period_bytes_max =	0x1800,
+	.periods_min =		2,
+	.periods_max =		3,
+	.fifo_size =		0,
 };
 
 static snd_pcm_hardware_t snd_msnd_capture =
 {
-	info:			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
+	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_MMAP_VALID),
-	formats:		( SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE),
-	rates:			SNDRV_PCM_RATE_KNOT | SNDRV_PCM_RATE_8000_48000,
-	rate_min:		8000,
-	rate_max:		48000,
-	channels_min:		1,
-	channels_max:		2,
-	buffer_bytes_max:	0x3000,
-	period_bytes_min:	0x40,
-	period_bytes_max:	0x1800,
-	periods_min:		2,
-	periods_max:		3,
-	fifo_size:		0,
+	.formats =		( SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE),
+	.rates =		SNDRV_PCM_RATE_KNOT | SNDRV_PCM_RATE_8000_48000,
+	.rate_min =		8000,
+	.rate_max =		48000,
+	.channels_min =		1,
+	.channels_max =		2,
+	.buffer_bytes_max =	0x3000,
+	.period_bytes_min =	0x40,
+	.period_bytes_max =	0x1800,
+	.periods_min =		2,
+	.periods_max =		3,
+	.fifo_size =		0,
 };
 
 
@@ -848,9 +848,9 @@ static unsigned int rates[7] = {
 };
 
 static snd_pcm_hw_constraint_list_t hw_constraints_rates = {
-	count: 7,
-	list: rates,
-	mask: 0,
+	.count = 7,
+	.list = rates,
+	.mask = 0,
 };
 
 
@@ -1116,14 +1116,14 @@ static snd_pcm_uframes_t snd_msnd_playback_pointer( snd_pcm_substream_t * substr
 
 
 static snd_pcm_ops_t snd_msnd_playback_ops = {
-	open:		snd_msnd_playback_open,
-	close:		snd_msnd_playback_close,
-	ioctl:		snd_pcm_lib_ioctl,
-	hw_params:	snd_msnd_playback_hw_params,
-//	hw_free:	snd_msnd_playback_hw_free,
-	prepare:	snd_msnd_playback_prepare,
-	trigger:	snd_msnd_playback_trigger,
-	pointer:	snd_msnd_playback_pointer,
+	.open =		snd_msnd_playback_open,
+	.close =	snd_msnd_playback_close,
+	.ioctl =	snd_pcm_lib_ioctl,
+	.hw_params =	snd_msnd_playback_hw_params,
+//	.hw_free =	snd_msnd_playback_hw_free,
+	.prepare =	snd_msnd_playback_prepare,
+	.trigger =	snd_msnd_playback_trigger,
+	.pointer =	snd_msnd_playback_pointer,
 };
 
 static int snd_msnd_capture_open(snd_pcm_substream_t * substream)
@@ -1230,14 +1230,14 @@ static int snd_msnd_capture_hw_params( snd_pcm_substream_t * substream, snd_pcm_
 
 
 static snd_pcm_ops_t snd_msnd_capture_ops = {
-	open:		snd_msnd_capture_open,
-	close:		snd_msnd_capture_close,
-	ioctl:		snd_pcm_lib_ioctl,
-	hw_params:	snd_msnd_capture_hw_params,
-//	hw_free:	snd_msnd_capture_hw_free,
-	prepare:	snd_msnd_capture_prepare,
-	trigger:	snd_msnd_capture_trigger,
-	pointer:	snd_msnd_capture_pointer,
+	.open =		snd_msnd_capture_open,
+	.close =	snd_msnd_capture_close,
+	.ioctl =	snd_pcm_lib_ioctl,
+	.hw_params =	snd_msnd_capture_hw_params,
+//	.hw_free =	snd_msnd_capture_hw_free,
+	.prepare =	snd_msnd_capture_prepare,
+	.trigger =	snd_msnd_capture_trigger,
+	.pointer =	snd_msnd_capture_pointer,
 };
 
 
@@ -1269,7 +1269,7 @@ static int __init snd_msnd_attach(void)
 	int err;
 	snd_card_t *card;
 	static snd_device_ops_t ops = {
-		dev_free:       snd_msnd_dev_free,
+		.dev_free =      snd_msnd_dev_free,
 		};
 
 	//snd_printd(  "snd_msnd_attach(void)\n");

@@ -423,17 +423,17 @@ static void snd_msndmidi_output_trigger(snd_rawmidi_substream_t * substream, int
 
 static snd_rawmidi_ops_t snd_msndmidi_output =
 {
-	open:		snd_msndmidi_output_open,
-	close:		snd_msndmidi_output_close,
-	trigger:	snd_msndmidi_output_trigger,
+	.open =		snd_msndmidi_output_open,
+	.close =	snd_msndmidi_output_close,
+	.trigger =	snd_msndmidi_output_trigger,
 };
 #endif
 
 static snd_rawmidi_ops_t snd_msndmidi_input =
 {
-	open:		snd_msndmidi_input_open,
-	close:		snd_msndmidi_input_close,
-	trigger:	snd_msndmidi_input_trigger,
+	.open =		snd_msndmidi_input_open,
+	.close =	snd_msndmidi_input_close,
+	.trigger =	snd_msndmidi_input_trigger,
 };
 
 static void snd_msndmidi_free(snd_rawmidi_t *rmidi)

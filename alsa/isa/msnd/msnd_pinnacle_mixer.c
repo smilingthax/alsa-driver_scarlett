@@ -267,10 +267,10 @@ static int snd_msndmix_volume_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_
 
 
 #define DUMMY_VOLUME(xname, xindex, addr) \
-{ iface: SNDRV_CTL_ELEM_IFACE_MIXER, name: xname, index: xindex, \
-  info: snd_msndmix_volume_info, \
-  get: snd_msndmix_volume_get, put: snd_msndmix_volume_put, \
-  private_value: addr }
+{ .iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, .index = xindex, \
+  .info = snd_msndmix_volume_info, \
+  .get = snd_msndmix_volume_get, .put = snd_msndmix_volume_put, \
+  .private_value = addr }
 
 
 #define MSND_CONTROLS (sizeof(snd_msnd_controls)/sizeof(snd_kcontrol_new_t))
@@ -283,11 +283,11 @@ DUMMY_VOLUME(	"Line Volume",	0, MSND_MIXER_LINE),
 DUMMY_VOLUME(	"Mic Volume",	0, MSND_MIXER_MIC),
 DUMMY_VOLUME(	"Monitor",	0, MSND_MIXER_IMIX),
 {
-	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
-	name: "Capture Source",
-	info: snd_msndmix_info_mux,
-	get: snd_msndmix_get_mux,
-	put: snd_msndmix_put_mux,
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "Capture Source",
+	.info = snd_msndmix_info_mux,
+	.get = snd_msndmix_get_mux,
+	.put = snd_msndmix_put_mux,
 }
 };
 
