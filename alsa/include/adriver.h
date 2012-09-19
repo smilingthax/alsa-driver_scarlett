@@ -66,6 +66,7 @@
 #ifdef LINUX_2_4__donotuse
 #include <linux/init.h>
 #include <linux/pm.h>
+#include <asm/page.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 3)
 #define pci_set_dma_mask(pci, mask) pci->dma_mask = mask
 #endif

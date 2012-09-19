@@ -123,6 +123,9 @@ __obj-m = $(filter-out export.o,$(obj-m))
 ld-multi-used-m := $(sort $(foreach m,$(__obj-m),$(patsubst %,$(m),$($(basename $(m))-objs))))
 ld-multi-objs-m := $(foreach m, $(ld-multi-used-m), $($(basename $(m))-objs) $(extra-$(basename $(m))-objs))
 
+depend-objs	:= $(foreach m,$(__obj-m),$($(basename $(m))-objs))
+depend-files	:= $(patsubst %.o,%.c,$(depend-objs))
+
 $(ld-multi-used-m) : %.o: $(ld-multi-objs-m)
 	rm -f $@
 	$(LD) $(EXTRA_LDFLAGS) -r -o $@ $(filter $($(basename $@)-objs) $(extra-$(basename $@)-objs), $^)
@@ -131,8 +134,8 @@ $(ld-multi-used-m) : %.o: $(ld-multi-objs-m)
 # This make dependencies quickly
 #
 fastdep: $(patsubst %,_sfdep_%,$(ALL_SUB_DIRS)) update-sndversions
-ifneq "$(strip $(wildcard *.[cS]))" ""
-		$(CC) -M -D__KERNEL__ -D__isapnp_now__ $(CFLAGS) $(EXTRA_CFLAGS) $(wildcard *.[cS]) > .depend
+ifneq "$(strip $(depend-files))" ""
+		$(CC) -M -D__KERNEL__ -D__isapnp_now__ $(CFLAGS) $(EXTRA_CFLAGS) $(depend-files) > .depend
 endif
 
 ifneq "$(strip $(ALL_SUB_DIRS))" ""

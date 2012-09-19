@@ -402,6 +402,8 @@ int main(void) {
 	fprintf(file, "x86_64");
 #elif defined(CONFIG_ARCH_SA1100)
 	fprintf(file, "sa1100");
+#elif defined(CONFIG_ARCH_PXA)
+	fprintf(file, "pxa");
 #elif defined(CONFIG_PARISC)
 	fprintf(file, "parisc");
 #else
@@ -476,7 +478,7 @@ case "$processor" in
     CONFIG_IA64=y
     ;;
   alpha*)
-    c_opts="-pipe -mno-fp-regs -ffixed-8"
+    c_opts="-mno-fp-regs -ffixed-8"
     if $CC -mcpu=pca56 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
       have_pca56=yes
     fi
@@ -519,7 +521,7 @@ case "$processor" in
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   ppc64)
-    c_opts="-D__powerpc__ -fsigned-char -msoft-float -pipe -Wno-uninitialized -mminimal-toc -fno-builtin"
+    c_opts="-D__powerpc__ -fsigned-char -msoft-float -Wno-uninitialized -mminimal-toc -fno-builtin"
     CONFIG_SND_BIT32_EMUL=m
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
@@ -537,9 +539,9 @@ case "$processor" in
       LD="$LD -m elf32_sparc"
     fi
     if test $IS_EGCS = y; then
-      c_opts="-pipe -mno-fpu -fcall-used-g5 -fcall-used-g7"
+      c_opts="-mno-fpu -fcall-used-g5 -fcall-used-g7"
     else
-      c_opts="-m32 -pipe -mno-fpu -fcall-used-g5 -fcall-used-g7"
+      c_opts="-m32 -mno-fpu -fcall-used-g5 -fcall-used-g7"
     fi
     processor="sparc";
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
@@ -559,9 +561,9 @@ case "$processor" in
       LD="$LD -m elf64_sparc"
     fi
     if test $NEW_GCC=y; then
-      c_opts="-m64 -pipe -mno-fpu -mcpu=ultrasparc -mcmodel=medlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare $CC_UNDECL"
+      c_opts="-m64 -mno-fpu -mcpu=ultrasparc -mcmodel=medlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare $CC_UNDECL"
     else
-      c_opts="-pipe -mno-fpu -mtune=ultrasparc -mmedlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare"
+      c_opts="-mno-fpu -mtune=ultrasparc -mmedlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare"
     fi
     processor="sparc64"
     CONFIG_SND_BIT32_EMUL=m
@@ -569,12 +571,18 @@ case "$processor" in
     ;;
   x86_64)
     LD="ld -m elf_x86_64 -e stext"
-    c_opts="-mno-red-zone -mcmodel=kernel -pipe -fno-reorder-blocks -fno-strength-reduce -finline-limit=2000"
+    c_opts="-mno-red-zone -mcmodel=kernel -fno-reorder-blocks -fno-strength-reduce -finline-limit=2000"
     CONFIG_SND_BIT32_EMUL=m
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sa1100)
     c_opts="-march=armv4 -mtune=strongarm1100 -msoft-float"
+    CONFIG_ARM=y
+    CONFIG_L3=y
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
+    ;;
+  pxa)
+    c_opts="-O2 -mapcs-32 -march=armv4 -Wa,-mxscale -mtune=strongarm -mshort-load-bytes -msoft-float"
     CONFIG_ARM=y
     CONFIG_L3=y
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
