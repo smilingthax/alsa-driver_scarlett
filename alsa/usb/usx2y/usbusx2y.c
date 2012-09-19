@@ -247,11 +247,11 @@ static struct usb_device_id snd_usX2Y_usb_id_table[] = {
 		.idVendor =	0x1604,
 		.idProduct =	USB_ID_US122 
 	},
-/* 	{ FIXME: uncomment  to test us224 support*/
-/* 		.match_flags =	USB_DEVICE_ID_MATCH_DEVICE, */
-/* 		.idVendor =	0x1604, */
-/* 		.idProduct =	USB_ID_US224  */
-/* 	}, */
+ 	{
+		.match_flags =	USB_DEVICE_ID_MATCH_DEVICE,
+		.idVendor =	0x1604,
+		.idProduct =	USB_ID_US224
+	},
 	{ /* terminator */ }
 };
 
@@ -292,7 +292,7 @@ static void* snd_usX2Y_usb_probe(struct usb_device* device, struct usb_interface
 	int		err;
 	snd_card_t*	card;
 	if (device->descriptor.idVendor != 0x1604 ||
-	    (device->descriptor.idProduct != USB_ID_US122 && /* device->descriptor.idProduct != USB_ID_US224 && */ device->descriptor.idProduct != USB_ID_US428) ||
+	    (device->descriptor.idProduct != USB_ID_US122 && device->descriptor.idProduct != USB_ID_US224 && device->descriptor.idProduct != USB_ID_US428) ||
 	    !(card = snd_usX2Y_create_card(device)))
 		return 0;
 	if ((err = snd_usX2Y_hwdep_new(card, device)) < 0  ||
