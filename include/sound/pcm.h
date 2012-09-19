@@ -305,6 +305,7 @@ struct _snd_pcm_runtime {
 	unsigned int rate_den;
 
 	/* -- SW params -- */
+	int tstamp_timespec;		/* use timeval (0) or timespec (1) */
 	snd_pcm_tstamp_t tstamp_mode;	/* mmap timestamp is updated */
   	unsigned int period_step;
 	unsigned int sleep_min;		/* min ticks to sleep */

@@ -514,9 +514,9 @@ int snd_pcm_status(snd_pcm_substream_t *substream,
 		if (runtime->tstamp_mode & SNDRV_PCM_TSTAMP_MMAP)
 			status->tstamp = runtime->status->tstamp;
 		else
-			snd_timestamp_now(&status->tstamp);
+			snd_timestamp_now(&status->tstamp, runtime->tstamp_timespec);
 	} else
-		snd_timestamp_now(&status->tstamp);
+		snd_timestamp_now(&status->tstamp, runtime->tstamp_timespec);
 	status->appl_ptr = runtime->control->appl_ptr;
 	status->hw_ptr = runtime->status->hw_ptr;
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
@@ -591,7 +591,7 @@ static void snd_pcm_trigger_time(snd_pcm_substream_t *substream)
 	if (runtime->trigger_master == NULL)
 		return;
 	if (runtime->trigger_master == substream) {
-		snd_timestamp_now(&runtime->trigger_tstamp);
+		snd_timestamp_now(&runtime->trigger_tstamp, runtime->tstamp_timespec);
 	} else {
 		snd_pcm_trigger_time(runtime->trigger_master);
 		runtime->trigger_tstamp = runtime->trigger_master->runtime->trigger_tstamp;
@@ -2165,6 +2165,14 @@ static int snd_pcm_common_ioctl1(snd_pcm_substream_t *substream,
 		return put_user(SNDRV_PCM_VERSION, (int *)arg) ? -EFAULT : 0;
 	case SNDRV_PCM_IOCTL_INFO:
 		return snd_pcm_info_user(substream, (snd_pcm_info_t *) arg);
+	case SNDRV_PCM_IOCTL_TSTAMP:
+	{
+		int xarg;
+		if (get_user(xarg, (int *) arg))
+			return -EFAULT;
+		substream->runtime->tstamp_timespec = xarg ? 1 : 0;
+		return 0;
+	}
 	case SNDRV_PCM_IOCTL_HW_REFINE:
 		return snd_pcm_hw_refine_user(substream, (snd_pcm_hw_params_t *) arg);
 	case SNDRV_PCM_IOCTL_HW_PARAMS:

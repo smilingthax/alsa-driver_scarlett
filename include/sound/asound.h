@@ -150,7 +150,7 @@ enum {
  *                                                                           *
  *****************************************************************************/
 
-#define SNDRV_PCM_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 4)
+#define SNDRV_PCM_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 5)
 
 typedef unsigned long sndrv_pcm_uframes_t;
 typedef long sndrv_pcm_sframes_t;
@@ -398,8 +398,8 @@ struct sndrv_pcm_channel_info {
 
 struct sndrv_pcm_status {
 	enum sndrv_pcm_state state;	/* stream state */
-	struct timeval trigger_tstamp;	/* time when stream was started/stopped/paused */
-	struct timeval tstamp;		/* reference timestamp */
+	struct timespec trigger_tstamp;	/* time when stream was started/stopped/paused */
+	struct timespec tstamp;		/* reference timestamp */
 	sndrv_pcm_uframes_t appl_ptr;	/* appl ptr */
 	sndrv_pcm_uframes_t hw_ptr;	/* hw ptr */
 	sndrv_pcm_sframes_t delay;	/* current delay in frames */
@@ -414,7 +414,7 @@ struct sndrv_pcm_mmap_status {
 	enum sndrv_pcm_state state;	/* RO: state - SNDRV_PCM_STATE_XXXX */
 	int pad1;			/* Needed for 64 bit alignment */
 	sndrv_pcm_uframes_t hw_ptr;	/* RO: hw ptr (0...boundary-1) */
-	struct timeval tstamp;		/* Timestamp */
+	struct timespec tstamp;		/* Timestamp */
 	enum sndrv_pcm_state suspended_state; /* RO: suspended stream state */
 };
 
@@ -438,6 +438,7 @@ struct sndrv_xfern {
 enum {
 	SNDRV_PCM_IOCTL_PVERSION = _IOR('A', 0x00, int),
 	SNDRV_PCM_IOCTL_INFO = _IOR('A', 0x01, struct sndrv_pcm_info),
+	SNDRV_PCM_IOCTL_TSTAMP = _IOW('A', 0x02, int),
 	SNDRV_PCM_IOCTL_HW_REFINE = _IOWR('A', 0x10, struct sndrv_pcm_hw_params),
 	SNDRV_PCM_IOCTL_HW_PARAMS = _IOWR('A', 0x11, struct sndrv_pcm_hw_params),
 	SNDRV_PCM_IOCTL_HW_FREE = _IO('A', 0x12),
@@ -513,7 +514,7 @@ struct sndrv_rawmidi_params {
 
 struct sndrv_rawmidi_status {
 	enum sndrv_rawmidi_stream stream;
-	struct timeval tstamp;		/* Timestamp */
+	struct timespec tstamp;		/* Timestamp */
 	size_t avail;			/* available bytes */
 	size_t xruns;			/* count of overruns since last status (in bytes) */
 	unsigned char reserved[16];	/* reserved for future use */
@@ -532,7 +533,7 @@ enum {
  *  Timer section - /dev/snd/timer
  */
 
-#define SNDRV_TIMER_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 0)
+#define SNDRV_TIMER_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 1)
 
 enum sndrv_timer_class {
 	SNDRV_TIMER_CLASS_NONE = -1,
@@ -592,8 +593,8 @@ struct sndrv_timer_params {
 };
 
 struct sndrv_timer_status {
-	struct timeval tstamp;		/* Timestamp */
-	unsigned int resolution;	/* current resolution */
+	struct timespec tstamp;		/* Timestamp - last update */
+	unsigned int resolution;	/* current resolution in ns */
 	unsigned int lost;		/* counter of master tick lost */
 	unsigned int overrun;		/* count of read queue overruns */
 	unsigned int queue;		/* used queue size */
@@ -603,6 +604,7 @@ struct sndrv_timer_status {
 enum {
 	SNDRV_TIMER_IOCTL_PVERSION = _IOR('T', 0x00, int),
 	SNDRV_TIMER_IOCTL_NEXT_DEVICE = _IOWR('T', 0x01, struct sndrv_timer_id),
+	SNDRV_TIMER_IOCTL_TREAD = _IOW('T', 0x02, int),
 	SNDRV_TIMER_IOCTL_SELECT = _IOW('T', 0x10, struct sndrv_timer_select),
 	SNDRV_TIMER_IOCTL_INFO = _IOR('T', 0x11, struct sndrv_timer_info),
 	SNDRV_TIMER_IOCTL_PARAMS = _IOW('T', 0x12, struct sndrv_timer_params),
@@ -617,13 +619,27 @@ struct sndrv_timer_read {
 	unsigned int ticks;
 };
 
+enum sndrv_timer_event {
+	SNDRV_TIMER_EVENT_RESOLUTION = 0,	/* val = resolution in ns */
+	SNDRV_TIMER_EVENT_TICK,			/* val = ticks */
+	SNDRV_TIMER_EVENT_START,		/* val = resolution in ns */
+	SNDRV_TIMER_EVENT_STOP,			/* val = 0 */
+	SNDRV_TIMER_EVENT_CONTINUE		/* val = resolution in ns */
+};
+
+struct sndrv_timer_tread {
+	enum sndrv_timer_event event;
+	struct timespec tstamp;
+	unsigned int val;
+};
+
 /****************************************************************************
  *                                                                          *
  *        Section for driver control interface - /dev/snd/control?          *
  *                                                                          *
  ****************************************************************************/
 
-#define SNDRV_CTL_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 0)
+#define SNDRV_CTL_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 1)
 
 struct sndrv_ctl_card_info {
 	int card;			/* card number */

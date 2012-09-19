@@ -4480,8 +4480,7 @@
         <informalexample>
           <programlisting>
 <![CDATA[
-  snd_pcm_sgbuf_t *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t,
-                              substream->dma_private, return -EINVAL);
+  snd_pcm_sgbuf_t *sgbuf = (snd_pcm_sgbuf_t*)substream->dma_private;
 ]]>
           </programlisting>
         </informalexample>

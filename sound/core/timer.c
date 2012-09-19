@@ -51,6 +51,7 @@ MODULE_PARM_DESC(timer_limit, "Maximum global timers in system.");
 
 typedef struct {
 	snd_timer_instance_t *timeri;
+	int tread;			/* enhanced read with timestamps and events */
 	unsigned long ticks;
 	unsigned long overrun;
 	int qhead;
@@ -58,7 +59,9 @@ typedef struct {
 	int qused;
 	int queue_size;
 	snd_timer_read_t *queue;
+	snd_timer_tread_t *tqueue;
 	spinlock_t qlock;
+	unsigned long last_resolution;
 	wait_queue_head_t qchange_sleep;
 	struct fasync_struct *fasync;
 } snd_timer_user_t;
@@ -938,9 +941,17 @@ static void snd_timer_user_interrupt(snd_timer_instance_t *timeri,
 {
 	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, timeri->callback_data, return);
 	snd_timer_read_t *r;
-	int _wake = 0;
+	int prev;
 	
 	spin_lock(&tu->qlock);
+	if (tu->qused > 0) {
+		prev = tu->qtail == 0 ? tu->queue_size - 1 : tu->qtail - 1;
+		r = &tu->queue[prev];
+		if (r->resolution == resolution) {
+			r->ticks += ticks;
+			goto __wake;
+		}
+	}
 	if (tu->qused >= tu->queue_size) {
 		tu->overrun++;
 	} else {
@@ -949,13 +960,58 @@ static void snd_timer_user_interrupt(snd_timer_instance_t *timeri,
 		r->resolution = resolution;
 		r->ticks = ticks;
 		tu->qused++;
-		_wake++;
 	}
+      __wake:
 	spin_unlock(&tu->qlock);
-	if (_wake) {
-		kill_fasync(&tu->fasync, SIGIO, POLL_IN);
-		wake_up(&tu->qchange_sleep);
+	kill_fasync(&tu->fasync, SIGIO, POLL_IN);
+	wake_up(&tu->qchange_sleep);
+}
+
+static void snd_timer_user_append_to_tqueue(snd_timer_user_t *tu, snd_timer_tread_t *tread)
+{
+	if (tu->qused >= tu->queue_size) {
+		tu->overrun++;
+	} else {
+		memcpy(&tu->queue[tu->qtail++], tread, sizeof(*tread));
+		tu->qused++;
 	}
+}
+
+static void snd_timer_user_tinterrupt(snd_timer_instance_t *timeri,
+				      unsigned long resolution,
+				      unsigned long ticks)
+{
+	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, timeri->callback_data, return);
+	snd_timer_tread_t *r, r1;
+	struct timespec tstamp;
+	int prev;
+
+	snd_timestamp_now(&tstamp, 1);
+	spin_lock(&tu->qlock);
+	if (tu->last_resolution != resolution) {
+		r1.event = SNDRV_TIMER_EVENT_RESOLUTION;
+		r1.tstamp = tstamp;
+		r1.val = resolution;
+		snd_timer_user_append_to_tqueue(tu, &r1);
+		tu->last_resolution = resolution;
+	}
+	if (tu->qused > 0) {
+		prev = tu->qtail == 0 ? tu->queue_size - 1 : tu->qtail - 1;
+		r = &tu->tqueue[prev];
+		if (r->event == SNDRV_TIMER_EVENT_TICK) {
+			r->tstamp = tstamp;
+			r->val += ticks;
+			goto __wake;
+		}
+	}
+	r1.event = SNDRV_TIMER_EVENT_TICK;
+	r1.tstamp = tstamp;
+	r1.val = ticks;
+	snd_timer_user_append_to_tqueue(tu, &r1);
+      __wake:
+	spin_unlock(&tu->qlock);
+	kill_fasync(&tu->fasync, SIGIO, POLL_IN);
+	wake_up(&tu->qchange_sleep);
 }
 
 static int snd_timer_user_open(struct inode *inode, struct file *file)
@@ -990,6 +1046,8 @@ static int snd_timer_user_release(struct inode *inode, struct file *file)
 			snd_timer_close(tu->timeri);
 		if (tu->queue)
 			kfree(tu->queue);
+		if (tu->tqueue)
+			kfree(tu->tqueue);
 		snd_magic_kfree(tu);
 	}
 	return 0;
@@ -1120,8 +1178,31 @@ static int snd_timer_user_tselect(struct file *file, snd_timer_select_t *_tselec
 		tselect.id.dev_sclass = SNDRV_TIMER_SCLASS_APPLICATION;
 	if ((tu->timeri = snd_timer_open(str, &tselect.id, current->pid)) == NULL)
 		return -ENODEV;
+
+	if (tu->queue) {
+		kfree(tu->queue);
+		tu->queue = NULL;
+	}
+	if (tu->tqueue) {
+		kfree(tu->tqueue);
+		tu->tqueue = NULL;
+	}
+	if (tu->tread) {
+		tu->tqueue = (snd_timer_tread_t *)kmalloc(tu->queue_size * sizeof(snd_timer_tread_t), GFP_KERNEL);
+		if (tu->tqueue == NULL) {
+			snd_timer_close(tu->timeri);
+			return -ENOMEM;
+		}
+	} else {
+		tu->queue = (snd_timer_read_t *)kmalloc(tu->queue_size * sizeof(snd_timer_read_t), GFP_KERNEL);
+		if (tu->queue == NULL) {
+			snd_timer_close(tu->timeri);
+			return -ENOMEM;
+		}
+	}
+	
 	tu->timeri->flags |= SNDRV_TIMER_IFLG_FAST;
-	tu->timeri->callback = snd_timer_user_interrupt;
+	tu->timeri->callback = tu->tread ? snd_timer_user_tinterrupt : snd_timer_user_interrupt;
 	tu->timeri->callback_data = (void *)tu;
 	return 0;
 }
@@ -1156,6 +1237,7 @@ static int snd_timer_user_params(struct file *file, snd_timer_params_t *_params)
 	snd_timer_params_t params;
 	snd_timer_t *t;
 	snd_timer_read_t *tr;
+	snd_timer_tread_t *ttr;
 	int err;
 	
 	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
@@ -1181,11 +1263,20 @@ static int snd_timer_user_params(struct file *file, snd_timer_params_t *_params)
 	}
 	spin_unlock_irqrestore(&t->lock, flags);
 	if (params.queue_size > 0 && (unsigned int)tu->queue_size != params.queue_size) {
-		tr = (snd_timer_read_t *)kmalloc(params.queue_size * sizeof(snd_timer_read_t), GFP_KERNEL);
-		if (tr) {
-			kfree(tu->queue);
-			tu->queue_size = params.queue_size;
-			tu->queue = tr;
+		if (tu->tread) {
+			ttr = (snd_timer_tread_t *)kmalloc(params.queue_size * sizeof(snd_timer_tread_t), GFP_KERNEL);
+			if (ttr) {
+				kfree(tu->tqueue);
+				tu->queue_size = params.queue_size;
+				tu->tqueue = ttr;
+			}
+		} else {
+			tr = (snd_timer_read_t *)kmalloc(params.queue_size * sizeof(snd_timer_read_t), GFP_KERNEL);
+			if (tr) {
+				kfree(tu->queue);
+				tu->queue_size = params.queue_size;
+				tu->queue = tr;
+			}
 		}
 	}
 	if (t->hw.flags & SNDRV_TIMER_HW_SLAVE) {
@@ -1229,6 +1320,7 @@ static int snd_timer_user_start(struct file *file)
 	snd_assert(tu->timeri != NULL, return -ENXIO);
 	snd_timer_stop(tu->timeri);
 	tu->timeri->lost = 0;
+	tu->last_resolution = 0;
 	return (err = snd_timer_start(tu->timeri, tu->ticks)) < 0 ? err : 0;
 }
 
@@ -1264,6 +1356,17 @@ static int snd_timer_user_ioctl(struct inode *inode, struct file *file,
 		return put_user(SNDRV_TIMER_VERSION, (int *)arg) ? -EFAULT : 0;
 	case SNDRV_TIMER_IOCTL_NEXT_DEVICE:
 		return snd_timer_user_next_device((snd_timer_id_t *)arg);
+	case SNDRV_TIMER_IOCTL_TREAD:
+	{
+		int xarg;
+		
+		if (tu->timeri)		/* too late */
+			return -EBUSY;
+		if (get_user(xarg, (int *) arg))
+			return -EFAULT;
+		tu->tread = xarg ? 1 : 0;
+		return 0;
+	}
 	case SNDRV_TIMER_IOCTL_SELECT:
 		return snd_timer_user_tselect(file, (snd_timer_select_t *)arg);
 	case SNDRV_TIMER_IOCTL_INFO:
@@ -1297,12 +1400,13 @@ static int snd_timer_user_fasync(int fd, struct file * file, int on)
 static ssize_t snd_timer_user_read(struct file *file, char *buffer, size_t count, loff_t *offset)
 {
 	snd_timer_user_t *tu;
-	long result = 0;
+	long result = 0, unit;
 	int err = 0;
 	
 	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
+	unit = tu->tread ? sizeof(snd_timer_tread_t) : sizeof(snd_timer_read_t);
 	spin_lock_irq(&tu->qlock);
-	while (count - result >= sizeof(snd_timer_read_t)) {
+	while (count - result >= unit) {
 		while (!tu->qused) {
 			wait_queue_t wait;
 
@@ -1331,15 +1435,22 @@ static ssize_t snd_timer_user_read(struct file *file, char *buffer, size_t count
 		if (err < 0)
 			break;
 
-		if (copy_to_user(buffer, &tu->queue[tu->qhead++], sizeof(snd_timer_read_t))) {
-			err = -EFAULT;
-			break;
+		if (tu->tread) {
+			if (copy_to_user(buffer, &tu->tqueue[tu->qhead++], sizeof(snd_timer_tread_t))) {
+				err = -EFAULT;
+				break;
+			}
+		} else {
+			if (copy_to_user(buffer, &tu->queue[tu->qhead++], sizeof(snd_timer_read_t))) {
+				err = -EFAULT;
+				break;
+			}
 		}
 
 		tu->qhead %= tu->queue_size;
 
-		result += sizeof(snd_timer_read_t);
-		buffer += sizeof(snd_timer_read_t);
+		result += unit;
+		buffer += unit;
 
 		spin_lock_irq(&tu->qlock);
 		tu->qused--;

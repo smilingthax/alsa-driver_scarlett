@@ -27,7 +27,7 @@
 #include <linux/rwsem.h>		/* struct rw_semaphore */
 
 /* Typedef's */
-typedef struct timeval snd_timestamp_t;
+typedef struct timespec snd_timestamp_t;
 typedef struct sndrv_interval snd_interval_t;
 typedef enum sndrv_card_type snd_card_type;
 typedef struct sndrv_xferi snd_xferi_t;
@@ -424,9 +424,27 @@ void snd_verbose_printd(const char *file, int line, const char *format, ...);
 #define snd_BUG() snd_assert(0, )
 
 
-#define snd_timestamp_now(tstamp) do_gettimeofday(tstamp)
-#define snd_timestamp_zero(tstamp) do { (tstamp)->tv_sec = 0; (tstamp)->tv_usec = 0; } while (0)
-#define snd_timestamp_null(tstamp) ((tstamp)->tv_sec == 0 && (tstamp)->tv_usec ==0)
+static inline void snd_timestamp_now(struct timespec *tstamp, int timespec)
+{
+	struct timeval val;
+	/* FIXME: use a linear time source */
+	do_gettimeofday(&val);
+	tstamp->tv_sec = val.tv_sec;
+	tstamp->tv_nsec = val.tv_usec;
+	if (timespec)
+		tstamp->tv_nsec *= 1000L;
+}
+
+static inline void snd_timestamp_zero(struct timespec *tstamp)
+{
+	tstamp->tv_sec = 0;
+	tstamp->tv_nsec = 0;
+}
+
+static inline int snd_timestamp_null(struct timespec *tstamp)
+{
+	return tstamp->tv_sec == 0 && tstamp->tv_nsec == 0;
+}
 
 #define SNDRV_OSS_VERSION         ((3<<16)|(8<<8)|(1<<4)|(0))	/* 3.8.1a */
 
