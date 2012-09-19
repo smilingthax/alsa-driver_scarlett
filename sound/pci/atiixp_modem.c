@@ -989,6 +989,7 @@ static int __devinit snd_atiixp_pcm_new(atiixp_t *chip)
 		return err;
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_atiixp_playback_ops);
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_atiixp_capture_ops);
+	pcm->dev_class = SNDRV_PCM_CLASS_MODEM;
 	pcm->private_data = chip;
 	strcpy(pcm->name, "ATI IXP MC97");
 	chip->pcmdevs[ATI_PCMDEV_ANALOG] = pcm;
@@ -1067,7 +1068,6 @@ static int __devinit snd_atiixp_mixer_new(atiixp_t *chip, int clock)
 	if ((err = snd_ac97_bus(chip->card, 0, &ops, chip, &pbus)) < 0)
 		return err;
 	pbus->clock = clock;
-	pbus->shared_type = AC97_SHARED_TYPE_ATIIXP;	/* shared with audio driver */
 	chip->ac97_bus = pbus;
 
 	codec_count = 0;
