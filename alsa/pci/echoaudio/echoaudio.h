@@ -290,28 +290,28 @@
 
 
 /* Debug initialization */
-#if (CONFIG_SND_DEBUG)
+#ifdef CONFIG_SND_DEBUG
 #define DE_INIT(x) snd_printk x
 #else
 #define DE_INIT(x)
 #endif
 
 /* Debug hw_params callbacks */
-#if (CONFIG_SND_DEBUG)
+#ifdef CONFIG_SND_DEBUG
 #define DE_HWP(x) snd_printk x
 #else
 #define DE_HWP(x)
 #endif
 
 /* Debug normal activity (open, start, stop...) */
-#if (CONFIG_SND_DEBUG)
+#ifdef CONFIG_SND_DEBUG
 #define DE_ACT(x) snd_printk x
 #else
 #define DE_ACT(x)
 #endif
 
 /* Debug midi activity */
-#if (CONFIG_SND_DEBUG)
+#ifdef CONFIG_SND_DEBUG
 #define DE_MID(x) snd_printk x
 #else
 #define DE_MID(x)
