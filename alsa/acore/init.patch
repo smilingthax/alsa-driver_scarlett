@@ -1,12 +1,12 @@
---- ../alsa-kernel/core/init.c	2008-10-17 14:14:13.000000000 +0200
-+++ init.c	2008-10-17 14:16:03.000000000 +0200
+--- ../alsa-kernel/core/init.c	2008-11-12 16:00:04.000000000 +0100
++++ init.c	2008-11-12 16:13:12.000000000 +0100
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
  /*
   *  Initialization routines
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -275,11 +277,19 @@
+@@ -278,11 +280,19 @@
  	return POLLERR | POLLNVAL;
  }
  
@@ -26,7 +26,7 @@
  
  static int snd_disconnect_mmap(struct file *file, struct vm_area_struct *vma)
  {
-@@ -293,16 +303,22 @@
+@@ -296,16 +306,22 @@
  
  static const struct file_operations snd_shutdown_f_ops =
  {
@@ -49,22 +49,24 @@
  	.mmap =		snd_disconnect_mmap,
  	.fasync =	snd_disconnect_fasync
  };
-@@ -549,9 +565,19 @@
+@@ -610,9 +626,21 @@
  		return -EINVAL;
  #ifndef CONFIG_SYSFS_DEPRECATED
  	if (!card->card_dev) {
 +#ifdef CONFIG_SND_HAS_DEVICE_CREATE_DRVDATA
 +		card->card_dev = device_create_drvdata(sound_class, card->dev,
-+						       MKDEV(0, 0), NULL,
++						       MKDEV(0, 0), card,
 +						       "card%i", card->number);
 +#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)
  		card->card_dev = device_create(sound_class, card->dev,
- 					       MKDEV(0, 0), NULL,
+ 					       MKDEV(0, 0), card,
  					       "card%i", card->number);
 +#else
 +		card->card_dev = device_create(sound_class, card->dev,
 +					       MKDEV(0, 0),
 +					       "card%i", card->number);
++		if (card->card_dev && !IS_ERR(card->card_dev))
++			dev_set_drvdata(card->card_dev, card);
 +#endif
  		if (IS_ERR(card->card_dev))
  			card->card_dev = NULL;
