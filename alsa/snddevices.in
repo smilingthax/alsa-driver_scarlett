@@ -111,7 +111,7 @@ fi
 if test $OSSMAJOR -eq 14; then
   create_odevices /dev/mixer		0
   create_odevice /dev/sequencer		1
-  create_odevices /dev/midi		2
+  create_odevices /dev/midi0		2	# /dev/midi is for tclmidi
   create_odevices /dev/dsp		3
   create_odevices /dev/audio		4
   create_odevice /dev/sndstat		6
@@ -124,7 +124,7 @@ if test $OSSMAJOR -eq 14; then
   create_odevices /dev/admmidi		14	# alternate direct midi
   # create symlinks
   ln -svf /dev/mixer0 /dev/mixer
-  ln -svf /dev/midi0 /dev/midi
+  ln -svf /dev/midi00 /dev/midi			# /dev/midi0 is for tclmidi
   ln -svf /dev/dsp0 /dev/dsp
   ln -svf /dev/audio0 /dev/audio
   ln -svf /dev/music /dev/sequencer2
