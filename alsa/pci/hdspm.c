@@ -389,7 +389,7 @@ struct _hdspm {
 	int irq;
 	unsigned long port;
 	struct resource *res_port;
-	unsigned long iobase;
+	void __iomem *iobase;
 
 	int irq_count;		/* for debug */
 
@@ -2375,7 +2375,7 @@ snd_hdspm_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 						  HDSPM_version2));
 
 	snd_iprintf(buffer, "IRQ: %d Registers bus: 0x%lx VM: 0x%lx\n",
-		    hdspm->irq, hdspm->port, hdspm->iobase);
+		    hdspm->irq, hdspm->port, (unsigned long)hdspm->iobase);
 
 	snd_iprintf(buffer, "--- System ---\n");
 
@@ -3551,7 +3551,7 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 	hdspm->midi[1].output = 0;
 	spin_lock_init(&hdspm->midi[0].lock);
 	spin_lock_init(&hdspm->midi[1].lock);
-	hdspm->iobase = 0;
+	hdspm->iobase = NULL;
 	hdspm->control_register = 0;
 	hdspm->control2_register = 0;
 
@@ -3594,16 +3594,13 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 		   hdspm->port + io_extent - 1);
 
 
-	if ((hdspm->iobase
-	     =
-	     (unsigned long) ioremap_nocache(hdspm->port,
-					     io_extent)) == 0) {
+	if ((hdspm->iobase = ioremap_nocache(hdspm->port, io_extent)) == NULL) {
 		snd_printk(KERN_ERR "HDSPM: unable to remap region 0x%lx-0x%lx\n",
 			   hdspm->port, hdspm->port + io_extent - 1);
 		return -EBUSY;
 	}
 	snd_printdd("remapped region (0x%lx) 0x%lx-0x%lx\n",
-		   hdspm->iobase, hdspm->port,
+		   (unsigned long)hdspm->iobase, hdspm->port,
 		   hdspm->port + io_extent - 1);
 
 	if (request_irq(pci->irq, snd_hdspm_interrupt,
@@ -3666,7 +3663,7 @@ static int snd_hdspm_free(hdspm_t * hdspm)
 		kfree(hdspm->mixer);
 
 	if (hdspm->iobase)
-		iounmap((void *) hdspm->iobase);
+		iounmap(hdspm->iobase);
 
 	snd_hdspm_memory_free(hdspm);
 

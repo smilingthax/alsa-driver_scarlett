@@ -1266,7 +1266,7 @@ static int const is_adat = 0;
  * Some convenient type definitions */
 typedef struct pci_dev       pci_dev_t;
 typedef struct pci_device_id pci_device_id_t;
-typedef unsigned long        vm_offset_t;
+typedef void __iomem        *vm_offset_t;
 
 
 #define PDPLUS_MODE_NONE     0
@@ -1441,21 +1441,21 @@ static vm_offset_t __init pdplus_remap_pci_mem (u_long base, u_long size)
 {
         u_long page_base    = ((u_long) base) & PAGE_MASK;
         u_long page_offs    = ((u_long) base) - page_base;
-        u_long page_remapped = (u_long) ioremap_nocache (page_base, page_offs+size);
+        vm_offset_t page_remapped = ioremap_nocache (page_base, page_offs+size);
 
         Vprintk ("base=0x%lx, offs=0x%lx, remapped=0x%lx\n",
                 page_base,
                 page_offs,
-                page_remapped);
+		 (unsigned long)page_remapped);
 
-        return (vm_offset_t) (page_remapped ? (page_remapped + page_offs) : 0UL);
+        return (vm_offset_t) (page_remapped ? (page_remapped + page_offs) : NULL);
 }
 
 static void __exit pdplus_unmap_pci_mem (snd_iomem_t *mem)
 {
         if (mem) {
         	if (mem->vaddr)
-	                iounmap((void *) (mem->vaddr & PAGE_MASK));
+	                iounmap((void __iomem *)((unsigned long)mem->vaddr & PAGE_MASK));
 		if (mem->resource) {
 			release_resource(mem->resource);
 			kfree_nocheck(mem->resource);
@@ -5438,8 +5438,8 @@ static void pdplus_print_iomem_ll (
         snd_info_buffer_t *buffer,
         snd_iomem_t *iomem)
 {
-        u_long lauf;
-        u_long end;
+        void __iomem *lauf;
+        void __iomem *end;
         int i = 0;
 
         snd_assert (iomem != NULL, return);
@@ -5452,7 +5452,7 @@ static void pdplus_print_iomem_ll (
                         i = 0;
                 }
                 if (i == 0)
-                        snd_iprintf (buffer, "base+%08lx: ", lauf - iomem->vaddr);
+                        snd_iprintf (buffer, "base+%08lx: ", (unsigned long)lauf - (unsigned long)iomem->vaddr);
                 snd_iprintf (buffer, " %08x", IOMEM_READ (lauf));
                 lauf+= 4;
                 i++;
