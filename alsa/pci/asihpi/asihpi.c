@@ -157,6 +157,8 @@ struct snd_card_asihpi {
 	int support_mmap;
 	int support_grouping;
 	int support_mrx;
+	u16 in_max_chans;
+	u16 out_max_chans;
 };
 
 /* Per stream data */
@@ -320,7 +322,6 @@ static void print_hwparams(struct snd_pcm_hw_params *p)
 	snd_printd("period_size %d \n", params_period_size(p));
 	snd_printd("periods %d \n", params_periods(p));
 	snd_printd("buffer_size %d \n", params_buffer_size(p));
-	snd_printd("tick_time %d \n", params_tick_time(p));
 }
 #else
 #define print_hwparams(x)
@@ -394,11 +395,18 @@ static void snd_card_asihpi_pcm_samplerates(struct snd_card_asihpi *asihpi,
 		err = HPI_MixerGetControl(phSubSys, asihpi->hMixer,
 					  HPI_SOURCENODE_CLOCK_SOURCE, 0, 0, 0,
 					  HPI_CONTROL_SAMPLECLOCK, &hControl);
+		if (err) {
+			printk(KERN_ERR "No local sampleclock, err %d\n", err);
+		}
 
 		for (idx = 0; idx < 100; idx++) {
 			if (HPI_SampleClock_QueryLocalRate(phSubSys, hControl,
-					idx, &sampleRate))
+					idx, &sampleRate)) {
+				if (!idx)
+					printk(KERN_ERR "Local rate query failed\n");
+
 				break;
+			}
 
 			rate_min = min(rate_min, sampleRate);
 			rate_max = max(rate_max, sampleRate);
@@ -475,9 +483,9 @@ static int snd_card_asihpi_pcm_hw_params(struct snd_pcm_substream *substream,
 	if (err)
 		return err;
 
-	VPRINTK1(KERN_INFO "Format %d chan, %d format, %dHz\n",
-				params_channels(params),
-				wFormat, params_rate(params));
+	VPRINTK1(KERN_INFO "Format %d, %d chans, %dHz\n",
+				wFormat,params_channels(params),
+				params_rate(params));
 
 	HPI_HandleError(HPI_FormatCreate(&dpcm->Format, params_channels(params),
 			     wFormat, params_rate(params), 0, 0));
@@ -498,7 +506,9 @@ static int snd_card_asihpi_pcm_hw_params(struct snd_pcm_substream *substream,
 			params_buffer_bytes(params),  runtime->dma_addr);
 		if (err == 0) {
 			snd_printd(KERN_INFO
-					"StreamHostBufferAttach succeeded\n");
+					"StreamHostBufferAttach succeeded %u %u\n",
+						params_buffer_bytes(params),
+						runtime->dma_addr);
 		} else {
 			snd_printd(KERN_INFO
 					"StreamHostBufferAttach error %d\n",
@@ -522,16 +532,8 @@ static int snd_card_asihpi_pcm_hw_params(struct snd_pcm_substream *substream,
 	dpcm->bytes_per_sec = bytes_per_sec;
 	dpcm->pcm_size = params_buffer_bytes(params);
 	dpcm->pcm_count = params_period_bytes(params);
-	snd_printd(KERN_INFO "pcm_size x%x, pcm_count x%x\n",
-			dpcm->pcm_size, dpcm->pcm_count);
-
-#ifdef FORCE_TIMER_JIFFIES
-	if (dpcm->pcm_jiffie_per_period > FORCE_TIMER_JIFFIES) {
-		dpcm->pcm_jiffie_per_period = FORCE_TIMER_JIFFIES;
-		snd_printd(KERN_INFO "Forced timer jiffies to %d\n",
-				FORCE_TIMER_JIFFIES);
-	}
-#endif
+	snd_printd(KERN_INFO "pcm_size x%x, pcm_count x%x, Bps %d\n",
+			dpcm->pcm_size, dpcm->pcm_count, bytes_per_sec);
 
 	dpcm->pcm_irq_pos = 0;
 	dpcm->pcm_buf_pos = 0;
@@ -681,8 +683,6 @@ static void snd_card_asihpi_runtime_free(struct snd_pcm_runtime *runtime)
 	kfree(dpcm);
 }
 
-/***************************** PLAYBACK OPS ****************/
-
 /*algorithm outline
  Without linking degenerates to getting single stream pos etc
  Without mmap 2nd loop degenerates to snd_pcm_period_elapsed
@@ -758,6 +758,7 @@ static void snd_card_asihpi_timer_function(unsigned long data)
 			snd_printd(KERN_WARNING  "OStream %d drained\n",
 					s->number);
 			snd_pcm_stop(s, SNDRV_PCM_STATE_XRUN);
+			return;
 		}
 
 		if (s->stream == SNDRV_PCM_STREAM_PLAYBACK) {
@@ -811,9 +812,10 @@ static void snd_card_asihpi_timer_function(unsigned long data)
 							ds->pcm_count);
 					HPI_HandleError(
 						HPI_OutStreamWriteBuf(
-							phSubSys,
-							ds->hStream,
-							NULL, xfercount,
+							phSubSys, ds->hStream,
+							&s->runtime->
+								dma_area[0],
+							xfercount,
 							&ds->Format));
 				} else {
 					VPRINTK2("Read IS%d x%04x\n",
@@ -833,14 +835,13 @@ static void snd_card_asihpi_timer_function(unsigned long data)
 		add_timer(&dpcm->timer);
 }
 
+/***************************** PLAYBACK OPS ****************/
 static int snd_card_asihpi_playback_ioctl(struct snd_pcm_substream *substream,
 					  unsigned int cmd, void *arg)
 {
 	snd_printd(KERN_INFO "Playback ioctl %d\n", cmd);
 	return snd_pcm_lib_ioctl(substream, cmd, arg);
 }
-
-
 
 static int snd_card_asihpi_playback_prepare(struct snd_pcm_substream *
 					    substream)
@@ -965,6 +966,7 @@ static int snd_card_asihpi_playback_open(struct snd_pcm_substream *substream)
 	runtime->private_data = dpcm;
 	runtime->private_free = snd_card_asihpi_runtime_free;
 
+	snd_card_asihpi_playback.channels_max = card->out_max_chans;
 	snd_card_asihpi_playback_format(card, dpcm->hStream,
 					&snd_card_asihpi_playback);
 
@@ -980,10 +982,11 @@ static int snd_card_asihpi_playback_open(struct snd_pcm_substream *substream)
 	if (card->support_grouping)
 		snd_card_asihpi_playback.info |= SNDRV_PCM_INFO_SYNC_START;
 
-	/* struct copy so can create initializer dynamically */
+	/* struct is copied, so can create initializer dynamically */
 	runtime->hw = snd_card_asihpi_playback;
-	/* Strictly only necessary for HPI6205 adapters */
-	err = snd_pcm_hw_constraint_pow2(runtime, 0,
+
+	if (card->support_mmap)
+		err = snd_pcm_hw_constraint_pow2(runtime, 0,
 					SNDRV_PCM_HW_PARAM_BUFFER_BYTES);
 	if (err < 0)
 		return err;
@@ -1187,9 +1190,9 @@ static int snd_card_asihpi_capture_open(struct snd_pcm_substream *substream)
 	runtime->private_data = dpcm;
 	runtime->private_free = snd_card_asihpi_runtime_free;
 
+	snd_card_asihpi_capture.channels_max = card->in_max_chans;
 	snd_card_asihpi_capture_format(card, dpcm->hStream,
 				       &snd_card_asihpi_capture);
-
 	snd_card_asihpi_pcm_samplerates(card,  &snd_card_asihpi_capture);
 	snd_card_asihpi_capture.info = SNDRV_PCM_INFO_INTERLEAVED;
 
@@ -1199,8 +1202,8 @@ static int snd_card_asihpi_capture_open(struct snd_pcm_substream *substream)
 
 	runtime->hw = snd_card_asihpi_capture;
 
-	/* Strictly only necessary for HPI6205 adapters */
-	err = snd_pcm_hw_constraint_pow2(runtime, 0,
+	if (card->support_mmap)
+		err = snd_pcm_hw_constraint_pow2(runtime, 0,
 					SNDRV_PCM_HW_PARAM_BUFFER_BYTES);
 	if (err < 0)
 		return err;
@@ -2132,7 +2135,7 @@ static int snd_asihpi_meter_get(struct snd_kcontrol *kcontrol,
 }
 
 static int __devinit snd_asihpi_meter_add(struct snd_card_asihpi *asihpi,
-					struct hpi_control *asihpi_control)
+					struct hpi_control *asihpi_control, int subidx)
 {
 	struct snd_card *card = asihpi->card;
 	struct snd_kcontrol_new snd_control;
@@ -2143,7 +2146,9 @@ static int __devinit snd_asihpi_meter_add(struct snd_card_asihpi *asihpi,
 	snd_control.info = snd_asihpi_meter_info;
 	snd_control.get = snd_asihpi_meter_get;
 
-	return (ctl_add(card, &snd_control, asihpi));
+	snd_control.index = subidx;
+
+	return ctl_add(card, &snd_control, asihpi);
 }
 
 /*------------------------------------------------------------
@@ -2559,8 +2564,9 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 {
 	struct snd_card *card = asihpi->card;
 	unsigned int idx = 0;
+	unsigned int subindex = 0;
 	int err;
-	struct hpi_control asihpi_control;
+	struct hpi_control asihpi_control, prev_control;
 
 	if (snd_BUG_ON(!asihpi))
 		return -EINVAL;
@@ -2597,6 +2603,21 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 		asihpi_control.wSrcNodeType -= HPI_SOURCENODE_BASE;
 		asihpi_control.wDstNodeType -= HPI_DESTNODE_BASE;
 
+		/* ASI50xx in SSX mode has multiple meters on the same node.
+		   Use subindex to create distinct ALSA controls
+		   for any duplicated controls.
+		*/
+		if ((asihpi_control.wControlType == prev_control.wControlType) &&
+		    (asihpi_control.wSrcNodeType == prev_control.wSrcNodeType) &&
+		    (asihpi_control.wSrcNodeIndex == prev_control.wSrcNodeIndex) &&
+		    (asihpi_control.wDstNodeType == prev_control.wDstNodeType) &&
+		    (asihpi_control.wDstNodeIndex == prev_control.wDstNodeIndex))
+			subindex++;
+		else
+			subindex = 0;
+
+		prev_control = asihpi_control;
+
 		switch (asihpi_control.wControlType) {
 		case HPI_CONTROL_VOLUME:
 			err = snd_asihpi_volume_add(asihpi, &asihpi_control);
@@ -2611,7 +2632,7 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 			err = snd_asihpi_cmode_add(asihpi, &asihpi_control);
 			break;
 		case HPI_CONTROL_METER:
-			err = snd_asihpi_meter_add(asihpi, &asihpi_control);
+			err = snd_asihpi_meter_add(asihpi, &asihpi_control, subindex);
 			break;
 		case HPI_CONTROL_SAMPLECLOCK:
 			err = snd_asihpi_sampleclock_add(
@@ -2857,8 +2878,19 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 			((asihpi->wType & 0xF000) == 0x6000));
 
 
-	printk(KERN_INFO "Supports mmap:%d grouping:%d\n",
-			asihpi->support_mmap, asihpi->support_grouping);
+	err = HPI_AdapterGetProperty(phSubSys, asihpi->wAdapterIndex,
+		HPI_ADAPTER_PROPERTY_CURCHANNELS,
+		&asihpi->in_max_chans, &asihpi->out_max_chans);
+	if (err) {
+		asihpi->in_max_chans = 2;
+		asihpi->out_max_chans = 2;
+	}
+
+	printk(KERN_INFO "Supports mmap:%d grouping:%d mrx:%d\n",
+			asihpi->support_mmap,
+			asihpi->support_grouping,
+			asihpi->support_mrx
+	      );
 
 	HPI_InStreamClose(phSubSys, hStream);
 

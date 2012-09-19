@@ -2126,6 +2126,9 @@ static short Hpi6205_TransferData(
 	u32 dwTimeOut, dwTemp2;
 	struct bus_master_interface *interface = pHw6205->pInterfaceBuffer;
 
+	if (!pData)
+		return HPI_ERROR_INVALID_DATA_TRANSFER;
+
 	dwDataSize &= ~3L;	/* round dwDataSize down to nearest 4 bytes */
 
 	/* make sure state is IDLE */

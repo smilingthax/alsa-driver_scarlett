@@ -288,8 +288,8 @@ short HpiCheckBufferMapping(
 	sizeof(((struct hpi_control_cache_pad *)(NULL))->m) }
 
 struct pad_ofs_size {
-	size_t offset;
-	size_t field_size;
+	unsigned int offset;
+	unsigned int field_size;
 };
 
 static struct pad_ofs_size aPadDesc[] = {
@@ -441,10 +441,10 @@ short HpiCheckControlCache(
 		else {
 			unsigned int index =
 				HPI_CTL_ATTR_INDEX(phm->u.c.wAttribute) - 1;
-			size_t offset = phm->u.c.dwParam1;
-			size_t pad_string_len, field_size;
+			unsigned int offset = phm->u.c.dwParam1;
+			unsigned int pad_string_len, field_size;
 			char *pad_string;
-			size_t tocopy;
+			unsigned int tocopy;
 
 			HPI_DEBUG_LOG(VERBOSE,
 				"PADS HPI_PADS_ %d\n", phm->u.c.wAttribute);
@@ -472,7 +472,7 @@ short HpiCheckControlCache(
 				tocopy = sizeof(phr->u.cu.chars8.szData);
 
 			HPI_DEBUG_LOG(VERBOSE,
-				"PADS memcpy(%zd), offset %zd \n", tocopy,
+				"PADS memcpy(%d), offset %d \n", tocopy,
 				offset);
 			memcpy(phr->u.cu.chars8.szData, &pad_string[offset],
 				tocopy);
