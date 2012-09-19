@@ -16,10 +16,12 @@
  * 2003-02-14   Brian Avery     fixed full duplex mode, other updates
  * 2003-02-20   Tomas Kasparek  merged updates by Brian (except HAL)
  * 2003-04-19   Jaroslav Kysela recoded DMA stuff to follow 2.4.18rmk3-hh24 kernel
- *				working suspend and resume
+ *                              working suspend and resume
+ * 2003-04-28   Tomas Kasparek  updated work by Jaroslav to compile it under 2.5.x again
+ *                              merged HAL layer (patches from Brian)
  */
 
-/* $Id: sa11xx-uda1341.c,v 1.10 2003/04/19 13:44:41 perex Exp $ */
+/* $Id: sa11xx-uda1341.c,v 1.11 2003/04/30 14:53:11 perex Exp $ */
 
 /***************************************************************************************************
 *
@@ -57,7 +59,7 @@
 * 
 ***************************************************************************************************/
 
-
+#include <linux/config.h>
 #include <sound/driver.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -66,17 +68,39 @@
 #include <linux/delay.h>
 #include <linux/slab.h>
 
+#ifdef CONFIG_PM
+#include <linux/pm.h>
+#endif
+
 #include <asm/hardware.h>
+#include <asm/arch/h3600.h>
+#include <asm/mach-types.h>
 #include <asm/dma.h>
+
+#ifdef CONFIG_H3600_HAL
+#include <asm/semaphore.h>
+#include <asm/uaccess.h>
+#include <asm/arch/h3600_hal.h>
+#endif
 
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/initval.h>
 
 #include <linux/l3/l3.h>
+
+#undef DEBUG_MODE
+#undef DEBUG_FUNCTION_NAMES
 #include <sound/uda1341.h>
 
-#define HH_VERSION 1	/* FIXME: autodetection */
+/*
+ * FIXME: Is this enough as autodetection of 2.4.X-rmkY-hhZ kernels?
+ * We use DMA stuff from 2.4.18-rmk3-hh24 here to be able to compile this
+ * module for Familiar 0.6.1
+ */
+#ifdef CONFIG_H3600_HAL
+#define HH_VERSION 1
+#endif
 
 /* {{{ Type definitions */
 
@@ -97,7 +121,11 @@ typedef struct audio_stream {
 	char *id;		/* identification string */
 	int stream_id;		/* numeric identification */	
 	dma_device_t dma_dev;	/* device identifier for DMA */
+#ifdef HH_VERSION
 	dmach_t dmach;		/* dma channel identification */
+#else
+	dma_regs_t *dma_regs;	/* points to our DMA registers */
+#endif
 	int active:1;		/* we are using this stream for transfer now */
 	int period;		/* current transfer period */
 	int periods;		/* current count of periods registerd in the DMA engine */
@@ -214,7 +242,11 @@ static void sa11xx_uda1341_set_samplerate(sa11xx_uda1341_t *sa11xx_uda1341, long
 		rate = 8000;
 
 	/* Set the external clock generator */
+#ifdef CONFIG_H3600_HAL
+	h3600_audio_clock(rate);
+#else	
 	sa11xx_uda1341_set_audio_clock(rate);
+#endif
 
 	/* Select the clock divisor */
 	switch (rate) {
@@ -279,10 +311,17 @@ static void sa11xx_uda1341_audio_init(sa11xx_uda1341_t *sa11xx_uda1341)
 	local_irq_restore(flags);
 
 	/* Enable the audio power */
+#ifdef CONFIG_H3600_HAL
+	h3600_audio_power(AUDIO_RATE_DEFAULT);
+#else
 	clr_sa11xx_uda1341_egpio(IPAQ_EGPIO_CODEC_NRESET);
 	set_sa11xx_uda1341_egpio(IPAQ_EGPIO_AUDIO_ON);
 	set_sa11xx_uda1341_egpio(IPAQ_EGPIO_QMUTE);
-        
+#endif
+ 
+	/* Wait for the UDA1341 to wake up */
+	mdelay(1); //FIXME - was removed by Perex - Why?
+
 	/* Initialize the UDA1341 internal state */
 	l3_open(sa11xx_uda1341->uda1341);
 	
@@ -295,23 +334,37 @@ static void sa11xx_uda1341_audio_init(sa11xx_uda1341_t *sa11xx_uda1341)
 
 	/* make the left and right channels unswapped (flip the WS latch) */
 	Ser4SSDR = 0;
-       
+
+#ifdef CONFIG_H3600_HAL
+	h3600_audio_mute(0);
+#else	
 	clr_sa11xx_uda1341_egpio(IPAQ_EGPIO_QMUTE);        
+#endif     
 }
 
 static void sa11xx_uda1341_audio_shutdown(sa11xx_uda1341_t *sa11xx_uda1341)
 {
 	/* mute on */
+#ifdef CONFIG_H3600_HAL
+	h3600_audio_mute(1);
+#else	
 	set_sa11xx_uda1341_egpio(IPAQ_EGPIO_QMUTE);
+#endif
 	
 	/* disable the audio power and all signals leading to the audio chip */
 	l3_close(sa11xx_uda1341->uda1341);
 	Ser4SSCR0 = 0;
 	clr_sa11xx_uda1341_egpio(IPAQ_EGPIO_CODEC_NRESET);
-	/* power off */
+
+	/* power off and mute off */
+	/* FIXME - is muting off necesary??? */
+#ifdef CONFIG_H3600_HAL
+	h3600_audio_power(0);
+	h3600_audio_mute(0);
+#else	
 	clr_sa11xx_uda1341_egpio(IPAQ_EGPIO_AUDIO_ON);
-	/* mute off */
 	clr_sa11xx_uda1341_egpio(IPAQ_EGPIO_QMUTE);
+#endif	
 }
 
 /* }}} */
@@ -324,6 +377,9 @@ static void sa11xx_uda1341_audio_shutdown(sa11xx_uda1341_t *sa11xx_uda1341)
  */
 #define FORCE_CLOCK_ADDR		(dma_addr_t)FLUSH_BASE_PHYS
 #define FORCE_CLOCK_SIZE		4096 // was 2048
+
+// FIXME Why this value exactly - wrote comment
+#define DMA_BUF_SIZE	8176	/* <= MAX_DMA_SIZE from asm/arch-sa1100/dma.h */
 
 #ifdef HH_VERSION
 
@@ -348,14 +404,14 @@ static inline void audio_dma_free(audio_stream_t *s)
 
 #else
 
-static void audio_dma_callback(void *)
+static int audio_dma_request(audio_stream_t *s, void (*callback)(void *))
 {
-	/* FIXME */
-}
+	int ret;
 
-static int audio_dma_request(audio_stream_t *s, void (*callback)(void *, int))
-{
-	ret = sa1100_request_dma(s->dma_dev, s->id, audio_dma_callback, s, &s->dma_regs));
+	ret = sa1100_request_dma(s->dma_dev, s->id, callback, s, &s->dma_regs);
+	if (ret < 0)
+		printk(KERN_ERR "unable to grab audio dma 0x%x\n", s->dma_dev);
+	return ret;
 }
 
 static void audio_dma_free(audio_stream_t *s)
@@ -376,7 +432,11 @@ static u_int audio_get_dma_pos(audio_stream_t *s)
 	
 	// this must be called w/ interrupts locked out see dma-sa1100.c in the kernel
 	spin_lock_irqsave(&s->dma_lock, flags);
+#ifdef HH_VERSION	
 	sa1100_dma_get_current(s->dmach, NULL, &addr);
+#else
+	addr = sa1100_get_dma_pos((s)->dma_regs);
+#endif
 	offset = addr - runtime->dma_addr;
 	spin_unlock_irqrestore(&s->dma_lock, flags);
 	
@@ -392,13 +452,17 @@ static u_int audio_get_dma_pos(audio_stream_t *s)
  */
 static void audio_stop_dma(audio_stream_t *s)
 {
-	long flags;
+	unsigned long flags;
 
 	spin_lock_irqsave(&s->dma_lock, flags);	
 	s->active = 0;
 	s->period = 0;
 	/* this stops the dma channel and clears the buffer ptrs */
+#ifdef HH_VERSION
 	sa1100_dma_flush_all(s->dmach);
+#else
+	sa1100_clear_dma(s->dma_regs);	
+#endif
 	spin_unlock_irqrestore(&s->dma_lock, flags);
 }
 
@@ -414,7 +478,15 @@ static void audio_process_dma(audio_stream_t *s)
 	if (s->tx_spin) {
 		snd_assert(s->stream_id == SNDRV_PCM_STREAM_PLAYBACK, return);
 		/* fill the xmit dma buffers and return */
+#ifdef HH_VERSION
 		sa1100_dma_set_spin(s->dmach, FORCE_CLOCK_ADDR, FORCE_CLOCK_SIZE);
+#else
+		while (1) {
+			ret = sa1100_start_dma(s->dma_regs, FORCE_CLOCK_ADDR, FORCE_CLOCK_SIZE);
+			if (ret)
+				return;   
+		}
+#endif
 		return;
 	}
 
@@ -434,13 +506,19 @@ static void audio_process_dma(audio_stream_t *s)
 				continue;		/* special case */
 		} else {
 			offset = dma_size * s->period;
-			snd_assert(dma_size <= 8176, );
+			snd_assert(dma_size <= DMA_BUF_SIZE, );
 		}
+#ifdef HH_VERSION
 		ret = sa1100_dma_queue_buffer(s->dmach, s, runtime->dma_addr + offset, dma_size);
+		if (ret)
+			return; //FIXME
+#else
+		ret = sa1100_start_dma((s)->dma_regs, runtime->dma_addr + offset, dma_size);
 		if (ret) {
 			printk(KERN_ERR "audio_process_dma: cannot queue DMA buffer (%i)\n", ret);
 			return;
 		}
+#endif
 
 		s->period++;
 		s->period %= runtime->periods;
@@ -448,7 +526,11 @@ static void audio_process_dma(audio_stream_t *s)
 	}
 }
 
+#ifdef HH_VERSION
 static void audio_dma_callback(void *data, int size)
+#else
+static void audio_dma_callback(void *data)
+#endif
 {
 	audio_stream_t *s = data;
         
@@ -480,22 +562,19 @@ static int snd_sa11xx_uda1341_trigger(snd_pcm_substream_t * substream, int cmd)
 	audio_stream_t *s1 = &chip->s[stream_id ^ 1];
 	int err = 0;
 
-	// note local interrupts are already disabled in the midlevel code
+	/* note local interrupts are already disabled in the midlevel code */
 	spin_lock(&s->dma_lock);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 		/* now we need to make sure a record only stream has a clock */
-		if (stream_id == SNDRV_PCM_STREAM_CAPTURE) {
-			if (!s1->active) {
-				/* we need to force fill the xmit DMA with zeros */
-				s1->tx_spin = 1;
-				audio_process_dma(s1);
-			}
+		if (stream_id == SNDRV_PCM_STREAM_CAPTURE && !s1->active) {
+			/* we need to force fill the xmit DMA with zeros */
+			s1->tx_spin = 1;
+			audio_process_dma(s1);
 		}
 		/* this case is when you were recording then you turn on a
-		 * playback stream so we
-		 * stop (also clears it) the dma first, clear the sync flag
-		 * and then we let it get turned on
+		 * playback stream so we stop (also clears it) the dma first,
+		 * clear the sync flag and then we let it turned on
 		 */		
 		else {
  			s->tx_spin = 0;
@@ -514,12 +593,10 @@ static int snd_sa11xx_uda1341_trigger(snd_pcm_substream_t * substream, int cmd)
 		 * so if we're stopping a playback with an active capture
 		 * we need to turn the 0 fill dma on for the xmit side
 		 */
-		if (stream_id == SNDRV_PCM_STREAM_PLAYBACK) {
-			if (s1->active) {
-				/* we need to force fill the xmit DMA with zeros */
-				s->tx_spin = 1;
-				audio_process_dma(s);
-			}
+		if (stream_id == SNDRV_PCM_STREAM_PLAYBACK && s1->active) {
+			/* we need to force fill the xmit DMA with zeros */
+			s->tx_spin = 1;
+			audio_process_dma(s);
 		}
 		/*
 		 * we killed a capture only stream, so we should also kill
@@ -535,9 +612,17 @@ static int snd_sa11xx_uda1341_trigger(snd_pcm_substream_t * substream, int cmd)
 		break;
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 		s->active = 0;
+#ifdef HH_VERSION		
 		sa1100_dma_stop(s->dmach);
+#else
+		//FIXME - DMA API
+#endif		
 		s->old_offset = audio_get_dma_pos(s) + 1;
+#ifdef HH_VERSION		
 		sa1100_dma_flush_all(s->dmach);
+#else
+		//FIXME - DMA API
+#endif		
 		s->periods = 0;
 		break;
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -550,19 +635,31 @@ static int snd_sa11xx_uda1341_trigger(snd_pcm_substream_t * substream, int cmd)
 		}
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+#ifdef HH_VERSION		
 		sa1100_dma_stop(s->dmach);
+#else
+		//FIXME - DMA API
+#endif
 		s->active = 0;
 		if (stream_id == SNDRV_PCM_STREAM_PLAYBACK) {
 			if (s1->active) {
 				s->tx_spin = 1;
 				s->old_offset = audio_get_dma_pos(s) + 1;
+#ifdef HH_VERSION				
 				sa1100_dma_flush_all(s->dmach);
+#else
+				//FIXME - DMA API
+#endif				
 				audio_process_dma(s);
 			}
 		} else {
 			if (s1->tx_spin) {
 				s1->tx_spin = 0;
+#ifdef HH_VERSION				
 				sa1100_dma_flush_all(s1->dmach);
+#else
+				//FIXME - DMA API
+#endif				
 			}
 		}
 		break;
@@ -577,7 +674,11 @@ static int snd_sa11xx_uda1341_trigger(snd_pcm_substream_t * substream, int cmd)
 			s1->tx_spin = 1;
 			audio_process_dma(s1);
 		}
+#ifdef HH_VERSION		
 		sa1100_dma_resume(s->dmach);
+#else
+		//FIXME - DMA API
+#endif
 		break;
 	default:
 		err = -EINVAL;
@@ -595,6 +696,9 @@ static int snd_sa11xx_uda1341_prepare(snd_pcm_substream_t * substream)
         
 	/* set requested samplerate */
 	sa11xx_uda1341_set_samplerate(chip, runtime->rate);
+
+	/* set requestd format when available */
+	/* set FMT here !!! FIXME */
 
 	s->period = 0;
 	s->periods = 0;
@@ -627,7 +731,7 @@ static snd_pcm_hardware_t snd_sa11xx_uda1341_capture =
 	.channels_max		= 2,
 	.buffer_bytes_max	= 64*1024,
 	.period_bytes_min	= 64,
-	.period_bytes_max	= 8176,
+	.period_bytes_max	= DMA_BUF_SIZE,
 	.periods_min		= 2,
 	.periods_max		= 255,
 	.fifo_size		= 0,
@@ -650,7 +754,7 @@ static snd_pcm_hardware_t snd_sa11xx_uda1341_playback =
 	.channels_max		= 2,
 	.buffer_bytes_max	= 64*1024,
 	.period_bytes_min	= 64,
-	.period_bytes_max	= 8176,
+	.period_bytes_max	= DMA_BUF_SIZE,
 	.periods_min		= 2,
 	.periods_max		= 255,
 	.fifo_size		= 0,
@@ -768,8 +872,12 @@ static void snd_sa11xx_uda1341_suspend(sa11xx_uda1341_t *chip)
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
 		return;
 	snd_pcm_suspend_all(chip->pcm);
+#ifdef HH_VERSION	
 	sa1100_dma_sleep(chip->s[SNDRV_PCM_STREAM_PLAYBACK].dmach);
 	sa1100_dma_sleep(chip->s[SNDRV_PCM_STREAM_CAPTURE].dmach);
+#else
+	//FIXME
+#endif
 	l3_command(chip->uda1341, CMD_SUSPEND, NULL);
 	sa11xx_uda1341_audio_shutdown(chip);
 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
@@ -783,8 +891,12 @@ static void snd_sa11xx_uda1341_resume(sa11xx_uda1341_t *chip)
 		return;
 	sa11xx_uda1341_audio_init(chip);
 	l3_command(chip->uda1341, CMD_RESUME, NULL);
+#ifdef HH_VERSION	
 	sa1100_dma_wakeup(chip->s[SNDRV_PCM_STREAM_PLAYBACK].dmach);
 	sa1100_dma_wakeup(chip->s[SNDRV_PCM_STREAM_CAPTURE].dmach);
+#else
+	//FIXME
+#endif
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
 }
 
@@ -823,7 +935,7 @@ static int sa11xx_uda1341_set_power_state(snd_card_t *card, unsigned int power_s
 	return 0;
 }
 
-#endif
+#endif /* COMFIG_PM */
 
 void snd_sa11xx_uda1341_free(snd_card_t *card)
 {
