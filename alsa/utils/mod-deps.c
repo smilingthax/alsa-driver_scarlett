@@ -161,10 +161,17 @@ static char *no_cards[] = {
 	"#SND_VX_LIB",
 	"#SND_MPU401_UART",
 	"#SND_GUS_SYNTH",
+	"#SND_AC97_BUS",
 	"#SND_AC97_CODEC",
 	"#SND_PXA2XX_PCM",
 	"#SND_GENERIC_PM",
 	NULL
+};
+
+static const char *kernel26_opts[] = {
+	"SND_AC97_BUS",
+	"SND_PXA2XX_PCM",
+	NULL,
 };
 
 #define READ_STATE_NONE		0
@@ -882,6 +889,17 @@ static void sel_remove_hitflags(void)
 	}
 }
 
+// is 2.6-only config option
+static int is_kernel26(const char *name)
+{
+	const char **p;
+	for (p = kernel26_opts; *p; p++)
+		if (! strcmp(name, *p))
+			return 1;
+	return 0;
+}
+
+
 static void sel_print_acinclude(struct sel *sel)
 {
 	struct dep * dep;
@@ -899,7 +917,10 @@ static void sel_print_acinclude(struct sel *sel)
 		sel_print_acinclude(nsel);
 		if (!nsel->dep->hitflag) {
 			nsel->dep->hitflag = 1;
-			printf("      CONFIG_%s=\"%c\"\n", nsel->name,
+			printf("      ");
+			if (is_kernel26(nsel->name))
+				printf("test $kpatchlevel = 6 && ");
+			printf("CONFIG_%s=\"%c\"\n", nsel->name,
 				(nsel->dep && nsel->dep->is_bool) ? 'y' : 'm');
 		}
 	}
@@ -978,7 +999,10 @@ static void output_acinclude(void)
 		for (sel = tempdep->sel; sel; sel = sel->next) {
 			if (is_always_true(sel->dep))
 				continue;
-			printf("      CONFIG_%s=\"%c\"\n", sel->name,
+			printf("      ");
+			if (is_kernel26(sel->name))
+				printf("test $kpatchlevel = 6 && ");
+			printf("CONFIG_%s=\"%c\"\n", sel->name,
 			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
 		}
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
@@ -1046,7 +1070,10 @@ static void output_acinclude(void)
 		for (sel = tempdep->sel; sel; sel = sel->next) {
 			if (is_always_true(sel->dep))
 				continue;
-			printf("      CONFIG_%s=\"%c\"\n", sel->name,
+			printf("      ");
+			if (is_kernel26(sel->name))
+				printf("test $kpatchlevel = 6 && ");
+			printf("CONFIG_%s=\"%c\"\n", sel->name,
 			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
 		}
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);

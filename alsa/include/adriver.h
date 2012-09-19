@@ -801,7 +801,7 @@ struct snd_gameport {
 };
 static inline struct gameport *gameport_allocate_port(void)
 {
-	extern void *snd_hidden_kcalloc(size_t n, size_t size, int flags);
+	extern void *snd_hidden_kcalloc(size_t n, size_t size, unsigned int flags);
 	struct snd_gameport *gp;
 #ifdef CONFIG_SND_DEBUG_MEMORY
 	gp = snd_hidden_kcalloc(1, sizeof(*gp), GFP_KERNEL);
