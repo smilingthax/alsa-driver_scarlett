@@ -67,4 +67,11 @@ config SND_VIA82XX_MODEM
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-via82xx-modem.
 
+config SND_ASIHPI
+	tristate "AudioScience ASIxxxx"
+	depends on SND && ASIHPK
+	select SND_PCM
+	help
+	  Say 'Y' or 'M' to include support for AudioScience ASIxxxx soundcards.
+
 endmenu
