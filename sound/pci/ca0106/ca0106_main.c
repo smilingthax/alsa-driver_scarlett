@@ -1,7 +1,7 @@
 /*
  *  Copyright (c) 2004 James Courtier-Dutton <James@superbug.demon.co.uk>
  *  Driver CA0106 chips. e.g. Sound Blaster Audigy LS and Live 24bit
- *  Version: 0.0.22
+ *  Version: 0.0.23
  *
  *  FEATURES currently supported:
  *    Front, Rear and Center/LFE.
@@ -77,6 +77,8 @@
  *    Add SPDIF capture using optional digital I/O module for SB Live 24bit. (Analog capture does not yet work.)
  *  0.0.22
  *    Add support for MSI K8N Diamond Motherboard with onboard SB Live 24bit without AC97. From kiksen, bug #901
+ *  0.0.23
+ *    Implement support for Line-in capture on SB Live 24bit.
  *
  *  BUGS:
  *    Some stability problems when unloading the snd-ca0106 kernel module.
@@ -173,15 +175,18 @@ static ca0106_details_t ca0106_chip_details[] = {
 	 /* New Sound Blaster Live! 7.1 24bit. This does not have an AC97. 53SB041000001 */
 	 { .serial = 0x10061102,
 	   .name   = "Live! 7.1 24bit [SB0410]",
-	   .gpio_type = 1 } ,
+	   .gpio_type = 1,
+	   .i2c_adc = 1 } ,
 	 /* New Dell Sound Blaster Live! 7.1 24bit. This does not have an AC97.  */
 	 { .serial = 0x10071102,
 	   .name   = "Live! 7.1 24bit [SB0413]",
-	   .gpio_type = 1 } ,
+	   .gpio_type = 1,
+	   .i2c_adc = 1 } ,
 	 /* MSI K8N Diamond Motherboard with onboard SB Live 24bit without AC97 */
 	 { .serial = 0x10091462,
 	   .name   = "MSI K8N Diamond MB [SB0438]",
-	   .gpio_type = 1 } ,
+	   .gpio_type = 1,
+	   .i2c_adc = 1 } ,
 	 { .serial = 0,
 	   .name   = "AudigyLS [Unknown]" }
 };
@@ -211,10 +216,10 @@ static snd_pcm_hardware_t snd_ca0106_capture_hw = {
 				 SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
 				 SNDRV_PCM_INFO_MMAP_VALID),
-	.formats =		SNDRV_PCM_FMTBIT_S16_LE,
-	.rates =		SNDRV_PCM_RATE_48000,
-	.rate_min =		48000,
-	.rate_max =		48000,
+	.formats =		SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S32_LE,
+	.rates =		SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_192000,
+	.rate_min =		44100,
+	.rate_max =		192000,
 	.channels_min =		2,
 	.channels_max =		2,
 	.buffer_bytes_max =	((65536 - 64) * 8),
@@ -256,6 +261,62 @@ void snd_ca0106_ptr_write(ca0106_t *emu,
 	outl(data, emu->port + DATA);
 	spin_unlock_irqrestore(&emu->emu_lock, flags);
 }
+
+int snd_ca0106_i2c_write(ca0106_t *emu,
+				u32 reg,
+				u32 value)
+{
+	u32 tmp;
+	int timeout=0;
+	int status;
+	int retry;
+	if ((reg > 0x7f) || (value > 0x1ff))
+	{
+                snd_printk("i2c_write: invalid values.\n");
+		return -EINVAL;
+	}
+
+	tmp = reg << 25 | value << 16;
+	/* Not sure what this I2C channel controls. */
+	/* snd_ca0106_ptr_write(emu, I2C_D0, 0, tmp); */
+
+	/* This controls the I2C connected to the WM8775 ADC Codec */
+	snd_ca0106_ptr_write(emu, I2C_D1, 0, tmp);
+
+	for(retry=0;retry<10;retry++)
+	{
+		/* Send the data to i2c */
+		tmp = snd_ca0106_ptr_read(emu, I2C_A, 0);
+		tmp = tmp & ~(I2C_A_ADC_READ|I2C_A_ADC_LAST|I2C_A_ADC_START|I2C_A_ADC_ADD_MASK);
+		tmp = tmp | (I2C_A_ADC_LAST|I2C_A_ADC_START|I2C_A_ADC_ADD);
+		snd_ca0106_ptr_write(emu, I2C_A, 0, tmp);
+
+		/* Wait till the transaction ends */
+		while(1)
+		{
+			status = snd_ca0106_ptr_read(emu, I2C_A, 0);
+                	//snd_printk("I2C:status=0x%x\n", status);
+			timeout++;
+			if((status & I2C_A_ADC_START)==0)
+				break;
+
+			if(timeout>1000)
+				break;
+		}
+		//Read back and see if the transaction is successful
+		if((status & I2C_A_ADC_ABORT)==0)
+			break;
+	}
+
+	if(retry==10)
+	{
+                snd_printk("Writing to ADC failed!\n");
+		return -EINVAL;
+	}
+    
+    	return 0;
+}
+
 
 static void snd_ca0106_intr_enable(ca0106_t *emu, unsigned int intrenb)
 {
@@ -549,6 +610,61 @@ static int snd_ca0106_pcm_prepare_capture(snd_pcm_substream_t *substream)
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	ca0106_pcm_t *epcm = runtime->private_data;
 	int channel = epcm->channel_id;
+	u32 hcfg_mask = HCFG_CAPTURE_S32_LE;
+	u32 hcfg_set = 0x00000000;
+	u32 hcfg;
+	u32 over_sampling=0x2;
+	u32 reg71_mask = 0x0000c000 ; /* Global. Set ADC rate. */
+	u32 reg71_set = 0;
+	u32 reg71;
+	
+        //snd_printk("prepare:channel_number=%d, rate=%d, format=0x%x, channels=%d, buffer_size=%ld, period_size=%ld, periods=%u, frames_to_bytes=%d\n",channel, runtime->rate, runtime->format, runtime->channels, runtime->buffer_size, runtime->period_size, runtime->periods, frames_to_bytes(runtime, 1));
+        //snd_printk("dma_addr=%x, dma_area=%p, table_base=%p\n",runtime->dma_addr, runtime->dma_area, table_base);
+	//snd_printk("dma_addr=%x, dma_area=%p, dma_bytes(size)=%x\n",emu->buffer.addr, emu->buffer.area, emu->buffer.bytes);
+	/* reg71 controls ADC rate. */
+	switch (runtime->rate) {
+	case 44100:
+		reg71_set = 0x00004000;
+		break;
+        case 48000:
+		reg71_set = 0; 
+		break;
+	case 96000:
+		reg71_set = 0x00008000;
+		over_sampling=0xa;
+		break;
+	case 192000:
+		reg71_set = 0x0000c000; 
+		over_sampling=0xa;
+		break;
+	default:
+		reg71_set = 0; 
+		break;
+	}
+	/* Format is a global setting */
+	/* FIXME: Only let the first channel accessed set this. */
+	switch (runtime->format) {
+	case SNDRV_PCM_FORMAT_S16_LE:
+		hcfg_set = 0;
+		break;
+	case SNDRV_PCM_FORMAT_S32_LE:
+		hcfg_set = HCFG_CAPTURE_S32_LE;
+		break;
+	default:
+		hcfg_set = 0;
+		break;
+	}
+	hcfg = inl(emu->port + HCFG) ;
+	hcfg = (hcfg & ~hcfg_mask) | hcfg_set;
+	outl(hcfg, emu->port + HCFG);
+	reg71 = snd_ca0106_ptr_read(emu, 0x71, 0);
+	reg71 = (reg71 & ~reg71_mask) | reg71_set;
+	snd_ca0106_ptr_write(emu, 0x71, 0, reg71);
+        if (emu->details->i2c_adc == 1) { /* The SB0410 and SB0413 use I2C to control ADC. */
+	        snd_ca0106_i2c_write(emu, ADC_MASTER, over_sampling); /* Adjust the over sampler to better suit the capture rate. */
+	}
+
+
         //printk("prepare:channel_number=%d, rate=%d, format=0x%x, channels=%d, buffer_size=%ld, period_size=%ld, frames_to_bytes=%d\n",channel, runtime->rate, runtime->format, runtime->channels, runtime->buffer_size, runtime->period_size,  frames_to_bytes(runtime, 1));
 	snd_ca0106_ptr_write(emu, 0x13, channel, 0);
 	snd_ca0106_ptr_write(emu, CAPTURE_DMA_ADDR, channel, runtime->dma_addr);
@@ -1176,6 +1292,10 @@ static int __devinit snd_ca0106_create(snd_card_t *card,
 	//outl(0x00001409, chip->port+HCFG); /* 0x1000 causes AC3 to fails. Maybe it effects 24 bit output. */
 	//outl(0x00000009, chip->port+HCFG);
 	outl(HCFG_AC97 | HCFG_AUDIOENABLE, chip->port+HCFG); /* AC97 2.0, Enable outputs. */
+
+        if (chip->details->i2c_adc == 1) { /* The SB0410 and SB0413 use I2C to control ADC. */
+	        snd_ca0106_i2c_write(chip, ADC_MUX, ADC_MUX_LINEIN); /* Enable Line-in capture. MIC in currently untested. */
+	}
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL,
 				  chip, &ops)) < 0) {
