@@ -76,8 +76,12 @@ static devfs_handle_t devfs_handle = NULL;
 void snd_request_card(int card)
 {
 	char str[32];
+	int locked;
 
-	if (snd_cards[card] != NULL)
+	read_lock(&snd_card_rwlock);
+	locked = test_bit(card, &snd_cards_lock);
+	read_unlock(&snd_card_rwlock);
+	if (locked)
 		return;
 	if (card < 0 || card >= snd_ecards_limit)
 		return;
@@ -353,7 +357,7 @@ static void __exit alsa_sound_exit(void)
 
 	for (controlnum = 0; controlnum < cards_limit; controlnum++)
 		devfs_remove("snd/controlC%d", controlnum);
-	
+
 #ifdef CONFIG_SND_OSSEMUL
 	snd_info_minor_unregister();
 #endif
@@ -423,6 +427,7 @@ EXPORT_SYMBOL(snd_cards);
 EXPORT_SYMBOL(snd_mixer_oss_notify_callback);
 #endif
 EXPORT_SYMBOL(snd_card_new);
+EXPORT_SYMBOL(snd_card_disconnect);
 EXPORT_SYMBOL(snd_card_free);
 EXPORT_SYMBOL(snd_card_register);
 EXPORT_SYMBOL(snd_component_add);

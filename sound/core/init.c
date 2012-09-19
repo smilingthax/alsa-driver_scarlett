@@ -29,7 +29,7 @@
 #include <sound/info.h>
 
 int snd_cards_count = 0;
-static unsigned int snd_cards_lock = 0;	/* locked for registering/using */
+unsigned long snd_cards_lock = 0;	/* locked for registering/using */
 snd_card_t *snd_cards[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = NULL};
 rwlock_t snd_card_rwlock = RW_LOCK_UNLOCKED;
 
@@ -42,6 +42,16 @@ static void snd_card_id_read(snd_info_entry_t *entry, snd_info_buffer_t * buffer
 	snd_iprintf(buffer, "%s\n", entry->card->id);
 }
 
+/**
+ *  snd_card_new: create and initialize a soundcard structure
+ *  @idx: card index (address) [0 ... (SNDRV_CARDS-1)]
+ *  @xid: card identification (ASCII string)
+ *  @module: top level module for locking
+ *  @extra_size: allocate this extra size after the main soundcard structure
+ *
+ *  Returns kmallocated snd_card_t structure. Creates the ALSA control interface
+ *  (which is blocked until #snd_card_register function is called).
+ */
 snd_card_t *snd_card_new(int idx, const char *xid,
 			 struct module *module, int extra_size)
 {
@@ -62,12 +72,12 @@ snd_card_t *snd_card_new(int idx, const char *xid,
 	if (idx < 0) {
 		int idx2;
 		for (idx2 = 0; idx2 < snd_ecards_limit; idx2++)
-			if (!(snd_cards_lock & (1 << idx2))) {
+			if (!test_bit(idx2, &snd_cards_lock)) {
 				idx = idx2;
 				break;
 			}
 	} else if (idx < snd_ecards_limit) {
-		if (snd_cards_lock & (1 << idx))
+		if (test_bit(idx, &snd_cards_lock))
 			idx = -1;	/* invalid */
 	}
 	if (idx < 0 || idx >= snd_ecards_limit) {
@@ -76,7 +86,7 @@ snd_card_t *snd_card_new(int idx, const char *xid,
 			snd_printk(KERN_ERR "card %i is out of range (0-%i)\n", idx, snd_ecards_limit-1);
 		goto __error;
 	}
-	snd_cards_lock |= 1 << idx;		/* lock it */
+	set_bit(idx, &snd_cards_lock);		/* lock it */
 	write_unlock(&snd_card_rwlock);
 	card->number = idx;
 	card->module = module;
@@ -85,6 +95,7 @@ snd_card_t *snd_card_new(int idx, const char *xid,
 	rwlock_init(&card->control_owner_lock);
 	INIT_LIST_HEAD(&card->controls);
 	INIT_LIST_HEAD(&card->ctl_files);
+	init_waitqueue_head(&card->shutdown_sleep);
 #ifdef CONFIG_PM
 	init_MUTEX(&card->power_lock);
 	init_waitqueue_head(&card->power_sleep);
@@ -110,17 +121,60 @@ snd_card_t *snd_card_new(int idx, const char *xid,
       	return NULL;
 }
 
+/**
+ *  snd_card_disconnect: disconnect all APIs from the file-operations (user space)
+ *  @card: soundcard structure
+ *
+ *  Returns - zero, otherwise a negative error code.
+ */
+int snd_card_disconnect(snd_card_t * card)
+{
+	/* disable fops (user space) operations for ALSA API */
+	write_lock(&snd_card_rwlock);
+	snd_cards[card->number] = NULL;
+	write_unlock(&snd_card_rwlock);
+
+	snd_ctl_disconnect(card);
+
+#if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
+	if (snd_mixer_oss_notify_callback)
+		snd_mixer_oss_notify_callback(card, 1);
+#endif
+
+	/* notify all devices that we are disconnected */
+	return snd_device_disconnect_all(card);
+}
+
+/**
+ *  snd_card_free: frees given soundcard structure
+ *  @card: soundcard structure
+ *
+ *  Returns - zero. Frees all associated devices and frees the control
+ *  interface associated to given soundcard.
+ */
 int snd_card_free(snd_card_t * card)
 {
+	wait_queue_t wait;
+
 	if (card == NULL)
 		return -EINVAL;
 	write_lock(&snd_card_rwlock);
 	snd_cards[card->number] = NULL;
 	snd_cards_count--;
 	write_unlock(&snd_card_rwlock);
+
+	/* wait, until all devices are ready for the free operation */
+	init_waitqueue_entry(&wait, current);
+	add_wait_queue(&card->shutdown_sleep, &wait);
+	while (snd_device_can_unregister_all(card) == 1 || snd_ctl_can_unregister(card) == 1) {
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(30 * HZ);
+	}
+	remove_wait_queue(&card->shutdown_sleep, &wait);
+
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 	if (snd_mixer_oss_notify_callback)
-		snd_mixer_oss_notify_callback(card, 1);
+		snd_mixer_oss_notify_callback(card, 2);
 #endif
 	if (snd_device_free_all(card, SNDRV_DEV_CMD_PRE) < 0) {
 		snd_printk(KERN_ERR "unable to free all devices (pre)\n");
@@ -146,7 +200,7 @@ int snd_card_free(snd_card_t * card)
 		/* Not fatal error */
 	}
 	write_lock(&snd_card_rwlock);
-	snd_cards_lock &= ~(1 << card->number);
+	clear_bit(card->number, &snd_cards_lock);
 	write_unlock(&snd_card_rwlock);
 	kfree(card);
 	return 0;
@@ -352,6 +406,7 @@ void snd_power_wait(snd_card_t *card)
 	init_waitqueue_entry(&wait, current);
 	add_wait_queue(&card->power_sleep, &wait);
 	snd_power_unlock(card);
+	set_current_state(TASK_UNINTERRUPTIBLE);
 	schedule_timeout(30 * HZ);
 	remove_wait_queue(&card->power_sleep, &wait);
 	snd_power_lock(card);

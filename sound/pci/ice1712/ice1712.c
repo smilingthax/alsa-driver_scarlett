@@ -985,24 +985,22 @@ static int snd_ice1712_pro_trigger(snd_pcm_substream_t *substream,
 
 /*
  */
-static void snd_ice1712_set_pro_rate(ice1712_t *ice, unsigned int rate, int do_not_lock)
+static void snd_ice1712_set_pro_rate(ice1712_t *ice, unsigned int rate, int force)
 {
 	unsigned long flags;
 	unsigned char val;
-	int old_lock_value;
 
 	spin_lock_irqsave(&ice->reg_lock, flags);
-	old_lock_value = PRO_RATE_LOCKED;
-	if (do_not_lock)
-		PRO_RATE_LOCKED = 0;
 	if (inb(ICEMT(ice, PLAYBACK_CONTROL)) & (ICE1712_CAPTURE_START_SHADOW|
 						 ICE1712_PLAYBACK_PAUSE|
 						 ICE1712_PLAYBACK_START)) {
 		spin_unlock_irqrestore(&ice->reg_lock, flags);
 		return;
 	}
-	if (!is_pro_rate_locked(ice))
-		goto __unlock;
+	if (!force && is_pro_rate_locked(ice)) {
+		spin_unlock_irqrestore(&ice->reg_lock, flags);
+		return;
+	}
 
 	switch (rate) {
 	case 8000: val = 6; break;
@@ -1024,9 +1022,7 @@ static void snd_ice1712_set_pro_rate(ice1712_t *ice, unsigned int rate, int do_n
 		break;
 	}
 	outb(val, ICEMT(ice, RATE));
-	PRO_RATE_LOCKED = old_lock_value;
 
-      __unlock:
 	spin_unlock_irqrestore(&ice->reg_lock, flags);
 
 	if (ice->ak4524.ops.set_rate_val)

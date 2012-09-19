@@ -117,6 +117,8 @@ struct _snd_rawmidi_str {
 struct _snd_rawmidi {
 	snd_card_t *card;
 
+	atomic_t use_count;
+
 	unsigned int device;		/* device number */
 	unsigned int info_flags;	/* SNDRV_RAWMIDI_INFO_XXXX */
 	char id[64];

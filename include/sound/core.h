@@ -58,8 +58,9 @@ typedef enum {
 } snd_device_type_t;
 
 typedef enum {
-	SNDRV_DEV_BUILD = 0,
-	SNDRV_DEV_REGISTERED = 1
+	SNDRV_DEV_BUILD,
+	SNDRV_DEV_REGISTERED,
+	SNDRV_DEV_DISCONNECTED
 } snd_device_state_t;
 
 typedef enum {
@@ -73,11 +74,15 @@ typedef struct _snd_device snd_device_t;
 
 typedef int (snd_dev_free_t)(snd_device_t *device);
 typedef int (snd_dev_register_t)(snd_device_t *device);
+typedef int (snd_dev_disconnect_t)(snd_device_t *device);
+typedef int (snd_dev_can_unregister_t)(snd_device_t *device);
 typedef int (snd_dev_unregister_t)(snd_device_t *device);
 
 typedef struct {
 	snd_dev_free_t *dev_free;
 	snd_dev_register_t *dev_register;
+	snd_dev_disconnect_t *dev_disconnect;
+	snd_dev_can_unregister_t *dev_can_unregister;
 	snd_dev_unregister_t *dev_unregister;
 } snd_device_ops_t;
 
@@ -134,10 +139,13 @@ struct _snd_card {
 	int controls_count;		/* count of all controls */
 	struct list_head controls;	/* all controls for this card */
 	struct list_head ctl_files;	/* active control files */
+	int ctl_shutdown;		/* control interface is going down */
 
 	snd_info_entry_t *proc_root;	/* root for soundcard specific files */
 	snd_info_entry_t *proc_id;	/* the card id */
 	struct proc_dir_entry *proc_root_link;	/* number link to real id */
+
+	wait_queue_head_t shutdown_sleep;
 
 #ifdef CONFIG_PM
 	int (*set_power_state) (snd_card_t *card, unsigned int state);
@@ -285,14 +293,16 @@ int copy_from_user_toio(unsigned long dst, const void *src, size_t count);
 /* init.c */
 
 extern int snd_cards_count;
+extern unsigned long snd_cards_lock;
 extern snd_card_t *snd_cards[SNDRV_CARDS];
 extern rwlock_t snd_card_rwlock;
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
-extern int (*snd_mixer_oss_notify_callback)(snd_card_t *card, int free_flag);
+extern int (*snd_mixer_oss_notify_callback)(snd_card_t *card, int cmd);
 #endif
 
 snd_card_t *snd_card_new(int idx, const char *id,
 			 struct module *module, int extra_size);
+int snd_card_disconnect(snd_card_t *card);
 int snd_card_free(snd_card_t *card);
 int snd_card_register(snd_card_t *card);
 int snd_card_info_init(void);
@@ -305,6 +315,10 @@ int snd_device_new(snd_card_t *card, snd_device_type_t type,
 		   void *device_data, snd_device_ops_t *ops);
 int snd_device_register(snd_card_t *card, void *device_data);
 int snd_device_register_all(snd_card_t *card);
+int snd_device_disconnect(snd_card_t *card, void *device_data);
+int snd_device_disconnect_all(snd_card_t *card);
+int snd_device_can_unregister(snd_card_t *card, void *device_data);
+int snd_device_can_unregister_all(snd_card_t *card);
 int snd_device_free(snd_card_t *card, void *device_data);
 int snd_device_free_all(snd_card_t *card, snd_device_cmd_t cmd);
 

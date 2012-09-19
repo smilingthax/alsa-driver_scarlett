@@ -1200,10 +1200,11 @@ static int snd_mixer_oss_free1(void *private)
 	return 0;
 }
 
-static int snd_mixer_oss_notify_handler(snd_card_t * card, int free_flag)
+static int snd_mixer_oss_notify_handler(snd_card_t * card, int cmd)
 {
-	if (!free_flag) {
-		snd_mixer_oss_t *mixer;
+	snd_mixer_oss_t *mixer;
+
+	if (cmd == 0) {		/* register */
 		char name[128];
 		int idx, err;
 
@@ -1220,6 +1221,7 @@ static int snd_mixer_oss_notify_handler(snd_card_t * card, int free_flag)
 			snd_magic_kfree(mixer);
 			return err;
 		}
+		mixer->oss_dev_alloc = 1;
 		mixer->card = card;
 		if (*card->mixername) {
 			strncpy(mixer->name, card->mixername, sizeof(mixer->name) - 1);
@@ -1236,14 +1238,21 @@ static int snd_mixer_oss_notify_handler(snd_card_t * card, int free_flag)
 		card->mixer_oss = mixer;
 		snd_mixer_oss_build(mixer);
 		snd_mixer_oss_proc_init(mixer);
-	} else {
-		snd_mixer_oss_t *mixer = card->mixer_oss;
+	} else if (cmd == 1) {	/* disconnect */
+		mixer = card->mixer_oss;
+		if (mixer == NULL || !mixer->oss_dev_alloc)
+			return 0;
+		snd_unregister_oss_device(SNDRV_OSS_DEVICE_TYPE_MIXER, mixer->card, 0);
+		mixer->oss_dev_alloc = 0;
+	} else {		/* free */
+		mixer = card->mixer_oss;
 		if (mixer == NULL)
 			return 0;
 #ifdef SNDRV_OSS_INFO_DEV_MIXERS
 		snd_oss_info_unregister(SNDRV_OSS_INFO_DEV_MIXERS, mixer->card->number);
 #endif
-		snd_unregister_oss_device(SNDRV_OSS_DEVICE_TYPE_MIXER, mixer->card, 0);
+		if (mixer->oss_dev_alloc)
+			snd_unregister_oss_device(SNDRV_OSS_DEVICE_TYPE_MIXER, mixer->card, 0);
 		snd_mixer_oss_proc_done(mixer);
 		return snd_mixer_oss_free1(mixer);
 	}
