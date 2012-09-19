@@ -103,7 +103,7 @@ typedef struct _snd_kcontrol snd_kcontrol_t;
 typedef struct _snd_timer snd_timer_t;
 typedef struct _snd_timer_instance snd_timer_instance_t;
 typedef struct _snd_hwdep snd_hwdep_t;
-#ifdef CONFIG_SND_OSSEMUL
+#if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 typedef struct _snd_oss_mixer snd_mixer_oss_t;
 #endif
 
@@ -145,7 +145,7 @@ struct _snd_card {
 	wait_queue_head_t power_sleep;
 #endif
 
-#ifdef CONFIG_SND_OSSEMUL
+#if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 	snd_mixer_oss_t *mixer_oss;
 	int mixer_oss_change_count;
 #endif
@@ -275,7 +275,7 @@ int copy_from_user_toio(unsigned long dst, const void *src, size_t count);
 extern int snd_cards_count;
 extern snd_card_t *snd_cards[SNDRV_CARDS];
 extern rwlock_t snd_card_rwlock;
-#ifdef CONFIG_SND_OSSEMUL
+#if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 extern int (*snd_mixer_oss_notify_callback)(snd_card_t *card, int free_flag);
 #endif
 
