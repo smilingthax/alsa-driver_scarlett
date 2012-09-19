@@ -96,13 +96,9 @@
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/gameport.h>
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/init.h>
 #include <linux/device.h>
 #include <linux/firmware.h>
 #include <asm/io.h>
-#include <asm/semaphore.h>
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/control.h>
