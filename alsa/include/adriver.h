@@ -626,5 +626,13 @@ void *snd_compat_kcalloc(size_t n, size_t size, int gfp_flags);
 #endif
 #endif
 
+/* DEFINE_SPIN/RWLOCK (up to 2.6.11-rc2) */
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 11)
+#include <linux/spinlock.h>
+#ifndef DEFINE_SPINLOCK
+#define DEFINE_SPINLOCK(x) spinlock_t x = SPIN_LOCK_UNLOCKED
+#define DEFINE_RWLOCK(x) rwlock_t x = RW_LOCK_UNLOCKED
+#endif
+#endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
