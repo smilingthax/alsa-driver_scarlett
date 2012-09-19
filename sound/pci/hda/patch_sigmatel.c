@@ -1706,6 +1706,10 @@ static struct snd_pci_quirk stac92hd71bxx_cfg_tbl[] = {
 	/* SigmaTel reference board */
 	SND_PCI_QUIRK(PCI_VENDOR_ID_INTEL, 0x2668,
 		      "DFI LanParty", STAC_92HD71BXX_REF),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x30f2,
+		      "HP dv5", STAC_HP_M4),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x30f4,
+		      "HP dv7", STAC_HP_M4),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x361a,
 				"unknown HP", STAC_HP_M4),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0233,
@@ -4558,6 +4562,13 @@ again:
 		stac92xx_set_config_regs(codec);
 	}
 
+	if (spec->board_config > STAC_92HD71BXX_REF) {
+		/* GPIO0 = EAPD */
+		spec->gpio_mask = 0x01;
+		spec->gpio_dir = 0x01;
+		spec->gpio_data = 0x01;
+	}
+
 	switch (codec->vendor_id) {
 	case 0x111d76b6: /* 4 Port without Analog Mixer */
 	case 0x111d76b7:
@@ -4619,13 +4630,6 @@ again:
 
 	spec->aloopback_mask = 0x50;
 	spec->aloopback_shift = 0;
-
-	if (spec->board_config > STAC_92HD71BXX_REF) {
-		/* GPIO0 = EAPD */
-		spec->gpio_mask = 0x01;
-		spec->gpio_dir = 0x01;
-		spec->gpio_data = 0x01;
-	}
 
 	spec->powerdown_adcs = 1;
 	spec->digbeep_nid = 0x26;
