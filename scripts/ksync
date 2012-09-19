@@ -79,6 +79,7 @@ KERNEL_MAP = {}		# Initialized from ALSA_MAP
 
 # Comment mapping
 COMMENT_MAP_DRIVER = [
+		('/include/mpu401.h'	,'MPU401 UART'),
 		('/drivers/mpu401'	,'MPU401 UART'),
 	 	('/include/asound_fm.h' ,'Raw OPL FM'),
 		('/include/opl3.h'	,'OPL3'),
@@ -243,6 +244,7 @@ COMMENT_MAP_DRIVER = [
 		('/usb'			,'ERROR'),
 		('/core/ioctl32'	,'IOCTL32 emulation'),
 		('/include/pcm_oss.h'	,'ALSA<-OSS emulation'),
+		('/include/mixer_oss.h'	,'ALSA<-OSS emulation'),
 		('/core/oss'		,'ALSA<-OSS emulation'),
 		('/core/seq/oss'	,'ALSA<-OSS sequencer'),
 		('/include/ainstr.*'	,'Instrument layer'),
@@ -250,6 +252,7 @@ COMMENT_MAP_DRIVER = [
 		('/include/seq_kernel.h','ALSA sequencer'),
 		('/include/seq_midi_emul.h','ALSA sequencer'),
 		('/include/asequencer.h','ALSA sequencer'),
+		('/include/seq_virmidi.h','Virtual Midi'),
 		('/core/seq'		,'ALSA sequencer'),
 		('/core/Kconfig'	,'ALSA Core'),
 		('/core/memalloc.*'	,'Memalloc module'),
@@ -267,6 +270,7 @@ COMMENT_MAP_DRIVER = [
 		('/core/control.*'	,'Control Midlevel'),
 		('/include/adriver.h'	,'ALSA Core'),
 		('/include/asound.h'	,'ALSA Core'),
+		('/include/asoundef.h'	,'ALSA Core'),
 		('/include/driver.h'	,'ALSA Core'),
 		('/include/version.h'	,'ALSA Version'),
 		('/include/initval.h'	,'ALSA Core'),
