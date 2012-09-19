@@ -54,6 +54,7 @@ struct tpa6130a2_data {
 	struct regulator_bulk_data supplies[TPA6130A2_NUM_SUPPLIES];
 	int power_gpio;
 	unsigned char power_state;
+	enum tpa_model id;
 };
 
 static int tpa6130a2_i2c_read(int reg)
@@ -176,7 +177,7 @@ exit:
 	return ret;
 }
 
-static int tpa6130a2_get_reg(struct snd_kcontrol *kcontrol,
+static int tpa6130a2_get_volsw(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct soc_mixer_control *mc =
@@ -184,7 +185,8 @@ static int tpa6130a2_get_reg(struct snd_kcontrol *kcontrol,
 	struct tpa6130a2_data *data;
 	unsigned int reg = mc->reg;
 	unsigned int shift = mc->shift;
-	unsigned int mask = mc->max;
+	int max = mc->max;
+	unsigned int mask = (1 << fls(max)) - 1;
 	unsigned int invert = mc->invert;
 
 	BUG_ON(tpa6130a2_client == NULL);
@@ -197,13 +199,13 @@ static int tpa6130a2_get_reg(struct snd_kcontrol *kcontrol,
 
 	if (invert)
 		ucontrol->value.integer.value[0] =
-			mask - ucontrol->value.integer.value[0];
+			max - ucontrol->value.integer.value[0];
 
 	mutex_unlock(&data->mutex);
 	return 0;
 }
 
-static int tpa6130a2_set_reg(struct snd_kcontrol *kcontrol,
+static int tpa6130a2_put_volsw(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct soc_mixer_control *mc =
@@ -211,7 +213,8 @@ static int tpa6130a2_set_reg(struct snd_kcontrol *kcontrol,
 	struct tpa6130a2_data *data;
 	unsigned int reg = mc->reg;
 	unsigned int shift = mc->shift;
-	unsigned int mask = mc->max;
+	int max = mc->max;
+	unsigned int mask = (1 << fls(max)) - 1;
 	unsigned int invert = mc->invert;
 	unsigned int val = (ucontrol->value.integer.value[0] & mask);
 	unsigned int val_reg;
@@ -220,7 +223,7 @@ static int tpa6130a2_set_reg(struct snd_kcontrol *kcontrol,
 	data = i2c_get_clientdata(tpa6130a2_client);
 
 	if (invert)
-		val = mask - val;
+		val = max - val;
 
 	mutex_lock(&data->mutex);
 
@@ -260,8 +263,22 @@ static const unsigned int tpa6130_tlv[] = {
 static const struct snd_kcontrol_new tpa6130a2_controls[] = {
 	SOC_SINGLE_EXT_TLV("TPA6130A2 Headphone Playback Volume",
 		       TPA6130A2_REG_VOL_MUTE, 0, 0x3f, 0,
-		       tpa6130a2_get_reg, tpa6130a2_set_reg,
+		       tpa6130a2_get_volsw, tpa6130a2_put_volsw,
 		       tpa6130_tlv),
+};
+
+static const unsigned int tpa6140_tlv[] = {
+	TLV_DB_RANGE_HEAD(3),
+	0, 8, TLV_DB_SCALE_ITEM(-5900, 400, 0),
+	9, 16, TLV_DB_SCALE_ITEM(-2500, 200, 0),
+	17, 31, TLV_DB_SCALE_ITEM(-1000, 100, 0),
+};
+
+static const struct snd_kcontrol_new tpa6140a2_controls[] = {
+	SOC_SINGLE_EXT_TLV("TPA6140A2 Headphone Playback Volume",
+		       TPA6130A2_REG_VOL_MUTE, 1, 0x1f, 0,
+		       tpa6130a2_get_volsw, tpa6130a2_put_volsw,
+		       tpa6140_tlv),
 };
 
 /*
@@ -369,13 +386,22 @@ static const struct snd_soc_dapm_route audio_map[] = {
 
 int tpa6130a2_add_controls(struct snd_soc_codec *codec)
 {
+	struct	tpa6130a2_data *data;
+
+	BUG_ON(tpa6130a2_client == NULL);
+	data = i2c_get_clientdata(tpa6130a2_client);
+
 	snd_soc_dapm_new_controls(codec, tpa6130a2_dapm_widgets,
 				ARRAY_SIZE(tpa6130a2_dapm_widgets));
 
 	snd_soc_dapm_add_routes(codec, audio_map, ARRAY_SIZE(audio_map));
 
-	return snd_soc_add_controls(codec, tpa6130a2_controls,
-				ARRAY_SIZE(tpa6130a2_controls));
+	if (data->id == TPA6140A2)
+		return snd_soc_add_controls(codec, tpa6140a2_controls,
+						ARRAY_SIZE(tpa6140a2_controls));
+	else
+		return snd_soc_add_controls(codec, tpa6130a2_controls,
+						ARRAY_SIZE(tpa6130a2_controls));
 
 }
 EXPORT_SYMBOL_GPL(tpa6130a2_add_controls);
@@ -408,6 +434,7 @@ static int __devinit tpa6130a2_probe(struct i2c_client *client,
 
 	pdata = client->dev.platform_data;
 	data->power_gpio = pdata->power_gpio;
+	data->id = pdata->id;
 
 	mutex_init(&data->mutex);
 
@@ -426,7 +453,7 @@ static int __devinit tpa6130a2_probe(struct i2c_client *client,
 		gpio_direction_output(data->power_gpio, 0);
 	}
 
-	switch (pdata->id) {
+	switch (data->id) {
 	case TPA6130A2:
 		for (i = 0; i < ARRAY_SIZE(data->supplies); i++)
 			data->supplies[i].supply = tpa6130a2_supply_names[i];
