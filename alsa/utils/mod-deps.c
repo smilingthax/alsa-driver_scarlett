@@ -837,7 +837,7 @@ static void output_acinclude(void)
 	printf("dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>,\n");
 	printf("dnl                  Anders Semb Hermansen <ahermans@vf.telia.no>\n\n");
 
-	printf("AC_DEFUN(ALSA_TOPLEVEL_INIT, [\n");
+	printf("AC_DEFUN([ALSA_TOPLEVEL_INIT], [\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("\t%s=\"\"\n", text);
@@ -845,7 +845,7 @@ static void output_acinclude(void)
 	}
 	printf("])\n\n");
 
-	printf("AC_DEFUN(ALSA_TOPLEVEL_ALL, [\n");
+	printf("AC_DEFUN([ALSA_TOPLEVEL_ALL], [\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		if (!belongs_to_all(tempdep))
 			continue;
@@ -892,7 +892,7 @@ static void output_acinclude(void)
 	}
 	printf("])\n\n");
 	
-	printf("AC_DEFUN(ALSA_TOPLEVEL_SELECT, [\n");
+	printf("AC_DEFUN([ALSA_TOPLEVEL_SELECT], [\n");
 	printf("dnl Check for which cards to compile driver for...\n");
 	printf("AC_MSG_CHECKING(for which soundcards to compile driver for)\n");
 	printf("AC_ARG_WITH(cards,\n\
