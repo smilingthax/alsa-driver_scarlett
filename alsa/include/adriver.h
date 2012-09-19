@@ -206,6 +206,9 @@ typedef __u16 __be16;
 typedef __u32 __le32;
 typedef __u32 __be32;
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
+typedef unsigned __nocast gfp_t;
+#endif
 
 #include <linux/wait.h>
 #ifndef wait_event_timeout
