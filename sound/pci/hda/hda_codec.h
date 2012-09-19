@@ -121,6 +121,7 @@ enum {
 #define AC_VERB_SET_CONFIG_DEFAULT_BYTES_1	0x71d
 #define AC_VERB_SET_CONFIG_DEFAULT_BYTES_2	0x71e
 #define AC_VERB_SET_CONFIG_DEFAULT_BYTES_3	0x71f
+#define AC_VERB_SET_EAPD				0x788
 #define AC_VERB_SET_CODEC_RESET			0x7ff
 
 /*
@@ -449,6 +450,7 @@ enum {
  */
 
 struct hda_bus;
+struct hda_beep;
 struct hda_codec;
 struct hda_pcm;
 struct hda_pcm_stream;
@@ -633,6 +635,9 @@ struct hda_codec {
 
 	/* codec specific info */
 	void *spec;
+
+	/* beep device */
+	struct hda_beep *beep;
 
 	/* widget capabilities cache */
 	unsigned int num_nodes;
