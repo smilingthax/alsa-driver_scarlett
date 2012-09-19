@@ -1,7 +1,7 @@
---- ../alsa-kernel/core/sound.c	2005-11-04 23:48:30.000000000 +0100
-+++ sound.c	2005-11-06 12:57:10.000000000 +0100
-@@ -64,7 +64,15 @@
- 
+--- ../alsa-kernel/core/sound.c	2006-01-03 20:49:01.000000000 +0100
++++ sound.c	2006-01-03 20:49:49.000000000 +0100
+@@ -63,7 +63,15 @@
+ static struct snd_minor *snd_minors[SNDRV_OS_MINORS];
  static DECLARE_MUTEX(sound_mutex);
  
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 2)
@@ -16,7 +16,7 @@
  
  
  #ifdef CONFIG_KMOD
-@@ -160,7 +168,9 @@
+@@ -176,7 +184,9 @@
  
  static struct file_operations snd_fops =
  {
@@ -26,23 +26,21 @@
  	.open =		snd_open
  };
  
-@@ -231,9 +241,13 @@
+@@ -274,7 +284,11 @@
+ 		devfs_mk_cdev(MKDEV(major, minor), S_IFCHR | device_mode, "snd/%s", name);
+ 	if (card)
  		device = card->dev;
- 		class_device = card->parent_device;
- 	}
 +#ifdef CONFIG_SND_HAVE_CLASS_SIMPLE
 +	class_simple_device_add(sound_class, MKDEV(major, minor), device, name);
 +#else
- 	class_device = class_device_create(sound_class, class_device,
- 					   MKDEV(major, minor), device,
- 					   "%s", name);
+ 	class_device_create(sound_class, NULL, MKDEV(major, minor), device, "%s", name);
 +#endif
- 	if (type == SNDRV_DEVICE_TYPE_CONTROL)
- 		card->parent_device = class_device;
  
-@@ -263,7 +281,11 @@
- 
- 	if (strncmp(mptr->name, "controlC", 8) || card->number >= cards_limit) /* created in sound.c */
+ 	up(&sound_mutex);
+ 	return 0;
+@@ -312,7 +326,11 @@
+ 	if (mptr->type != SNDRV_DEVICE_TYPE_CONTROL ||
+ 	    mptr->card >= cards_limit)			/* created in sound.c */
  		devfs_remove("snd/%s", mptr->name);
 +#ifdef CONFIG_SND_HAVE_CLASS_SIMPLE
 +	class_simple_device_remove(MKDEV(major, minor));
@@ -50,9 +48,9 @@
  	class_device_destroy(sound_class, MKDEV(major, minor));
 +#endif
  
- 	list_del(&mptr->list);
+ 	snd_minors[minor] = NULL;
  	up(&sound_mutex);
-@@ -328,6 +350,19 @@
+@@ -403,6 +421,19 @@
   *  INIT PART
   */
  
@@ -72,7 +70,7 @@
  static int __init alsa_sound_init(void)
  {
  	short controlnum;
-@@ -349,14 +384,19 @@
+@@ -418,14 +449,19 @@
  	if (snd_info_init() < 0) {
  		unregister_chrdev(major, "alsa");
  		devfs_remove("snd");
@@ -92,7 +90,7 @@
  	return 0;
  }
  
-@@ -368,10 +408,15 @@
+@@ -437,10 +473,15 @@
  		devfs_remove("snd/controlC%d", controlnum);
  
  	snd_info_minor_unregister();
@@ -108,7 +106,7 @@
  }
  
  module_init(alsa_sound_init)
-@@ -462,3 +507,5 @@
+@@ -533,3 +574,5 @@
  #if defined(CONFIG_SND_DEBUG) && defined(CONFIG_SND_VERBOSE_PRINTK)
  EXPORT_SYMBOL(snd_verbose_printd);
  #endif
