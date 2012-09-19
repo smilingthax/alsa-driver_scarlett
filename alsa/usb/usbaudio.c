@@ -197,7 +197,7 @@ static int prepare_capture_sync_urb(snd_usb_substream_t *subs,
 	int i, offs;
 
 	urb->number_of_packets = ctx->packets;
-	urb->dev = ctx->subs->dev; /* this seems necessary.. */
+	urb->dev = ctx->subs->dev; /* we need to set this at each time */
 	for (i = offs = 0; i < urb->number_of_packets; i++, offs += 3, cp += 3) {
 		urb->iso_frame_desc[i].length = 3;
 		urb->iso_frame_desc[i].offset = offs;
@@ -240,7 +240,7 @@ static int prepare_capture_urb(snd_usb_substream_t *subs,
 	urb->number_of_packets = ctx->packets;
 	urb->transfer_buffer = ctx->buf;
 	urb->transfer_buffer_length = subs->curpacksize * urb->number_of_packets;
-	urb->dev = ctx->subs->dev; /* this seems necessary.. */
+	urb->dev = ctx->subs->dev; /* we need to set this at each time */
 	for (i = offs = 0; i < urb->number_of_packets; i++) {
 		urb->iso_frame_desc[i].offset = offs;
 		urb->iso_frame_desc[i].length = subs->curpacksize;
@@ -317,7 +317,7 @@ static int prepare_playback_sync_urb(snd_usb_substream_t *subs,
 	snd_urb_ctx_t *ctx = (snd_urb_ctx_t *)urb->context;
 
 	urb->number_of_packets = ctx->packets;
-	urb->dev = ctx->subs->dev; /* this seems necessary.. */
+	urb->dev = ctx->subs->dev; /* we need to set this at each time */
 	for (i = offs = 0; i < urb->number_of_packets; i++, offs += 3) {
 		urb->iso_frame_desc[i].length = 3;
 		urb->iso_frame_desc[i].offset = offs;
@@ -383,7 +383,7 @@ static int prepare_playback_urb(snd_usb_substream_t *subs,
 
 	whole_size = 0;
 	urb->number_of_packets = ctx->packets;
-	urb->dev = ctx->subs->dev; /* this seems necessary.. */
+	urb->dev = ctx->subs->dev; /* we need to set this at each time */
 	spin_lock_irqsave(&subs->lock, flags);
 	for (i = 0; i < urb->number_of_packets; i++) {
 		/* calculate the size of a packet */
@@ -480,20 +480,20 @@ static void snd_complete_urb(struct urb *urb)
 	snd_pcm_substream_t *substream = ctx->subs->pcm_substream;
 	int err;
 
-	err = subs->ops.retire(subs, substream->runtime, urb);
+	if (subs->running)
+		err = subs->ops.retire(subs, substream->runtime, urb);
+	else
+		err = -EINTR;
 	clear_bit(ctx->index, &subs->active_mask);
 	if (err)
 		return;
 
-	if (subs->running) {
-		if ((err = subs->ops.prepare(subs, substream->runtime, urb) < 0) ||
-		    (err = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
-			snd_printd(KERN_ERR "cannot submit urb (err = %d)\n", err);
-			snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
-			return;
-		} else
-			set_bit(ctx->index, &subs->active_mask);
-	}
+	if ((err = subs->ops.prepare(subs, substream->runtime, urb) < 0) ||
+	    (err = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
+		snd_printd(KERN_ERR "cannot submit urb (err = %d)\n", err);
+		snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
+	} else
+		set_bit(ctx->index, &subs->active_mask);
 }
 
 
@@ -507,20 +507,20 @@ static void snd_complete_sync_urb(struct urb *urb)
 	snd_pcm_substream_t *substream = ctx->subs->pcm_substream;
 	int err;
 
-	err = subs->ops.retire_sync(subs, substream->runtime, urb);
+	if (subs->running)
+		err = subs->ops.retire_sync(subs, substream->runtime, urb);
+	else
+		err = -EINTR;
 	clear_bit(ctx->index + 16, &subs->active_mask);
 	if (err)
 		return;
 
-	if (subs->running) {
-		if ((err = subs->ops.prepare_sync(subs, substream->runtime, urb))  < 0 ||
-		    (err = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
-			snd_printd(KERN_ERR "cannot submit sync urb (err = %d)\n", err);
-			snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
-			return;
-		} else
-			set_bit(ctx->index + 16, &subs->active_mask);
-	}
+	if ((err = subs->ops.prepare_sync(subs, substream->runtime, urb))  < 0 ||
+	    (err = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
+		snd_printd(KERN_ERR "cannot submit sync urb (err = %d)\n", err);
+		snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
+	} else
+		set_bit(ctx->index + 16, &subs->active_mask);
 }
 
 
