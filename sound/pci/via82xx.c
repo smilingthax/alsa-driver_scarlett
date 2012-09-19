@@ -268,7 +268,7 @@ static void clean_via_table(viadev_t *dev, snd_pcm_substream_t *substream,
 			    struct pci_dev *pci)
 {
 	if (dev->table) {
-		snd_free_pci_pages(pci, PAGE_ALIGN(dev->tbl_entries * 8), dev->table, dev->table_addr);
+		snd_free_pci_pages(pci, PAGE_ALIGN(VIA_TABLE_SIZE * 2 * 8), dev->table, dev->table_addr);
 		dev->table = NULL;
 	}
 	if (dev->idx_table) {
