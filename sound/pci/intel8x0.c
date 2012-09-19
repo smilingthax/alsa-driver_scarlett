@@ -210,7 +210,7 @@ MODULE_PARM_SYNTAX(snd_mpu_port, SNDRV_ENABLED ",allows:{{0},{0x330},{0x300}},di
 
 typedef struct {
 	unsigned long reg_offset;
-	u32 *bdbar;			/* CPU address (32bit) */
+	u32 *bdbar;				/* CPU address (32bit) */
 	unsigned int bdbar_addr;		/* PCI bus address (32bit) */
 	snd_pcm_substream_t *substream;
 	unsigned int physbuf;			/* physical address (32bit) */
@@ -235,6 +235,8 @@ typedef struct _snd_intel8x0 intel8x0_t;
 
 struct _snd_intel8x0 {
 	unsigned int device_type;
+	char ac97_name[32];
+	char ctrl_name[32];
 
 	unsigned long dma_playback_size;
 	unsigned long dma_capture_size;
@@ -1276,7 +1278,7 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	pos = (pos / t) * 1000 + ((pos % t) * 1000) / t;
 	if (pos < 40000 || pos >= 60000) 
 		/* abnormal value. hw problem? */
-		printk(KERN_INFO "intel8x0: measured clock %d rejected\n", pos);
+		printk(KERN_INFO "intel8x0: measured clock %ld rejected\n", pos);
 	else if (pos < 47500 || pos > 48500)
 		/* not 48000Hz, tuning the clock.. */
 		chip->ac97->clock = (chip->ac97->clock * 48000) / pos;
@@ -1290,16 +1292,15 @@ static int snd_intel8x0_dev_free(snd_device_t *device)
 }
 
 static int __devinit snd_intel8x0_create(snd_card_t * card,
-				      struct pci_dev *pci,
-				      unsigned long device_type,
-				      intel8x0_t ** r_intel8x0)
+					 struct pci_dev *pci,
+					 unsigned long device_type,
+					 intel8x0_t ** r_intel8x0)
 {
 	intel8x0_t *chip;
 	int err;
 	static snd_device_ops_t ops = {
 		dev_free:	snd_intel8x0_dev_free,
 	};
-	char name[32];
 
 	*r_intel8x0 = NULL;
 
@@ -1316,15 +1317,15 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 	chip->pci = pci;
 	chip->irq = -1;
 	chip->port = pci_resource_start(pci, 0);
-	sprintf(name, "%s - AC'97", card->shortname);
-	if ((chip->res_port = request_region(chip->port, 256, name)) == NULL) {
+	sprintf(chip->ac97_name, "%s - AC'97", card->shortname);
+	if ((chip->res_port = request_region(chip->port, 256, chip->ac97_name)) == NULL) {
 		snd_intel8x0_free(chip);
 		snd_printk("unable to grab ports 0x%lx-0x%lx\n", chip->port, chip->port + 256 - 1);
 		return -EBUSY;
 	}
-	sprintf(name, "%s - Controller", card->shortname);
+	sprintf(chip->ctrl_name, "%s - Controller", card->shortname);
 	chip->bmport = pci_resource_start(pci, 1);
-	if ((chip->res_bmport = request_region(chip->bmport, 64, name)) == NULL) {
+	if ((chip->res_bmport = request_region(chip->bmport, 64, chip->ctrl_name)) == NULL) {
 		snd_intel8x0_free(chip);
 		snd_printk("unable to grab ports 0x%lx-0x%lx\n", chip->bmport, chip->bmport + 64 - 1);
 		return -EBUSY;

@@ -87,6 +87,8 @@ typedef struct snd_emu8000 {
 	spinlock_t control_lock;
 	snd_kcontrol_t *controls[EMU8000_NUM_CONTROLS];
 
+	snd_pcm_t *pcm; /* pcm on emu8000 wavetable */
+
 } emu8000_t;
 
 /* sequencer device id */

@@ -5,8 +5,6 @@
 
 O_TARGET     := _opl3.o
 
-list-multi   := snd-opl3-lib.o snd-opl3-synth.o
-
 export-objs  := opl3_lib.o
 
 snd-opl3-lib-objs := opl3_lib.o opl3_synth.o
@@ -70,9 +68,3 @@ endif
 obj-m := $(sort $(obj-m))
 
 include $(TOPDIR)/Rules.make
-
-snd-opl3-lib.o: $(snd-opl3-lib-objs)
-	$(LD) $(LD_RFLAG) -r -o $@ $(snd-opl3-lib-objs)
-
-snd-opl3-synth.o: $(snd-opl3-synth-objs)
-	$(LD) $(LD_RFLAG) -r -o $@ $(snd-opl3-synth-objs)

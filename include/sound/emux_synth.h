@@ -102,6 +102,7 @@ struct snd_emux {
 	unsigned long flags;	/* other conditions */
 	int midi_ports;		/* number of virtual midi devices */
 	int midi_devidx;	/* device offset of virtual midi */
+	unsigned int linear_panning: 1; /* panning is linear (sbawe = 1, emu10k1 = 0) */
 
 	/* private */
 	int num_voices;		/* current number of voices */
