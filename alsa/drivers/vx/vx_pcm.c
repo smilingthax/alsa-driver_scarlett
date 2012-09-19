@@ -1,4 +1,4 @@
-#include "alsa-autoconf.h"
+#include <linux/version.h>
 #define __NO_VERSION__
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 18)
