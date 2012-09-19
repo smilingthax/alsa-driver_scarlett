@@ -27,13 +27,14 @@
 
 #include <asm/byteorder.h>
 
-#include "uda1380.h"
+#include <sound/uda1380.h>
 
 /* begin {{ I2C }} */
 
 static struct i2c_driver snd_uda1380_i2c_driver = {
-	.owner          = THIS_MODULE,
-	.name		= "uda1380-i2c"
+	.driver = {
+		.name = "uda1380-i2c"
+	},
 };
 
 static int snd_uda1380_i2c_init(void)
@@ -49,7 +50,7 @@ static void snd_uda1380_i2c_free(void)
 static inline int snd_uda1380_i2c_probe(struct snd_uda1380 *uda)
 {
 	if (uda->i2c_client.adapter == NULL ||
-	    (uda->i2c_client.addr & 0xfc) != 0x18) return -EINVAL;
+	    (uda->i2c_client.addr & 0xfd) != 0x18) return -EINVAL;
 	if (i2c_smbus_xfer(uda->i2c_client.adapter, uda->i2c_client.addr,
 			   0, 0, 0, I2C_SMBUS_QUICK, NULL) < 0)
 		return -ENODEV;
@@ -255,7 +256,7 @@ static int snd_uda1380_actl_reg_elem_int_info(struct snd_kcontrol *kcontrol,
 					      struct snd_ctl_elem_info *uinfo)
 {
 	struct snd_uda1380_uctl_reg_elem_int *uctl =
-		(struct snd_uda1380_actl_reg_elem_int *) kcontrol->private_value;
+		(struct snd_uda1380_uctl_reg_elem_int *) kcontrol->private_value;
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = uctl->is_stereo ? 2 : 1;
@@ -313,7 +314,8 @@ static int snd_uda1380_actl_reg_elem_int_put(struct snd_kcontrol *kcontrol,
 	}
 
 	snd_uda1380_lock(uda);
-	uda->regs[uctl->reg] = WRITE_MASK(uda->regs[uctl->reg], val, uctl->mask << uctl->shift);
+	uda->regs[uctl->reg] = WRITE_MASK(uda->regs[uctl->reg],
+					  val << uctl->shift, uctl->mask << uctl->shift);
 
 	snd_uda1380_cache_dirty(uda, uctl->reg);
 	snd_uda1380_unlock(uda);
@@ -345,8 +347,8 @@ ACTL_REG_ELEM_INT(deemphasis, "De-Emphasis", 0x13, 0, 0x0007, 0, 0)
 ACTL_REG_ELEM_INT(tone_ctl_strength, "Tone Control - Strength", 0x12, 14, 0x0003, 0, 0)
 ACTL_REG_ELEM_INT_STEREO(tone_ctl_treble, "Tone Control - Treble", 0x12, 4, 0x0303, 0, 0)
 ACTL_REG_ELEM_INT_STEREO(tone_ctl_bass, "Tone Control - Bass", 0x12, 0, 0x0f0f, 0, 0)
-ACTL_REG_ELEM_INT(mic_gain, "Mic Capture Gain", 0x22, 8, 0x000f, 0, 0)
-ACTL_REG_ELEM_INT_STEREO(line_in_gain, "Line Capture Gain", 0x21, 0, 0x0f0f, 0, 0)
+ACTL_REG_ELEM_INT(mic_gain, "Mic Capture Volume", 0x22, 8, 0x000f, 0, 0)
+ACTL_REG_ELEM_INT_STEREO(line_in_gain, "Line Capture Volume", 0x21, 0, 0x0f0f, 0, 0)
 ACTL_REG_ELEM_INT_STEREO(capture_volume, "Capture Volume", 0x20, 0, 0xffff, 0, 1)
 
 struct snd_uda1380_uctl_bool {
@@ -447,11 +449,9 @@ static int snd_uda1380_uctl_agc_get(struct snd_uda1380 *uda)
 static int snd_uda1380_uctl_agc_set (struct snd_uda1380 *uda, int on)
 {
 	snd_uda1380_lock(uda);
-	uda->regs[0x22] = WRITE_MASK(uda->regs[0x22],
-				     ~on ? R22_SKIP_DCFIL: 0x0000, R22_SKIP_DCFIL);
 	uda->regs[0x23] = WRITE_MASK(uda->regs[0x23],
 				     on ? R23_AGC_EN : 0x0000, R23_AGC_EN);
-	snd_uda1380_cache_dirty_zone(uda, 0x22, 2);
+	snd_uda1380_cache_dirty_zone(uda, 0x23, 1);
 	snd_uda1380_unlock(uda);
 	return 0;
 }
@@ -508,13 +508,12 @@ static int snd_uda1380_uctl_select_capture_source(struct snd_uda1380 *uda,
 						     R22_SEL_LNA | R22_SEL_MIC);
 			snd_uda1380_hwsync_write(uda, 0x22, 1);
 			uda->regs[0x02] = WRITE_MASK(uda->regs[0x02],
-						     0x0000,
-						     R02_PON_PGAL | R02_PON_PGAR | R02_PON_ADCR);
+						     0x0000, R02_PON_PGAL | R02_PON_PGAR);
 			snd_uda1380_hwsync_write(uda, 0x02, 1);
 		} else {
 			uda->regs[0x02] = WRITE_MASK(uda->regs[0x02],
-						     R02_PON_PGAL | R02_PON_PGAR | R02_PON_ADCR,
-						     R02_PON_PGAL | R02_PON_PGAR | R02_PON_ADCR);
+						     R02_PON_PGAL | R02_PON_PGAR,
+						     R02_PON_PGAL | R02_PON_PGAR);
 			snd_uda1380_hwsync_write(uda, 0x02, 1);
 			uda->regs[0x22] = WRITE_MASK(uda->regs[0x22],
 						     0x0000,
@@ -704,7 +703,7 @@ static int snd_uda1380_playback_off(struct snd_uda1380 *uda)
 	/* power-down */
 	uda->playback_clock_on = 0;
 	uda->regs[0x00] = WRITE_MASK(uda->regs[0x00], 0x0000, R00_EN_DAC | R00_EN_INT);
-	uda->regs[0x02] = WRITE_MASK(uda->regs[0x02], 0x0000, R02_PON_HP |R02_PON_DAC);
+	uda->regs[0x02] = WRITE_MASK(uda->regs[0x02], 0x0000, R02_PON_HP | R02_PON_DAC);
 	snd_uda1380_hwsync_write(uda, 0x00, 3);
 
 	return 0;
@@ -724,13 +723,13 @@ static int snd_uda1380_capture_on(struct snd_uda1380 *uda)
 
 	snd_uda1380_cache_try_flush(uda);
 
-	val = R02_PON_BIAS | R02_PON_ADCL;
-	val |= (uda->regs[0x22] == R22_SEL_MIC) ?
+	val = R02_PON_ADCL | R02_PON_ADCR;
+	val |= (uda->regs[0x22] & R22_SEL_MIC) ?
 	       R02_PON_LNA :
-	       R02_PON_PGAL | R02_PON_PGAR | R02_PON_ADCR;
+	       R02_PON_PGAL | R02_PON_PGAR;
 	uda->regs[0x02] = WRITE_MASK(uda->regs[0x02],
-				     val, R02_PON_BIAS | R02_PON_ADCL | R02_PON_LNA |
-					  R02_PON_PGAL | R02_PON_PGAR | R02_PON_ADCR);
+				     val, R02_PON_ADCL | R02_PON_ADCR |
+					  R02_PON_LNA | R02_PON_PGAL | R02_PON_PGAR);
 	snd_uda1380_hwsync_write(uda, 0x02, 1);
 
 	/* notify input sources */
@@ -751,8 +750,6 @@ static int snd_uda1380_capture_on(struct snd_uda1380 *uda)
 
 static int snd_uda1380_capture_off(struct snd_uda1380 *uda)
 {
-	unsigned int val;
-
 	if (!uda->capture_on) return 0;
 
 	uda->capture_on = 0;
@@ -770,13 +767,10 @@ static int snd_uda1380_capture_off(struct snd_uda1380 *uda)
 
 	/* power-down */
 	uda->capture_clock_on = 0;
-	uda->regs[0x00] = WRITE_MASK(uda->regs[0x00],
-				     0x0000, R00_EN_ADC | R00_EN_DEC);
-	val = 0x0000;
-	val |= uda->playback_on ? R02_PON_BIAS : 0x0000;
+	uda->regs[0x00] = WRITE_MASK(uda->regs[0x00], 0x0000, R00_EN_ADC | R00_EN_DEC);
 	uda->regs[0x02] = WRITE_MASK(uda->regs[0x02],
-				     val, R02_PON_BIAS | R02_PON_ADCL | R02_PON_LNA |
-					  R02_PON_PGAL | R02_PON_PGAR | R02_PON_ADCR);
+				     0x0000, R02_PON_ADCL | R02_PON_ADCR |
+				     R02_PON_LNA | R02_PON_PGAL | R02_PON_PGAR);
 	snd_uda1380_hwsync_write(uda, 0x00, 3);
 
 	return 0;
@@ -822,8 +816,9 @@ static int snd_uda1380_init_regs(struct snd_uda1380 *uda)
 		uda->regs[0x22] = WRITE_MASK(uda->regs[0x22],
 					     R22_SEL_LNA | R22_SEL_MIC,
 					     R22_SEL_LNA | R22_SEL_MIC);
-		snd_uda1380_hwsync_write(uda, 0x22, 1);
 	}
+	uda->regs[0x22] = WRITE_MASK(uda->regs[0x22], 0x0000, R22_SKIP_DCFIL);
+	snd_uda1380_hwsync_write(uda, 0x22, 1);
 
 	uda->regs[0x00] = WRITE_MASK(uda->regs[0x00],
 				     0x0000, R00_EN_DEC | R00_EN_INT);

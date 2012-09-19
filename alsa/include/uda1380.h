@@ -1,5 +1,5 @@
 /*
- * Audio support for Philips UDA1380
+ * Audio support for codec Philips UDA1380
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -8,10 +8,15 @@
  * Copyright (c) 2005 Giorgio Padrin <giorgio@mandarinlogiq.org>
  */
 
+#ifndef __SOUND_UDA1380_H
+#define __SOUND_UDA1380_H
+
 #include <linux/i2c.h>
 
-enum snd_uda1380_capture_source
-	{ SND_UDA1380_CAP_SOURCE_LINE_IN, SND_UDA1380_CAP_SOURCE_MIC };
+enum snd_uda1380_capture_source {
+	SND_UDA1380_CAP_SOURCE_LINE_IN,
+	SND_UDA1380_CAP_SOURCE_MIC
+};
 
 struct snd_uda1380 {
 	struct semaphore sem;
@@ -67,7 +72,7 @@ struct snd_uda1380 {
 int snd_uda1380_activate(struct snd_uda1380 *uda);
 
 void snd_uda1380_deactivate(struct snd_uda1380 *uda);
-int snd_uda1380_add_mixer_controls(struct snd_uda1380 *uda, snd_card_t *card);
+int snd_uda1380_add_mixer_controls(struct snd_uda1380 *uda, struct snd_card *card);
 int snd_uda1380_open_stream(struct snd_uda1380 *uda, int stream);
 int snd_uda1380_close_stream(struct snd_uda1380 *uda, int stream);
 int snd_uda1380_suspend(struct snd_uda1380 *uda, pm_message_t state);
@@ -75,3 +80,5 @@ int snd_uda1380_resume(struct snd_uda1380 *uda);
 
 void snd_uda1380_hp_connected(struct snd_uda1380 *uda, int connected); /* non atomic context */
 void snd_uda1380_hp_detected(struct snd_uda1380 *uda, int detected); /* atomic context */
+
+#endif /* __SOUND_UDA1380_H */
