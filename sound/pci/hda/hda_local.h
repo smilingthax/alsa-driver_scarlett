@@ -84,6 +84,16 @@ int snd_hda_codec_amp_read(struct hda_codec *codec, hda_nid_t nid, int ch,
 			   int direction, int index);
 int snd_hda_codec_amp_update(struct hda_codec *codec, hda_nid_t nid, int ch,
 			     int direction, int idx, int mask, int val);
+int snd_hda_codec_amp_stereo(struct hda_codec *codec, hda_nid_t nid,
+			     int dir, int idx, int mask, int val);
+#ifdef SND_HDA_NEEDS_RESUME
+void snd_hda_codec_resume_amp(struct hda_codec *codec);
+#endif
+
+/* amp value bits */
+#define HDA_AMP_MUTE	0x80
+#define HDA_AMP_UNMUTE	0x00
+#define HDA_AMP_VOLMASK	0x7f
 
 /* mono switch binding multiple inputs */
 #define HDA_BIND_MUTE_MONO(xname, nid, channel, indices, direction) \
@@ -256,15 +266,6 @@ int snd_hda_add_new_ctls(struct hda_codec *codec,
 			 struct snd_kcontrol_new *knew);
 
 /*
- * power management
- */
-#ifdef CONFIG_PM
-int snd_hda_resume_ctls(struct hda_codec *codec, struct snd_kcontrol_new *knew);
-int snd_hda_resume_spdif_out(struct hda_codec *codec);
-int snd_hda_resume_spdif_in(struct hda_codec *codec);
-#endif
-
-/*
  * unsolicited event handler
  */
 
@@ -364,5 +365,28 @@ int snd_hda_override_amp_caps(struct hda_codec *codec, hda_nid_t nid, int dir,
  * hwdep interface
  */
 int snd_hda_create_hwdep(struct hda_codec *codec);
+
+/*
+ * power-management
+ */
+
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+void snd_hda_schedule_power_save(struct hda_codec *codec);
+
+struct hda_amp_list {
+	hda_nid_t nid;
+	unsigned char dir;
+	unsigned char idx;
+};
+
+struct hda_loopback_check {
+	struct hda_amp_list *amplist;
+	int power_on;
+};
+
+int snd_hda_check_amp_list_power(struct hda_codec *codec,
+				 struct hda_loopback_check *check,
+				 hda_nid_t nid);
+#endif /* CONFIG_SND_HDA_POWER_SAVE */
 
 #endif /* __SOUND_HDA_LOCAL_H */

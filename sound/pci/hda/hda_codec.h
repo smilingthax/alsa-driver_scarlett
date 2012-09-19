@@ -26,6 +26,10 @@
 #include <sound/pcm.h>
 #include <sound/hwdep.h>
 
+#if defined(CONFIG_PM) || defined(CONFIG_SND_HDA_POWER_SAVE)
+#define SND_HDA_NEEDS_RESUME	/* resume control code is required */
+#endif
+
 /*
  * nodes
  */
@@ -412,6 +416,10 @@ struct hda_bus_ops {
 	unsigned int (*get_response)(struct hda_codec *codec);
 	/* free the private data */
 	void (*private_free)(struct hda_bus *);
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+	/* notify power-up/down from codec to contoller */
+	void (*pm_notify)(struct hda_codec *codec);
+#endif
 };
 
 /* template to pass to the bus constructor */
@@ -473,19 +481,34 @@ struct hda_codec_ops {
 	int (*init)(struct hda_codec *codec);
 	void (*free)(struct hda_codec *codec);
 	void (*unsol_event)(struct hda_codec *codec, unsigned int res);
-#ifdef CONFIG_PM
+#ifdef SND_HDA_NEEDS_RESUME
 	int (*suspend)(struct hda_codec *codec, pm_message_t state);
 	int (*resume)(struct hda_codec *codec);
+#endif
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+	int (*check_power_status)(struct hda_codec *codec, hda_nid_t nid);
 #endif
 };
 
 /* record for amp information cache */
-struct hda_amp_info {
+struct hda_cache_head {
 	u32 key;		/* hash key */
+	u16 val;		/* assigned value */
+	u16 next;		/* next link; -1 = terminal */
+};
+
+struct hda_amp_info {
+	struct hda_cache_head head;
 	u32 amp_caps;		/* amp capabilities */
 	u16 vol[2];		/* current volume & mute */
-	u16 status;		/* update flag */
-	u16 next;		/* next link */
+};
+
+struct hda_cache_rec {
+	u16 hash[64];			/* hash table for index */
+	unsigned int num_entries;	/* number of assigned entries */
+	unsigned int size;		/* allocated size */
+	unsigned int record_size;	/* record size (including header) */
+	void *buffer;			/* hash table entries */
 };
 
 /* PCM callbacks */
@@ -540,11 +563,6 @@ struct hda_codec {
 	/* set by patch */
 	struct hda_codec_ops patch_ops;
 
-	/* resume phase - all controls should update even if
-	 * the values are not changed
-	 */
-	unsigned int in_resume;
-
 	/* PCM to create, set by patch_ops.build_pcms callback */
 	unsigned int num_pcms;
 	struct hda_pcm *pcm_info;
@@ -557,11 +575,8 @@ struct hda_codec {
 	hda_nid_t start_nid;
 	u32 *wcaps;
 
-	/* hash for amp access */
-	u16 amp_hash[32];
-	int num_amp_entries;
-	int amp_info_size;
-	struct hda_amp_info *amp_info;
+	struct hda_cache_rec amp_cache;	/* cache for amp access */
+	struct hda_cache_rec cmd_cache;	/* cache for other commands */
 
 	struct mutex spdif_mutex;
 	unsigned int spdif_status;	/* IEC958 status bits */
@@ -569,6 +584,12 @@ struct hda_codec {
 	unsigned int spdif_in_enable;	/* SPDIF input enable? */
 
 	struct snd_hwdep *hwdep;	/* assigned hwdep device */
+
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+	int power_on;		/* current (global) power-state */
+	int power_count;	/* current (global) power refcount */
+	struct delayed_work power_work; /* delayed task for powerdown */
+#endif
 };
 
 /* direction */
@@ -612,6 +633,18 @@ void snd_hda_sequence_write(struct hda_codec *codec,
 /* unsolicited event */
 int snd_hda_queue_unsol_event(struct hda_bus *bus, u32 res, u32 res_ex);
 
+/* cached write */
+#ifdef SND_HDA_NEEDS_RESUME
+int snd_hda_codec_write_cache(struct hda_codec *codec, hda_nid_t nid,
+			      int direct, unsigned int verb, unsigned int parm);
+void snd_hda_sequence_write_cache(struct hda_codec *codec,
+				  const struct hda_verb *seq);
+void snd_hda_codec_resume_cache(struct hda_codec *codec);
+#else
+#define snd_hda_codec_write_cache	snd_hda_codec_write
+#define snd_hda_sequence_write_cache	snd_hda_sequence_write
+#endif
+
 /*
  * Mixer
  */
@@ -644,6 +677,17 @@ void snd_hda_get_codec_name(struct hda_codec *codec, char *name, int namelen);
 #ifdef CONFIG_PM
 int snd_hda_suspend(struct hda_bus *bus, pm_message_t state);
 int snd_hda_resume(struct hda_bus *bus);
+#endif
+
+/*
+ * power saving
+ */
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+void snd_hda_power_up(struct hda_codec *codec);
+void snd_hda_power_down(struct hda_codec *codec);
+#else
+static inline void snd_hda_power_up(struct hda_codec *codec) {}
+static inline void snd_hda_power_down(struct hda_codec *codec) {}
 #endif
 
 #endif /* __SOUND_HDA_CODEC_H */
