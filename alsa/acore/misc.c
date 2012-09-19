@@ -11,17 +11,22 @@ int try_inc_mod_count(struct module *module)
 	return 1;
 }
 
-struct resource snd_compat_mem_region;
-
-struct resource *snd_compat_request_region(unsigned long start, unsigned long size, const char *name)
+struct resource *snd_compat_request_region(unsigned long start, unsigned long size, const char *name, int is_memory)
 {
 	struct resource *resource;
 
+#ifdef CONFIG_SND_DEBUG_MEMORY
+	/* DON'T use kmalloc here; the allocated resource is released
+	 * by kfree without wrapper in each driver
+	 */
+	resource = snd_wrapper_kmalloc(sizeof(struct resource), GFP_KERNEL);
+#else
 	resource = kmalloc(sizeof(struct resource), GFP_KERNEL);
+#endif
 	if (resource == NULL)
 		return NULL;
-	if (check_region(start, size)) {
-		kfree(resource);
+	if (! is_memory && check_region(start, size)) {
+		kfree_nocheck(resource);
 		return NULL;
 	}
 	memset(resource, 0, sizeof(struct resource));
@@ -29,14 +34,14 @@ struct resource *snd_compat_request_region(unsigned long start, unsigned long si
 	resource->name = name;
 	resource->start = start;
 	resource->end = start + size - 1;
-	resource->flags = IORESOURCE_IO;
+	resource->flags = is_memory ? IORESOURCE_MEM : IORESOURCE_IO;
 	return resource;
 }
 
 int snd_compat_release_resource(struct resource *resource)
 {
 	snd_runtime_check(resource != NULL, return -EINVAL);
-	if (resource == &snd_compat_mem_region)
+	if (resource->flags & IORESOURCE_MEM)
 		return 0;
 	release_region(resource->start, (resource->end - resource->start) + 1);
 	return 0;
@@ -92,18 +97,23 @@ void snd_pci_compat_set_driver_data (struct pci_dev *dev, void *driver_data)
 
 unsigned long snd_pci_compat_get_dma_mask (struct pci_dev *dev)
 {
-	struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
-	if (map)
-		return map->dma_mask;
-	return 0;
+	if (dev) {
+		struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
+		if (map)
+			return map->dma_mask;
+		return 0;
+	} else
+		return 0xffffff; /* ISA - 16MB */
 }
 
 
 void snd_pci_compat_set_dma_mask (struct pci_dev *dev, unsigned long mask)
 {
-	struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
-	if (map)
-		map->dma_mask = mask;
+	if (dev) {
+		struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
+		if (map)
+			map->dma_mask = mask;
+	}
 }
 
 

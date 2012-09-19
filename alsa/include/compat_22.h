@@ -167,13 +167,11 @@ struct resource {
 
 void snd_wrapper_request_region(unsigned long from, unsigned long extent, const char *name);
 #undef request_region
-#define request_region snd_compat_request_region
-#define release_resource snd_compat_release_resource
-#define request_mem_region(from, size, name) (&snd_compat_mem_region)
+#define request_region(start,size,name) snd_compat_request_region(start,size,name,0)
+#define request_mem_region(start,size,name) snd_compat_request_mem_region(start,size,name,1)
+#define release_resource(res) snd_compat_release_resource(res)
 
-extern struct resource snd_compat_mem_region;
-
-struct resource *snd_compat_request_region(unsigned long start, unsigned long size, const char *name);
+struct resource *snd_compat_request_region(unsigned long start, unsigned long size, const char *name, int is_memory);
 int snd_compat_release_resource(struct resource *resource);
 
 #ifdef CONFIG_PCI
