@@ -2002,7 +2002,8 @@ static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
 #endif
 
 /* krealloc() wrapper */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)) || defined(CONFIG_SND_DEBUG_MEMORY)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)) || \
+	(defined(CONFIG_SND_DEBUG_MEMORY) && !defined(SKIP_HIDDEN_MALLOCS))
 #include <linux/slab.h>
 static inline void *snd_compat_krealloc(const void *p, size_t new_size, gfp_t flags)
 {
