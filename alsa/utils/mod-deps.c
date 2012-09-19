@@ -169,7 +169,7 @@ static char *no_cards[] = {
 	"#SND_GUS_SYNTH",
 	"#AC97_BUS",
 	"#SND_AC97_CODEC",
-	"#SND_AT91_SOC_I2S",
+	"#SND_AT91_SOC_SSC",
 	"#SND_SOC_AC97_CODEC",
 	"#SND_SOC_WM8731",
 	"#SND_SOC_WM8750",
