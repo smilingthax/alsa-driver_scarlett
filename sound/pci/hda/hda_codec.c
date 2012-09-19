@@ -301,10 +301,19 @@ int snd_hda_get_connections(struct hda_codec *codec, hda_nid_t nid,
 	unsigned int parm;
 	int i, conn_len, conns;
 	unsigned int shift, num_elems, mask;
+	unsigned int wcaps;
 	hda_nid_t prev_nid;
 
 	if (snd_BUG_ON(!conn_list || max_conns <= 0))
 		return -EINVAL;
+
+	wcaps = get_wcaps(codec, nid);
+	if (!(wcaps & AC_WCAP_CONN_LIST) &&
+	    get_wcaps_type(wcaps) != AC_WID_VOL_KNB) {
+		snd_printk(KERN_WARNING "hda_codec: "
+			   "connection list not available for 0x%x\n", nid);
+		return -EINVAL;
+	}
 
 	parm = snd_hda_param_read(codec, nid, AC_PAR_CONNLIST_LEN);
 	if (parm & AC_CLIST_LONG) {
@@ -742,8 +751,7 @@ static int read_pin_defaults(struct hda_codec *codec)
 	for (i = 0; i < codec->num_nodes; i++, nid++) {
 		struct hda_pincfg *pin;
 		unsigned int wcaps = get_wcaps(codec, nid);
-		unsigned int wid_type = (wcaps & AC_WCAP_TYPE) >>
-				AC_WCAP_TYPE_SHIFT;
+		unsigned int wid_type = get_wcaps_type(wcaps);
 		if (wid_type != AC_WID_PIN)
 			continue;
 		pin = snd_array_new(&codec->init_pins);
@@ -2367,16 +2375,20 @@ static void hda_set_power_state(struct hda_codec *codec, hda_nid_t fg,
 	hda_nid_t nid;
 	int i;
 
-	snd_hda_codec_write(codec, fg, 0, AC_VERB_SET_POWER_STATE,
+	/* this delay seems necessary to avoid click noise at power-down */
+	if (power_state == AC_PWRST_D3)
+		msleep(100);
+	snd_hda_codec_read(codec, fg, 0, AC_VERB_SET_POWER_STATE,
 			    power_state);
-	msleep(10); /* partial workaround for "azx_get_response timeout" */
+	/* partial workaround for "azx_get_response timeout" */
+	if (power_state == AC_PWRST_D0)
+		msleep(10);
 
 	nid = codec->start_nid;
 	for (i = 0; i < codec->num_nodes; i++, nid++) {
 		unsigned int wcaps = get_wcaps(codec, nid);
 		if (wcaps & AC_WCAP_POWER) {
-			unsigned int wid_type = (wcaps & AC_WCAP_TYPE) >>
-				AC_WCAP_TYPE_SHIFT;
+			unsigned int wid_type = get_wcaps_type(wcaps);
 			if (power_state == AC_PWRST_D3 &&
 			    wid_type == AC_WID_PIN) {
 				unsigned int pincap;
@@ -3667,8 +3679,7 @@ int snd_hda_parse_pin_def_config(struct hda_codec *codec,
 	end_nid = codec->start_nid + codec->num_nodes;
 	for (nid = codec->start_nid; nid < end_nid; nid++) {
 		unsigned int wid_caps = get_wcaps(codec, nid);
-		unsigned int wid_type =
-			(wid_caps & AC_WCAP_TYPE) >> AC_WCAP_TYPE_SHIFT;
+		unsigned int wid_type = get_wcaps_type(wid_caps);
 		unsigned int def_conf;
 		short assoc, loc;
 

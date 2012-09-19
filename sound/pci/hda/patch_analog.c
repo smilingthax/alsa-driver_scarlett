@@ -2982,7 +2982,8 @@ static int patch_ad1988(struct hda_codec *codec)
 	board_config = snd_hda_check_board_config(codec, AD1988_MODEL_LAST,
 						  ad1988_models, ad1988_cfg_tbl);
 	if (board_config < 0) {
-		printk(KERN_INFO "hda_codec: Unknown model for AD1988, trying auto-probe from BIOS...\n");
+		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
+		       codec->chip_name);
 		board_config = AD1988_AUTO;
 	}
 
@@ -3754,7 +3755,7 @@ static int ad1884a_mobile_master_sw_put(struct snd_kcontrol *kcontrol,
 	int mute = (!ucontrol->value.integer.value[0] &&
 		    !ucontrol->value.integer.value[1]);
 	/* toggle GPIO1 according to the mute state */
-	snd_hda_codec_write(codec, 0x01, 0, AC_VERB_SET_GPIO_DATA,
+	snd_hda_codec_write_cache(codec, 0x01, 0, AC_VERB_SET_GPIO_DATA,
 			    mute ? 0x02 : 0x0);
 	return ret;
 }
