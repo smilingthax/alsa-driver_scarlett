@@ -247,15 +247,6 @@ Additional Modules
 
     Module supports up to 8 cards.
 
-  Module snd-via82xx-modem
-  ------------------------
-
-    Module for VIA82xx AC97 modem
-
-    ac97_clock	- AC'97 codec clock base (default 48000Hz)
-
-    Module supports up to 8 cards.
-
   Module snd-asihpi
   -----------------
 
