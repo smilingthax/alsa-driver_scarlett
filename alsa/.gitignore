@@ -29,6 +29,7 @@ linux
 include/sound
 
 acore/control.c
+acore/hrtimer.c
 acore/hwdep.c
 acore/info.c
 acore/init.c
@@ -48,6 +49,7 @@ acore/timer.c
 arm/sa11xx-uda1341.c
 drivers/mpu401/mpu401.c
 drivers/mts64.c
+drivers/pcsp/pcsp.c
 drivers/portman2x4.c
 drivers/opl3/opl3_lib.c
 i2c/other/tea575x-tuner.c
@@ -91,6 +93,7 @@ pci/echoaudio/mona.c
 pci/emu10k1/emu10k1_main.c
 pci/emu10k1/emu10k1x.c
 pci/fm801.c
+pci/hda/hda_intel.c
 pci/hda/hda_codec.c
 pci/hda/hda_beep.c
 pci/intel8x0.c

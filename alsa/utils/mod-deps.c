@@ -68,7 +68,7 @@ struct dep {
 	int type;
 	// default value
 	int int_val;
-	int bool_val;
+	int def_val;
 	// hitflag?
 	int hitflag;
 	int own_config;
@@ -380,7 +380,7 @@ static int read_file_1(const char *filename, struct cond **template)
 			} else if (!strncmp(buffer, "\tdef_bool ", 10)) {
 				dep->type = TYPE_BOOL;
 				if (buffer[10] == 'y')
-					dep->bool_val = 1;
+					dep->def_val = 1;
 			} else if (!strncmp(buffer, "\tint ", 5)) {
 				dep->type = TYPE_INT;
 				/*dep->selectable = 1;*/ /* exception */
@@ -397,8 +397,21 @@ static int read_file_1(const char *filename, struct cond **template)
 						;
 					dep->int_val = strtol(p, NULL, 0);
 				} else {
-					if (buffer[9] == 'y')
-						dep->bool_val = 1;
+					switch (buffer[9]) {
+					case 'y':
+					case 'm':
+						dep->def_val = 1;
+						break;
+					case 'n':
+						dep->def_val = 0;
+						break;
+					default:
+						fprintf(stderr, "can't handle 'default %s', translating as depends on\n",
+							buffer + 9);
+						dep->def_val = 1;
+						add_dep(dep, buffer + 9);
+						break;
+					}
 				}
 			}
 			continue;
@@ -1189,7 +1202,7 @@ static void process_dep_acinclude(struct dep *tempdep, int slave,
 
 	if (!tempdep->selectable) {
 		if (tempdep->type != TYPE_INT && !slave) {
-			if (!tempdep->cond || !tempdep->bool_val)
+			if (!tempdep->cond || !tempdep->def_val)
 				return;
 		}
 	}
@@ -1250,7 +1263,7 @@ static void process_dep_acinclude(struct dep *tempdep, int slave,
 		printf("  if test \"$CONFIG_%s\" = \"m\" -o \"$CONFIG_%s\" = \"y\"; then\n", text, text);
 		free(text);
 		put_topif = 1;
-	} else if (tempdep->cond && tempdep->bool_val) {
+	} else if (tempdep->cond && tempdep->def_val) {
 		/* "def_bool yes" and depends on ... */
 		put_define = 1;
 	} else
