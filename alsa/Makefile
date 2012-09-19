@@ -115,7 +115,7 @@ $(ALSAKERNELFILE):
 	{ \
 	rm -rf alsa-kernel ; \
 	if [ ! -z "$(ALSAKERNELDIR)" ]; then \
-		if [ -f $(ALSAKERNELDIR)/kernel/sched.c ]; then \
+		if [ -f $(ALSAKERNELDIR)/kernel/sched.c -o -f $(ALSAKERNELDIR)/.alsamirror ]; then \
 			# whole linux kernel source tree \
 			mkdir alsa-kernel; \
 			for i in $(ALSAKERNELDIR)/sound/* ; do \
