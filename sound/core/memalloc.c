@@ -46,14 +46,6 @@ MODULE_LICENSE("GPL");
 /*
  */
 
-void *snd_malloc_sgbuf_pages(struct device *device,
-                             size_t size, struct snd_dma_buffer *dmab,
-			     size_t *res_size);
-int snd_free_sgbuf_pages(struct snd_dma_buffer *dmab);
-
-/*
- */
-
 static DEFINE_MUTEX(list_mutex);
 static LIST_HEAD(mem_list_head);
 
@@ -285,11 +277,16 @@ int snd_dma_alloc_pages_fallback(int type, struct device *device, size_t size,
 	int err;
 
 	while ((err = snd_dma_alloc_pages(type, device, size, dmab)) < 0) {
+		size_t aligned_size;
 		if (err != -ENOMEM)
 			return err;
-		size >>= 1;
 		if (size <= PAGE_SIZE)
 			return -ENOMEM;
+		aligned_size = PAGE_SIZE << get_order(size);
+		if (size != aligned_size)
+			size = aligned_size;
+		else
+			size >>= 1;
 	}
 	if (! dmab->area)
 		return -ENOMEM;

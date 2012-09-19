@@ -11043,6 +11043,14 @@ static hda_nid_t alc269_adc_nids[1] = {
 	0x08,
 };
 
+static hda_nid_t alc269_capsrc_nids[1] = {
+	0x23,
+};
+
+/* NOTE: ADC2 (0x07) is connected from a recording *MIXER* (0x24),
+ *       not a mux!
+ */
+
 static struct hda_input_mux alc269_eeepc_dmic_capture_source = {
 	.num_items = 2,
 	.items = {
@@ -11069,6 +11077,8 @@ static struct snd_kcontrol_new alc269_base_mixer[] = {
 	HDA_CODEC_MUTE("Line Playback Switch", 0x0b, 0x02, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Beep Playback Volume", 0x0b, 0x4, HDA_INPUT),
+	HDA_CODEC_MUTE("Beep Playback Switch", 0x0b, 0x4, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
 	HDA_CODEC_VOLUME("Front Mic Playback Volume", 0x0b, 0x01, HDA_INPUT),
 	HDA_CODEC_MUTE("Front Mic Playback Switch", 0x0b, 0x01, HDA_INPUT),
@@ -11118,6 +11128,13 @@ static struct snd_kcontrol_new alc269_capture_mixer[] = {
 static struct snd_kcontrol_new alc269_epc_capture_mixer[] = {
 	HDA_CODEC_VOLUME("Capture Volume", 0x08, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE("Capture Switch", 0x08, 0x0, HDA_INPUT),
+	{ } /* end */
+};
+
+/* beep control */
+static struct snd_kcontrol_new alc269_beep_mixer[] = {
+	HDA_CODEC_VOLUME("Beep Playback Volume", 0x0b, 0x4, HDA_INPUT),
+	HDA_CODEC_MUTE("Beep Playback Switch", 0x0b, 0x4, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -11383,7 +11400,7 @@ static int alc269_auto_create_multi_out_ctls(struct alc_spec *spec,
 static int alc269_parse_auto_config(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
-	int err;
+	int i, err;
 	static hda_nid_t alc269_ignore[] = { 0x1d, 0 };
 
 	err = snd_hda_parse_pin_def_config(codec, &spec->autocfg,
@@ -11406,9 +11423,20 @@ static int alc269_parse_auto_config(struct hda_codec *codec)
 	if (spec->kctl_alloc)
 		spec->mixers[spec->num_mixers++] = spec->kctl_alloc;
 
+	/* create a beep mixer control if the pin 0x1d isn't assigned */
+	for (i = 0; i < ARRAY_SIZE(spec->autocfg.input_pins); i++)
+		if (spec->autocfg.input_pins[i] == 0x1d)
+			break;
+	if (i >= ARRAY_SIZE(spec->autocfg.input_pins))
+		spec->mixers[spec->num_mixers++] = alc269_beep_mixer;
+
 	spec->init_verbs[spec->num_init_verbs++] = alc269_init_verbs;
 	spec->num_mux_defs = 1;
 	spec->input_mux = &spec->private_imux;
+	/* set default input source */
+	snd_hda_codec_write_cache(codec, alc269_capsrc_nids[0],
+				  0, AC_VERB_SET_CONNECT_SEL,
+				  spec->input_mux->items[0].index);
 
 	err = alc_auto_add_mic_boost(codec);
 	if (err < 0)
@@ -11541,6 +11569,7 @@ static int patch_alc269(struct hda_codec *codec)
 
 	spec->adc_nids = alc269_adc_nids;
 	spec->num_adc_nids = ARRAY_SIZE(alc269_adc_nids);
+	spec->capsrc_nids = alc269_capsrc_nids;
 
 	codec->patch_ops = alc_patch_ops;
 	if (board_config == ALC269_AUTO)
