@@ -86,6 +86,7 @@ COMMENT_MAP = [
 		('/drivers/vx'		,'Digigram VX core'),
 		('/drivers'		,'Generic drivers'),
 		('/arm/Kconfig'		,'ARM'),
+		('/include/uda1341.h'	,'UDA1341'),
 		('/arm/sa11xx-uda1341.c','SA11xx UDA1341 driver'),
 		('/arm'			,'ERROR'),
 		('/isa/Kconfig'		,'ISA'),
