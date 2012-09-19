@@ -1227,10 +1227,7 @@ static const char *slave_vols[] = {
 	"LFE Playback Volume",
 	"Side Playback Volume",
 	"Headphone Playback Volume",
-	"Headphone Playback Volume",
 	"Speaker Playback Volume",
-	"External Speaker Playback Volume",
-	"Speaker2 Playback Volume",
 	NULL
 };
 
@@ -1241,10 +1238,7 @@ static const char *slave_sws[] = {
 	"LFE Playback Switch",
 	"Side Playback Switch",
 	"Headphone Playback Switch",
-	"Headphone Playback Switch",
 	"Speaker Playback Switch",
-	"External Speaker Playback Switch",
-	"Speaker2 Playback Switch",
 	"IEC958 Playback Switch",
 	NULL
 };
@@ -2877,6 +2871,16 @@ static hda_nid_t get_unassigned_dac(struct hda_codec *codec, hda_nid_t nid)
 			return conn[j];
 		}
 	}
+	/* if all DACs are already assigned, connect to the primary DAC */
+	if (conn_len > 1) {
+		for (j = 0; j < conn_len; j++) {
+			if (conn[j] == spec->multiout.dac_nids[0]) {
+				snd_hda_codec_write_cache(codec, nid, 0,
+						  AC_VERB_SET_CONNECT_SEL, j);
+				break;
+			}
+		}
+	}
 	return 0;
 }
 
@@ -2917,6 +2921,26 @@ static int stac92xx_auto_fill_dac_nids(struct hda_codec *codec)
 		add_spec_dacs(spec, dac);
 	}
 
+	for (i = 0; i < cfg->hp_outs; i++) {
+		nid = cfg->hp_pins[i];
+		dac = get_unassigned_dac(codec, nid);
+		if (dac) {
+			if (!spec->multiout.hp_nid)
+				spec->multiout.hp_nid = dac;
+			else
+				add_spec_extra_dacs(spec, dac);
+		}
+		spec->hp_dacs[i] = dac;
+	}
+
+	for (i = 0; i < cfg->speaker_outs; i++) {
+		nid = cfg->speaker_pins[i];
+		dac = get_unassigned_dac(codec, nid);
+		if (dac)
+			add_spec_extra_dacs(spec, dac);
+		spec->speaker_dacs[i] = dac;
+	}
+
 	/* add line-in as output */
 	nid = check_line_out_switch(codec);
 	if (nid) {
@@ -2944,26 +2968,6 @@ static int stac92xx_auto_fill_dac_nids(struct hda_codec *codec)
 		}
 	}
 
-	for (i = 0; i < cfg->hp_outs; i++) {
-		nid = cfg->hp_pins[i];
-		dac = get_unassigned_dac(codec, nid);
-		if (dac) {
-			if (!spec->multiout.hp_nid)
-				spec->multiout.hp_nid = dac;
-			else
-				add_spec_extra_dacs(spec, dac);
-		}
-		spec->hp_dacs[i] = dac;
-	}
-
-	for (i = 0; i < cfg->speaker_outs; i++) {
-		nid = cfg->speaker_pins[i];
-		dac = get_unassigned_dac(codec, nid);
-		if (dac)
-			add_spec_extra_dacs(spec, dac);
-		spec->speaker_dacs[i] = dac;
-	}
-
 	snd_printd("stac92xx: dac_nids=%d (0x%x/0x%x/0x%x/0x%x/0x%x)\n",
 		   spec->multiout.num_dacs,
 		   spec->multiout.dac_nids[0],
@@ -2976,8 +2980,8 @@ static int stac92xx_auto_fill_dac_nids(struct hda_codec *codec)
 }
 
 /* create volume control/switch for the given prefx type */
-static int create_controls(struct hda_codec *codec, const char *pfx,
-			   hda_nid_t nid, int chs)
+static int create_controls_idx(struct hda_codec *codec, const char *pfx,
+			       int idx, hda_nid_t nid, int chs)
 {
 	struct sigmatel_spec *spec = codec->spec;
 	char name[32];
@@ -3001,18 +3005,21 @@ static int create_controls(struct hda_codec *codec, const char *pfx,
 	}
 
 	sprintf(name, "%s Playback Volume", pfx);
-	err = stac92xx_add_control(spec, STAC_CTL_WIDGET_VOL, name,
+	err = stac92xx_add_control_idx(spec, STAC_CTL_WIDGET_VOL, idx, name,
 		HDA_COMPOSE_AMP_VAL_OFS(nid, chs, 0, HDA_OUTPUT,
 					spec->volume_offset));
 	if (err < 0)
 		return err;
 	sprintf(name, "%s Playback Switch", pfx);
-	err = stac92xx_add_control(spec, STAC_CTL_WIDGET_MUTE, name,
+	err = stac92xx_add_control_idx(spec, STAC_CTL_WIDGET_MUTE, idx, name,
 				   HDA_COMPOSE_AMP_VAL(nid, chs, 0, HDA_OUTPUT));
 	if (err < 0)
 		return err;
 	return 0;
 }
+
+#define create_controls(codec, pfx, nid, chs) \
+	create_controls_idx(codec, pfx, 0, nid, chs)
 
 static int add_spec_dacs(struct sigmatel_spec *spec, hda_nid_t nid)
 {
@@ -3039,35 +3046,27 @@ static int add_spec_extra_dacs(struct sigmatel_spec *spec, hda_nid_t nid)
 	return 1;
 }
 
-static int is_unique_dac(struct sigmatel_spec *spec, hda_nid_t nid)
-{
-	int i;
-
-	if (spec->autocfg.line_outs != 1)
-		return 0;
-	if (spec->multiout.hp_nid == nid)
-		return 0;
-	for (i = 0; i < ARRAY_SIZE(spec->multiout.extra_out_nid); i++)
-		if (spec->multiout.extra_out_nid[i] == nid)
-			return 0;
-	return 1;
-}
-
-/* add playback controls from the parsed DAC table */
-static int stac92xx_auto_create_multi_out_ctls(struct hda_codec *codec,
-					       const struct auto_pin_cfg *cfg)
+/* Create output controls
+ * The mixer elements are named depending on the given type (AUTO_PIN_XXX_OUT)
+ */
+static int create_multi_out_ctls(struct hda_codec *codec, int num_outs,
+				 const hda_nid_t *pins,
+				 const hda_nid_t *dac_nids,
+				 int type)
 {
 	struct sigmatel_spec *spec = codec->spec;
 	static const char *chname[4] = {
 		"Front", "Surround", NULL /*CLFE*/, "Side"
 	};
-	hda_nid_t nid = 0;
+	hda_nid_t nid;
 	int i, err;
 	unsigned int wid_caps;
 
-	for (i = 0; i < cfg->line_outs && spec->multiout.dac_nids[i]; i++) {
-		nid = spec->multiout.dac_nids[i];
-		if (i == 2) {
+	for (i = 0; i < num_outs && i < ARRAY_SIZE(chname); i++) {
+		nid = dac_nids[i];
+		if (!nid)
+			continue;
+		if (type != AUTO_PIN_HP_OUT && i == 2) {
 			/* Center/LFE */
 			err = create_controls(codec, "Center", nid, 1);
 			if (err < 0)
@@ -3088,23 +3087,47 @@ static int stac92xx_auto_create_multi_out_ctls(struct hda_codec *codec,
 			}
 
 		} else {
-			const char *name = chname[i];
-			/* if it's a single DAC, assign a better name */
-			if (!i && is_unique_dac(spec, nid)) {
-				switch (cfg->line_out_type) {
-				case AUTO_PIN_HP_OUT:
-					name = "Headphone";
-					break;
-				case AUTO_PIN_SPEAKER_OUT:
-					name = "Speaker";
-					break;
-				}
+			const char *name;
+			int idx;
+			switch (type) {
+			case AUTO_PIN_HP_OUT:
+				name = "Headphone";
+				idx = i;
+				break;
+			case AUTO_PIN_SPEAKER_OUT:
+				name = "Speaker";
+				idx = i;
+				break;
+			default:
+				name = chname[i];
+				idx = 0;
+				break;
 			}
-			err = create_controls(codec, name, nid, 3);
+			err = create_controls_idx(codec, name, idx, nid, 3);
 			if (err < 0)
 				return err;
+			if (type == AUTO_PIN_HP_OUT && !spec->hp_detect) {
+				wid_caps = get_wcaps(codec, pins[i]);
+				if (wid_caps & AC_WCAP_UNSOL_CAP)
+					spec->hp_detect = 1;
+			}
 		}
 	}
+	return 0;
+}
+
+/* add playback controls from the parsed DAC table */
+static int stac92xx_auto_create_multi_out_ctls(struct hda_codec *codec,
+					       const struct auto_pin_cfg *cfg)
+{
+	struct sigmatel_spec *spec = codec->spec;
+	int err;
+
+	err = create_multi_out_ctls(codec, cfg->line_outs, cfg->line_out_pins,
+				    spec->multiout.dac_nids,
+				    cfg->line_out_type);
+	if (err < 0)
+		return err;
 
 	if (cfg->hp_outs > 1 && cfg->line_out_type == AUTO_PIN_LINE_OUT) {
 		err = stac92xx_add_control(spec,
@@ -3139,40 +3162,18 @@ static int stac92xx_auto_create_hp_ctls(struct hda_codec *codec,
 					struct auto_pin_cfg *cfg)
 {
 	struct sigmatel_spec *spec = codec->spec;
-	hda_nid_t nid;
-	int i, err, nums;
+	int err;
 
-	nums = 0;
-	for (i = 0; i < cfg->hp_outs; i++) {
-		static const char *pfxs[] = {
-			"Headphone", "Headphone2", "Headphone3",
-		};
-		unsigned int wid_caps = get_wcaps(codec, cfg->hp_pins[i]);
-		if (wid_caps & AC_WCAP_UNSOL_CAP)
-			spec->hp_detect = 1;
-		if (nums >= ARRAY_SIZE(pfxs))
-			continue;
-		nid = spec->hp_dacs[i];
-		if (!nid)
-			continue;
-		err = create_controls(codec, pfxs[nums++], nid, 3);
-		if (err < 0)
-			return err;
-	}
-	nums = 0;
-	for (i = 0; i < cfg->speaker_outs; i++) {
-		static const char *pfxs[] = {
-			"Speaker", "External Speaker", "Speaker2",
-		};
-		if (nums >= ARRAY_SIZE(pfxs))
-			continue;
-		nid = spec->speaker_dacs[i];
-		if (!nid)
-			continue;
-		err = create_controls(codec, pfxs[nums++], nid, 3);
-		if (err < 0)
-			return err;
-	}
+	err = create_multi_out_ctls(codec, cfg->hp_outs, cfg->hp_pins,
+				    spec->hp_dacs, AUTO_PIN_HP_OUT);
+	if (err < 0)
+		return err;
+
+	err = create_multi_out_ctls(codec, cfg->speaker_outs, cfg->speaker_pins,
+				    spec->speaker_dacs, AUTO_PIN_SPEAKER_OUT);
+	if (err < 0)
+		return err;
+
 	return 0;
 }
 
@@ -3505,6 +3506,7 @@ static void stac92xx_auto_init_hp_out(struct hda_codec *codec)
 static int stac92xx_parse_auto_config(struct hda_codec *codec, hda_nid_t dig_out, hda_nid_t dig_in)
 {
 	struct sigmatel_spec *spec = codec->spec;
+	int hp_swap = 0;
 	int err;
 
 	if ((err = snd_hda_parse_pin_def_config(codec,
@@ -3532,6 +3534,7 @@ static int stac92xx_parse_auto_config(struct hda_codec *codec, hda_nid_t dig_out
 		spec->autocfg.line_outs = spec->autocfg.hp_outs;
 		spec->autocfg.line_out_type = AUTO_PIN_HP_OUT;
 		spec->autocfg.hp_outs = 0;
+		hp_swap = 1;
 	}
 	if (spec->autocfg.mono_out_pin) {
 		int dir = get_wcaps(codec, spec->autocfg.mono_out_pin) &
@@ -3625,12 +3628,19 @@ static int stac92xx_parse_auto_config(struct hda_codec *codec, hda_nid_t dig_out
 #endif
 
 	err = stac92xx_auto_create_hp_ctls(codec, &spec->autocfg);
-
 	if (err < 0)
 		return err;
 
-	err = stac92xx_auto_create_analog_input_ctls(codec, &spec->autocfg);
+	/* All output parsing done, now restore the swapped hp pins */
+	if (hp_swap) {
+		memcpy(spec->autocfg.hp_pins, spec->autocfg.line_out_pins,
+		       sizeof(spec->autocfg.hp_pins));
+		spec->autocfg.hp_outs = spec->autocfg.line_outs;
+		spec->autocfg.line_out_type = AUTO_PIN_HP_OUT;
+		spec->autocfg.line_outs = 0;
+	}
 
+	err = stac92xx_auto_create_analog_input_ctls(codec, &spec->autocfg);
 	if (err < 0)
 		return err;
 
