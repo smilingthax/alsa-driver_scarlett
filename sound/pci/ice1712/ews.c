@@ -445,11 +445,10 @@ static int __devinit snd_ice1712_ews_init(ice1712_t *ice)
 		if ((err = snd_ice1712_init_cs8427(ice, CS8427_BASE_ADDR)) < 0)
 			return err;
 		break;
-#if 0 // XXX not working...
 	case ICE1712_SUBDEVICE_DMX6FIRE:
 		if ((err = snd_ice1712_init_cs8427(ice, ICE1712_6FIRE_CS8427_ADDR)) < 0)
 			return err;
-#endif
+		break;
 	case ICE1712_SUBDEVICE_EWS88MT:
 	case ICE1712_SUBDEVICE_EWS88MT_NEW:
 	case ICE1712_SUBDEVICE_EWS88D:

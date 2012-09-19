@@ -77,6 +77,6 @@ extern struct snd_ice1712_card_info snd_ice1712_ews_cards[];
 #define ICE1712_6FIRE_RX2		0x80	/* MIDI2 */
 
 #define ICE1712_6FIRE_PCF9554_ADDR	(0x40>>1)
-#define ICE1712_6FIRE_CS8427_ADDR	(0x22>>1)
+#define ICE1712_6FIRE_CS8427_ADDR	(0x22)
 
 #endif /* __SOUND_EWS_H */

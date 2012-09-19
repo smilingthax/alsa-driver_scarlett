@@ -348,7 +348,7 @@ int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream, size_t size)
 		dmab = substream->dma_buffer;
 	} else {
 		memset(&dmab, 0, sizeof(dmab));
-		snd_dma_alloc_pages(&substream->dma_device, size, NULL);
+		snd_dma_alloc_pages(&substream->dma_device, size, &dmab);
 	}
 	if (! dmab.area)
 		return -ENOMEM;
