@@ -362,6 +362,8 @@ MODULE_PARM_SYNTAX(snd_dual_codec, SNDRV_ENABLED ",allows:{{0,3}}");
 #define BA0_SRCSA		0x075c	/* SRC Slot Assignments */
 #define BA0_PPLVC		0x0760	/* PCM Playback Left Volume Control */
 #define BA0_PPRVC		0x0764	/* PCM Playback Right Volume Control */
+#define BA0_PASR		0x0768	/* playback sample rate */
+#define BA0_CASR		0x076C	/* capture sample rate */
 
 /* Source Slot Numbers - Playback */
 #define SRCSLOT_LEFT_PCM_PLAYBACK		0
@@ -465,6 +467,8 @@ struct snd_cs4281_dma {
 	int frag;			/* period number */
 };
 
+#define SUSPEND_REGISTERS	20
+
 struct snd_cs4281 {
 	int irq;
 
@@ -506,6 +510,11 @@ struct snd_cs4281 {
 	snd_info_entry_t *proc_entry;
 
 	struct snd_cs4281_gameport *gameport;
+
+#ifdef CONFIG_PM
+	u32 suspend_regs[SUSPEND_REGISTERS];
+#endif
+
 };
 
 static void snd_cs4281_interrupt(int irq, void *dev_id, struct pt_regs *regs);
@@ -2054,13 +2063,31 @@ static void __devexit snd_cs4281_remove(struct pci_dev *pci)
  */
 #ifdef CONFIG_PM
 
+static int saved_regs[SUSPEND_REGISTERS] = {
+	BA0_JSCTL,
+	BA0_GPIOR,
+	BA0_SSCR,
+	BA0_MIDCR,
+	BA0_SRCSA,
+	BA0_PASR,
+	BA0_CASR,
+	BA0_DACSR,
+	BA0_ADCSR,
+	BA0_FMLVC,
+	BA0_FMRVC,
+	BA0_PPLVC,
+	BA0_PPRVC,
+};
+
+#define number_of(array)	(sizeof(array) / sizeof(array[0]))
+
 #define CLKCR1_CKRA                             0x00010000L
 
 static void cs4281_suspend(cs4281_t *chip)
 {
 	snd_card_t *card = chip->card;
 	u32 ulCLK;
-	u32 ulSSCR;
+	int i;
 
 	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
@@ -2075,7 +2102,9 @@ static void cs4281_suspend(cs4281_t *chip)
 	/* Disable interrupts. */
 	snd_cs4281_pokeBA0(chip, BA0_HICR, BA0_HICR_CHGM);
 
-	ulSSCR = snd_cs4281_peekBA0(chip, BA0_SSCR);
+	/* remember the status registers */
+	for (i = 0; number_of(saved_regs); i++)
+		chip->suspend_regs[i] = snd_cs4281_peekBA0(chip, saved_regs[i]);
 
 	/* Turn off the serial ports. */
 	snd_cs4281_pokeBA0(chip, BA0_SERMC, 0);
@@ -2101,6 +2130,7 @@ static void cs4281_suspend(cs4281_t *chip)
 static void cs4281_resume(cs4281_t *chip)
 {
 	snd_card_t *card = chip->card;
+	int i;
 	u32 ulCLK;
 
 	snd_power_lock(card);
@@ -2115,18 +2145,18 @@ static void cs4281_resume(cs4281_t *chip)
 
 	snd_cs4281_chip_init(chip, 0);
 
-	ulCLK = snd_cs4281_peekBA0(chip, BA0_CLKCR1);
-	ulCLK &= ~CLKCR1_CKRA;
-	snd_cs4281_pokeBA0(chip, BA0_CLKCR1, ulCLK);
+	/* restore the status registers */
+	for (i = 0; number_of(saved_regs); i++)
+		snd_cs4281_pokeBA0(chip, saved_regs[i], chip->suspend_regs[i]);
 
 	if (chip->ac97)
 		snd_ac97_resume(chip->ac97);
 	if (chip->ac97_secondary)
 		snd_ac97_resume(chip->ac97_secondary);
 
-	/*
-	 * FIXME: need to restore the pcm stream status?
-	 */
+	ulCLK = snd_cs4281_peekBA0(chip, BA0_CLKCR1);
+	ulCLK &= ~CLKCR1_CKRA;
+	snd_cs4281_pokeBA0(chip, BA0_CLKCR1, ulCLK);
 
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
       __skip:
