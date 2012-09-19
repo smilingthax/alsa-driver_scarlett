@@ -183,25 +183,25 @@ static void __devexit snd_trident_remove(struct pci_dev *pci)
 static int snd_card_trident_suspend(struct pci_dev *pci, u32 state)
 {
 	trident_t *chip = snd_magic_cast(trident_t, pci_get_drvdata(pci), return -ENXIO);
-	snd_trident_suspend(chip, 0);
+	snd_trident_suspend(chip);
 	return 0;
 }
 static int snd_card_trident_resume(struct pci_dev *pci)
 {
 	trident_t *chip = snd_magic_cast(trident_t, pci_get_drvdata(pci), return -ENXIO);
-	snd_trident_resume(chip, 0);
+	snd_trident_resume(chip);
 	return 0;
 }
 #else
 static void snd_card_trident_suspend(struct pci_dev *pci)
 {
 	trident_t *chip = snd_magic_cast(trident_t, pci_get_drvdata(pci), return);
-	snd_trident_suspend(chip, 0);
+	snd_trident_suspend(chip);
 }
 static void snd_card_trident_resume(struct pci_dev *pci)
 {
 	trident_t *chip = snd_magic_cast(trident_t, pci_get_drvdata(pci), return);
-	snd_trident_resume(chip, 0);
+	snd_trident_resume(chip);
 }
 #endif
 #endif

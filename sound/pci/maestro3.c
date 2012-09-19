@@ -2322,12 +2322,12 @@ static int snd_m3_free(m3_t *chip)
  */
 #ifdef CONFIG_PM
 
-static void m3_suspend(m3_t *chip, int can_schedule)
+static void m3_suspend(m3_t *chip)
 {
 	snd_card_t *card = chip->card;
 	int i, index;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
 		goto __skip;
 
@@ -2354,12 +2354,12 @@ static void m3_suspend(m3_t *chip, int can_schedule)
       	snd_power_unlock(card);
 }
 
-static void m3_resume(m3_t *chip, int can_schedule)
+static void m3_resume(m3_t *chip)
 {
 	snd_card_t *card = chip->card;
 	int i, index;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D0)
 		goto __skip;
 
@@ -2400,25 +2400,25 @@ static void m3_resume(m3_t *chip, int can_schedule)
 static int snd_m3_suspend(struct pci_dev *pci, u32 state)
 {
 	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return -ENXIO);
-	m3_suspend(chip, 0);
+	m3_suspend(chip);
 	return 0;
 }
 static int snd_m3_resume(struct pci_dev *pci)
 {
 	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return -ENXIO);
-	m3_resume(chip, 0);
+	m3_resume(chip);
 	return 0;
 }
 #else
 static void snd_m3_suspend(struct pci_dev *pci)
 {
 	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return);
-	m3_suspend(chip, 0);
+	m3_suspend(chip);
 }
 static void snd_m3_resume(struct pci_dev *pci)
 {
 	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return);
-	m3_resume(chip, 0);
+	m3_resume(chip);
 }
 #endif
 
@@ -2430,11 +2430,11 @@ static int snd_m3_set_power_state(snd_card_t *card, unsigned int power_state)
 	case SNDRV_CTL_POWER_D0:
 	case SNDRV_CTL_POWER_D1:
 	case SNDRV_CTL_POWER_D2:
-		m3_resume(chip, 1);
+		m3_resume(chip);
 		break;
 	case SNDRV_CTL_POWER_D3hot:
 	case SNDRV_CTL_POWER_D3cold:
-		m3_suspend(chip, 1);
+		m3_suspend(chip);
 		break;
 	default:
 		return -EINVAL;

@@ -362,8 +362,8 @@ int snd_ymfpci_voice_alloc(ymfpci_t *chip, ymfpci_voice_type_t type, int pair, y
 int snd_ymfpci_voice_free(ymfpci_t *chip, ymfpci_voice_t *pvoice);
 
 #ifdef CONFIG_PM
-void snd_ymfpci_suspend(ymfpci_t *chip, int can_schedule);
-void snd_ymfpci_resume(ymfpci_t *chip, int can_schedule);
+void snd_ymfpci_suspend(ymfpci_t *chip);
+void snd_ymfpci_resume(ymfpci_t *chip);
 #endif
 
 #endif /* __SOUND_YMFPCI_H */

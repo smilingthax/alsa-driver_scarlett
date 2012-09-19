@@ -2080,11 +2080,11 @@ static struct cs_card_type __initdata cards[] = {
  * APM support
  */
 #ifdef CONFIG_PM
-void snd_cs46xx_suspend(cs46xx_t *chip, int can_schedule)
+void snd_cs46xx_suspend(cs46xx_t *chip)
 {
 	snd_card_t *card = chip->card;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
 		goto __skip;
 	snd_pcm_suspend_all(chip->pcm);
@@ -2096,12 +2096,12 @@ void snd_cs46xx_suspend(cs46xx_t *chip, int can_schedule)
       	snd_power_unlock(card);
 }
 
-void snd_cs46xx_resume(cs46xx_t *chip, int can_schedule)
+void snd_cs46xx_resume(cs46xx_t *chip)
 {
 	snd_card_t *card = chip->card;
 	int amp_saved;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D0)
 		goto __skip;
 
@@ -2144,11 +2144,11 @@ static int snd_cs46xx_set_power_state(snd_card_t *card, unsigned int power_state
 	case SNDRV_CTL_POWER_D0:
 	case SNDRV_CTL_POWER_D1:
 	case SNDRV_CTL_POWER_D2:
-		snd_cs46xx_resume(chip, 1);
+		snd_cs46xx_resume(chip);
 		break;
 	case SNDRV_CTL_POWER_D3hot:
 	case SNDRV_CTL_POWER_D3cold:
-		snd_cs46xx_suspend(chip, 1);
+		snd_cs46xx_suspend(chip);
 		break;
 	default:
 		return -EINVAL;

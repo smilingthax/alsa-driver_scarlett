@@ -3558,11 +3558,11 @@ void snd_trident_clear_voices(trident_t * trident, unsigned short v_min, unsigne
 
 #ifdef CONFIG_PM
 
-void snd_trident_suspend(trident_t *trident, int can_schedule)
+void snd_trident_suspend(trident_t *trident)
 {
 	snd_card_t *card = trident->card;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
 		goto __skip;
 	snd_pcm_suspend_all(trident->pcm);
@@ -3582,11 +3582,11 @@ void snd_trident_suspend(trident_t *trident, int can_schedule)
       	snd_power_unlock(card);
 }
 
-void snd_trident_resume(trident_t *trident, int can_schedule)
+void snd_trident_resume(trident_t *trident)
 {
 	snd_card_t *card = trident->card;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D0)
 		goto __skip;
 	switch (trident->device) {
@@ -3609,11 +3609,11 @@ static int snd_trident_set_power_state(snd_card_t *card, unsigned int power_stat
         case SNDRV_CTL_POWER_D0:
         case SNDRV_CTL_POWER_D1:
         case SNDRV_CTL_POWER_D2:
-        	snd_trident_resume(chip, 1);
+        	snd_trident_resume(chip);
                 break;
 	case SNDRV_CTL_POWER_D3hot:
         case SNDRV_CTL_POWER_D3cold:
-		snd_trident_suspend(chip, 1);
+		snd_trident_suspend(chip);
 		break;
         default:
 	        return -EINVAL;
