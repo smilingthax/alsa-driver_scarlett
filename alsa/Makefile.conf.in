@@ -37,7 +37,7 @@ CONFIG_SND_RTC=@CONFIG_SND_RTC@
 
 CC=@CC@ $(CFLAGS) $(CPPFLAGS) -DALSA_BUILD -D__KERNEL__
 CPP=@CPP@ $(CPPFLAGS) -M -D__DEPEND__ -DALSA_BUILD -D__KERNEL__
-INCLUDE=-I$(CONFIG_SND_KERNELDIR)/include -I$(TOPDIR)
+INCLUDE=-I$(CONFIG_SND_KERNELDIR)/include -I$(TOPDIR)/include
 COPTS=$(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
 LINKER=@LD@ -r
 MAKE+=$(m_opts)

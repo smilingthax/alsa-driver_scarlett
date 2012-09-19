@@ -376,7 +376,7 @@ case "$1" in
     ;;
   dummy)
     basic
-    insert snd-card-dummy.o snd_pcm_devs=4
+    insert snd-card-dummy.o snd_enable=1,1 snd_pcm_devs=4,4
     #restore dummy.conf
     ;;
   virmidi)
