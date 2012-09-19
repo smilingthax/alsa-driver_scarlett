@@ -26,11 +26,20 @@ Please note that the CM8x38 DAC doesn't support continuous playback
 rate but only fixed rates: 5512, 8000, 11025, 16000, 22050, 32000,
 44100 and 48000 Hz.
 
+The 2nd DAC is enabled when "Four Channel Mode" switch is enabled.
+As default it's turned on.
+It looks like the 2nd DAC has no independent mixer control, i.e.
+the volume of rear channel is identical with the volume of front
+speakers, PCM and Master volumes.
+
+When the 2nd channel is used as ADC, the signals to the 1st DAC are
+copied (duplicated) to the rear speakers, too.
+
 *** WARNING ***
-The biggest problem of 2nd DAC is that it has _NO_ mixer control.
-It outputs always LOUDEST volume.  I don't know whether really a
-hardware volume exists or not.  Anyway, so far, no info about it.
-Please let me know if you have any info!!
+When "Four Channel Mode" switch is off, the output from rear speakers
+will be FULL VOLUME regardless of Master and PCM volumes.
+This might damage your audio equipment.  Please disconnect speakers
+before your turn off this switch.
 *** WARNING ***
 
 If your card has an extra output jack for the rear output, the rear
@@ -42,8 +51,6 @@ is used as rear output.
 There are two more controls regarding to the rear output.
 The "Exchange DAC" switch is used to exchange front and rear playback
 routes, i.e. the 2nd DAC is output from front output.
-The "Analog For Channel" switch means that the front stereo channel is
-duplicated to both front and rear outputs.
 
 
 4/6 Multi-Channel Playback
@@ -102,14 +109,11 @@ below).
 
 Additionally there are relevant control switches:
 
-"IEC958 DAC To Out" - Mix analog PCM playback and FM-OPL/3 streams
-	and output through SPDIF.
+"IEC958 Mix Analog" - Mix analog PCM playback and FM-OPL/3 streams and
+	output through SPDIF.
 	Note: without this control you can output PCM to SPDIF.
 	This is "mixing" of streams, so e.g. it's not for AC3 output
 	(see the next section).
-
-"IEC958 Out To DAC" - SPDIF output can be heard from internal DAC.
-	(what's for??)
 
 "IEC958 Loop"       - SPDIF input data is loop back into SPDIF
 	output (bypass)
@@ -165,8 +169,8 @@ MIDI CONTROLLER
 ---------------
 
 The MPU401-UART interface is enabled as default only for the first
-(CMIPCI) card.  You need to set module options "snd_enable_midi"
-and "snd_midi_port" properly for the 2nd (CMIPCI) card.
+(CMIPCI) card.  You need to set module option "snd_midi_port" properly
+for the 2nd (CMIPCI) card.
 
 There is _no_ hardware wavetable function on this chip (except for
 OPL3 synth below).
@@ -179,8 +183,7 @@ FM OPL/3 Synth
 --------------
 
 The FM OPL/3 is also enabled as default only for the first card.
-Set "snd_enable_fm" and "snd_fm_port" module options for more
-cards.
+Set "snd_fm_port" module option for more cards.
 
 The output quality of FM OPL/3 is, however, very weird.
 I don't know why..

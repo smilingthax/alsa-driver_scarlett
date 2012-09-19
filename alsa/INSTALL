@@ -712,10 +712,8 @@ Module parameters
 
     Module for C-Media CMI8338 and 8738 PCI soundcards.
 
-    snd_enable_midi 	 - 1 = enable, 0 = disable (default)
-    snd_enable_fm	 - 1 = enable, 0 = disable (default)
-    snd_mpu_port         - 0x300 (default),0x310,0x320,0x330
-    snd_fm_port          - 0x388 (default)
+    snd_mpu_port         - 0x300 (default),0x310,0x320,0x330, -1 (diable)
+    snd_fm_port          - 0x388 (default), -1 (disable)
 
     Module supports autoprobe and multiple chips (max 8).
     
