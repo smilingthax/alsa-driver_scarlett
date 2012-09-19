@@ -92,6 +92,7 @@ static int __init hpetimer_init(void)
 	if (err < 0)
 		return err;
 
+	timer->module = THIS_MODULE;
 	strcpy(timer->name, "high precision event timer");
 	timer->hw = snd_hpet_hw;
 	timer->hw.resolution = 1000000000 / frequency;
