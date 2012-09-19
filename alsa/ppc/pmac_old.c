@@ -1,8 +1,3 @@
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
-#define CONFIG_ADB_CUDA
-#define CONFIG_ADB_PMU
-#endif
-
 /*
  * PMac DBDMA lowlevel functions
  *
@@ -38,18 +33,6 @@
 #include <sound/pcm_params.h>
 #include <asm/pmac_feature.h>
 #include <asm/pci-bridge.h>
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
-#define pmu_suspend()	/**/
-#define pmu_resume()	/**/
-#endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,18)
-#define request_OF_resource(io,num,str)  1
-#define release_OF_resource(io,num) /**/
-#endif
-
-
 
 /* fixed frequency table for awacs, screamer, burgundy, DACA (44100 max) */
 static int awacs_freqs[8] = {

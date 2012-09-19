@@ -5,8 +5,6 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-isapnp-files := cs4236.isapnp 
-
 include $(SND_TOPDIR)/alsa-kernel/isa/cs423x/Makefile
 
 # snd-pc98-cs4232-objs := pc98.o

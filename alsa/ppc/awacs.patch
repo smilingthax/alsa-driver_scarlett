@@ -1,16 +1,19 @@
---- ../alsa-kernel/ppc/awacs.c	2007-12-20 11:47:37.000000000 +0100
-+++ awacs.c	2007-12-20 12:23:14.000000000 +0100
-@@ -1,3 +1,9 @@
+--- ../alsa-kernel/ppc/awacs.c	2011-10-19 17:32:45.000000000 +0200
++++ awacs.c	2012-07-23 14:53:03.000000000 +0200
+@@ -1,3 +1,12 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 +#define CONFIG_ADB_CUDA
 +#define CONFIG_ADB_PMU
 +#endif
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 34)
++#define of_machine_is_compatible	machine_is_compatible
++#endif
  /*
   * PMac AWACS lowlevel functions
   *
-@@ -29,7 +35,7 @@
+@@ -29,7 +38,7 @@
  #include "pmac.h"
  
  
@@ -19,7 +22,7 @@
  #define PMAC_AMP_AVAIL
  #endif
  
-@@ -40,7 +46,11 @@
+@@ -40,7 +49,11 @@
  	unsigned char amp_tone[2];
  };
  

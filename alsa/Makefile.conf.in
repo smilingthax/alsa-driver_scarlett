@@ -56,20 +56,6 @@ CONFIG_PM		= @CONFIG_PM@
 CONFIG_AC97_BUS		= @CONFIG_AC97_BUS@
 CONFIG_HAS_DMA		= @CONFIG_HAS_DMA@
 
-ifndef NEW_KBUILD
-INCLUDE		= -I$(TOPDIR)/include @EXTRA_INCLUDES@ @KERNEL_INC@
-CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes \
-	-fomit-frame-pointer -Wno-trigraphs -O2 -fno-strict-aliasing -fno-common \
-	-pipe -DALSA_BUILD -nostdinc -iwithprefix include
-ifdef CONFIG_SND_MVERSION
-CFLAGS += -DMODVERSIONS -include $(CONFIG_SND_KERNELDIR)/include/linux/modversions.h
-endif
-CPPFLAGS = $(MODFLAGS) $(INCLUDE) $(c_opts) -DALSA_BUILD -nostdinc -iwithprefix include
-MAKE		+= $(m_opts)
-SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
-DEXPORT		= $(TOPDIR)/include/modules
-else
-# 2.6 kbuild
 EXTRA_CFLAGS += -DALSA_BUILD
 LINUXINCLUDE := -I$(MAINSRCDIR)/include $(LINUXINCLUDE)
 CPPFLAGS := -I$(MAINSRCDIR)/include $(CPPFLAGS)
@@ -77,5 +63,5 @@ KBUILD_CPPFLAGS := -I$(MAINSRCDIR)/include $(KBUILD_CPPFLAGS)
 # 2.6.24 complains this override...
 # CFLAGS := -I$(MAINSRCDIR)/include $(CFLAGS)
 MAKE_ADDS = @MAKE_ADDS@
-endif
+
 

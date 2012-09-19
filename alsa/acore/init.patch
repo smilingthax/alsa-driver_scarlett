@@ -1,12 +1,12 @@
---- ../alsa-kernel/core/init.c	2010-11-02 16:17:52.267995721 +0100
-+++ init.c	2010-11-03 09:30:44.003861335 +0100
+--- ../alsa-kernel/core/init.c	2012-04-05 17:55:31.000000000 +0200
++++ init.c	2012-07-19 14:04:35.000000000 +0200
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
  /*
   *  Initialization routines
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -296,11 +298,19 @@ static unsigned int snd_disconnect_poll(
+@@ -298,11 +300,19 @@
  	return POLLERR | POLLNVAL;
  }
  
@@ -26,15 +26,7 @@
  
  static int snd_disconnect_mmap(struct file *file, struct vm_area_struct *vma)
  {
-@@ -314,16 +324,22 @@ static int snd_disconnect_fasync(int fd,
- 
- static const struct file_operations snd_shutdown_f_ops =
- {
-+#ifndef LINUX_2_2
- 	.owner = 	THIS_MODULE,
-+#endif
- 	.llseek =	snd_disconnect_llseek,
- 	.read = 	snd_disconnect_read,
+@@ -322,10 +332,14 @@
  	.write =	snd_disconnect_write,
  	.release =	snd_disconnect_release,
  	.poll =		snd_disconnect_poll,
@@ -49,7 +41,7 @@
  	.mmap =		snd_disconnect_mmap,
  	.fasync =	snd_disconnect_fasync
  };
-@@ -395,10 +411,12 @@ int snd_card_disconnect(struct snd_card
+@@ -394,10 +408,12 @@
  		snd_printk(KERN_ERR "not all devices for card %i can be disconnected\n", card->number);
  
  	snd_info_card_disconnect(card);
@@ -62,7 +54,7 @@
  #ifdef CONFIG_PM
  	wake_up(&card->power_sleep);
  #endif
-@@ -571,6 +589,7 @@ void snd_card_set_id(struct snd_card *ca
+@@ -600,6 +616,7 @@
  }
  EXPORT_SYMBOL(snd_card_set_id);
  
@@ -70,7 +62,7 @@
  static ssize_t
  card_id_show_attr(struct device *dev,
  		  struct device_attribute *attr, char *buf)
-@@ -632,6 +651,7 @@ card_number_show_attr(struct device *dev
+@@ -651,6 +668,7 @@
  
  static struct device_attribute card_number_attrs =
  	__ATTR(number, S_IRUGO, card_number_show_attr, NULL);
@@ -78,7 +70,7 @@
  
  /**
   *  snd_card_register - register the soundcard
-@@ -650,15 +670,27 @@ int snd_card_register(struct snd_card *c
+@@ -669,15 +687,27 @@
  
  	if (snd_BUG_ON(!card))
  		return -EINVAL;
@@ -108,7 +100,7 @@
  	if ((err = snd_device_register_all(card)) < 0)
  		return err;
  	mutex_lock(&snd_card_mutex);
-@@ -675,6 +707,7 @@ int snd_card_register(struct snd_card *c
+@@ -705,6 +735,7 @@
  	if (snd_mixer_oss_notify_callback)
  		snd_mixer_oss_notify_callback(card, SND_MIXER_OSS_NOTIFY_REGISTER);
  #endif
@@ -116,7 +108,7 @@
  	if (card->card_dev) {
  		err = device_create_file(card->card_dev, &card_id_attrs);
  		if (err < 0)
-@@ -683,7 +716,7 @@ int snd_card_register(struct snd_card *c
+@@ -713,7 +744,7 @@
  		if (err < 0)
  			return err;
  	}
@@ -125,7 +117,7 @@
  	return 0;
  }
  
-@@ -945,3 +978,16 @@ int snd_power_wait(struct snd_card *card
+@@ -979,3 +1010,16 @@
  
  EXPORT_SYMBOL(snd_power_wait);
  #endif /* CONFIG_PM */

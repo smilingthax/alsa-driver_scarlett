@@ -7,8 +7,6 @@ include $(SND_TOPDIR)/Makefile.conf
 
 clean-files := hda_intel.c hda_beep.c
 
-export-objs  := hda_codec.o
-
 EXTRA_CFLAGS += -I$(SND_TOPDIR)/alsa-kernel/pci/hda
 
 include $(SND_TOPDIR)/alsa-kernel/pci/hda/Makefile

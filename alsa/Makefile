@@ -43,7 +43,6 @@ dummy2:
 	@echo
 endif
 
-ifdef NEW_KBUILD
 ifdef V
   ifeq ("$(origin V)", "command line")
     KBUILD_VERBOSE = $(V)
@@ -61,14 +60,9 @@ ifndef KBUILD_CHECKSRC
   KBUILD_CHECKSRC = 0
 endif
 export KBUILD_VERBOSE KBUILD_CHECKSRC
-endif
 
 SUBDIRS  = include acore i2c drivers isa synth pci aoa soc
 CSUBDIRS =
-
-ifndef NEW_KBUILD
-SUBDIRS += support
-endif
 
 ifeq (y,$(CONFIG_ARM))
 SUBDIRS  += arm
@@ -167,28 +161,15 @@ include/sndversions.h:
 
 .PHONY: compile
 compile: include/sndversions.h
-ifdef NEW_KBUILD
 	$(MAKE) -C $(CONFIG_SND_KERNELBUILD) SUBDIRS=$(shell /bin/pwd) $(MAKE_ADDS) CPP="$(CPP)" CC="$(CC)" modules
 	utils/link-modules $(SND_TOPDIR)
-else
-	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
-endif
 	@echo
 	@echo "ALSA modules were successfully compiled."
 	@echo
 
 .PHONY: dep
 dep:
-ifdef NEW_KBUILD
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d prepare; then exit 1; fi; done
-else
-	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d fastdep; then exit 1; fi; done
-endif
-
-.PHONY: map
-map:
-	awk "{ if ( length( $$1 ) != 0 ) print $$1 }" snd.map | sort -o snd.map1
-	mv -f snd.map1 snd.map
 
 .PHONY: install
 install: install-headers install-modules install-scripts check-snd-prefix
@@ -278,9 +259,7 @@ endif
 
 .PHONY: clean
 clean: clean1
-ifdef NEW_KBUILD
 	rm -rf .tmp_versions
-endif
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
 	@for d in $(CSUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
 

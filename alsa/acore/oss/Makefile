@@ -7,8 +7,6 @@ include $(SND_TOPDIR)/Makefile.conf
 
 clean-files := mixer_oss.c pcm_oss.c
 
-export-objs  := mixer_oss.o
-
 include $(SND_TOPDIR)/alsa-kernel/core/oss/Makefile
 
 EXTRA_CFLAGS += -I$(SND_TOPDIR)/alsa-kernel/core/oss

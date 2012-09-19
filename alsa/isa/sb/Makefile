@@ -5,10 +5,6 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-export-objs  := emu8000.o sb_common.o sb8_main.o sb16_main.o sb16_csp.o
-
-isapnp-files := sb16.isapnp sbawe.isapnp
-
 clean-files := sb16_csp.c
 
 include $(SND_TOPDIR)/alsa-kernel/isa/sb/Makefile

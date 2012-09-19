@@ -1,11 +1,11 @@
---- ../../alsa-kernel/pci/hda/hda_intel.c	2012-05-15 08:47:39.000000000 +0200
-+++ hda_intel.c	2012-05-15 12:40:25.000000000 +0200
+--- ../../alsa-kernel/pci/hda/hda_intel.c	2012-07-19 08:17:20.000000000 +0200
++++ hda_intel.c	2012-07-19 08:40:39.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "hda_intel_hack.c"
  /*
   *
   *  hda_intel.c - Implementation of primary alsa driver code base
-@@ -622,10 +623,21 @@
+@@ -624,10 +625,21 @@
  		return;
  	if (addr && size) {
  		int pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
@@ -27,7 +27,7 @@
  	}
  }
  
-@@ -2221,7 +2233,11 @@
+@@ -2225,7 +2237,11 @@
  	struct azx_pcm *apcm = snd_pcm_substream_chip(substream);
  	struct azx *chip = apcm->chip;
  	if (!azx_snoop(chip))
@@ -39,7 +39,7 @@
  	return snd_pcm_lib_default_mmap(substream, area);
  }
  #else
-@@ -2665,6 +2681,7 @@
+@@ -2679,6 +2695,7 @@
  static bool __devinit check_hdmi_disabled(struct pci_dev *pci)
  {
  	bool vga_inactive = false;
@@ -47,15 +47,15 @@
  	struct pci_dev *p = get_bound_vga(pci);
  
  	if (p) {
-@@ -2672,6 +2689,7 @@
+@@ -2686,6 +2703,7 @@
  			vga_inactive = true;
  		pci_dev_put(p);
  	}
 +#endif
  	return vga_inactive;
  }
- 
-@@ -2778,6 +2796,10 @@
+ #endif /* SUPPORT_VGA_SWITCHEROO */
+@@ -2797,6 +2815,10 @@
  	}
  }
  
@@ -66,7 +66,7 @@
  /*
   * white/black-list for enable_msi
   */
-@@ -2790,6 +2812,14 @@
+@@ -2809,6 +2831,14 @@
  	{}
  };
  
@@ -81,7 +81,7 @@
  static void __devinit check_msi(struct azx *chip)
  {
  	const struct snd_pci_quirk *q;
-@@ -2798,7 +2828,11 @@
+@@ -2817,7 +2847,11 @@
  		chip->msi = !!enable_msi;
  		return;
  	}
@@ -93,7 +93,7 @@
  	q = snd_pci_quirk_lookup(chip->pci, msi_black_list);
  	if (q) {
  		printk(KERN_INFO
-@@ -2807,6 +2841,16 @@
+@@ -2826,6 +2860,16 @@
  		chip->msi = q->value;
  		return;
  	}
@@ -110,7 +110,7 @@
  
  	/* NVidia chipsets seem to cause troubles with MSI */
  	if (chip->driver_caps & AZX_DCAPS_NO_MSI) {
-@@ -2828,7 +2872,7 @@
+@@ -2847,7 +2891,7 @@
  		if (snoop) {
  			u8 val;
  			pci_read_config_byte(chip->pci, 0x42, &val);
@@ -119,7 +119,7 @@
  				snoop = false;
  		}
  		break;
-@@ -2999,7 +3043,7 @@
+@@ -3018,7 +3062,7 @@
  					 PCI_DEVICE_ID_ATI_SBX00_SMBUS,
  					 NULL);
  		if (p_smbus) {
