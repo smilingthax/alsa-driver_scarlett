@@ -1,6 +1,44 @@
 #define SND_NEED_USB_WRAPPER
+#include <sound/driver.h>
+#include <linux/usb.h>
+
+#ifdef OLD_USB
+#define snd_usb_complete_callback(x) __old_ ## x
+static void __old_snd_complete_urb(struct urb *urb);
+static void __old_snd_complete_sync_urb(struct urb *urb);
+
+static void * usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
+                              const struct usb_device_id *id);
+static void usb_audio_disconnect(struct usb_device *dev, void *ptr);
+#endif
+
 #include "../alsa-kernel/usb/usbaudio.c"
 
+#ifdef OLD_USB
+/*
+ * 2.4 USB kernel API
+ */
+static void *usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
+			     const struct usb_device_id *id)
+{
+	return snd_usb_audio_probe(dev, usb_ifnum_to_if(dev, ifnum), id);
+}
+                                       
+static void usb_audio_disconnect(struct usb_device *dev, void *ptr)
+{
+	snd_usb_audio_disconnect(dev, ptr);
+}
+
+static void __old_snd_complete_urb(struct urb *urb)
+{
+	snd_complete_urb(urb, NULL);
+}
+
+static void __old_snd_complete_sync_urb(struct urb *urb)
+{
+	snd_complete_sync_urb(urb, NULL);
+}
+#endif
 
 /*
  * workarounds / hacks for the older kernels follow below
