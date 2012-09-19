@@ -29,6 +29,7 @@ acore/info.c
 acore/init.c
 acore/memalloc.c
 acore/misc.c
+acore/pcm.c
 acore/oss/mixer_oss.c
 acore/oss/pcm_oss.c
 acore/pcm_native.c
