@@ -2041,6 +2041,7 @@ static irqreturn_t snd_es1968_interrupt(int irq, void *dev_id, struct pt_regs *r
 		}
 		spin_unlock(&chip->substream_lock);
 	}
+
 	return IRQ_HANDLED;
 }
 

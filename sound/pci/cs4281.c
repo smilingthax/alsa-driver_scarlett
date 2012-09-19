@@ -1894,7 +1894,7 @@ static irqreturn_t snd_cs4281_interrupt(int irq, void *dev_id, struct pt_regs *r
 	status = snd_cs4281_peekBA0(chip, BA0_HISR);
 	if ((status & 0x7fffffff) == 0) {
 		snd_cs4281_pokeBA0(chip, BA0_HICR, BA0_HICR_EOI);
-		return IRQ_HANDLED;
+		return IRQ_NONE;
 	}
 
 	if (status & (BA0_HISR_DMA(0)|BA0_HISR_DMA(1)|BA0_HISR_DMA(2)|BA0_HISR_DMA(3))) {
@@ -1949,6 +1949,7 @@ static irqreturn_t snd_cs4281_interrupt(int irq, void *dev_id, struct pt_regs *r
 
 	/* EOI to the PCI part... reenables interrupts */
 	snd_cs4281_pokeBA0(chip, BA0_HICR, BA0_HICR_EOI);
+
 	return IRQ_HANDLED;
 }
 

@@ -536,6 +536,7 @@ static irqreturn_t snd_amd7930_interrupt(int irq, void *dev_id, struct pt_regs *
 		snd_pcm_period_elapsed(amd->playback_substream);
 	else
 		snd_pcm_period_elapsed(amd->capture_substream);
+
 	return IRQ_HANDLED;
 }
 
