@@ -837,11 +837,18 @@ static irqreturn_t snd_intel8x0_interrupt(int irq, void *dev_id, struct pt_regs 
 		if (status) {
 			/* ack */
 			iputdword(chip, chip->int_sta_reg, status);
+			/* FIXME: on some ICH5 board shows the same
+			 *        problem.  So we return IRQ_HANDLED
+			 *        in any cases.
+			 * (or, maybe add a new module param to control this?)
+			 */
+#if 0
 			/* some Nforce[2] boards have problems when
 			   IRQ_NONE is returned here.
 			*/
 			if (chip->device_type != DEVICE_NFORCE)
 				status = 0;
+#endif
 		}
 		return IRQ_RETVAL(status);
 	}
@@ -1810,6 +1817,12 @@ static struct ac97_quirk ac97_quirks[] __devinitdata = {
 	},
 	{
 		.vendor = 0x8086,
+		.device = 0x4d56,
+		.name = "Intel ICH/AD1885",
+		.type = AC97_TUNE_HP_ONLY
+	},
+	{
+		.vendor = 0x8086,
 		.device = 0x6000,
 		.mask = 0xfff0,
 		.name = "Intel ICH5/AD1985",
@@ -2189,13 +2202,13 @@ static int snd_intel8x0_free(intel8x0_t *chip)
 	/* --- */
 	synchronize_irq(chip->irq);
       __hw_end:
+	if (chip->irq >= 0)
+		free_irq(chip->irq, (void *)chip);
 	if (chip->bdbars.area) {
 		if (chip->fix_nocache)
 			fill_nocache(chip->bdbars.area, chip->bdbars.bytes, 0);
 		snd_dma_free_pages(&chip->bdbars);
 	}
-	if (chip->irq >= 0)
-		free_irq(chip->irq, (void *)chip);
 	if (chip->remap_addr)
 		iounmap((void *) chip->remap_addr);
 	if (chip->remap_bmaddr)
