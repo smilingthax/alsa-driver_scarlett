@@ -123,6 +123,10 @@ typedef __u32 __be32;
 #ifndef __devexit_p
 #define __devexit_p(x) x
 #endif
+#ifndef __init_or_module
+#define __init_or_module
+#define __initdata_or_module
+#endif
 
 #include <linux/kdev_t.h>
 #ifndef major

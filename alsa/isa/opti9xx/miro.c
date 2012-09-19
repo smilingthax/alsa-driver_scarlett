@@ -139,6 +139,8 @@ static void snd_miro_proc_init(struct snd_miro * miro);
 
 #define DRIVER_NAME "snd-miro"
 
+static struct platform_device *device;
+
 static char * snd_opti9xx_names[] = {
 	"unkown",
 	"82C928", "82C929",
@@ -1431,7 +1433,6 @@ static struct platform_driver snd_miro_driver = {
 
 static int __init alsa_card_miro_init(void)
 {
-	struct platform_device *device;
 	int error;
 
 	if ((error = platform_driver_register(&snd_miro_driver)) < 0)
@@ -1448,6 +1449,7 @@ static int __init alsa_card_miro_init(void)
 
 static void __exit alsa_card_miro_exit(void)
 {
+	platform_device_unregister(device);
 	platform_driver_unregister(&snd_miro_driver);
 }
 

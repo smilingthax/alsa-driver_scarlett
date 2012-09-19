@@ -16,10 +16,16 @@ struct platform_device {
 
 extern struct bus_type snd_platform_bus_type;
 #define platform_device_register_simple	snd_platform_device_register_simple
+#define platform_device_unregister snd_platform_device_unregister
 #define platform_bus_type	snd_platform_bus_type
 
 struct platform_device *snd_platform_device_register_simple(const char *name, int id,
 							    struct resource *res, int nres);
+
+static inline void snd_platform_device_unregister(struct platform_device *pdev)
+{
+	/* pdev gets freed in snd_compat_driver_unregister() */
+}
 
 #endif /* < 2.6.0 */
 
