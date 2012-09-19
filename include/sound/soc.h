@@ -100,6 +100,15 @@
 	.info = snd_soc_info_volsw, \
 	.get = xhandler_get, .put = xhandler_put, \
 	.private_value = SOC_SINGLE_VALUE(xreg, xshift, xmask, xinvert) }
+#define SOC_SINGLE_EXT_TLV(xname, xreg, xshift, xmask, xinvert,\
+	 xhandler_get, xhandler_put, tlv_array) \
+{	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
+	.access = SNDRV_CTL_ELEM_ACCESS_TLV_READ |\
+		 SNDRV_CTL_ELEM_ACCESS_READWRITE,\
+	.tlv.p = (tlv_array), \
+	.info = snd_soc_info_volsw, \
+	.get = xhandler_get, .put = xhandler_put, \
+	.private_value = SOC_SINGLE_VALUE(xreg, xshift, xmask, xinvert) }
 #define SOC_SINGLE_BOOL_EXT(xname, xdata, xhandler_get, xhandler_put) \
 {	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
 	.info = snd_soc_info_bool_ext, \
@@ -358,8 +367,10 @@ struct snd_soc_cpu_dai {
 	unsigned char type;
 
 	/* DAI callbacks */
-	int (*probe)(struct platform_device *pdev);
-	void (*remove)(struct platform_device *pdev);
+	int (*probe)(struct platform_device *pdev,
+		     struct snd_soc_cpu_dai *dai);
+	void (*remove)(struct platform_device *pdev,
+		       struct snd_soc_cpu_dai *dai);
 	int (*suspend)(struct platform_device *pdev,
 		struct snd_soc_cpu_dai *cpu_dai);
 	int (*resume)(struct platform_device *pdev,
@@ -499,6 +510,7 @@ struct snd_soc_device {
 	struct snd_soc_codec *codec;
 	struct snd_soc_codec_device *codec_dev;
 	struct delayed_work delayed_work;
+	struct work_struct deferred_resume_work;
 	void *codec_data;
 };
 
