@@ -168,18 +168,6 @@ AC_DEFUN(CHECK_KERNEL_HEADER, [
   fi
 ])
 
-dnl Check kernel headers for 2.2
-CHECK_KERNEL_HEADER(linux/pm.h)
-CHECK_KERNEL_HEADER(linux/spinlock.h)
-CHECK_KERNEL_HEADER(linux/irq.h)
-CHECK_KERNEL_HEADER(linux/threads.h)
-CHECK_KERNEL_HEADER(linux/rwsem.h)
-CHECK_KERNEL_HEADER(linux/gameport.h)
-CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
-CHECK_KERNEL_HEADER(linux/highmem.h)
-CHECK_KERNEL_HEADER(linux/workqueue.h)
-CHECK_KERNEL_HEADER(asm/hw_irq.h)
-
 dnl Check kernel configurations
 
 AC_DEFUN(CHECK_KERNEL_CONFIG, [
@@ -205,6 +193,29 @@ int main( void ) {
   CFLAGS="$ac_save_CFLAGS"
   eval $boolvar="$boolchk"
 ])
+
+dnl Check kernel headers for 2.2
+CHECK_KERNEL_HEADER(linux/pm.h)
+CHECK_KERNEL_HEADER(linux/spinlock.h)
+CHECK_KERNEL_HEADER(linux/irq.h)
+CHECK_KERNEL_HEADER(linux/threads.h)
+CHECK_KERNEL_HEADER(linux/rwsem.h)
+CHECK_KERNEL_HEADER(linux/gameport.h)
+CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
+CHECK_KERNEL_HEADER(linux/highmem.h)
+CHECK_KERNEL_HEADER(linux/workqueue.h)
+if test ! -f include/linux/workqueue.h; then
+  if test "$kversion.$kpatchlevel.$ksublevel" = "2.4.20"; then
+    CHECK_KERNEL_CONFIG(RED_HAT_LINUX_KERNEL, [redhat kernel])
+    if test $RED_HAT_LINUX_KERNEL = y; then
+      echo "It looks like you're using a RedHat 9.0 kernel."
+      echo "Disabling their incomplete workqueue.h modification."
+      mkdir -p include/linux
+      touch include/linux/workqueue.h
+    fi
+  fi
+fi
+CHECK_KERNEL_HEADER(asm/hw_irq.h)
 
 dnl Check for modversions...
 CHECK_KERNEL_CONFIG(CONFIG_MODVERSIONS, [kernel module symbol versions])
