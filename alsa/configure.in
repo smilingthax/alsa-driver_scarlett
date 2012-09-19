@@ -860,6 +860,8 @@ int main(void) {
 	fprintf(file, "i586tsc");
 #elif defined(CONFIG_M586MMX)
 	fprintf(file, "i586mmx");
+#elif defined(CONFIG_MCORE2)
+	fprintf(file, "mcore2");
 #elif defined(CONFIG_M686) || defined(CONFIG_MPENTIUMII) || defined(CONFIG_MPENTIUMIII) || defined(CONFIG_MPENTIUM4) || defined(CONFIG_MPENTIUMM)
 	fprintf(file, "i686");
 #elif defined(CONFIG_MK6)
@@ -868,12 +870,16 @@ int main(void) {
 	fprintf(file, "k7");
 #elif defined(CONFIG_MK8)
 	fprintf(file, "k8");
+#elif defined(CONFIG_MGEODEGX1)
+	fprintf(file, "geodegx1");
 #elif defined(CONFIG_MCRUSOE)
 	fprintf(file, "crusoe");
 #elif defined(CONFIG_MWINCHIPC6) || defined(CONFIG_MWINCHIP2) || defined(CONFIG_MWINCHIP3D)
 	fprintf(file, "mwinchip");
 #elif defined(CONFIG_MCYRIXIII)
 	fprintf(file, "mcyrixiii");
+#elif defined(CONFIG_X86_32)
+	fprintf(file, "x86_32");
 #elif defined(CONFIG_IA64)
 	fprintf(file, "ia64");
 #elif defined(CONFIG_ALPHA_GENERIC)
@@ -936,6 +942,10 @@ c_opts=""
 KLD=ld
 ARCH=
 case "$processor" in
+  x86_32)
+    ARCH=i386
+    c_opts="-march=i386"
+    ;;
   i386*)
     ARCH=i386
     c_opts="-march=i386"
@@ -951,6 +961,13 @@ case "$processor" in
   i686*)
     ARCH=i386
     c_opts="-march=i686"
+    ;;
+  mcore2)
+    ARCH=i386
+    c_opts="-march=i686"
+    if $KCC -mtune=core2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+      c_opts="$c_opts -mtune=core2"
+    fi
     ;;
   k6)
     ARCH=i386
@@ -992,6 +1009,10 @@ case "$processor" in
     else
       c_opts="$c_opts -malign-functions=0 -malign-jumps=0 -malign-loops=0"
     fi
+    ;;
+  geodegx1)
+    ARCH=i386
+    c_opts="-march=pentium-mmx"
     ;;
   ia64)
     ARCH=ia64
