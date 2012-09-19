@@ -1,3 +1,4 @@
+#define __NO_VERSION__
 /*
  *  patch_cmi9780.c - Driver for C-Media CMI8788 PCI soundcards.
  *
