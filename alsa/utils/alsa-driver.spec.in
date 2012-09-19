@@ -1,4 +1,5 @@
 %define version  @CONFIG_SND_VERSION@
+%define modsubdir "@modsubdir@"
 
 Summary:   ALSA driver
 Name:      alsa-driver
@@ -46,19 +47,19 @@ else
     export KVERSION=`uname -r`
 fi
 
-for I in etc/rc.d/init.d usr/include/linux lib/modules/$KVERSION/misc; do
+for I in etc/rc.d/init.d usr/include/linux lib/modules/$KVERSION/$modsubdir; do
   mkdir -p $RPM_BUILD_ROOT/$I
 done
 
 make prefix=$RPM_BUILD_ROOT/usr \
-     moddir=$RPM_BUILD_ROOT/lib/modules/$KVERSION/misc \
+     moddir=$RPM_BUILD_ROOT/lib/modules/$KVERSION/$modsubdir \
      install
 
 
 install -m755 utils/alsasound $RPM_BUILD_ROOT/etc/rc.d/init.d/alsasound
 
 # files list - path for modules depends on kernel version
-echo "%attr(-,root,root) /lib/modules/$KVERSION/misc/*.o"			>/tmp/alsa-driver-files.lst
+echo "%attr(-,root,root) /lib/modules/$KVERSION/$modsubdir"			>/tmp/alsa-driver-files.lst
 # other files must be in file list too
 echo "%attr(-,root,root) %doc FAQ INSTALL README TODO snddevices doc/*" 	>>/tmp/alsa-driver-files.lst
 echo "%attr(-,root,root) %config /etc/rc.d/init.d/*"                            >>/tmp/alsa-driver-files.lst
