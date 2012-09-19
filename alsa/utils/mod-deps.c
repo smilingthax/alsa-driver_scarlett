@@ -112,6 +112,7 @@ static char *kernel_deps[] = {
 	"PPC64",
 	"X86_64",
 	"X86",
+	"MIPS64",
 	"IA32_EMULATION",
 	/* architecture specific */
 	"ARCH_SA1100",
@@ -125,16 +126,15 @@ static char *kernel_deps[] = {
 	NULL
 };
 
-/* @ -> add to output for all cards */
 /* % -> always true */
 static char *no_cards[] = {
 	"%SOUND",
 	"SOUND_PRIME",
-	"%@SND",
-	"@SND_TIMER",
-	"@SND_HWDEP",
-	"@SND_RAWMIDI",
-	"@SND_PCM",
+	"%SND",
+	"SND_TIMER",
+	"SND_HWDEP",
+	"SND_RAWMIDI",
+	"SND_PCM",
 	"SND_SEQUENCER",
 	"SND_MIXER_OSS",
 	"SND_PCM_OSS",
@@ -146,11 +146,12 @@ static char *no_cards[] = {
 	"SND_DEBUG_DETECT",
 	"SND_VERBOSE_PRINTK",
 	"SND_BIT32_EMUL",
-	"@SND_OPL3_LIB",
-	"@SND_OPL4_LIB",
-	"@SND_VX_LIB",
-	"@SND_MPU401_UART",
-	"@SND_GUS_SYNTH",
+	"SND_OPL3_LIB",
+	"SND_OPL4_LIB",
+	"SND_VX_LIB",
+	"SND_MPU401_UART",
+	"SND_GUS_SYNTH",
+	"SND_AC97_CODEC",
 	NULL
 };
 
@@ -758,8 +759,6 @@ static int is_toplevel(struct dep *dep)
 		str = no_cards[idx];
 		if (*str == '%')
 			str++;
-		if (*str == '@')
-			str++;
 		if (!strcmp(str, dep->name))
 			return 0;
 	}
@@ -777,29 +776,6 @@ static int is_always_true(struct dep *dep)
 	for (idx = 0; no_cards[idx]; idx++) {
 		str = no_cards[idx];
 		if (*str != '%')
-			continue;
-		str++;
-		if (*str == '@')
-			str++;
-		if (!strcmp(str, dep->name))
-			return 1;
-	}
-	return 0;
-}
-
-// is CONFIG_ variable belongs to all card output
-static int belongs_to_all(struct dep *dep)
-{
-	int idx;
-	char *str;
-
-	if (dep == NULL)
-		return 0;
-	for (idx = 0; no_cards[idx]; idx++) {
-		str = no_cards[idx];
-		if (*str == '%')
-			str++;
-		if (*str != '@')
 			continue;
 		str++;
 		if (!strcmp(str, dep->name))
@@ -878,10 +854,8 @@ static void sel_print_acinclude(struct sel *sel)
 		sel_print_acinclude(nsel);
 		if (!nsel->dep->hitflag) {
 			nsel->dep->hitflag = 1;
-			printf("\t\tCONFIG_%s=\"%c\"\n", nsel->name,
+			printf("      CONFIG_%s=\"%c\"\n", nsel->name,
 				(nsel->dep && nsel->dep->is_bool) ? 'y' : 'm');
-			printf("\t\tAC_DEFINE(CONFIG_%s%s)\n", nsel->name,
-				(nsel->dep && nsel->dep->is_bool) ? "" : "_MODULE");
 		}
 	}
 }
@@ -908,57 +882,6 @@ static void output_acinclude(void)
 	}
 	printf("])\n\n");
 
-	printf("AC_DEFUN([ALSA_TOPLEVEL_ALL], [\n");
-	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
-		if (!belongs_to_all(tempdep))
-			continue;
-		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		if (!strncmp(text, "CONFIG_SND", 10)) {
-			printf("\t%s=\"%c\"\n", text,
-			       tempdep->is_bool ? 'y' : 'm');
-			printf("\tAC_DEFINE(%s%s)\n", text,
-			       tempdep->is_bool ? "" : "_MODULE");
-		}
-		free(text);
-	}
-	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
-		int put_if = 0;
-		if (!is_toplevel(tempdep))
-			continue;
-		for (cond = tempdep->cond, cond_prev = NULL; cond; cond = cond->next) {
-			if (!put_if)
-				printf("\tif ");
-			else {
-				printf(cond_prev->type == COND_AND ? " &&" : " ||");
-				printf("\n\t   ");
-			}
-			for (j = 0; j < cond->left; j++)
-				printf("(");
-			printf("( test \"$CONFIG_%s\" == \"y\" -o \"$CONFIG_%s\" == \"m\" )", cond->name, cond->name);
-			for (j = 0; j < cond->right; j++)
-				printf(")");
-			put_if = 1;
-			cond_prev = cond;
-		}
-		if (put_if)
-			printf("; then\n");
-		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		printf("\t");
-		if (put_if)
-			printf("  ");
-		printf("%s=\"%c\"\n", text,
-		       tempdep->is_bool ? 'y' : 'm');
-		printf("\t");
-		if (put_if)
-			printf("  ");
-		printf("AC_DEFINE(%s%s)\n", text,
-		       tempdep->is_bool ? "" : "_MODULE");
-		if (put_if)
-			printf("\tfi\n");
-		free(text);
-	}
-	printf("])\n\n");
-	
 	printf("AC_DEFUN([ALSA_TOPLEVEL_SELECT], [\n");
 	printf("dnl Check for which cards to compile driver for...\n");
 	printf("AC_MSG_CHECKING(for which soundcards to compile driver for)\n");
@@ -973,62 +896,79 @@ static void output_acinclude(void)
 	output_card_list(all_deps, 24, 50, 0);
 	printf(" ],\n");
 	printf("  cards=\"$withval\", cards=\"all\")\n");
-	printf("if test \"$cards\" = \"all\"; then\n");
-	printf("  ALSA_TOPLEVEL_ALL\n");
-	printf("  AC_MSG_RESULT(all)\n");
-	printf("else\n");
-	printf("  cards=`echo $cards | sed 's/,/ /g'`\n");
-	printf("  for card in $cards\n");
-	printf("  do\n");
-	printf("    case \"$card\" in\n");
+
+	/* check cards */
+	printf("cards=`echo $cards | sed 's/,/ /g'`\n");
+	printf("for card in $cards; do\n"
+	       "  probed=\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		int put_if;
 		if (!is_toplevel(tempdep))
 			continue;
 		text = get_card_name(tempdep->name);
-		if (text) {
-			printf("\t%s)\n", text);
-			free(text);
-			printf("\t\tCONFIG_SND=\"m\"\n");
-			printf("\t\tAC_DEFINE(CONFIG_SND_MODULE)\n");
-			sel_remove_hitflags();
-			for (sel = tempdep->sel; sel; sel = sel->next)
-				sel_print_acinclude(sel);			
-#if 0
-			for (cond = tempdep->cond; cond; cond = cond->next) {
-				if (is_always_true(cond->dep) &&
-				    strcmp(cond->name, "SND"))
-					continue;
-				printf("\t\tCONFIG_%s=\"%c\"\n", cond->name,
-				       (cond->dep && cond->dep->is_bool) ? 'y' : 'm');
-				printf("\t\tAC_DEFINE(CONFIG_%s%s)\n", cond->name,
-				       (cond->dep && cond->dep->is_bool) ? "" : "_MODULE");
+		if (! text)
+			continue;
+		printf("  if test \"$card\" = \"all\" -o \"$card\" = \"%s\"; then\n", text);
+		free(text);
+		put_if = 0;
+		for (cond = tempdep->cond, cond_prev = NULL; cond; cond = cond->next) {
+			if (!put_if)
+				printf("    if ");
+			else {
+				printf(cond_prev->type == COND_AND ? " &&" : " ||");
+				printf("\n      ");
 			}
-#endif
-			for (sel = tempdep->sel; sel; sel = sel->next) {
-				if (is_always_true(sel->dep))
-					continue;
-				printf("\t\tCONFIG_%s=\"%c\"\n", sel->name,
-				       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
-				printf("\t\tAC_DEFINE(CONFIG_%s%s)\n", sel->name,
-				       (sel->dep && sel->dep->is_bool) ? "" : "_MODULE");
-			}
-			text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-			printf("\t\t%s=\"%c\"\n", text,
-			       tempdep->is_bool ? 'y' : 'm');
-			printf("\t\tAC_DEFINE(%s%s)\n", text,
-			       tempdep->is_bool ? "" : "_MODULE");
-			printf("\t\t;;\n");
-			free(text);
+			for (j = 0; j < cond->left; j++)
+				printf("(");
+			printf("( test \"$CONFIG_%s\" == \"y\" -o \"$CONFIG_%s\" == \"m\" )", cond->name, cond->name);
+			for (j = 0; j < cond->right; j++)
+				printf(")");
+			put_if = 1;
+			cond_prev = cond;
 		}
+		if (put_if)
+			printf("; then\n");
+
+		sel_remove_hitflags();
+		for (sel = tempdep->sel; sel; sel = sel->next)
+			sel_print_acinclude(sel);			
+		for (sel = tempdep->sel; sel; sel = sel->next) {
+			if (is_always_true(sel->dep))
+				continue;
+			printf("      CONFIG_%s=\"%c\"\n", sel->name,
+			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
+		}
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("      %s=\"%c\"\n", text, tempdep->is_bool ? 'y' : 'm');
+		free(text);
+		printf("      probed=1\n");
+		if (put_if)
+			printf("    elif test -z \"$probed\"; then\n"
+			       "      probed=0\n"
+			       "    fi\n");
+		printf("  fi\n");
 	}
-	printf("\t*)\n");
-	printf("\t\techo \"Unknown soundcard $card, exiting!\"\n");
-	printf("\t\texit 1\n");
-	printf("\t\t;;\n");
-	printf("    esac\n");
-	printf("  done\n");
-	printf("  AC_MSG_RESULT($cards)\n");
-	printf("fi\n");
+	printf("  if test -z \"$probed\"; then\n"
+	       "    AC_MSG_ERROR(Unknown soundcard $card)\n"
+	       "  elif test \"$probed\" = \"0\"; then\n"
+	       "    AC_MSG_ERROR(Unsupported soundcard $card)\n"
+	       "  fi\n"
+	       "done\n\n");
+	printf("AC_MSG_RESULT($cards)\n\n");
+	printf("CONFIG_SND=\"m\"\n");
+	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		if (!is_toplevel(tempdep))
+			continue;
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("if test -n \"$%s\"; then\n", text);
+		if (tempdep->is_bool)
+			printf("  AC_DEFINE(%s)\n", text);
+		else
+			printf("  AC_DEFINE(%s_MODULE)\n", text);
+		printf("fi\n");
+		free(text);
+	}
+
 	printf("])\n\n");
 	printf("AC_DEFUN([ALSA_TOPLEVEL_OUTPUT], [\n");
 	printf("dnl output all subst\n");
