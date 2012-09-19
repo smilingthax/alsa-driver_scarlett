@@ -817,10 +817,10 @@ AC_SUBST(CONFIG_USB)
 
 dnl PCMCIA stuff
 AC_ARG_WITH(pcmcia,
-  [  --with-pcmcai=kernel,external   support kernel PCMCIA driver or external PCMCIA driver],
+  [  --with-pcmcia=kernel,external   support kernel PCMCIA driver or external PCMCIA driver],
   pcmcia="$withval", pcmcia="kernel")
 AC_ARG_WITH(pcmcia_root,
-  [  --with-pcmcai-root=dir  specify the root directory of external PCMCIA source-tree],
+  [  --with-pcmcia-root=dir  specify the root directory of external PCMCIA source-tree],
   pcmciaroot="$withval", pcmciaroot="")
 EXTRA_INCLUDES=""
 if test "$pcmcia" = "kernel"; then
