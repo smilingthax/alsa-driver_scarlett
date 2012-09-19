@@ -606,6 +606,35 @@ u16 HPI_AdapterSelfTest(
 	return (hr.wError);
 }
 
+u16 HPI_AdapterDebugRead(
+	struct hpi_hsubsys *phSubSys,
+	u16 wAdapterIndex,
+	u32 dwDspAddress,
+	char *pBuffer,
+	int *dwCountBytes
+)
+{
+	struct hpi_message hm;
+	struct hpi_response hr;
+	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_DEBUG_READ);
+	hm.wAdapterIndex = wAdapterIndex;
+	hm.u.ax.debug_read.dwDspAddress = dwDspAddress;
+
+	if (*dwCountBytes > sizeof(hr.u.bytes))
+		*dwCountBytes = sizeof(hr.u.bytes);
+
+	hm.u.ax.debug_read.dwCountBytes = *dwCountBytes;
+
+	HPI_Message(&hm, &hr);
+
+	if (!hr.wError) {
+		*dwCountBytes = hr.wSize - 12;
+		memcpy(pBuffer, &hr.u.bytes, *dwCountBytes);
+	} else
+		*dwCountBytes = 0;
+	return (hr.wError);
+}
+
 u16 HPI_AdapterSetProperty(
 	struct hpi_hsubsys *phSubSys,
 	u16 wAdapterIndex,
@@ -1690,6 +1719,61 @@ u16 HPI_ControlQuery(
 	*pdwSetting = hr.u.c.dwParam1;
 
 	return (hr.wError);
+}
+
+static u16 HPI_Control_GetString(
+	const struct hpi_hsubsys *phSubSys,
+	const u32 hControlHandle,
+	const u16 wAttribute,
+	char *pszString,
+	const u32 wStringLength
+)
+{
+	unsigned int subStringIndex = 0, j = 0;
+	char c = 0;
+	unsigned int n = 0;
+	u16 wHE = 0;
+
+	if ((wStringLength < 1) || (wStringLength > 256))
+		return HPI_ERROR_INVALID_CONTROL_VALUE;
+	for (subStringIndex = 0; subStringIndex < wStringLength;
+		subStringIndex += 8) {
+		struct hpi_message hm;
+		struct hpi_response hr;
+
+		HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
+		u32TOINDEXES(hControlHandle, &hm.wAdapterIndex,
+			&hm.u.c.wControlIndex);
+		hm.u.c.wAttribute = wAttribute;
+		hm.u.c.dwParam1 = subStringIndex;
+		hm.u.c.dwParam2 = 0;
+		HPI_Message(&hm, &hr);
+
+		if (subStringIndex == 0
+			&& (hr.u.cu.chars8.dwRemainingChars + 8) >
+			wStringLength)
+			return HPI_ERROR_INVALID_CONTROL_VALUE;
+
+		if (hr.wError) {
+			wHE = hr.wError;
+			break;
+		}
+		for (j = 0; j < 8; j++) {
+			c = hr.u.cu.chars8.szData[j];
+			pszString[subStringIndex + j] = c;
+			n++;
+			if (n >= wStringLength) {
+				pszString[wStringLength - 1] = 0;
+				wHE = HPI_ERROR_INVALID_CONTROL_VALUE;
+				break;
+			}
+			if (c == 0)
+				break;
+		}
+		if (c == 0)
+			break;
+	}
+	return wHE;
 }
 
 #if 0
@@ -2976,6 +3060,50 @@ u16 HPI_Tuner_GetDeemphasis(
 		pdwDeemphasis);
 }
 
+u16 HPI_Tuner_SetProgram(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 dwProgram
+)
+{
+	return HPI_ControlParamSet(phSubSys, hControl, HPI_TUNER_PROGRAM,
+		dwProgram, 0);
+}
+
+u16 HPI_Tuner_GetProgram(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwProgram
+)
+{
+	return HPI_ControlParam1Get(phSubSys, hControl, HPI_TUNER_PROGRAM,
+		pdwProgram);
+}
+
+u16 HPI_Tuner_GetHdRadioDspVersion(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszDspVersion,
+	const u32 dwStringSize
+)
+{
+	return HPI_Control_GetString(phSubSys,
+		hControl,
+		HPI_TUNER_HDRADIO_DSP_VERSION, pszDspVersion, dwStringSize);
+}
+
+u16 HPI_Tuner_GetHdRadioSdkVersion(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszSdkVersion,
+	const u32 dwStringSize
+)
+{
+	return HPI_Control_GetString(phSubSys,
+		hControl,
+		HPI_TUNER_HDRADIO_SDK_VERSION, pszSdkVersion, dwStringSize);
+}
+
 u16 HPI_Tuner_GetStatus(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
@@ -3022,6 +3150,16 @@ u16 HPI_Tuner_GetMode(
 		nMode, 0, pnValue, NULL);
 }
 
+u16 HPI_Tuner_GetHdRadioSignalQuality(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwQuality
+)
+{
+	return HPI_ControlParamGet(phSubSys, hControl,
+		HPI_TUNER_HDRADIO_SIGNAL_QUALITY, 0, 0, pdwQuality, NULL);
+}
+
 u16 HPI_Tuner_GetRDS(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
@@ -3040,6 +3178,82 @@ u16 HPI_Tuner_GetRDS(
 		*(u32 *)&pData[8] = hr.u.cu.tuner.rds.dwBLER;
 	}
 	return (hr.wError);
+}
+
+#ifdef _DOX_ONLY_
+u16 HPI_Tuner_GetHdRadioSignalQuality(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwSignalQuality
+)
+{
+	return HPI_ControlParamGet(phSubSys, hControl,
+		HPI_TUNER_HDRADIO_SIGNAL_QUALITY, 0, 0, pdwSignalQuality, 0);
+}
+#endif
+
+u16 HPI_PAD_GetChannelName(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszString,
+	const u32 dwDataLength
+)
+{
+	return HPI_Control_GetString(phSubSys,
+		hControl, HPI_PAD_CHANNEL_NAME, pszString, dwDataLength);
+}
+
+u16 HPI_PAD_GetArtist(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszString,
+	const u32 dwDataLength
+)
+{
+	return HPI_Control_GetString(phSubSys,
+		hControl, HPI_PAD_ARTIST, pszString, dwDataLength);
+}
+
+u16 HPI_PAD_GetTitle(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszString,
+	const u32 dwDataLength
+)
+{
+	return HPI_Control_GetString(phSubSys,
+		hControl, HPI_PAD_TITLE, pszString, dwDataLength);
+}
+
+u16 HPI_PAD_GetComment(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszString,
+	const u32 dwDataLength
+)
+{
+	return HPI_Control_GetString(phSubSys,
+		hControl, HPI_PAD_COMMENT, pszString, dwDataLength);
+}
+
+u16 HPI_PAD_GetProgramType(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwPTY
+)
+{
+	return HPI_ControlParamGet(phSubSys, hControl, HPI_PAD_PROGRAM_TYPE,
+		0, 0, pdwPTY, NULL);
+}
+
+u16 HPI_PAD_GetRdsPI(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwPI
+)
+{
+	return HPI_ControlParamGet(phSubSys, hControl, HPI_PAD_PROGRAM_ID,
+		0, 0, pdwPI, NULL);
 }
 
 u16 HPI_VolumeSetGain(

@@ -170,10 +170,11 @@ void hpi_debug_data(
   "HPI_ADAPTER_SET_PROPERTY",    \
   "HPI_ADAPTER_GET_PROPERTY",    \
   "HPI_ADAPTER_ENUM_PROPERTY",    \
-  "HPI_ADAPTER_MODULE_INFO"    \
+  "HPI_ADAPTER_MODULE_INFO",    \
+  "HPI_ADAPTER_DEBUG_READ"    \
 }
 
-function_count_check(HPI_ADAPTER, 17);
+function_count_check(HPI_ADAPTER, 18);
 
 #define HPI_OSTREAM_STRINGS     \
 {                               \
@@ -328,9 +329,10 @@ function_count_check(HPI_ASYNCEVENT, 6);
 	"HPI_CONTROL_COBRANET", \
 	"HPI_CONTROL_TONE_DETECT", \
 	"HPI_CONTROL_SILENCE_DETECT" \
+	"HPI_CONTROL_PAD" \
 }
 
-compile_time_assert((HPI_CONTROL_LAST_INDEX + 1) == (24),
+compile_time_assert((HPI_CONTROL_LAST_INDEX + 1) == (25),
 	controltype_strings_dont_match_defs);
 
 #define HPI_SOURCENODE_STRINGS \

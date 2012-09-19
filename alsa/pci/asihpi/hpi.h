@@ -41,12 +41,12 @@ i.e 3.05.02 is a development version
 #define HPI_VERSION_CONSTRUCTOR(maj, min, rel) \
 	((maj << 16) + (min << 8) + rel)
 
-#define HPI_VER_MAJOR(v) (v >> 16)
-#define HPI_VER_MINOR(v) ((v >> 8) & 0xFF)
-#define HPI_VER_RELEASE(v) (v & 0xFF)
+#define HPI_VER_MAJOR(v) (int)(v >> 16)
+#define HPI_VER_MINOR(v) (int)((v >> 8) & 0xFF)
+#define HPI_VER_RELEASE(v) (int)(v & 0xFF)
 
 /* Use single digits for versions less that 10 to avoid octal. */
-#define HPI_VER HPI_VERSION_CONSTRUCTOR(3L, 9, 15)
+#define HPI_VER HPI_VERSION_CONSTRUCTOR(3L, 10, 0)
 
 #ifdef _DOX_ONLY_
 /*****************************************************************************/
@@ -191,6 +191,8 @@ extern "C" {
 #define HPI_ADAPTER_ASI1722             0x1722
 /** ASI1731 - Quad TV tuner module */
 #define HPI_ADAPTER_ASI1731             0x1731
+/** ASI1741 - Quad HDRadio "pseudo" module */
+#define HPI_ADAPTER_ASI1741             0x1741
 /*ASI2214 - USB 2.0 1xanalog in, 4 x analog out, 1 x AES in/out */
 /*#define HPI_ADAPTER_ASI2214           0x2214  */
 
@@ -408,6 +410,8 @@ OBSOLETE - OEM 4 play PCM, MPEG*/
 #define HPI_ADAPTER_ASI8801             0x8801
 
 #define HPI_ADAPTER_FAMILY_ASI8900      0x8900
+/** 4 channel AM/FM HD-Radio */
+#define HPI_ADAPTER_ASI8914             0x8914
 /** OEM FM+RDS, 2 module tuner card */
 #define HPI_ADAPTER_ASI8920             0x8920
 /** 2 module tuner card */
@@ -471,7 +475,6 @@ The following table shows what combinations of mode and bitrate are possible:
 <td><p><b>Mono<br>Stereo @ 16,<br>22.050 and<br>24kHz*</b></p>
 <td><p><b>Mono<br>Stereo @ 32,<br>44.1 and<br>48kHz</b></p>
 
-<tr><td>8<td>X<td>X<td>_
 <tr><td>16<td>X<td>X<td>_
 <tr><td>24<td>X<td>X<td>_
 <tr><td>32<td>X<td>X<td>X
@@ -622,9 +625,10 @@ Audio samples from the device are sent out on the Cobranet network.*/
 #define HPI_CONTROL_COBRANET            21	/**< Cobranet control. */
 #define HPI_CONTROL_TONEDETECTOR        22	/**< Tone detector control. */
 #define HPI_CONTROL_SILENCEDETECTOR     23	/**< Silence detector control. */
+#define HPI_CONTROL_PAD                 24	/**< Tuner PAD control. */
 
 /*! Update this if you add a new control type. , AND hpidebug.h */
-#define HPI_CONTROL_LAST_INDEX                  23
+#define HPI_CONTROL_LAST_INDEX                  24
 
 /* WARNING types 32 or greater impact bit packing in all AX4 DSP code */
 /* WARNING types 256 or greater impact bit packing in all AX6 DSP code */
@@ -884,6 +888,9 @@ enum HPI_MIXER_STORE_COMMAND {
 /* This allows for 255 control types, 256 unique attributes each */
 #define HPI_CTL_ATTR(ctl, ai) (HPI_CONTROL_##ctl * 0x100 + ai)
 
+/* Get the sub-index of the attribute for a control type */
+#define HPI_CTL_ATTR_INDEX(i) (i&0xff)
+
 /* Original 0-based non-unique attributes, might become unique later */
 #define HPI_CTL_ATTR0(ctl, ai) (ai)
 
@@ -1009,6 +1016,42 @@ enum HPI_MIXER_STORE_COMMAND {
 #define HPI_TUNER_RDS                   HPI_CTL_ATTR0(TUNER, 9)
 /** Audio pre-emphasis. */
 #define HPI_TUNER_DEEMPHASIS            HPI_CTL_ATTR(TUNER, 10)
+/** HD-Radio tuner program control. */
+#define HPI_TUNER_PROGRAM               HPI_CTL_ATTR(TUNER, 11)
+/** HD-Radio tuner digital signal quality. */
+#define HPI_TUNER_HDRADIO_SIGNAL_QUALITY        HPI_CTL_ATTR(TUNER, 12)
+/** HD-Radio SDK firmware version. */
+#define HPI_TUNER_HDRADIO_SDK_VERSION   HPI_CTL_ATTR(TUNER, 13)
+/** HD-Radio DSP firmware version. */
+#define HPI_TUNER_HDRADIO_DSP_VERSION   HPI_CTL_ATTR(TUNER, 14)
+/** \} */
+
+/** \defgroup pads_attrs Tuner PADs control attributes
+\{
+*/
+/** The text string containing the station/channel combination. */
+#define HPI_PAD_CHANNEL_NAME            HPI_CTL_ATTR(PAD, 1)
+#define HPI_PAD_CHANNEL_NAME_LEN        16
+/** The text string containing the artist. */
+#define HPI_PAD_ARTIST                  HPI_CTL_ATTR(PAD, 2)
+#define HPI_PAD_ARTIST_LEN              64
+/** The text string containing the title. */
+#define HPI_PAD_TITLE                   HPI_CTL_ATTR(PAD, 3)
+#define HPI_PAD_TITLE_LEN               64
+/** The text string containing the comment. */
+#define HPI_PAD_COMMENT                 HPI_CTL_ATTR(PAD, 4)
+#define HPI_PAD_COMMENT_LEN             256
+/** The integer containing the PTY code. */
+#define HPI_PAD_PROGRAM_TYPE            HPI_CTL_ATTR(PAD, 5)
+/** The integer containing the program identification. */
+#define HPI_PAD_PROGRAM_ID              HPI_CTL_ATTR(PAD, 6)
+/** The integer containing whether traffic information is supported.
+Contains either 1 or 0. */
+#define HPI_PAD_TA_SUPPORT              HPI_CTL_ATTR(PAD, 7)
+/** The integer containing whether traffic announcement is in progress.
+Contains either 1 or 0. */
+#define HPI_PAD_TA_ACTIVE               HPI_CTL_ATTR(PAD, 8)
+
 /** \} */
 
 /** \defgroup tuner_bands Tuner bands
@@ -1040,13 +1083,21 @@ Used for HPI_Tuner_SetBand(),HPI_Tuner_GetBand()
 #define HPI_TUNER_LEVEL_AVERAGE         0
 #define HPI_TUNER_LEVEL_RAW             1
 
-/** Tuner video status */
+/** \defgroup tuner_status Tuner status fields
+
+These bitfield values are returned by a call to HPI_Tuner_GetStatus().
+Multiple fields are returned from a single call.
+\{
+*/
 #define HPI_TUNER_VIDEO_COLOR_PRESENT           0x0001	/**< Video color is present. */
 #define HPI_TUNER_VIDEO_IS_60HZ                 0x0020	/**< 60 Hz video detected. */
 #define HPI_TUNER_VIDEO_HORZ_SYNC_MISSING       0x0040	/**< Video HSYNC is missing. */
 #define HPI_TUNER_VIDEO_STATUS_VALID            0x0100	/**< Video status is valid. */
 #define HPI_TUNER_PLL_LOCKED                    0x1000	/**< The tuner's PLL is locked. */
 #define HPI_TUNER_FM_STEREO                     0x2000	/**< Tuner reports back FM stereo. */
+#define HPI_TUNER_DIGITAL                       0x0200	/**< Tuner reports digital programming. */
+#define HPI_TUNER_MULITPROGRAM                  0x0400	/**< Tuner reports multiple programs. */
+/** \} */
 /** \} */
 
 /* VOX control attributes */
@@ -1224,8 +1275,8 @@ enum HPI_FILTER_TYPE {
 
 #define HPI_ETHERNET_UDP_PORT (44600)	/*!< UDP messaging port */
 
-/** Base network time out is set to 2 seconds. */
-#define HPI_ETHERNET_TIMEOUT_MS      (2000)
+/** Base network time out is set to 100 milli-seconds. */
+#define HPI_ETHERNET_TIMEOUT_MS      (100)
 
 /** \defgroup tonedet_attr Tonedetector attributes
 \{
@@ -1703,6 +1754,14 @@ u16 HPI_AdapterEnableCapability(
 u16 HPI_AdapterSelfTest(
 	struct hpi_hsubsys *phSubSys,
 	u16 wAdapterIndex
+);
+
+u16 HPI_AdapterDebugRead(
+	struct hpi_hsubsys *phSubSys,
+	u16 wAdapterIndex,
+	u32 dwDspAddress,
+	char *pBytes,
+	int *dwCountBytes
 );
 
 u16 HPI_AdapterSetProperty(
@@ -2363,6 +2422,87 @@ u16 HPI_Tuner_GetDeemphasis(
 	u32 hControl,
 	u32 *pdwDeemphasis
 );
+u16 HPI_Tuner_SetProgram(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 dwProgram
+);
+u16 HPI_Tuner_GetProgram(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwProgram
+);
+u16 HPI_Tuner_GetHdRadioDspVersion(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszDspVersion,
+	const u32 dwStringSize
+);
+u16 HPI_Tuner_GetHdRadioSdkVersion(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszSdkVersion,
+	const u32 dwStringSize
+);
+
+u16 HPI_Tuner_GetHdRadioSignalQuality(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwQuality
+);
+
+/****************************/
+/* PADs control             */
+/****************************/
+
+u16 HPI_PAD_GetChannelName(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszData,
+	const u32 dwDataLength
+);
+
+u16 HPI_PAD_GetArtist(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszData,
+	const u32 dwDataLength
+);
+
+u16 HPI_PAD_GetTitle(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszData,
+	const u32 dwDataLength
+);
+
+u16 HPI_PAD_GetComment(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	char *pszData,
+	const u32 dwDataLength
+);
+
+u16 HPI_PAD_GetProgramType(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwPTY
+);
+
+u16 HPI_PAD_GetRdsPI(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwPI
+);
+
+u16 HPI_PAD_GetProgramTypeString(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	const u32 dwDataType,
+	const u32 nPTY,
+	char *pszData,
+	const u32 dwDataLength
+);
 
 /****************************/
 /* AES/EBU Receiver control */
@@ -2987,7 +3127,8 @@ u16 HPI_FormatCreate(
 #define HPI_ADAPTER_GET_PROPERTY        HPI_MAKE_INDEX(HPI_OBJ_ADAPTER, 15)
 #define HPI_ADAPTER_ENUM_PROPERTY       HPI_MAKE_INDEX(HPI_OBJ_ADAPTER, 16)
 #define HPI_ADAPTER_MODULE_INFO         HPI_MAKE_INDEX(HPI_OBJ_ADAPTER, 17)
-#define HPI_ADAPTER_FUNCTION_COUNT 17
+#define HPI_ADAPTER_DEBUG_READ          HPI_MAKE_INDEX(HPI_OBJ_ADAPTER, 18)
+#define HPI_ADAPTER_FUNCTION_COUNT 18
 /* OUTPUT STREAM */
 #define HPI_OSTREAM_OPEN                HPI_MAKE_INDEX(HPI_OBJ_OSTREAM, 1)
 #define HPI_OSTREAM_CLOSE               HPI_MAKE_INDEX(HPI_OBJ_OSTREAM, 2)
@@ -3135,7 +3276,7 @@ struct hpi_msg_format {
 };
 
 /**  Buffer+format structure.
-	 Must be kept 7 * 32 bits to match public struct hpi_data HPI_DATAstruct */
+	 Must be kept 7 * 32 bits to match public struct hpi_datastruct */
 struct hpi_msg_data {
 	struct hpi_msg_format Format;
 	u8 *pbData;
@@ -3145,7 +3286,7 @@ struct hpi_msg_data {
 	u32 dwDataSize;
 };
 
-/** struct hpi_data HPI_DATAstructure used up to 3.04 driver */
+/** struct hpi_datastructure used up to 3.04 driver */
 struct hpi_data_legacy32 {
 	struct hpi_format Format;
 	u32 pbData;
@@ -3153,7 +3294,7 @@ struct hpi_data_legacy32 {
 };
 
 #ifdef HPI64BIT
-/* Compatibility version of struct hpi_data HPI_DATA*/
+/* Compatibility version of struct hpi_data*/
 struct hpi_data_compat32 {
 	struct hpi_msg_format Format;
 	u32 pbData;
@@ -3218,6 +3359,10 @@ union hpi_adapterx_msg {
 	struct {
 		u16 index;
 	} module_info;
+	struct {
+		u32 dwDspAddress;
+		u32 dwCountBytes;
+	} debug_read;
 };
 
 struct hpi_adapter_res {
@@ -3334,7 +3479,7 @@ union hpi_mixerx_msg {
 
 union hpi_mixerx_res {
 	struct {
-		u32 dwBytesReturned;	/* number of items returned */
+		u32 dwBytesReturned;	/* size of items returned */
 		u32 pData;	/* pointer to data array */
 		u16 wMoreToDo;	/* indicates if there is more to do */
 	} gcabi;
@@ -3360,6 +3505,7 @@ struct hpi_control_union_msg {
 			u32 dwGain;
 			u32 dwBand;
 			u32 dwDeemphasis;
+			u32 dwProgram;
 			struct {
 				u32 dwMode;
 				u32 dwValue;
@@ -3394,6 +3540,10 @@ union hpi_control_union_res {
 			u32 dwBLER;
 		} rds;
 	} tuner;
+	struct {
+		char szData[8];
+		u32 dwRemainingChars;
+	} chars8;
 };
 
 /* HPI_CONTROLX_STRUCTURES */
@@ -3419,6 +3569,17 @@ struct hpi_controlx_msg_cobranet_bigdata {
 #endif
 };
 
+/** Used for PADS control reading of string fields.
+*/
+struct hpi_controlx_msg_pad_data {
+	u32 dwField;
+	u32 dwByteCount;
+	u8 *pbData;
+#ifndef HPI64BIT
+	u32 dwPadding;
+#endif
+};
+
 /** Used for generic data
 */
 
@@ -3432,6 +3593,7 @@ struct hpi_controlx_msg {
 		struct hpi_controlx_msg_cobranet_data cobranet_data;
 		struct hpi_controlx_msg_cobranet_bigdata cobranet_bigdata;
 		struct hpi_controlx_msg_generic generic;
+		struct hpi_controlx_msg_pad_data pad_data;
 		/* nothing extra to send for status read */
 	} u;
 	u16 wControlIndex;
@@ -3657,6 +3819,7 @@ struct hpi_response {
 		struct hpi_clock_res t;	/* dsp time */
 		struct hpi_profile_res p;
 		struct hpi_async_res as;
+		u8 bytes[52];
 	} u;
 };
 
@@ -3696,11 +3859,17 @@ struct hpi_control_defn {
 Used for efficient transfer of the control state
 between DSP and host or across a network
 */
-struct hpi_control_cache_single {
+struct hpi_control_cache_info {
 	/** one of HPI_CONTROL_* */
-	u16 ControlType;
+	u8 ControlType;
+	/** The total size of cached information in 32-bit words. */
+	u8 nSizeIn32bitWords;
 	/** The original index of the control on the DSP */
 	u16 ControlIndex;
+};
+
+struct hpi_control_cache_single {
+	struct hpi_control_cache_info i;
 	union {
 		struct {	/* volume */
 			u16 anLog[2];
@@ -3750,6 +3919,20 @@ struct hpi_control_cache_single {
 		} g;
 	} u;
 };
+
+struct hpi_control_cache_pad {
+	struct hpi_control_cache_info i;
+	u32 dwFieldValidFlags;
+	u8 cChannel[8];
+	u8 cArtist[40];
+	u8 cTitle[40];
+	u8 cComment[200];
+	u32 dwPTY;
+	u32 dwPI;
+	u32 dwTrafficSupported;
+	u32 dwTrafficAnouncement;
+};
+
 /*/////////////////////////////////////////////////////////////////////////// */
 /* declarations for 2^N sized FIFO buffer (internal to HPI<->DSP interaction) */
 struct hpi_fifo_buffer {

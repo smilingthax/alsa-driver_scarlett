@@ -45,6 +45,7 @@ struct hpi_hif_6000 {
 	u32 dwControlCacheIsDirty;
 	u32 dwControlCacheAddress;
 	u32 dwControlCacheSizeInBytes;
+	u32 dwControlCacheCount;
 };
 
 #define HPI_HIF_PACK_ADAPTER_INFO(adapter, versionMajor, versionMinor) \

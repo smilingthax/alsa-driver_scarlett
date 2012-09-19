@@ -32,6 +32,18 @@ struct hpi_adapter_obj {
 	void *priv;
 };
 
+struct hpi_control_cache {
+	u32 dwInit;	       /**< indicates whether the
+				structures are initialized */
+	u32 dwControlCount;
+	u32 dwCacheSizeInBytes;
+	struct hpi_control_cache_info
+	**pInfo;		/**< pointer to allocated memory of
+				lookup pointers. */
+	struct hpi_control_cache_single
+	*pCache;		/**< pointer to DSP's control cache. */
+};
+
 struct hpi_adapter_obj *HpiFindAdapter(
 	u16 wAdapterIndex
 );
@@ -44,16 +56,32 @@ void HpiDeleteAdapter(
 );
 
 short HpiCheckControlCache(
-	struct hpi_control_cache_single *pC,
+	struct hpi_control_cache *pC,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 );
+struct hpi_control_cache *HpiAllocControlCache(
+	const u32 dwNumberOfControls,
+	const u32 dwSizeInBytes,
+	struct hpi_control_cache_info
+	*pDSPControlBuffer
+);
+void HpiFreeControlCache(
+	struct hpi_control_cache *pCache
+);
+
 void HpiSyncControlCache(
-	struct hpi_control_cache_single *pC,
+	struct hpi_control_cache *pC,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 );
 u16 HpiValidateResponse(
 	struct hpi_message *phm,
 	struct hpi_response *phr
+);
+short HpiCheckBufferMapping(
+	struct hpi_control_cache *pCache,
+	struct hpi_message *phm,
+	void **p,
+	unsigned int *pN
 );

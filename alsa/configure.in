@@ -588,6 +588,13 @@ AC_DEFINE_UNQUOTED(CONFIG_SND_KERNELDIR, "$CONFIG_SND_KERNELDIR")
 AC_SUBST(CONFIG_SND_KERNELDIR)
 AC_SUBST(MAKE_ADDS)
 
+dnl update include/sound/version.h
+AC_MSG_CHECKING(for updating alsa-kernel version.h)
+AC_ARG_ENABLE(update-version,
+  AS_HELP_STRING([--disable-update-version], [disable updating alsa-kernel version]),
+  update_version="$enableval", update_version="yes")
+AC_MSG_RESULT($update_version)
+
 dnl Check experimental drivers...
 AC_MSG_CHECKING(for CONFIG_EXPERIMENTAL)
 AC_ARG_ENABLE(experimental,
@@ -2935,4 +2942,9 @@ EOF
       >> include/linux/autoconf.h
 else
   rm -f include/linux/autoconf.h
+fi
+
+dnl avoid changing include/sound/version.h
+if test "$update_versoin" != "yes"; then
+  touch alsa-kernel/include/version.h
 fi

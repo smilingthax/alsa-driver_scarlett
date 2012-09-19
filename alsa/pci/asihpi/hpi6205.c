@@ -126,8 +126,10 @@ struct hpi_hw_obj {
 
 	struct consistent_dma_area hControlCache;
 	struct consistent_dma_area hAsyncEventBuffer;
-	struct hpi_control_cache_single *pControlCache;
+/*      struct hpi_control_cache_single *pControlCache; */
 	struct hpi_async_event *pAsyncEventBuffer;
+	struct hpi_control_cache *pCache;
+
 };
 
 /*****************************************************************************/
@@ -168,12 +170,6 @@ static void SubSysCreateAdapter(
 	struct hpi_response *phr
 );
 static void SubSysDeleteAdapter(
-	struct hpi_message *phm,
-	struct hpi_response *phr
-);
-
-static void AdapterGetAsserts(
-	struct hpi_adapter_obj *pao,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 );
@@ -325,9 +321,7 @@ static void ControlMessage(
 	case HPI_CONTROL_GET_STATE:
 		if (pao->wHasControlCache) {
 			rmb();	/* make sure we see updates DMAed from DSP */
-			if (HpiCheckControlCache
-				(&pHw6205->pControlCache[phm->u.c.
-						wControlIndex], phm, phr))
+			if (HpiCheckControlCache(pHw6205->pCache, phm, phr))
 				break;
 		}
 		HW_Message(pao, phm, phr);
@@ -338,9 +332,7 @@ static void ControlMessage(
 	case HPI_CONTROL_SET_STATE:
 		HW_Message(pao, phm, phr);
 		if (pao->wHasControlCache)
-			HpiSyncControlCache(&pHw6205->
-				pControlCache[phm->u.c.
-					wControlIndex], phm, phr);
+			HpiSyncControlCache(pHw6205->pCache, phm, phr);
 		break;
 	default:
 		phr->wError = HPI_ERROR_INVALID_FUNC;
@@ -354,14 +346,7 @@ static void AdapterMessage(
 	struct hpi_response *phr
 )
 {
-
 	switch (phm->wFunction) {
-	case HPI_ADAPTER_GET_INFO:
-		HW_Message(pao, phm, phr);
-		break;
-	case HPI_ADAPTER_GET_ASSERT:
-		AdapterGetAsserts(pao, phm, phr);
-		break;
 	default:
 		HW_Message(pao, phm, phr);
 		break;
@@ -506,6 +491,7 @@ void HPI_6205(
 			AdapterMessage(pao, phm, phr);
 			break;
 
+		case HPI_OBJ_CONTROLEX:
 		case HPI_OBJ_CONTROL:
 			ControlMessage(pao, phm, phr);
 			break;
@@ -694,20 +680,25 @@ static u16 CreateAdapterObj(
 	 * Allocate bus mastering control cache buffer and tell the DSP about it
 	 */
 	if (interface->aControlCache.dwNumberOfControls) {
+		void *pControlCacheVirtual;
+
 		err = HpiOs_LockedMem_Alloc(&pHw6205->hControlCache,
-			interface->aControlCache.
-			dwNumberOfControls *
-			sizeof(struct hpi_control_cache_single),
+			interface->aControlCache.dwSizeInBytes,
 			pao->Pci.pOsData);
 		if (!err)
 			err = HpiOs_LockedMem_GetVirtAddr(&pHw6205->
-				hControlCache, (void *)
-				&pHw6205->pControlCache);
-		if (!err)
-			memset((void *)pHw6205->pControlCache, 0,
-				interface->aControlCache.
-				dwNumberOfControls *
-				sizeof(struct hpi_control_cache_single));
+				hControlCache, &pControlCacheVirtual);
+		if (!err) {
+			memset(pControlCacheVirtual, 0,
+				interface->aControlCache.dwSizeInBytes);
+
+			pHw6205->pCache =
+				HpiAllocControlCache(interface->aControlCache.
+				dwNumberOfControls,
+				interface->aControlCache.dwSizeInBytes,
+				(struct hpi_control_cache_info *)
+				pControlCacheVirtual);
+		}
 		if (!err) {
 			err = HpiOs_LockedMem_GetPhysAddr(&pHw6205->
 				hControlCache, &dwPhysAddr);
@@ -718,10 +709,8 @@ static u16 CreateAdapterObj(
 		if (!err)
 			pao->wHasControlCache = 1;
 		else {
-			if (HpiOs_LockedMem_Valid(&pHw6205->hControlCache)) {
+			if (HpiOs_LockedMem_Valid(&pHw6205->hControlCache))
 				HpiOs_LockedMem_Free(&pHw6205->hControlCache);
-				pHw6205->pControlCache = NULL;
-			}
 			pao->wHasControlCache = 0;
 		}
 	}
@@ -816,7 +805,7 @@ static void DeleteAdapterObj(
 
 	if (HpiOs_LockedMem_Valid(&pHw6205->hControlCache)) {
 		HpiOs_LockedMem_Free(&pHw6205->hControlCache);
-		pHw6205->pControlCache = NULL;
+		HpiFreeControlCache(pHw6205->pCache);
 	}
 
 	if (HpiOs_LockedMem_Valid(&pHw6205->hLockedMem)) {
@@ -843,19 +832,6 @@ static void DeleteAdapterObj(
 
 	HpiDeleteAdapter(pao);
 	kfree(pHw6205);
-}
-
-/*****************************************************************************/
-/* ADAPTER */
-
-static void AdapterGetAsserts(
-	struct hpi_adapter_obj *pao,
-	struct hpi_message *phm,
-	struct hpi_response *phr
-)
-{
-	HW_Message(pao, phm, phr);	/*get DSP asserts */
-	return;
 }
 
 /*****************************************************************************/
