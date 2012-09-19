@@ -1,0 +1,76 @@
+--- ../../alsa-kernel/include/core.h	2009-09-07 15:59:08.000000000 +0200
++++ core.h	2009-09-07 16:01:27.000000000 +0200
+@@ -104,8 +104,12 @@
+ 	char shortname[32];		/* short name of this soundcard */
+ 	char longname[80];		/* name of this soundcard */
+ 	char mixername[80];		/* mixer name */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 27)
++	char old_components[80];	/* just for ABI compatibility */
++#else
+ 	char components[128];		/* card components delimited with
+ 								space */
++#endif
+ 	struct module *module;		/* top-level module */
+ 
+ 	void *private_data;		/* private data for soundcard */
+@@ -125,7 +129,11 @@
+ 	struct snd_info_entry *proc_id;	/* the card id */
+ 	struct proc_dir_entry *proc_root_link;	/* number link to real id */
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30)
++	void *old_monitor_file_next;	/* just for ABI compatibility */
++#else
+ 	struct list_head files_list;	/* all files associated to this card */
++#endif
+ 	struct snd_shutdown_f_ops *s_f_ops; /* file operations in the shutdown
+ 								state */
+ 	spinlock_t files_lock;		/* lock the files for this card */
+@@ -147,6 +155,15 @@
+ 	struct snd_mixer_oss *mixer_oss;
+ 	int mixer_oss_change_count;
+ #endif
++
++	/* added in the tail */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 27)
++	char components[128];		/* card components delimited with
++								space */
++#endif
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30)
++	struct list_head files_list;	/* all files associated to this card */
++#endif
+ };
+ 
+ #ifdef CONFIG_PM
+@@ -302,7 +319,11 @@
+ int snd_card_file_add(struct snd_card *card, struct file *file);
+ int snd_card_file_remove(struct snd_card *card, struct file *file);
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
++#define snd_card_set_dev(card,dev) /* no struct device */
++#else
+ #define snd_card_set_dev(card, devptr) ((card)->dev = (devptr))
++#endif
+ 
+ /* device.c */
+ 
+@@ -417,12 +438,20 @@
+ 
+ /* for easier backward-porting */
+ #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
++#ifndef gameport_set_dev_parent
+ #define gameport_set_dev_parent(gp,xdev) ((gp)->dev.parent = (xdev))
+ #define gameport_set_port_data(gp,r) ((gp)->port_data = (r))
+ #define gameport_get_port_data(gp) (gp)->port_data
+ #endif
++#endif
+ 
+ /* PCI quirk list helper */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30)
++/* rename for ABI compatibility */
++#define snd_pci_quirk		snd_pci_new_quirk
++#define snd_pci_quirk_lookup	snd_pci_new_quirk_lookup
++#endif
++
+ struct snd_pci_quirk {
+ 	unsigned short subvendor;	/* PCI subvendor ID */
+ 	unsigned short subdevice;	/* PCI subdevice ID */

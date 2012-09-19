@@ -885,10 +885,6 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 }
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-#define snd_card_set_dev(card,dev) /* no struct device */
-#endif
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 #define snd_dma_pci_data(pci)	((struct device *)(pci))
 #define snd_dma_isa_data()	NULL
