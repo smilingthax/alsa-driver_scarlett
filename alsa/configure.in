@@ -2639,6 +2639,35 @@ if test "$CONFIG_HAVE_GFP_DMA32" = "1"; then
   AC_DEFINE(CONFIG_HAVE_GFP_DMA32)
 fi
 
+dnl Check for page_to_pfn...
+AC_MSG_CHECKING(for page_to_pfn)
+page_to_pfn="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/types.h>
+#include <linux/mm.h>
+],[
+   struct page *page = NULL;
+   unsigned int a = page_to_pfn(page);
+   page = (struct page *)a;
+],
+    AC_MSG_RESULT(yes);page_to_pfn="1",
+    AC_MSG_RESULT(no);page_to_pfn="0",
+    AC_MSG_RESULT(unknown);page_to_pfn="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_PAGE_TO_PFN=$page_to_pfn
+dnl AC_SUBST(CONFIG_HAVE_PAGE_TO_PFN)
+if test "$CONFIG_HAVE_PAGE_TO_PFN" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_PAGE_TO_PFN)
+fi
+
 dnl Check for init_utsname...
 if test "$kversion.$kpatchlevel" = "2.6" -a $ksublevel -ge 19; then
   CONFIG_HAVE_INIT_UTSNAME=1
