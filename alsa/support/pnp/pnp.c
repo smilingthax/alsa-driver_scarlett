@@ -186,36 +186,37 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 				ninst->devs[i] = NULL;
 			for (i = 0; i < PNP_MAX_DEVICES && cid->devs[i].id[0] != '\0'; i++) {
 				if (parse_id(cid->devs[i].id, &subvendor, &subdevice) < 0)
-					goto __next_card;
+					goto __next_id;
 				dev = ninst->devs[i] = (struct pnp_dev *)isapnp_find_dev((struct isapnp_card *)card, subvendor, subdevice, NULL);
 				if (dev == NULL)
+					goto __next_card;
+			}
+
+			/* all parsed successfully */
+			/* activate or deactivate devices before probing */
+			for (i = 0; i < PNP_MAX_DEVICES; i++) {
+				dev = ninst->devs[i];
+				if (! dev)
 					break;
-			}
-			if (i == PNP_MAX_DEVICES || !cid->devs[i].id[0]) {
-				/* all parsed successfully */
-				/* activate or deactivate devices before probing */
-				for (i = 0; i < PNP_MAX_DEVICES; i++) {
-					dev = ninst->devs[i];
-					if (! dev)
-						break;
-					if ((drv->flags & PNP_DRIVER_RES_DISABLE) != PNP_DRIVER_RES_DISABLE)
-						dev->p.activate((struct isapnp_dev *)dev);
-					else {
-						dev->p.deactivate((struct isapnp_dev *)dev);
-						dev->p.prepare((struct isapnp_dev *)dev);
-					}
-				}
-				ninst->link.card = card;
-				ninst->link.driver = drv;
-				ninst->link.driver_data = NULL;
-				if (drv->probe(&ninst->link, cid) >= 0) {
-					list_add_tail(&ninst->list, &pnp_card_drivers);
-					ninst = NULL;
-					res++;
+				if (! drv->flags)
+					dev->p.activate((struct isapnp_dev *)dev);
+				else if (drv->flags != PNP_DRIVER_RES_DO_NOT_CHANGE) {
+					dev->p.deactivate((struct isapnp_dev *)dev);
+					dev->p.prepare((struct isapnp_dev *)dev);
 				}
 			}
+			ninst->link.card = card;
+			ninst->link.driver = drv;
+			ninst->link.driver_data = NULL;
+			if (drv->probe(&ninst->link, cid) >= 0) {
+				list_add_tail(&ninst->list, &pnp_card_drivers);
+				ninst = NULL;
+				res++;
+			}
+		__next_card:
+			;
 		}
-	__next_card:
+	__next_id:
 		;
 	}
 
