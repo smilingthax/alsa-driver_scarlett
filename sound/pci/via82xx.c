@@ -181,7 +181,33 @@ DEFINE_VIA_REGSET(FM, 0x20);
 #define   VIA_REG_AC97_CMD_MASK		0x7e
 #define   VIA_REG_AC97_DATA_SHIFT	0
 #define   VIA_REG_AC97_DATA_MASK	0xffff
+
 #define VIA_REG_SGD_SHADOW		0x84	/* dword */
+/* via686 */
+#define   VIA_REG_SGD_STAT_PB_FLAG	(1<<0)
+#define   VIA_REG_SGD_STAT_CP_FLAG	(1<<1)
+#define   VIA_REG_SGD_STAT_FM_FLAG	(1<<2)
+#define   VIA_REG_SGD_STAT_PB_EOL	(1<<4)
+#define   VIA_REG_SGD_STAT_CP_EOL	(1<<5)
+#define   VIA_REG_SGD_STAT_FM_EOL	(1<<6)
+#define   VIA_REG_SGD_STAT_PB_STOP	(1<<8)
+#define   VIA_REG_SGD_STAT_CP_STOP	(1<<9)
+#define   VIA_REG_SGD_STAT_FM_STOP	(1<<10)
+#define   VIA_REG_SGD_STAT_PB_ACTIVE	(1<<12)
+#define   VIA_REG_SGD_STAT_CP_ACTIVE	(1<<13)
+#define   VIA_REG_SGD_STAT_FM_ACTIVE	(1<<14)
+/* via8233 */
+#define   VIA8233_REG_SGD_STAT_FLAG	(1<<0)
+#define   VIA8233_REG_SGD_STAT_EOL	(1<<1)
+#define   VIA8233_REG_SGD_STAT_STOP	(1<<2)
+#define   VIA8233_REG_SGD_STAT_ACTIVE	(1<<3)
+#define   VIA8233_REG_SGD_SDX0_SHIFT	0
+#define   VIA8233_REG_SGD_SDX1_SHIFT	4
+#define   VIA8233_REG_SGD_SDX2_SHIFT	8
+#define   VIA8233_REG_SGD_SDX3_SHIFT	12
+#define   VIA8233_REG_SGD_MCHAN_SHIFT	16
+#define   VIA8233_REG_SGD_REC0_SHIFT	24
+#define   VIA8233_REG_SGD_REC1_SHIFT	28
 
 /* multi-channel and capture registers for via8233 */
 DEFINE_VIA_REGSET(MULTPLAY, 0x40);
@@ -349,6 +375,10 @@ struct _snd_via82xx {
 	unsigned char old_legacy;
 	unsigned char old_legacy_cfg;
 
+	unsigned char playback_volume[2]; /* for VIA8233/C/8235; default = 0 */
+
+	unsigned int intr_mask; /* SGD_SHADOW mask to check interrupts */
+
 	struct pci_dev *pci;
 	snd_card_t *card;
 
@@ -502,22 +532,19 @@ static void snd_via82xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	unsigned int i;
 
 	spin_lock(&chip->reg_lock);
-	if (chip->chip_type == TYPE_VIA686) {
-		/* check mpu401 interrupt */
-		status = inl(VIAREG(chip, SGD_SHADOW));
-		if ((status & 0x00000077) == 0) {
-			spin_unlock(&chip->reg_lock);
-			if (chip->rmidi != NULL)
-				snd_mpu401_uart_interrupt(irq, chip->rmidi->private_data, regs);
-			return;
-		}
+	status = inl(VIAREG(chip, SGD_SHADOW));
+	if (! (status & chip->intr_mask)) {
+		spin_unlock(&chip->reg_lock);
+		if (chip->rmidi)
+			/* check mpu401 interrupt */
+			snd_mpu401_uart_interrupt(irq, chip->rmidi->private_data, regs);
+		return;
 	}
+
 	/* check status for each stream */
 	for (i = 0; i < chip->num_devs; i++) {
 		viadev_t *viadev = &chip->devs[i];
 		unsigned char status = inb(VIADEV_REG(viadev, OFFSET_STATUS));
-		if (! (status & VIA_REG_STAT_ACTIVE))
-			continue;
 		status &= (VIA_REG_STAT_EOL|VIA_REG_STAT_FLAG);
 		if (! status)
 			continue;
@@ -799,8 +826,8 @@ static int snd_via8233_playback_prepare(snd_pcm_substream_t *substream)
 	snd_assert((rbits & ~0xfffff) == 0, return -EINVAL);
 	snd_via82xx_channel_reset(chip, viadev);
 	snd_via82xx_set_table_ptr(chip, viadev);
-	outb(0, VIADEV_REG(viadev, OFS_PLAYBACK_VOLUME_L));
-	outb(0, VIADEV_REG(viadev, OFS_PLAYBACK_VOLUME_R));
+	outb(chip->playback_volume[0], VIADEV_REG(viadev, OFS_PLAYBACK_VOLUME_L));
+	outb(chip->playback_volume[1], VIADEV_REG(viadev, OFS_PLAYBACK_VOLUME_R));
 	outl((runtime->format == SNDRV_PCM_FORMAT_S16_LE ? VIA8233_REG_TYPE_16BIT : 0) | /* format */
 	     (runtime->channels > 1 ? VIA8233_REG_TYPE_STEREO : 0) | /* stereo */
 	     rbits | /* rate */
@@ -1099,6 +1126,7 @@ static int __devinit snd_via8233_pcm_new(via82xx_t *chip)
 	chip->multi_devno = 4;		/* x 1 */
 	chip->capture_devno = 5;	/* x 2 */
 	chip->num_devs = 7;
+	chip->intr_mask = 0x33033333; /* FLAG|EOL for rec0-1, mc, sdx0-3 */
 
 	/* PCM #0:  4 DSX playbacks and 1 capture */
 	err = snd_pcm_new(chip->card, chip->card->shortname, 0, 4, 1, &pcm);
@@ -1148,6 +1176,7 @@ static int __devinit snd_via8233a_pcm_new(via82xx_t *chip)
 	chip->playback_devno = 1;
 	chip->capture_devno = 2;
 	chip->num_devs = 3;
+	chip->intr_mask = 0x03033000; /* FLAG|EOL for rec0, mc, sdx3 */
 
 	/* PCM #0:  multi-channel playback and capture */
 	err = snd_pcm_new(chip->card, chip->card->shortname, 0, 1, 1, &pcm);
@@ -1192,6 +1221,7 @@ static int __devinit snd_via686_pcm_new(via82xx_t *chip)
 	chip->playback_devno = 0;
 	chip->capture_devno = 1;
 	chip->num_devs = 2;
+	chip->intr_mask = 0x77; /* FLAG | EOL for PB, CP, FM */
 
 	err = snd_pcm_new(chip->card, chip->card->shortname, 0, 1, 1, &pcm);
 	if (err < 0)
@@ -1305,6 +1335,48 @@ static snd_kcontrol_new_t snd_via8233_dxs3_spdif_control __devinitdata = {
 	.put = snd_via8233_dxs3_spdif_put,
 };
 
+static int snd_via8233_dxs_volume_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = 2;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 0xff;
+	return 0;
+}
+
+static int snd_via8233_dxs_volume_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	via82xx_t *chip = snd_kcontrol_chip(kcontrol);
+	ucontrol->value.integer.value[0] = 0xff - chip->playback_volume[0];
+	ucontrol->value.integer.value[1] = 0xff - chip->playback_volume[1];
+	return 0;
+}
+
+static int snd_via8233_dxs_volume_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	via82xx_t *chip = snd_kcontrol_chip(kcontrol);
+	unsigned char val;
+	int change;
+
+	val = 0xff - ucontrol->value.integer.value[0];
+	change = val != chip->playback_volume[0];
+	if (val)
+		chip->playback_volume[0] = val;
+	val = 0xff - ucontrol->value.integer.value[1];
+	change |= val != chip->playback_volume[1];
+	if (val)
+		chip->playback_volume[1] = val;
+	return change;
+}
+
+static snd_kcontrol_new_t snd_via8233_dxs_volume_control __devinitdata = {
+	.name = "VIA DXS Playback Volume",
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.info = snd_via8233_dxs_volume_info,
+	.get = snd_via8233_dxs_volume_get,
+	.put = snd_via8233_dxs_volume_put,
+};
+
 /*
  */
 
@@ -1401,6 +1473,9 @@ static int snd_via8233_init_misc(via82xx_t *chip, int dev)
 			return err;
 	}
 	err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_via8233_dxs3_spdif_control, chip));
+	if (err < 0)
+		return err;
+	err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_via8233_dxs_volume_control, chip));
 	if (err < 0)
 		return err;
 
@@ -1690,7 +1765,7 @@ static struct via823x_info via823x_cards[] __devinitdata = {
 	{ VIA_REV_8233C, "VIA 8233C", TYPE_VIA8233 },
 	{ VIA_REV_8233, "VIA 8233", TYPE_VIA8233 },
 	{ VIA_REV_8233A, "VIA 8233A", TYPE_VIA8233A },
-	{ VIA_REV_8233, "VIA 8235", TYPE_VIA8233 },
+	{ VIA_REV_8235, "VIA 8235", TYPE_VIA8233 },
 };
 
 static int __devinit snd_via82xx_probe(struct pci_dev *pci,

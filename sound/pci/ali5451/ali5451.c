@@ -529,7 +529,8 @@ static int snd_ali_reset_5451(ali_t *codec)
 		udelay(5000);
 	}
 
-	snd_printk(KERN_WARNING "ali5451: reset time out\n");
+	/* non-fatal if you have a non PM capable codec */
+	/* snd_printk(KERN_WARNING "ali5451: reset time out\n"); */
 	return 0;
 }
 
@@ -2089,12 +2090,12 @@ static int __devinit snd_ali_create(snd_card_t * card,
 	/* enable PCI device */
 	if ((err = pci_enable_device(pci)) < 0)
 		return err;
-	/* check, if we can restrict PCI DMA transfers to 30 bits */
-	if (!pci_dma_supported(pci, 0x3fffffff)) {
-		snd_printk("architecture does not support 30bit PCI busmaster DMA\n");
+	/* check, if we can restrict PCI DMA transfers to 31 bits */
+	if (!pci_dma_supported(pci, 0x7fffffff)) {
+		snd_printk("architecture does not support 31bit PCI busmaster DMA\n");
 		return -ENXIO;
 	}
-	pci_set_dma_mask(pci, 0x3fffffff);
+	pci_set_dma_mask(pci, 0x7fffffff);
 
 	if ((codec = snd_magic_kcalloc(ali_t, 0, GFP_KERNEL)) == NULL)
 		return -ENOMEM;
