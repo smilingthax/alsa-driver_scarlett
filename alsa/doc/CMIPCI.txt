@@ -118,6 +118,12 @@ The SPDIF input is always enabled, so you can hear SPDIF input data
 from line-out with "IEC958 In Monitor" switch at any time (see
 below).
 
+You can play via SPDIF even with the first device (hw:0,0),
+but SPDIF is enabled only when the proper format (S16LE), sample rate
+(441100 or 48000) and channels (2) are used.  Otherwise it's turned
+off.  (Also don't forget to turn on "IEC958 Output Switch", too.)
+
+
 Additionally there are relevant control switches:
 
 "IEC958 Mix Analog" - Mix analog PCM playback and FM-OPL/3 streams and
@@ -125,6 +131,8 @@ Additionally there are relevant control switches:
 	Note: without this control you can output PCM to SPDIF.
 	This is "mixing" of streams, so e.g. it's not for AC3 output
 	(see the next section).
+	This switch don't appear only on the recent chip models
+	since apprently this function doesn't work on them.
 
 "IEC958 Loop"       - SPDIF input data is loop back into SPDIF
 	output (bypass)
