@@ -8,7 +8,6 @@ include $(SND_TOPDIR)/Makefile.conf
 #
 # ALSA extra code
 #
-obj-$(CONFIG_SND) += msnd/
 
 isapnp-files := als100.isapnp azt2320.isapnp dt019x.isapnp opl3sa2.isapnp \
 		cmi8330.isapnp es18xx.isapnp sscape.isapnp

@@ -1,3 +1,3 @@
-/* The work is in msnd_pinnacle.c, just define MSND_CLASSIC before it. */
-#define MSND_CLASSIC
-#include "msnd_pinnacle.c"
+#include "adriver.h"
+#include "../../alsa-kernel/isa/msnd/msnd_classic.c"
+EXPORT_NO_SYMBOLS;

@@ -260,20 +260,6 @@ When DEVFS is enabled, snd module has the following option:
 Information about Additional Modules
 ====================================
 
-  Module snd-msnd-pinnacle
-  ------------------------
-
-    Module for Turtle Beach MultiSound Pinnacle/Fiji soundcards.
-
-    io		- Port # for pinnacle/fiji card
-    irq		- IRQ # for pinnalce/fiji card
-    mem		- Memory address (0xb0000, 0xc8000, 0xd0000, 0xd8000,
-		  0xe0000 or 0xe8000)
-    write_ndelay - enable write ndelay
-    calibrate_signal - calibrate signal (?)
-
-    Module supports only one card.
-
   Module snd-pdplus
   -----------------
 
