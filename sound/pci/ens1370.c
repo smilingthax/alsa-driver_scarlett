@@ -1534,16 +1534,21 @@ static struct {
 static int snd_ensoniq_1371_mixer(ensoniq_t * ensoniq)
 {
 	snd_card_t *card = ensoniq->card;
+	ac97_bus_t bus, *pbus;
 	ac97_t ac97;
 	int err, idx;
 
+	memset(&bus, 0, sizeof(bus));
+	bus.write = snd_es1371_codec_write;
+	bus.read = snd_es1371_codec_read;
+	if ((err = snd_ac97_bus(card, &bus, &pbus)) < 0)
+		return err;
+
 	memset(&ac97, 0, sizeof(ac97));
-	ac97.write = snd_es1371_codec_write;
-	ac97.read = snd_es1371_codec_read;
 	ac97.private_data = ensoniq;
 	ac97.private_free = snd_ensoniq_mixer_free_ac97;
 	ac97.scaps = AC97_SCAP_AUDIO;
-	if ((err = snd_ac97_mixer(card, &ac97, &ensoniq->u.es1371.ac97)) < 0)
+	if ((err = snd_ac97_mixer(pbus, &ac97, &ensoniq->u.es1371.ac97)) < 0)
 		return err;
 	for (idx = 0; es1371_spdif_present[idx].vid != (unsigned short)PCI_ANY_ID; idx++)
 		if (ensoniq->pci->vendor == es1371_spdif_present[idx].vid &&
@@ -1680,11 +1685,24 @@ static int __devinit snd_ensoniq_1370_mixer(ensoniq_t * ensoniq)
 #ifdef SUPPORT_JOYSTICK
 static int snd_ensoniq_joystick(ensoniq_t *ensoniq, long port)
 {
-	ensoniq->gameport.io = port;
-	if (!request_region(ensoniq->gameport.io, 8, "ens137x: gameport")) {
-		snd_printk("gameport io port 0x%03x in use", ensoniq->gameport.io);
-		return -EBUSY;
+#ifdef CHIP1371
+	if (port == 1) { /* auto-detect */
+		for (port = 0x200; port <= 0x218; port += 8)
+			if (request_region(port, 8, "ens137x: gameport"))
+				break;
+		if (port > 0x218) {
+			snd_printk("no gameport available\n");
+			return -EBUSY;
+		}
+	} else
+#endif
+	{
+		if (!request_region(port, 8, "ens137x: gameport")) {
+			snd_printk("gameport io port 0x%03x in use", ensoniq->gameport.io);
+			return -EBUSY;
+		}
 	}
+	ensoniq->gameport.io = port;
 	ensoniq->ctrl |= ES_JYSTK_EN;
 #ifdef CHIP1371
 	ensoniq->ctrl &= ~ES_1371_JOY_ASELM;
@@ -1732,7 +1750,7 @@ static void __devinit snd_ensoniq_proc_init(ensoniq_t * ensoniq)
 	snd_info_entry_t *entry;
 
 	if (! snd_card_proc_new(ensoniq->card, "audiopci", &entry))
-		snd_info_set_text_ops(entry, ensoniq, snd_ensoniq_proc_read);
+		snd_info_set_text_ops(entry, ensoniq, 1024, snd_ensoniq_proc_read);
 }
 
 /*
@@ -2246,6 +2264,7 @@ static int __devinit snd_audiopci_probe(struct pci_dev *pci,
 #ifdef SUPPORT_JOYSTICK
 #ifdef CHIP1371
 	switch (joystick_port[dev]) {
+	case 1: /* auto-detect */
 	case 0x200:
 	case 0x208:
 	case 0x210:
