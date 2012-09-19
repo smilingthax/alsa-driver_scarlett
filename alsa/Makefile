@@ -53,6 +53,13 @@ endif
 ifeq (y,$(CONFIG_PPC))
 SUBDIRS  += ppc
 endif
+ifeq (y,$(CONFIG_SPARC32))
+SUBDIRS  += sparc
+else
+ifeq (y,$(CONFIG_SPARC64))
+SUBDIRS  += sparc
+endif
+endif
 ifeq (y,$(CONFIG_SGI))
 SUBDIRS  += hal2
 endif
