@@ -1402,7 +1402,7 @@ typedef struct pdplus_stru {
 
 /* ********************************************************************** */
 
-static void  pdplus_sweep (struct snd_card *) __exit;
+static void  pdplus_sweep (struct snd_card *);
 
 static int   pdplus_a_play_prepare (struct snd_pcm_substream *);
 static int   pdplus_a_play_trigger (struct snd_pcm_substream *, int);
