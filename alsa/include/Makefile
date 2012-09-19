@@ -21,4 +21,5 @@ clean:
 mrproper: clean
 	rm -f *.orig *.rej *~ .#*
 	rm -rf linux/regulator
+	rm -rf linux/usb
 	rm -f linux/* asm/* media/*
