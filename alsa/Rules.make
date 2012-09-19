@@ -132,7 +132,7 @@ $(ld-multi-used-m) : %.o: $(ld-multi-objs-m)
 #
 fastdep: $(patsubst %,_sfdep_%,$(ALL_SUB_DIRS)) update-sndversions
 ifneq "$(strip $(wildcard *.[cS]))" ""
-		$(CC) -M -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) $(wildcard *.[cS]) > .depend
+		$(CC) -M -D__KERNEL__ -D__isapnp_now__ $(CFLAGS) $(EXTRA_CFLAGS) $(wildcard *.[cS]) > .depend
 endif
 
 ifneq "$(strip $(ALL_SUB_DIRS))" ""
