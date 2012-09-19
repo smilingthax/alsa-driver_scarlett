@@ -1,5 +1,5 @@
---- ../alsa-kernel/usb/card.c	2010-04-16 10:37:42.000000000 +0200
-+++ card.c	2010-04-16 10:29:29.000000000 +0200
+--- ../alsa-kernel/usb/card.c	2010-05-31 18:18:40.281789895 +0200
++++ card.c	2010-05-31 18:25:11.879373517 +0200
 @@ -1,3 +1,4 @@
 +#include "card.inc"
  /*
@@ -19,9 +19,9 @@
  static int device_setup[SNDRV_CARDS]; /* device parameter for this card */
  static int ignore_ctl_error;
  
-@@ -238,13 +244,18 @@
+@@ -237,7 +243,11 @@
+ 
  	case UAC_VERSION_2: {
- 		struct uac_clock_source_descriptor *cs;
  		struct usb_interface_assoc_descriptor *assoc =
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 23)
  			usb_ifnum_to_if(dev, ctrlif)->intf_assoc;
@@ -31,22 +31,7 @@
  
  		if (!assoc) {
  			snd_printk(KERN_ERR "Audio class v2 interfaces need an interface association\n");
- 			return -EINVAL;
- 		}
- 
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 23)
- 		/* FIXME: for now, we expect there is at least one clock source
- 		 * descriptor and we always take the first one.
- 		 * We should properly support devices with multiple clock sources,
-@@ -266,6 +277,7 @@
- 			if (intf != ctrlif)
- 				snd_usb_create_stream(chip, ctrlif, intf);
- 		}
-+#endif
- 
- 		break;
- 	}
-@@ -341,8 +353,13 @@
+@@ -325,8 +335,13 @@
  	chip->nrpacks = nrpacks;
  	chip->async_unlink = async_unlink;
  
@@ -60,7 +45,7 @@
  	INIT_LIST_HEAD(&chip->pcm_list);
  	INIT_LIST_HEAD(&chip->midi_list);
  	INIT_LIST_HEAD(&chip->mixer_list);
-@@ -428,8 +445,12 @@
+@@ -412,8 +427,12 @@
  
  	alts = &intf->altsetting[0];
  	ifnum = get_iface_desc(alts)->bInterfaceNumber;
@@ -73,7 +58,7 @@
  	if (quirk && quirk->ifnum >= 0 && ifnum != quirk->ifnum)
  		goto __err_val;
  
-@@ -547,6 +568,7 @@
+@@ -533,6 +552,7 @@
  	}
  }
  
@@ -81,7 +66,7 @@
  /*
   * new 2.5 USB kernel API
   */
-@@ -610,6 +632,7 @@
+@@ -596,6 +616,7 @@
  #define usb_audio_suspend	NULL
  #define usb_audio_resume	NULL
  #endif		/* CONFIG_PM */
@@ -89,7 +74,7 @@
  
  static struct usb_device_id usb_audio_ids [] = {
  #include "quirks-table.h"
-@@ -626,11 +649,19 @@
+@@ -612,11 +633,19 @@
   */
  
  static struct usb_driver usb_audio_driver = {
@@ -109,7 +94,7 @@
  	.id_table =	usb_audio_ids,
  };
  
-@@ -650,3 +681,5 @@
+@@ -636,3 +665,5 @@
  
  module_init(snd_usb_audio_init);
  module_exit(snd_usb_audio_cleanup);

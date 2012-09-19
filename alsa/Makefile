@@ -160,7 +160,7 @@ include/sndversions.h:
 .PHONY: compile
 compile: include/sndversions.h
 ifdef NEW_KBUILD
-	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR) $(MAKE_ADDS) CPP="$(CPP)" CC="$(CC)" modules
+	$(MAKE) -C $(CONFIG_SND_KERNELBUILD) SUBDIRS=$(MAINSRCDIR) $(MAKE_ADDS) CPP="$(CPP)" CC="$(CC)" modules
 	utils/link-modules $(SND_TOPDIR)
 else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
