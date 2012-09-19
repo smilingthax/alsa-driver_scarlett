@@ -1669,4 +1669,18 @@ void snd_compat_print_hex_dump_bytes(const char *prefix_str, int prefix_type,
 #define print_hex_dump_bytes(a,b,c,d) snd_compat_print_hex_dump_bytes(a,b,c,d)
 #endif
 
+/*
+ * pci_ioremap_bar() wrapper
+ */
+#ifdef CONFIG_PCI
+#ifndef CONFIG_HAVE_PCI_IOREMAP_BAR
+#include <linux/pci.h>
+static inline void *pci_ioremap_bar(struct pci_dev *pdev, int bar)
+{
+	return ioremap_nocache(pci_resource_start(pdev, bar),
+			       pci_resource_len(pdev, bar));
+}
+#endif
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
