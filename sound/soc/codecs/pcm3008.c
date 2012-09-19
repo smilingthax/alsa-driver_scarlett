@@ -91,7 +91,7 @@ static int pcm3008_soc_probe(struct platform_device *pdev)
 	}
 
 	/* Register Card. */
-	ret = snd_soc_register_card(socdev);
+	ret = snd_soc_init_card(socdev);
 	if (ret < 0) {
 		printk(KERN_ERR "pcm3008: failed to register card\n");
 		goto card_err;
@@ -194,6 +194,18 @@ struct snd_soc_codec_device soc_codec_dev_pcm3008 = {
 	.resume =	pcm3008_soc_resume,
 };
 EXPORT_SYMBOL_GPL(soc_codec_dev_pcm3008);
+
+static int __init pcm3008_init(void)
+{
+	return snd_soc_register_dai(&pcm3008_dai);
+}
+module_init(pcm3008_init);
+
+static void __exit pcm3008_exit(void)
+{
+	snd_soc_unregister_dai(&pcm3008_dai);
+}
+module_exit(pcm3008_exit);
 
 MODULE_DESCRIPTION("Soc PCM3008 driver");
 MODULE_AUTHOR("Hugo Villeneuve");

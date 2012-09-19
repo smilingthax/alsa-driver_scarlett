@@ -332,7 +332,7 @@ static int wm8728_init(struct snd_soc_device *socdev)
 
 	wm8728_add_controls(codec);
 	wm8728_add_widgets(codec);
-	ret = snd_soc_register_card(socdev);
+	ret = snd_soc_init_card(socdev);
 	if (ret < 0) {
 		printk(KERN_ERR "wm8728: failed to register card\n");
 		goto card_err;
@@ -567,6 +567,18 @@ struct snd_soc_codec_device soc_codec_dev_wm8728 = {
 	.resume =	wm8728_resume,
 };
 EXPORT_SYMBOL_GPL(soc_codec_dev_wm8728);
+
+static int __init wm8728_modinit(void)
+{
+	return snd_soc_register_dai(&wm8728_dai);
+}
+module_init(wm8728_modinit);
+
+static void __exit wm8728_exit(void)
+{
+	snd_soc_unregister_dai(&wm8728_dai);
+}
+module_exit(wm8728_exit);
 
 MODULE_DESCRIPTION("ASoC WM8728 driver");
 MODULE_AUTHOR("Mark Brown <broonie@opensource.wolfsonmicro.com>");

@@ -285,7 +285,8 @@ static int s3c2443_ac97_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int s3c2443_ac97_trigger(struct snd_pcm_substream *substream, int cmd)
+static int s3c2443_ac97_trigger(struct snd_pcm_substream *substream, int cmd,
+				struct snd_soc_dai *dai)
 {
 	u32 ac_glbctrl;
 
@@ -394,6 +395,21 @@ struct snd_soc_dai s3c2443_ac97_dai[] = {
 };
 EXPORT_SYMBOL_GPL(s3c2443_ac97_dai);
 EXPORT_SYMBOL_GPL(soc_ac97_ops);
+
+static int __init s3c2443_ac97_init(void)
+{
+	return snd_soc_register_dais(s3c2443_ac97_dai,
+				     ARRAY_SIZE(s3c2443_ac97_dai));
+}
+module_init(s3c2443_ac97_init);
+
+static void __exit s3c2443_ac97_exit(void)
+{
+	snd_soc_unregister_dais(s3c2443_ac97_dai,
+				ARRAY_SIZE(s3c2443_ac97_dai));
+}
+module_exit(s3c2443_ac97_exit);
+
 
 MODULE_AUTHOR("Graeme Gregory");
 MODULE_DESCRIPTION("AC97 driver for the Samsung s3c2443 chip");

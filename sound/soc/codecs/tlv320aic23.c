@@ -541,7 +541,7 @@ static int tlv320aic23_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	case SND_SOC_DAIFMT_I2S:
 		iface_reg |= TLV320AIC23_FOR_I2S;
 		break;
-	case SND_SOC_DAIFMT_DSP_A:
+	case SND_SOC_DAIFMT_DSP_B:
 		iface_reg |= TLV320AIC23_FOR_DSP;
 		break;
 	case SND_SOC_DAIFMT_RIGHT_J:
@@ -720,7 +720,7 @@ static int tlv320aic23_init(struct snd_soc_device *socdev)
 
 	tlv320aic23_add_controls(codec);
 	tlv320aic23_add_widgets(codec);
-	ret = snd_soc_register_card(socdev);
+	ret = snd_soc_init_card(socdev);
 	if (ret < 0) {
 		printk(KERN_ERR "tlv320aic23: failed to register card\n");
 		goto card_err;
@@ -846,6 +846,18 @@ struct snd_soc_codec_device soc_codec_dev_tlv320aic23 = {
 	.resume = tlv320aic23_resume,
 };
 EXPORT_SYMBOL_GPL(soc_codec_dev_tlv320aic23);
+
+static int __init tlv320aic23_modinit(void)
+{
+	return snd_soc_register_dai(&tlv320aic23_dai);
+}
+module_init(tlv320aic23_modinit);
+
+static void __exit tlv320aic23_exit(void)
+{
+	snd_soc_unregister_dai(&tlv320aic23_dai);
+}
+module_exit(tlv320aic23_exit);
 
 MODULE_DESCRIPTION("ASoC TLV320AIC23 codec driver");
 MODULE_AUTHOR("Arun KS <arunks@mistralsolutions.com>");

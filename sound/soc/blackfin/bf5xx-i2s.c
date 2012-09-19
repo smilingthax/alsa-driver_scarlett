@@ -222,16 +222,14 @@ static int bf5xx_i2s_probe(struct platform_device *pdev,
 	return 0;
 }
 
-static void bf5xx_i2s_remove(struct platform_device *pdev,
-			   struct snd_soc_dai *dai)
+static void bf5xx_i2s_remove(struct snd_soc_dai *dai)
 {
 	pr_debug("%s enter\n", __func__);
 	peripheral_free_list(&sport_req[sport_num][0]);
 }
 
 #ifdef CONFIG_PM
-static int bf5xx_i2s_suspend(struct platform_device *dev,
-			     struct snd_soc_dai *dai)
+static int bf5xx_i2s_suspend(struct snd_soc_dai *dai)
 {
 	struct sport_device *sport =
 		(struct sport_device *)dai->private_data;
@@ -314,6 +312,18 @@ struct snd_soc_dai bf5xx_i2s_dai = {
 	},
 };
 EXPORT_SYMBOL_GPL(bf5xx_i2s_dai);
+
+static int __init bfin_i2s_init(void)
+{
+	return snd_soc_register_dai(&bf5xx_i2s_dai);
+}
+module_init(bfin_i2s_init);
+
+static void __exit bfin_i2s_exit(void)
+{
+	snd_soc_unregister_dai(&bf5xx_i2s_dai);
+}
+module_exit(bfin_i2s_exit);
 
 /* Module information */
 MODULE_AUTHOR("Cliff Cai");

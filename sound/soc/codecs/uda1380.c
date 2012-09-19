@@ -677,7 +677,7 @@ static int uda1380_init(struct snd_soc_device *socdev, int dac_clk)
 	/* uda1380 init */
 	uda1380_add_controls(codec);
 	uda1380_add_widgets(codec);
-	ret = snd_soc_register_card(socdev);
+	ret = snd_soc_init_card(socdev);
 	if (ret < 0) {
 		pr_err("uda1380: failed to register card\n");
 		goto card_err;
@@ -840,6 +840,18 @@ struct snd_soc_codec_device soc_codec_dev_uda1380 = {
 	.resume =	uda1380_resume,
 };
 EXPORT_SYMBOL_GPL(soc_codec_dev_uda1380);
+
+static int __init uda1380_modinit(void)
+{
+	return snd_soc_register_dais(uda1380_dai, ARRAY_SIZE(uda1380_dai));
+}
+module_init(uda1380_modinit);
+
+static void __exit uda1380_exit(void)
+{
+	snd_soc_unregister_dais(uda1380_dai, ARRAY_SIZE(uda1380_dai));
+}
+module_exit(uda1380_exit);
 
 MODULE_AUTHOR("Giorgio Padrin");
 MODULE_DESCRIPTION("Audio support for codec Philips UDA1380");

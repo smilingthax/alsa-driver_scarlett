@@ -419,8 +419,7 @@ static int s3c24xx_i2s_probe(struct platform_device *pdev,
 }
 
 #ifdef CONFIG_PM
-static int s3c24xx_i2s_suspend(struct platform_device *pdev,
-		struct snd_soc_dai *cpu_dai)
+static int s3c24xx_i2s_suspend(struct snd_soc_dai *cpu_dai)
 {
 	DBG("Entered %s\n", __func__);
 
@@ -434,8 +433,7 @@ static int s3c24xx_i2s_suspend(struct platform_device *pdev,
 	return 0;
 }
 
-static int s3c24xx_i2s_resume(struct platform_device *pdev,
-		struct snd_soc_dai *cpu_dai)
+static int s3c24xx_i2s_resume(struct snd_soc_dai *cpu_dai)
 {
 	DBG("Entered %s\n", __func__);
 	clk_enable(s3c24xx_i2s.iis_clk);
@@ -483,6 +481,18 @@ struct snd_soc_dai s3c24xx_i2s_dai = {
 	},
 };
 EXPORT_SYMBOL_GPL(s3c24xx_i2s_dai);
+
+static int __init s3c24xx_i2s_init(void)
+{
+	return snd_soc_register_dai(&s3c24xx_i2s_dai);
+}
+module_init(s3c24xx_i2s_init);
+
+static void __exit s3c24xx_i2s_exit(void)
+{
+	snd_soc_unregister_dai(&s3c24xx_i2s_dai);
+}
+module_exit(s3c24xx_i2s_exit);
 
 /* Module information */
 MODULE_AUTHOR("Ben Dooks, <ben@simtec.co.uk>");

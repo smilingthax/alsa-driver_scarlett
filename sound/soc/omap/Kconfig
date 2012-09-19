@@ -1,6 +1,6 @@
 config SND_OMAP_SOC
 	tristate "SoC Audio for the Texas Instruments OMAP chips"
-	depends on ARCH_OMAP && SND_SOC
+	depends on ARCH_OMAP
 
 config SND_OMAP_SOC_MCBSP
 	tristate
@@ -44,6 +44,13 @@ config SND_OMAP_SOC_SDP3430
 	select SND_OMAP_SOC_MCBSP
 	select SND_SOC_TWL4030
 	help
-	  Say Y if you want to add support for SoC audio on Texas Instruments SDP3430.
+	  Say Y if you want to add support for SoC audio on Texas Instruments
+	  SDP3430.
 
-
+config SND_OMAP_SOC_OMAP3_PANDORA
+	tristate "SoC Audio support for OMAP3 Pandora"
+	depends on TWL4030_CORE && SND_OMAP_SOC && MACH_OMAP3_PANDORA
+	select SND_OMAP_SOC_MCBSP
+	select SND_SOC_TWL4030
+	help
+	  Say Y if you want to add support for SoC audio on the OMAP3 Pandora.

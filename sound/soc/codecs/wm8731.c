@@ -545,7 +545,7 @@ static int wm8731_init(struct snd_soc_device *socdev)
 
 	wm8731_add_controls(codec);
 	wm8731_add_widgets(codec);
-	ret = snd_soc_register_card(socdev);
+	ret = snd_soc_init_card(socdev);
 	if (ret < 0) {
 		printk(KERN_ERR "wm8731: failed to register card\n");
 		goto card_err;
@@ -792,6 +792,18 @@ struct snd_soc_codec_device soc_codec_dev_wm8731 = {
 	.resume =	wm8731_resume,
 };
 EXPORT_SYMBOL_GPL(soc_codec_dev_wm8731);
+
+static int __init wm8731_modinit(void)
+{
+	return snd_soc_register_dai(&wm8731_dai);
+}
+module_init(wm8731_modinit);
+
+static void __exit wm8731_exit(void)
+{
+	snd_soc_unregister_dai(&wm8731_dai);
+}
+module_exit(wm8731_exit);
 
 MODULE_DESCRIPTION("ASoC WM8731 driver");
 MODULE_AUTHOR("Richard Purdie");

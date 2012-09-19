@@ -1462,7 +1462,7 @@ static int wm8990_init(struct snd_soc_device *socdev)
 
 	wm8990_add_controls(codec);
 	wm8990_add_widgets(codec);
-	ret = snd_soc_register_card(socdev);
+	ret = snd_soc_init_card(socdev);
 	if (ret < 0) {
 		printk(KERN_ERR "wm8990: failed to register card\n");
 		goto card_err;
@@ -1642,6 +1642,18 @@ struct snd_soc_codec_device soc_codec_dev_wm8990 = {
 	.resume =	wm8990_resume,
 };
 EXPORT_SYMBOL_GPL(soc_codec_dev_wm8990);
+
+static int __init wm8990_modinit(void)
+{
+	return snd_soc_register_dai(&wm8990_dai);
+}
+module_init(wm8990_modinit);
+
+static void __exit wm8990_exit(void)
+{
+	snd_soc_unregister_dai(&wm8990_dai);
+}
+module_exit(wm8990_exit);
 
 MODULE_DESCRIPTION("ASoC WM8990 driver");
 MODULE_AUTHOR("Liam Girdwood");

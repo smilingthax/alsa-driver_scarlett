@@ -454,10 +454,10 @@ static int ssm2602_set_dai_fmt(struct snd_soc_dai *codec_dai,
 		iface |= 0x0001;
 		break;
 	case SND_SOC_DAIFMT_DSP_A:
-		iface |= 0x0003;
+		iface |= 0x0013;
 		break;
 	case SND_SOC_DAIFMT_DSP_B:
-		iface |= 0x0013;
+		iface |= 0x0003;
 		break;
 	default:
 		return -EINVAL;
@@ -624,7 +624,7 @@ static int ssm2602_init(struct snd_soc_device *socdev)
 
 	ssm2602_add_controls(codec);
 	ssm2602_add_widgets(codec);
-	ret = snd_soc_register_card(socdev);
+	ret = snd_soc_init_card(socdev);
 	if (ret < 0) {
 		pr_err("ssm2602: failed to register card\n");
 		goto card_err;
@@ -792,6 +792,18 @@ struct snd_soc_codec_device soc_codec_dev_ssm2602 = {
 	.resume =	ssm2602_resume,
 };
 EXPORT_SYMBOL_GPL(soc_codec_dev_ssm2602);
+
+static int __init ssm2602_modinit(void)
+{
+	return snd_soc_register_dai(&ssm2602_dai);
+}
+module_init(ssm2602_modinit);
+
+static void __exit ssm2602_exit(void)
+{
+	snd_soc_unregister_dai(&ssm2602_dai);
+}
+module_exit(ssm2602_exit);
 
 MODULE_DESCRIPTION("ASoC ssm2602 driver");
 MODULE_AUTHOR("Cliff Cai");

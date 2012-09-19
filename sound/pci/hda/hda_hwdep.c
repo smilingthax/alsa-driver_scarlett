@@ -116,7 +116,7 @@ static void hwdep_free(struct snd_hwdep *hwdep)
 	clear_hwdep_elements(hwdep->private_data);
 }
 
-int __devinit snd_hda_create_hwdep(struct hda_codec *codec)
+int /*__devinit*/ snd_hda_create_hwdep(struct hda_codec *codec)
 {
 	char hwname[16];
 	struct snd_hwdep *hwdep;
@@ -168,7 +168,7 @@ static int reconfig_codec(struct hda_codec *codec)
 	if (err < 0)
 		return err;
 	/* rebuild PCMs */
-	err = snd_hda_build_pcms(codec->bus);
+	err = snd_hda_codec_build_pcms(codec);
 	if (err < 0)
 		return err;
 	/* rebuild mixers */

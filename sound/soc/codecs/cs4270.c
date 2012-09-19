@@ -723,7 +723,7 @@ static int cs4270_probe(struct platform_device *pdev)
 	printk(KERN_INFO "cs4270: I2C disabled, using stand-alone mode\n");
 #endif
 
-	ret = snd_soc_register_card(socdev);
+	ret = snd_soc_init_card(socdev);
 	if (ret < 0) {
 		printk(KERN_ERR "cs4270: failed to register card\n");
 		goto error_del_driver;
@@ -773,6 +773,18 @@ struct snd_soc_codec_device soc_codec_device_cs4270 = {
 	.remove = 	cs4270_remove
 };
 EXPORT_SYMBOL_GPL(soc_codec_device_cs4270);
+
+static int __init cs4270_init(void)
+{
+	return snd_soc_register_dai(&cs4270_dai);
+}
+module_init(cs4270_init);
+
+static void __exit cs4270_exit(void)
+{
+	snd_soc_unregister_dai(&cs4270_dai);
+}
+module_exit(cs4270_exit);
 
 MODULE_AUTHOR("Timur Tabi <timur@freescale.com>");
 MODULE_DESCRIPTION("Cirrus Logic CS4270 ALSA SoC Codec Driver");

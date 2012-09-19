@@ -658,7 +658,7 @@ static int wm8510_init(struct snd_soc_device *socdev)
 	wm8510_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 	wm8510_add_controls(codec);
 	wm8510_add_widgets(codec);
-	ret = snd_soc_register_card(socdev);
+	ret = snd_soc_init_card(socdev);
 	if (ret < 0) {
 		printk(KERN_ERR "wm8510: failed to register card\n");
 		goto card_err;
@@ -888,6 +888,18 @@ struct snd_soc_codec_device soc_codec_dev_wm8510 = {
 	.resume =	wm8510_resume,
 };
 EXPORT_SYMBOL_GPL(soc_codec_dev_wm8510);
+
+static int __init wm8510_modinit(void)
+{
+	return snd_soc_register_dai(&wm8510_dai);
+}
+module_init(wm8510_modinit);
+
+static void __exit wm8510_exit(void)
+{
+	snd_soc_unregister_dai(&wm8510_dai);
+}
+module_exit(wm8510_exit);
 
 MODULE_DESCRIPTION("ASoC WM8510 driver");
 MODULE_AUTHOR("Liam Girdwood");

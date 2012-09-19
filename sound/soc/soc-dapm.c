@@ -1077,7 +1077,7 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_new_widgets);
 /**
  * snd_soc_dapm_get_volsw - dapm mixer get callback
  * @kcontrol: mixer control
- * @uinfo: control element information
+ * @ucontrol: control element information
  *
  * Callback to get the value of a dapm mixer control.
  *
@@ -1122,7 +1122,7 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_get_volsw);
 /**
  * snd_soc_dapm_put_volsw - dapm mixer set callback
  * @kcontrol: mixer control
- * @uinfo: control element information
+ * @ucontrol: control element information
  *
  * Callback to set the value of a dapm mixer control.
  *
@@ -1193,7 +1193,7 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_put_volsw);
 /**
  * snd_soc_dapm_get_enum_double - dapm enumerated double mixer get callback
  * @kcontrol: mixer control
- * @uinfo: control element information
+ * @ucontrol: control element information
  *
  * Callback to get the value of a dapm enumerated double mixer control.
  *
@@ -1221,7 +1221,7 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_get_enum_double);
 /**
  * snd_soc_dapm_put_enum_double - dapm enumerated double mixer set callback
  * @kcontrol: mixer control
- * @uinfo: control element information
+ * @ucontrol: control element information
  *
  * Callback to set the value of a dapm enumerated double mixer control.
  *
@@ -1320,8 +1320,12 @@ int snd_soc_dapm_new_controls(struct snd_soc_codec *codec,
 
 	for (i = 0; i < num; i++) {
 		ret = snd_soc_dapm_new_control(codec, widget);
-		if (ret < 0)
+		if (ret < 0) {
+			printk(KERN_ERR
+			       "ASoC: Failed to create DAPM control %s: %d\n",
+			       widget->name, ret);
 			return ret;
+		}
 		widget++;
 	}
 	return 0;
@@ -1415,7 +1419,7 @@ int snd_soc_dapm_set_bias_level(struct snd_soc_device *socdev,
 
 /**
  * snd_soc_dapm_enable_pin - enable pin.
- * @snd_soc_codec: SoC codec
+ * @codec: SoC codec
  * @pin: pin name
  *
  * Enables input/output pin and it's parents or children widgets iff there is

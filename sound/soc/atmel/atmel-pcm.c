@@ -417,8 +417,7 @@ static void atmel_pcm_free_dma_buffers(struct snd_pcm *pcm)
 }
 
 #ifdef CONFIG_PM
-static int atmel_pcm_suspend(struct platform_device *pdev,
-	struct snd_soc_dai *dai)
+static int atmel_pcm_suspend(struct snd_soc_dai *dai)
 {
 	struct snd_pcm_runtime *runtime = dai->runtime;
 	struct atmel_runtime_data *prtd;
@@ -442,8 +441,7 @@ static int atmel_pcm_suspend(struct platform_device *pdev,
 	return 0;
 }
 
-static int atmel_pcm_resume(struct platform_device *pdev,
-	struct snd_soc_dai *dai)
+static int atmel_pcm_resume(struct snd_soc_dai *dai)
 {
 	struct snd_pcm_runtime *runtime = dai->runtime;
 	struct atmel_runtime_data *prtd;
@@ -478,6 +476,18 @@ struct snd_soc_platform atmel_soc_platform = {
 	.resume		= atmel_pcm_resume,
 };
 EXPORT_SYMBOL_GPL(atmel_soc_platform);
+
+static int __init atmel_pcm_modinit(void)
+{
+	return snd_soc_register_platform(&atmel_soc_platform);
+}
+module_init(atmel_pcm_modinit);
+
+static void __exit atmel_pcm_modexit(void)
+{
+	snd_soc_unregister_platform(&atmel_soc_platform);
+}
+module_exit(atmel_pcm_modexit);
 
 MODULE_AUTHOR("Sedji Gaouaou <sedji.gaouaou@atmel.com>");
 MODULE_DESCRIPTION("Atmel PCM module");

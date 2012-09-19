@@ -21,6 +21,7 @@
 
 #include <mach/hardware.h>
 #include <mach/pxa-regs.h>
+#include <mach/regs-ac97.h>
 
 #include "pxa2xx-pcm.h"
 #include "pxa2xx-ac97.h"
@@ -87,14 +88,12 @@ static struct pxa2xx_pcm_dma_params pxa2xx_ac97_pcm_mic_mono_in = {
 };
 
 #ifdef CONFIG_PM
-static int pxa2xx_ac97_suspend(struct platform_device *pdev,
-	struct snd_soc_dai *dai)
+static int pxa2xx_ac97_suspend(struct snd_soc_dai *dai)
 {
 	return pxa2xx_ac97_hw_suspend();
 }
 
-static int pxa2xx_ac97_resume(struct platform_device *pdev,
-	struct snd_soc_dai *dai)
+static int pxa2xx_ac97_resume(struct snd_soc_dai *dai)
 {
 	return pxa2xx_ac97_hw_resume();
 }
@@ -229,6 +228,18 @@ struct snd_soc_dai pxa_ac97_dai[] = {
 
 EXPORT_SYMBOL_GPL(pxa_ac97_dai);
 EXPORT_SYMBOL_GPL(soc_ac97_ops);
+
+static int __init pxa_ac97_init(void)
+{
+	return snd_soc_register_dais(pxa_ac97_dai, ARRAY_SIZE(pxa_ac97_dai));
+}
+module_init(pxa_ac97_init);
+
+static void __exit pxa_ac97_exit(void)
+{
+	snd_soc_unregister_dais(pxa_ac97_dai, ARRAY_SIZE(pxa_ac97_dai));
+}
+module_exit(pxa_ac97_exit);
 
 MODULE_AUTHOR("Nicolas Pitre");
 MODULE_DESCRIPTION("AC97 driver for the Intel PXA2xx chip");

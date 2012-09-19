@@ -314,8 +314,7 @@ static void au1xpsc_ac97_remove(struct platform_device *pdev,
 	au1xpsc_ac97_workdata = NULL;
 }
 
-static int au1xpsc_ac97_suspend(struct platform_device *pdev,
-				struct snd_soc_dai *dai)
+static int au1xpsc_ac97_suspend(struct snd_soc_dai *dai)
 {
 	/* save interesting registers and disable PSC */
 	au1xpsc_ac97_workdata->pm[0] =
@@ -329,8 +328,7 @@ static int au1xpsc_ac97_suspend(struct platform_device *pdev,
 	return 0;
 }
 
-static int au1xpsc_ac97_resume(struct platform_device *pdev,
-			       struct snd_soc_dai *dai)
+static int au1xpsc_ac97_resume(struct snd_soc_dai *dai)
 {
 	/* restore PSC clock config */
 	au_writel(au1xpsc_ac97_workdata->pm[0] | PSC_SEL_PS_AC97MODE,
@@ -373,11 +371,12 @@ EXPORT_SYMBOL_GPL(au1xpsc_ac97_dai);
 static int __init au1xpsc_ac97_init(void)
 {
 	au1xpsc_ac97_workdata = NULL;
-	return 0;
+	return snd_soc_register_dai(&au1xpsc_ac97_dai);
 }
 
 static void __exit au1xpsc_ac97_exit(void)
 {
+	snd_soc_unregister_dai(&au1xpsc_ac97_dai);
 }
 
 module_init(au1xpsc_ac97_init);

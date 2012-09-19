@@ -1,4 +1,21 @@
 /*
+ * ALSA timer back-end using hrtimer
+ * Copyright (C) 2008 Takashi Iwai
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *
  */
 
 #include <linux/init.h>
@@ -26,7 +43,7 @@ static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
 {
 	struct snd_hrtimer *stime = container_of(hrt, struct snd_hrtimer, hrt);
 	struct snd_timer *t = stime->timer;
-	hrtimer_forward_now(hrt, ktime_set(0, t->sticks * resolution));
+	hrtimer_forward_now(hrt, ns_to_ktime(t->sticks * resolution));
 	snd_timer_interrupt(stime->timer, t->sticks);
 	return HRTIMER_RESTART;
 }
@@ -40,7 +57,6 @@ static int snd_hrtimer_open(struct snd_timer *t)
 		return -ENOMEM;
 	hrtimer_init(&stime->hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	stime->timer = t;
-	stime->hrt.cb_mode = HRTIMER_CB_SOFTIRQ;
 	stime->hrt.function = snd_hrtimer_callback;
 	t->private_data = stime;
 	return 0;
@@ -62,7 +78,7 @@ static int snd_hrtimer_start(struct snd_timer *t)
 {
 	struct snd_hrtimer *stime = t->private_data;
 
-	hrtimer_start(&stime->hrt, ktime_set(0, t->sticks * resolution),
+	hrtimer_start(&stime->hrt, ns_to_ktime(t->sticks * resolution),
 		      HRTIMER_MODE_REL);
 	return 0;
 }
@@ -76,9 +92,7 @@ static int snd_hrtimer_stop(struct snd_timer *t)
 }
 
 static struct snd_timer_hardware hrtimer_hw = {
-	.flags =	(SNDRV_TIMER_HW_AUTO |
-			 /*SNDRV_TIMER_HW_FIRST |*/
-			 SNDRV_TIMER_HW_TASKLET),
+	.flags =	SNDRV_TIMER_HW_AUTO,
 	.open =		snd_hrtimer_open,
 	.close =	snd_hrtimer_close,
 	.start =	snd_hrtimer_start,

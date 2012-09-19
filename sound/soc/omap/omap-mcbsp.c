@@ -270,7 +270,7 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
 		regs->srgr2	|= FPER(wlen * 2 - 1);
 		regs->srgr1	|= FWID(wlen - 1);
 		break;
-	case SND_SOC_DAIFMT_DSP_A:
+	case SND_SOC_DAIFMT_DSP_B:
 		regs->srgr2	|= FPER(wlen * channels - 1);
 		regs->srgr1	|= FWID(wlen * channels - 2);
 		break;
@@ -309,7 +309,7 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		regs->rcr2	|= RDATDLY(1);
 		regs->xcr2	|= XDATDLY(1);
 		break;
-	case SND_SOC_DAIFMT_DSP_A:
+	case SND_SOC_DAIFMT_DSP_B:
 		/* 0-bit data delay */
 		regs->rcr2      |= RDATDLY(0);
 		regs->xcr2      |= XDATDLY(0);
@@ -498,6 +498,19 @@ struct snd_soc_dai omap_mcbsp_dai[] = {
 };
 
 EXPORT_SYMBOL_GPL(omap_mcbsp_dai);
+
+static int __init snd_omap_mcbsp_init(void)
+{
+	return snd_soc_register_dais(omap_mcbsp_dai,
+				     ARRAY_SIZE(omap_mcbsp_dai));
+}
+module_init(snd_omap_mcbsp_init);
+
+static void __exit snd_omap_mcbsp_exit(void)
+{
+	snd_soc_unregister_dais(omap_mcbsp_dai, ARRAY_SIZE(omap_mcbsp_dai));
+}
+module_exit(snd_omap_mcbsp_exit);
 
 MODULE_AUTHOR("Jarkko Nikula <jarkko.nikula@nokia.com>");
 MODULE_DESCRIPTION("OMAP I2S SoC Interface");

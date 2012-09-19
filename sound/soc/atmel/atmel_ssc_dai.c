@@ -628,8 +628,7 @@ static int atmel_ssc_prepare(struct snd_pcm_substream *substream,
 
 
 #ifdef CONFIG_PM
-static int atmel_ssc_suspend(struct platform_device *pdev,
-			    struct snd_soc_dai *cpu_dai)
+static int atmel_ssc_suspend(struct snd_soc_dai *cpu_dai)
 {
 	struct atmel_ssc_info *ssc_p;
 
@@ -657,8 +656,7 @@ static int atmel_ssc_suspend(struct platform_device *pdev,
 
 
 
-static int atmel_ssc_resume(struct platform_device *pdev,
-			   struct snd_soc_dai *cpu_dai)
+static int atmel_ssc_resume(struct snd_soc_dai *cpu_dai)
 {
 	struct atmel_ssc_info *ssc_p;
 	u32 cr;
@@ -773,6 +771,18 @@ struct snd_soc_dai atmel_ssc_dai[NUM_SSC_DEVICES] = {
 #endif
 };
 EXPORT_SYMBOL_GPL(atmel_ssc_dai);
+
+static int __init atmel_ssc_modinit(void)
+{
+	return snd_soc_register_dais(atmel_ssc_dai, ARRAY_SIZE(atmel_ssc_dai));
+}
+module_init(atmel_ssc_modinit);
+
+static void __exit atmel_ssc_modexit(void)
+{
+	snd_soc_unregister_dais(atmel_ssc_dai, ARRAY_SIZE(atmel_ssc_dai));
+}
+module_exit(atmel_ssc_modexit);
 
 /* Module information */
 MODULE_AUTHOR("Sedji Gaouaou, sedji.gaouaou@atmel.com, www.atmel.com");

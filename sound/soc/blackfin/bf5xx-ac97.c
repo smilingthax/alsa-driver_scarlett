@@ -269,8 +269,7 @@ struct snd_ac97_bus_ops soc_ac97_ops = {
 EXPORT_SYMBOL_GPL(soc_ac97_ops);
 
 #ifdef CONFIG_PM
-static int bf5xx_ac97_suspend(struct platform_device *pdev,
-	struct snd_soc_dai *dai)
+static int bf5xx_ac97_suspend(struct snd_soc_dai *dai)
 {
 	struct sport_device *sport =
 		(struct sport_device *)dai->private_data;
@@ -285,8 +284,7 @@ static int bf5xx_ac97_suspend(struct platform_device *pdev,
 	return 0;
 }
 
-static int bf5xx_ac97_resume(struct platform_device *pdev,
-	struct snd_soc_dai *dai)
+static int bf5xx_ac97_resume(struct snd_soc_dai *dai)
 {
 	int ret;
 	struct sport_device *sport =
@@ -432,6 +430,18 @@ struct snd_soc_dai bfin_ac97_dai = {
 		.formats = SNDRV_PCM_FMTBIT_S16_LE, },
 };
 EXPORT_SYMBOL_GPL(bfin_ac97_dai);
+
+static int __init bfin_ac97_init(void)
+{
+	return snd_soc_register_dai(&bfin_ac97_dai);
+}
+module_init(bfin_ac97_init);
+
+static void __exit bfin_ac97_exit(void)
+{
+	snd_soc_unregister_dai(&bfin_ac97_dai);
+}
+module_exit(bfin_ac97_exit);
 
 MODULE_AUTHOR("Roy Huang");
 MODULE_DESCRIPTION("AC97 driver for ADI Blackfin");

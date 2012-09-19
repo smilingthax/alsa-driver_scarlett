@@ -30,7 +30,6 @@
 #include <sound/core.h>
 #include "hda_codec.h"
 #include "hda_local.h"
-#include "hda_patch.h"
 
 #define ALC880_FRONT_EVENT		0x01
 #define ALC880_DCVOL_EVENT		0x02
@@ -765,6 +764,27 @@ static void add_verb(struct alc_spec *spec, const struct hda_verb *verb)
 		return;
 	spec->init_verbs[spec->num_init_verbs++] = verb;
 }
+
+#ifdef CONFIG_PROC_FS
+/*
+ * hook for proc
+ */
+static void print_realtek_coef(struct snd_info_buffer *buffer,
+			       struct hda_codec *codec, hda_nid_t nid)
+{
+	int coeff;
+
+	if (nid != 0x20)
+		return;
+	coeff = snd_hda_codec_read(codec, nid, 0, AC_VERB_GET_PROC_COEF, 0);
+	snd_iprintf(buffer, "  Processing Coefficient: 0x%02x\n", coeff);
+	coeff = snd_hda_codec_read(codec, nid, 0,
+				   AC_VERB_GET_COEF_INDEX, 0);
+	snd_iprintf(buffer, "  Coefficient Index: 0x%02x\n", coeff);
+}
+#else
+#define print_realtek_coef	NULL
+#endif
 
 /*
  * set up from the preset table
@@ -4269,7 +4289,7 @@ static void set_capture_mixer(struct alc_spec *spec)
 		alc_capture_mixer2,
 		alc_capture_mixer3,
 	};
-	if (spec->num_adc_nids > 0 && spec->num_adc_nids < 3)
+	if (spec->num_adc_nids > 0 && spec->num_adc_nids <= 3)
 		spec->cap_mixer = caps[spec->num_adc_nids - 1];
 }
 
@@ -4344,6 +4364,7 @@ static int patch_alc880(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc880_loopbacks;
 #endif
+	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -5869,6 +5890,7 @@ static int patch_alc260(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc260_loopbacks;
 #endif
+	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -7074,6 +7096,7 @@ static int patch_alc882(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc882_loopbacks;
 #endif
+	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -8444,6 +8467,7 @@ static struct snd_pci_quirk alc883_cfg_tbl[] = {
 	SND_PCI_QUIRK(0x103c, 0x2a4f, "HP Samba", ALC888_3ST_HP),
 	SND_PCI_QUIRK(0x103c, 0x2a60, "HP Lucknow", ALC888_3ST_HP),
 	SND_PCI_QUIRK(0x103c, 0x2a61, "HP Nettle", ALC883_6ST_DIG),
+	SND_PCI_QUIRK(0x103c, 0x2a66, "HP Acacia", ALC888_3ST_HP),
 	SND_PCI_QUIRK(0x1043, 0x1873, "Asus M90V", ALC888_ASUS_M90V),
 	SND_PCI_QUIRK(0x1043, 0x8249, "Asus M2A-VM HDMI", ALC883_3ST_6ch_DIG),
 	SND_PCI_QUIRK(0x1043, 0x82fe, "Asus P5Q-EM HDMI", ALC1200_ASUS_P5Q),
@@ -9042,6 +9066,7 @@ static int patch_alc883(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc883_loopbacks;
 #endif
+	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -10534,6 +10559,8 @@ static struct snd_pci_quirk alc262_cfg_tbl[] = {
 	SND_PCI_QUIRK(0x104d, 0x820f, "Sony ASSAMD", ALC262_SONY_ASSAMD),
 	SND_PCI_QUIRK(0x104d, 0x900e, "Sony ASSAMD", ALC262_SONY_ASSAMD),
 	SND_PCI_QUIRK(0x104d, 0x9015, "Sony 0x9015", ALC262_SONY_ASSAMD),
+	SND_PCI_QUIRK(0x104d, 0x9033, "Sony VAIO VGN-SR19XN",
+		      ALC262_SONY_ASSAMD),
 	SND_PCI_QUIRK(0x1179, 0x0001, "Toshiba dynabook SS RX1",
 		      ALC262_TOSHIBA_RX1),
 	SND_PCI_QUIRK(0x1179, 0xff7b, "Toshiba S06", ALC262_TOSHIBA_S06),
@@ -10848,6 +10875,7 @@ static int patch_alc262(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc262_loopbacks;
 #endif
+	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -11913,6 +11941,8 @@ static int patch_alc268(struct hda_codec *codec)
 	if (board_config == ALC268_AUTO)
 		spec->init_hook = alc268_auto_init;
 
+	codec->proc_widget_hook = print_realtek_coef;
+
 	return 0;
 }
 
@@ -12714,6 +12744,7 @@ static int patch_alc269(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc269_loopbacks;
 #endif
+	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -13802,6 +13833,7 @@ static int patch_alc861(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc861_loopbacks;
 #endif
+	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -14763,6 +14795,7 @@ static int patch_alc861vd(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc861vd_loopbacks;
 #endif
+	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -16572,6 +16605,7 @@ static int patch_alc662(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc662_loopbacks;
 #endif
+	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -16579,7 +16613,7 @@ static int patch_alc662(struct hda_codec *codec)
 /*
  * patch entries
  */
-struct hda_codec_preset snd_hda_preset_realtek[] = {
+static struct hda_codec_preset snd_hda_preset_realtek[] = {
 	{ .id = 0x10ec0260, .name = "ALC260", .patch = patch_alc260 },
 	{ .id = 0x10ec0262, .name = "ALC262", .patch = patch_alc262 },
 	{ .id = 0x10ec0267, .name = "ALC267", .patch = patch_alc268 },
@@ -16605,9 +16639,32 @@ struct hda_codec_preset snd_hda_preset_realtek[] = {
 	  .patch = patch_alc882 }, /* should be patch_alc883() in future */
 	{ .id = 0x10ec0885, .name = "ALC885", .patch = patch_alc882 },
 	{ .id = 0x10ec0887, .name = "ALC887", .patch = patch_alc883 },
-	{ .id = 0x10ec0888, .name = "ALC888", .patch = patch_alc883 },
 	{ .id = 0x10ec0888, .rev = 0x100101, .name = "ALC1200",
 	  .patch = patch_alc883 },
+	{ .id = 0x10ec0888, .name = "ALC888", .patch = patch_alc883 },
 	{ .id = 0x10ec0889, .name = "ALC889", .patch = patch_alc883 },
 	{} /* terminator */
 };
+
+MODULE_ALIAS("snd-hda-codec-id:10ec*");
+
+MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("Realtek HD-audio codec");
+
+static struct hda_codec_preset_list realtek_list = {
+	.preset = snd_hda_preset_realtek,
+	.owner = THIS_MODULE,
+};
+
+static int __init patch_realtek_init(void)
+{
+	return snd_hda_add_codec_preset(&realtek_list);
+}
+
+static void __exit patch_realtek_exit(void)
+{
+	snd_hda_delete_codec_preset(&realtek_list);
+}
+
+module_init(patch_realtek_init)
+module_exit(patch_realtek_exit)
