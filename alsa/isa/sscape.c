@@ -497,16 +497,31 @@ static int upload_dma_data(struct soundscape *s,
 	 * board through the DMA channel ...
 	 */
 	while (size != 0) {
-		unsigned long len = min(size, dma.size);
+		unsigned long len;
+
+		/*
+		 * Apparently, copying to/from userspace can sleep.
+		 * We are therefore forbidden from holding any
+		 * spinlocks while we copy ...
+		 */
+		spin_unlock_irqrestore(&s->lock, flags);
 
 		/*
 		 * Remember that the data that we want to DMA
 		 * comes from USERSPACE. We have already verified
 		 * the userspace pointer ...
 		 */
+		len = min(size, dma.size);
 		__copy_from_user(dma.data, data, len);
 		data += len;
 		size -= len;
+
+		/*
+		 * Grab that spinlock again, now that we've
+		 * finished copying!
+		 */
+		spin_lock_irqsave(&s->lock, flags);
+
 		snd_dma_program(s->chip->dma1, dma.addr, len, DMA_MODE_WRITE);
 		sscape_start_dma_unsafe(s->io_base, GA_DMAA_REG);
 		if (!sscape_wait_dma_unsafe(s->io_base, GA_DMAA_REG, 5000)) {
@@ -707,7 +722,7 @@ static int sscape_hw_ioctl(snd_hwdep_t * hw, struct file *file,
 	default:
 		err = -EINVAL;
 		break;
-	}			/* switch */
+	} /* switch */
 
 	return err;
 }
