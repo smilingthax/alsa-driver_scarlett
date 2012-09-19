@@ -12,4 +12,3 @@ snd-asihpi-objs := asihpi.o hpimod.o hpimsginit.o\
 obj-$(CONFIG_SND_ASIHPI) += snd-asihpi.o
 
 include $(SND_TOPDIR)/Rules.make
-

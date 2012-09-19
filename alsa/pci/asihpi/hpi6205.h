@@ -28,19 +28,19 @@ Copyright AudioScience, Inc., 2003
 #include "hpi.h"
 
 /***********************************************************
-Defines used for basic messaging
+	Defines used for basic messaging
 ************************************************************/
-#define H620_HIF_RESET          0
-#define H620_HIF_IDLE           1
-#define H620_HIF_GET_RESP       2
-#define H620_HIF_DATA_DONE      3
-#define H620_HIF_DATA_MASK      0x10
-#define H620_HIF_SEND_DATA      0x14
-#define H620_HIF_GET_DATA       0x15
-#define H620_HIF_UNKNOWN                0xffff
+#define H620_HIF_RESET		0
+#define H620_HIF_IDLE		1
+#define H620_HIF_GET_RESP	2
+#define H620_HIF_DATA_DONE	3
+#define H620_HIF_DATA_MASK	0x10
+#define H620_HIF_SEND_DATA	0x14
+#define H620_HIF_GET_DATA	0x15
+#define H620_HIF_UNKNOWN		0xffff
 
 /***********************************************************
-Types used for mixer control caching
+	Types used for mixer control caching
 ************************************************************/
 
 #define H620_MAX_ISTREAMS 32
@@ -48,21 +48,21 @@ Types used for mixer control caching
 #define HPI_NMIXER_CONTROLS 2048
 
 /*********************************************************************
-This is used for background buffer bus mastering stream buffers.
+	This is used for background buffer bus mastering stream buffers.
 **********************************************************************/
 struct hostbuffer_status_6205 {
 	u32 dwSamplesProcessed;
 	u32 dwAuxiliaryDataAvailable;
 	u32 dwStreamState;
-/* DSP index in to the host bus master buffer. */
+	/* DSP index in to the host bus master buffer. */
 	u32 dwDSPIndex;
-/* Host index in to the host bus master buffer. */
+	/* Host index in to the host bus master buffer. */
 	u32 dwHostIndex;
 	u32 dwSizeInBytes;
 };
 
 /*********************************************************************
-This is used for dynamic control cache allocation
+	This is used for dynamic control cache allocation
 **********************************************************************/
 struct controlcache_6205 {
 	u32 dwNumberOfControls;
@@ -71,7 +71,7 @@ struct controlcache_6205 {
 };
 
 /*********************************************************************
-This is used for dynamic allocation of async event array
+	This is used for dynamic allocation of async event array
 **********************************************************************/
 struct async_event_buffer_6205 {
 	u32 dwPhysicalPCI32address;
@@ -80,8 +80,8 @@ struct async_event_buffer_6205 {
 };
 
 /***********************************************************
-The Host located memory buffer that the 6205 will bus master
-in and out of.
+	The Host located memory buffer that the 6205 will bus master
+	in and out of.
 ************************************************************/
 #define HPI6205_SIZEOF_DATA (16*1024)
 struct bus_master_interface {

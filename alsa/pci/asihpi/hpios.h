@@ -49,23 +49,23 @@ void HpiOs_LockedMem_FreeAll(
 /** Allocate and map an area of locked memory for bus master DMA operations.
 
 On success, *pLockedMemeHandle is a valid handle, and 0 is returned
-On error *pLockedMemHandle=NULL, non-zero returned.
+On error *pLockedMemHandle marked invalid, non-zero returned.
 
 If this function succeeds, then HpiOs_LockedMem_GetVirtAddr() and
 HpiOs_LockedMem_GetPyhsAddr() will always succed on the returned handle.
 */
 u16 HpiOs_LockedMem_Alloc(
-	struct consistent_dma_area **pLockedMemHandle,
-						 /**< memory handle */
-	u32 dwSize,
-	    /**< Size in bytes to allocate */
+	struct consistent_dma_area *pLockedMemHandle,	/**< memory handle */
+	u32 dwSize, /**< Size in bytes to allocate */
 	struct pci_dev *pOsReference
-/**< OS specific data required for memory allocation */
+	/**< OS specific data required for memory allocation */
 );
 
 /** Free mapping and memory represented by LockedMemHandle
 
-Returns 0 on success, 1 if handle is NULL
+Frees any resources, then invalidates the handle.
+Returns 0 on success, 1 if handle is invalid.
+
 */
 u16 HpiOs_LockedMem_Free(
 	struct consistent_dma_area *LockedMemHandle
@@ -73,7 +73,7 @@ u16 HpiOs_LockedMem_Free(
 
 /** Get the physical PCI address of memory represented by LockedMemHandle.
 
-If handle is NULL *pPhysicalAddr is set to zero and return 1
+If handle is invalid *pPhysicalAddr is set to zero and return 1
 */
 u16 HpiOs_LockedMem_GetPhysAddr(
 	struct consistent_dma_area *LockedMemHandle,
@@ -87,6 +87,13 @@ If handle is NULL *ppvVirtualAddr is set to NULL and return 1
 u16 HpiOs_LockedMem_GetVirtAddr(
 	struct consistent_dma_area *LockedMemHandle,
 	void **ppvVirtualAddr
+);
+
+/** Check that handle is valid
+i.e it represents a valid memory area
+*/
+u16 HpiOs_LockedMem_Valid(
+	struct consistent_dma_area *LockedMemHandle
 );
 
 /* timing/delay */

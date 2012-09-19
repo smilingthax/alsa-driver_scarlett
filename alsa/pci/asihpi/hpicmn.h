@@ -32,28 +32,23 @@ struct hpi_adapter_obj {
 	void *priv;
 };
 
-struct hpi_adapter_obj *FindAdapter(
+struct hpi_adapter_obj *HpiFindAdapter(
 	u16 wAdapterIndex
 );
-void WipeAdapterList(
-	void
-);
-void SubSysGetAdapters(
-	struct hpi_response *phr
-);
-u16 AddAdapter(
-	struct hpi_adapter_obj *pao
-);
-void DeleteAdapter(
+u16 HpiAddAdapter(
 	struct hpi_adapter_obj *pao
 );
 
-short CheckControlCache(
+void HpiDeleteAdapter(
+	struct hpi_adapter_obj *pao
+);
+
+short HpiCheckControlCache(
 	volatile struct hpi_control_cache_single *pC,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 );
-void SyncControlCache(
+void HpiSyncControlCache(
 	volatile struct hpi_control_cache_single *pC,
 	struct hpi_message *phm,
 	struct hpi_response *phr

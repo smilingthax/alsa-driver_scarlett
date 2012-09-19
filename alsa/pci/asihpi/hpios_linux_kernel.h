@@ -65,17 +65,47 @@ HPI Operating System Specific macros for Linux
 Need all info for parameters to pci_free_consistent
 */
 struct consistent_dma_area {
-	struct pci_dev *pdev;
-	dma_addr_t dma_addr;
-	void *cpu_addr;
+	struct device *pdev;
+	/* looks like dma-mapping dma_devres ?! */
 	size_t size;
+	void *vaddr;
+	dma_addr_t dma_handle;
 };
+
+static inline u16 HpiOs_LockedMem_GetPhysAddr(
+	struct consistent_dma_area *LockedMemHandle,
+	uint32_t * pPhysicalAddr
+)
+{
+	*pPhysicalAddr = LockedMemHandle->dma_handle;
+	return 0;
+}
+
+static inline u16 HpiOs_LockedMem_GetVirtAddr(
+	struct consistent_dma_area *LockedMemHandle,
+	void **ppVirtualAddr
+)
+{
+	*ppVirtualAddr = LockedMemHandle->vaddr;
+	return 0;
+}
+
+static inline u16 HpiOs_LockedMem_Valid(
+	struct consistent_dma_area *LockedMemHandle
+)
+{
+	return (LockedMemHandle->size != 0);
+}
 
 struct hpi_ioctl_linux {
 	void __user *phm;
 	void __user *phr;
 };
 
+/* Conflict?: H is already used by a number of drivers hid, bluetooth hci,
+   and some sound drivers sb16, hdsp, emu10k. AFAIK 0xFC is ununsed command
+#define HPI_IOCTL_LINUX _IOWR('H', 0xFC, struct hpi_ioctl_linux)
+*/
 #define HPI_IOCTL_LINUX _IOWR('H', 1, struct hpi_ioctl_linux)
 
 #define HPI_DEBUG_FLAG_ERROR   KERN_ERR
@@ -95,10 +125,10 @@ struct hpios_spinlock {
 };
 
 /* The reason for all this evilness is that ALSA calls some of a drivers
-* operators in atomic context, and some not.  But all our functions channel
-* through the HPI_Message conduit, so we can't handle the different context
-* per function
-*/
+ * operators in atomic context, and some not.  But all our functions channel
+ * through the HPI_Message conduit, so we can't handle the different context
+ * per function
+ */
 #define IN_LOCK_BH 1
 #define IN_LOCK_IRQ 0
 static inline void cond_lock(
@@ -106,7 +136,9 @@ static inline void cond_lock(
 )
 {
 	if (irqs_disabled()) {
-/* NO bh or isr can execute on this processor, so ordinary lock will do */
+		/* NO bh or isr can execute on this processor,
+		   so ordinary lock will do
+		 */
 		spin_lock(&((l)->lock));
 		l->lock_context = IN_LOCK_IRQ;
 	} else {
@@ -144,13 +176,13 @@ static inline void cond_unlock(
 #define HpiOs_Alistlock_UnLock(obj) spin_unlock(&((obj)->aListLock.lock))
 
 struct hpi_adapter {
-/* Semaphores prevent contention for one card
-between multiple user programs (via ioctl) */
-	struct semaphore sem;
-	u16 wAdapterIndex;
+	/* mutex prevents contention for one card
+	   between multiple user programs (via ioctl) */
+	struct mutex mutex;
+	u16 index;
 	u16 type;
 
-/* ALSA card structure */
+	/* ALSA card structure */
 	void *snd_card_asihpi;
 
 	char *pBuffer;

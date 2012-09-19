@@ -29,16 +29,16 @@ DSPCODE_ARRAY is defined.
 HPI_INCLUDE_**** must be defined
 and the appropriate hzz?????.c or hex?????.c linked in
 
-*/
+ */
 /***********************************************************************/
 #define SOURCEFILE_NAME "hpidspcd.c"
 #include "hpidspcd.h"
 #include "hpidebug.h"
 
 /**
-Header structure for binary dsp code file (see asidsp.doc)
-This structure must match that used in s2bin.c for generation of asidsp.bin
-*/
+ Header structure for binary dsp code file (see asidsp.doc)
+ This structure must match that used in s2bin.c for generation of asidsp.bin
+ */
 
 #ifndef DISABLE_PRAGMA_PACK1
 #pragma pack(push, 1)
@@ -133,7 +133,7 @@ void HpiDspCode_Rewind(
 	struct dsp_code *psDspCode
 )
 {
-/* Go back to start of  data, after header */
+	/* Go back to start of	data, after header */
 	psDspCode->dwWordCount = sizeof(struct code_header) / sizeof(u32);
 }
 

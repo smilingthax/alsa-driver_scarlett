@@ -272,13 +272,10 @@ static inline u16 HPI_StreamGroupGetMap(struct hpi_hsubsys *hS,
 
 static u16 _HandleError(u16 err, int line, char *filename)
 {
-	char ErrorText[80];
-
-	if (err) {
-		HPI_GetErrorText(err, ErrorText);
-		printk(KERN_WARNING "in file %s, line %d: %s\n",
-			filename, line, ErrorText);
-	}
+	if (err)
+		printk(KERN_WARNING
+			"in file %s, line %d: HPI error %d\n",
+			filename, line, err);
 	return err;
 }
 
@@ -2425,7 +2422,6 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 						      &snd_control) < 0)
 				return -EINVAL;
 			continue;
-		case HPI_CONTROL_MUTE:
 		case HPI_CONTROL_VOX:
 		case HPI_CONTROL_BITSTREAM:
 		case HPI_CONTROL_MICROPHONE:
@@ -2533,15 +2529,15 @@ int snd_asihpi_bind(struct hpi_adapter *hpi_card)
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;
 
-	/* Should this be enable[hpi_card->wAdapterIndex] ? */
+	/* Should this be enable[hpi_card->index] ? */
 	if (!enable[dev]) {
 		dev++;
 		return -ENOENT;
 	}
 
 	/* first try to give the card the same index as its hardware index */
-	card = snd_card_new(hpi_card->wAdapterIndex,
-			id[hpi_card->wAdapterIndex], THIS_MODULE,
+	card = snd_card_new(hpi_card->index,
+			id[hpi_card->index], THIS_MODULE,
 			sizeof(struct snd_card_asihpi));
 	if (card == NULL) {
 		/* if that fails, try the default index==next available */
@@ -2553,13 +2549,13 @@ int snd_asihpi_bind(struct hpi_adapter *hpi_card)
 			return -ENOMEM;
 		snd_printk(KERN_WARNING
 			"**** WARNING **** Adapter index %d->ALSA index %d\n",
-			hpi_card->wAdapterIndex, card->number);
+			hpi_card->index, card->number);
 	}
 
 	asihpi = (struct snd_card_asihpi *) card->private_data;
 	asihpi->card = card;
 	asihpi->pci = hpi_card->pci;
-	asihpi->wAdapterIndex = hpi_card->wAdapterIndex;
+	asihpi->wAdapterIndex = hpi_card->index;
 	HPI_HandleError(HPI_AdapterGetInfo(phSubSys,
 				 asihpi->wAdapterIndex,
 				 &asihpi->wNumOutStreams,

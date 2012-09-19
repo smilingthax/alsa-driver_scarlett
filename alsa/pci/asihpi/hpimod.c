@@ -30,6 +30,7 @@ Linux HPI driver module
 #include <linux/pci.h>
 #include <linux/device.h>
 #include <linux/interrupt.h>
+#include <linux/mutex.h>
 #include <linux/version.h>
 #include <asm/uaccess.h>
 #include <linux/stringify.h>
@@ -78,7 +79,7 @@ module_param(bufsize, int,
 	S_IRUGO
 );
 /* Allow the debug level to be changed after module load.
- E.g.   echo 2 > /sys/module/asihpi/parameters/hpiDebugLevel
+ E.g.	echo 2 > /sys/module/asihpi/parameters/hpiDebugLevel
 */
 module_param(hpiDebugLevel, int,
 	S_IRUGO | S_IWUSR
@@ -197,23 +198,24 @@ static int hpi_ioctl(
 	get_user(phm, &phpi_ioctl_data->phm);
 	get_user(phr, &phpi_ioctl_data->phr);
 
-	/* Now read the message size and data from user space.  */
+	/* Now read the message size and data from user space.	*/
 	/* get_user(hm.wSize, (u16 __user *)phm); */
 	uncopied_bytes = copy_from_user(&hm, phm, sizeof(hm));
 	if (uncopied_bytes)
 		return -EFAULT;
 
-	if (hm.wAdapterIndex > HPI_MAX_ADAPTERS) {
+	pa = &adapters[hm.wAdapterIndex];
+
+	if ((hm.wAdapterIndex > HPI_MAX_ADAPTERS) || (!pa->type)) {
 		HPI_InitResponse(&hr, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN,
 			HPI_ERROR_BAD_ADAPTER_NUMBER);
-		/* Copy the response back to user space.  */
+
 		uncopied_bytes = copy_to_user(phr, &hr, sizeof(hr));
 		if (uncopied_bytes)
 			return -EFAULT;
 		return 0;
 	}
 
-	pa = &adapters[hm.wAdapterIndex];
 	hr.wSize = 0;
 	/* Response filled either copy from cache, or by HPI_Message() */
 	{
@@ -254,17 +256,19 @@ static int hpi_ioctl(
 			(hm.wObject != HPI_OBJ_SUBSYSTEM))
 			hr.wError = HPI_ERROR_INVALID_OBJ_INDEX;
 		else {
-			if (down_interruptible(&adapters[nAdapter].sem))
-				return (-EINTR);
+			if (mutex_lock_interruptible(&adapters[nAdapter].
+					mutex))
+				return -EINTR;
 
 			if (wrflag == 0) {
 				if (size > bufsize) {
-					up(&adapters[nAdapter].sem);
+					mutex_unlock(&adapters[nAdapter].
+						mutex);
 					HPI_DEBUG_LOG(ERROR,
 						"Requested transfer of %d "
 						"bytes, max buffer size "
-						"is %d bytes.\n",
-						size, bufsize);
+						"is %d bytes.\n", size,
+						bufsize);
 					return -EINVAL;
 				}
 
@@ -282,7 +286,8 @@ static int hpi_ioctl(
 
 			if (wrflag == 1) {
 				if (size > bufsize) {
-					up(&adapters[nAdapter].sem);
+					mutex_unlock(&adapters[nAdapter].
+						mutex);
 					HPI_DEBUG_LOG(ERROR,
 						"Requested transfer of %d "
 						"bytes, max buffer size is "
@@ -299,7 +304,7 @@ static int hpi_ioctl(
 						uncopied_bytes, size);
 			}
 
-			up(&adapters[nAdapter].sem);
+			mutex_unlock(&adapters[nAdapter].mutex);
 		}
 	}
 
@@ -403,10 +408,11 @@ static int __devinit adapter_probe(
 	}
 
 	if (hr.wError == 0) {
-		adapter.wAdapterIndex = hr.u.s.wAdapterIndex;
-		hm.wAdapterIndex = hr.u.s.wAdapterIndex;
+		adapter.index = hr.u.s.wAdapterIndex;
+		adapter.type = hr.u.s.awAdapterList[adapter.index];
+		hm.wAdapterIndex = adapter.index;
 
-		err = HPI_AdapterOpen(NULL, hr.u.s.wAdapterIndex);
+		err = HPI_AdapterOpen(NULL, adapter.index);
 		if (err)
 			goto err;
 
@@ -415,24 +421,23 @@ static int __devinit adapter_probe(
 		 * and then copy it to adapters[] ?!?!
 		 */
 		adapters[hr.u.s.wAdapterIndex] = adapter;
-		init_MUTEX(&adapters[hr.u.s.wAdapterIndex].sem);
+		mutex_init(&adapters[adapter.index].mutex);
 #ifdef ALSA_BUILD
-		if (snd_asihpi_bind(&adapters[hr.u.s.wAdapterIndex])) {
+		if (snd_asihpi_bind(&adapters[adapter.index])) {
 			HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM,
 				HPI_SUBSYS_DELETE_ADAPTER);
-			hm.wAdapterIndex = adapter.wAdapterIndex;
+			hm.wAdapterIndex = adapter.index;
 			HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 			goto err;
 		}
 #endif
 
-		pci_set_drvdata(pci_dev, &adapters[hr.u.s.wAdapterIndex]);
+		pci_set_drvdata(pci_dev, &adapters[adapter.index]);
 		adapter_count++;
 
 		printk(KERN_INFO
 			"Probe found adapter ASI%04X HPI index #%d.\n",
-			hr.u.s.awAdapterList[hr.u.s.wAdapterIndex],
-			hr.u.s.wAdapterIndex);
+			adapter.type, adapter.index);
 		return 0;
 	}
 
@@ -467,7 +472,7 @@ static void __devexit adapter_remove(
 #endif
 
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DELETE_ADAPTER);
-	hm.wAdapterIndex = pa->wAdapterIndex;
+	hm.wAdapterIndex = pa->index;
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 
 	/* unmap PCI memory space, mapped during device init. */
@@ -486,7 +491,7 @@ static void __devexit adapter_remove(
 		" HPI index # %d, removed.\n",
 		pci_dev->vendor, pci_dev->device,
 		pci_dev->subsystem_vendor,
-		pci_dev->subsystem_device, pci_dev->devfn, pa->wAdapterIndex);
+		pci_dev->subsystem_device, pci_dev->devfn, pa->index);
 }
 
 /* also used by hpimsgx.c for message routing based on pci id */
@@ -504,9 +509,11 @@ static struct pci_driver asihpi_pci_driver = {
 };
 
 static struct class *asihpi_class;
+static int chrdev_registered;
+static int pci_driver_registered;
 
 static void hpimod_cleanup(
-	int stage
+	void
 )
 {
 
@@ -515,41 +522,37 @@ static void hpimod_cleanup(
 
 	HPI_DEBUG_LOG(DEBUG, "cleanup_module\n");
 
-	switch (stage) {
-	case 3:
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 14)
+	if (asihpi_class) {
 		class_device_destroy(asihpi_class, MKDEV(major, 0));
 		class_destroy(asihpi_class);
-#endif
-	case 2:
-		unregister_chrdev(major, "asihpi");
-	case 1:
-		pci_unregister_driver(&asihpi_pci_driver);
-	case 0:
-		HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM,
-			HPI_SUBSYS_DRIVER_UNLOAD);
-		HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 	}
+#endif
+	if (chrdev_registered >= 0)
+		unregister_chrdev(major, "asihpi");
+	if (pci_driver_registered >= 0)
+		pci_unregister_driver(&asihpi_pci_driver);
+
+	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DRIVER_UNLOAD);
+	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 }
 
 static void __exit hpimod_exit(
 	void
 )
 {
-	hpimod_cleanup(3);
+	hpimod_cleanup();
 }
 
 static int __init hpimod_init(
 	void
 )
 {
-	int status, i;
 	struct hpi_message hm;
 	struct hpi_response hr;
 	u32 dwVersion = 0;
 
-	for (i = 0; i < HPI_MAX_ADAPTERS; i++)
-		init_MUTEX(&adapters[i].sem);
+	memset(adapters, 0, sizeof(adapters));
 
 	/* HPI_DebugLevelSet(debug); now set directly as module param */
 	printk(KERN_INFO "ASIHPI driver %s debug=%d \n",
@@ -563,12 +566,13 @@ static int __init hpimod_init(
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 
 	/* old version of below fn returned +ve number of devices, -ve error */
-	status = pci_register_driver(&asihpi_pci_driver);
-	if (status < 0) {
+	pci_driver_registered = pci_register_driver(&asihpi_pci_driver);
+	if (pci_driver_registered < 0) {
 		HPI_DEBUG_LOG(ERROR,
-			"HPI: pci_register_driver returned %d\n", status);
-		hpimod_cleanup(0);
-		return status;
+			"HPI: pci_register_driver returned %d\n",
+			pci_driver_registered);
+		hpimod_cleanup();
+		return pci_driver_registered;
 	}
 
 	/* note need to remove this if we want driver to stay
@@ -576,20 +580,20 @@ static int __init hpimod_init(
 	 */
 	if (!adapter_count) {
 		HPI_DEBUG_LOG(INFO, "No adapters found\n");
-		hpimod_cleanup(1);
+		hpimod_cleanup();
 		return -ENODEV;
 	}
-	status = register_chrdev(major, "asihpi", &hpi_fops);
-	if (status < 0) {
+	chrdev_registered = register_chrdev(major, "asihpi", &hpi_fops);
+	if (chrdev_registered < 0) {
 		printk(KERN_ERR
 			"HPI: failed with error %d for major number %d\n",
-			-status, major);
-		hpimod_cleanup(1);
+			-chrdev_registered, major);
+		hpimod_cleanup();
 		return -EIO;
 	}
 
 	if (!major)		/* Use dynamically allocated major number. */
-		major = status;
+		major = chrdev_registered;
 
 	/* would like to create device in "sound" class
 	 * (usually created by alsa) but don't know how
@@ -598,7 +602,7 @@ static int __init hpimod_init(
 	asihpi_class = class_create(THIS_MODULE, "asihpi");
 	if (IS_ERR(asihpi_class)) {
 		printk(KERN_ERR "Error creating asihpi class.\n");
-		hpimod_cleanup(2);
+		hpimod_cleanup();
 	} else {
 		class_device_create(asihpi_class, NULL, MKDEV(major, 0), NULL,
 			"asihpi");

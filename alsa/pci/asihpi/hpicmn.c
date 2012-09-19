@@ -16,7 +16,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-Common functions used by hpixxxx.c modules
+ Common functions used by hpixxxx.c modules
 
 (C) Copyright AudioScience Inc. 1998-2003
 *******************************************************************************/
@@ -53,12 +53,12 @@ u16 HpiValidateResponse(
 	return wError;
 }
 
-u16 AddAdapter(
+u16 HpiAddAdapter(
 	struct hpi_adapter_obj *pao
 )
 {
 	u16 retval = 0;
-/*HPI_ASSERT(pao->wAdapterType); */
+	/*HPI_ASSERT(pao->wAdapterType); */
 
 	HpiOs_Alistlock_Lock(&adapters);
 
@@ -76,7 +76,7 @@ u16 AddAdapter(
 	return retval;
 }
 
-void DeleteAdapter(
+void HpiDeleteAdapter(
 	struct hpi_adapter_obj *pao
 )
 {
@@ -92,7 +92,7 @@ void DeleteAdapter(
 * index wAdapterIndex in an HPI_ADAPTERS_LIST structure.
 *
 */
-struct hpi_adapter_obj *FindAdapter(
+struct hpi_adapter_obj *HpiFindAdapter(
 	u16 wAdapterIndex
 )
 {
@@ -122,7 +122,7 @@ struct hpi_adapter_obj *FindAdapter(
 * wipe an HPI_ADAPTERS_LIST structure.
 *
 **/
-void WipeAdapterList(
+static void WipeAdapterList(
 	void
 )
 {
@@ -134,30 +134,30 @@ void WipeAdapterList(
 * with all adapters in the given HPI_ADAPTERS_LIST.
 *
 */
-void SubSysGetAdapters(
+static void SubSysGetAdapters(
 	struct hpi_response *phr
 )
 {
-/* fill in the response adapter array with the position */
-/* identified by the adapter number/index of the adapters in */
-/* this HPI */
-/* i.e. if we have an A120 with it's jumper set to */
-/* Adapter Number 2 then put an Adapter type A120 in the */
-/* array in position 1 */
-/* NOTE: AdapterNumber is 1..N, Index is 0..N-1 */
+	/* fill in the response adapter array with the position */
+	/* identified by the adapter number/index of the adapters in */
+	/* this HPI */
+	/* i.e. if we have an A120 with it's jumper set to */
+	/* Adapter Number 2 then put an Adapter type A120 in the */
+	/* array in position 1 */
+	/* NOTE: AdapterNumber is 1..N, Index is 0..N-1 */
 
-/* input:  NONE */
-/* output: wNumAdapters */
-/*                 awAdapter[] */
-/* */
+	/* input:  NONE */
+	/* output: wNumAdapters */
+	/*		   awAdapter[] */
+	/* */
 
 	short i;
 	struct hpi_adapter_obj *pao = NULL;
 
 	HPI_DEBUG_LOG(VERBOSE, DBG_TEXT("SubSysGetAdapters\n"));
 
-/* for each adapter, place it's type in the position of the array */
-/* corresponding to it's adapter number */
+	/* for each adapter, place it's type in the position of the array */
+	/* corresponding to it's adapter number */
 	for (i = 0; i < adapters.gwNumAdapters; i++) {
 		pao = &adapters.adapter[i];
 		if (phr->u.s.awAdapterList[pao->wIndex] != 0) {
@@ -177,15 +177,15 @@ void SubSysGetAdapters(
 * value is in the cache and fills the struct hpi_response accordingly.
 * It returns nonzero if a cache hit occurred, zero otherwise.
 */
-short CheckControlCache(
+short HpiCheckControlCache(
 	volatile struct hpi_control_cache_single *pC,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 )
 {
 	short found = 1;
-/* if the control type in the cache is non-zero then */
-/* we have cached control information to process */
+	/* if the control type in the cache is non-zero then */
+	/* we have cached control information to process */
 	phr->wSize =
 		sizeof(struct hpi_response_header) +
 		sizeof(struct hpi_control_res);
@@ -216,7 +216,7 @@ short CheckControlCache(
 			found = 0;	/* signal that message was not cached */
 		break;
 	case HPI_CONTROL_CHANNEL_MODE:
-		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE)
+		if (phm->u.c.wAttribute == HPI_CHANNEL_MODE_MODE)
 			phr->u.c.dwParam1 = pC->u.m.wMode;
 		else
 			found = 0;	/* signal that message was not cached */
@@ -240,15 +240,15 @@ short CheckControlCache(
 			found = 0;	/* signal that message was not cached */
 		break;
 	case HPI_CONTROL_AESEBU_RECEIVER:
-		if (phm->u.c.wAttribute == HPI_AESEBU_ERRORSTATUS)
+		if (phm->u.c.wAttribute == HPI_AESEBURX_ERRORSTATUS)
 			phr->u.c.dwParam1 = pC->u.aes3rx.dwErrorStatus;
-		else if (phm->u.c.wAttribute == HPI_AESEBU_FORMAT)
+		else if (phm->u.c.wAttribute == HPI_AESEBURX_FORMAT)
 			phr->u.c.dwParam1 = pC->u.aes3rx.dwSource;
 		else
 			found = 0;	/* signal that message was not cached */
 		break;
 	case HPI_CONTROL_AESEBU_TRANSMITTER:
-		if (phm->u.c.wAttribute == HPI_AESEBU_FORMAT)
+		if (phm->u.c.wAttribute == HPI_AESEBUTX_FORMAT)
 			phr->u.c.dwParam1 = pC->u.aes3tx.dwFormat;
 		else
 			found = 0;	/* signal that message was not cached */
@@ -300,7 +300,7 @@ Only update if no error.
 Volume and Level return the limited values in the response, so use these
 Multiplexer does so use sent values
 */
-void SyncControlCache(
+void HpiSyncControlCache(
 	volatile struct hpi_control_cache_single *pC,
 	struct hpi_message *phm,
 	struct hpi_response *phr
@@ -317,14 +317,14 @@ void SyncControlCache(
 		}
 		break;
 	case HPI_CONTROL_MULTIPLEXER:
-/* mux does not return its setting on Set command. */
+		/* mux does not return its setting on Set command. */
 		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
 			pC->u.x.wSourceNodeType = (u16)phm->u.c.dwParam1;
 			pC->u.x.wSourceNodeIndex = (u16)phm->u.c.dwParam2;
 		}
 		break;
 	case HPI_CONTROL_CHANNEL_MODE:
-/* mux does not return its setting on Set command. */
+		/* mux does not return its setting on Set command. */
 		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE)
 			pC->u.m.wMode = (u16)phm->u.c.dwParam1;
 		break;
@@ -335,11 +335,11 @@ void SyncControlCache(
 		}
 		break;
 	case HPI_CONTROL_AESEBU_TRANSMITTER:
-		if (phm->u.c.wAttribute == HPI_AESEBU_FORMAT)
+		if (phm->u.c.wAttribute == HPI_AESEBUTX_FORMAT)
 			pC->u.aes3tx.dwFormat = phm->u.c.dwParam1;
 		break;
 	case HPI_CONTROL_AESEBU_RECEIVER:
-		if (phm->u.c.wAttribute == HPI_AESEBU_FORMAT)
+		if (phm->u.c.wAttribute == HPI_AESEBURX_FORMAT)
 			pC->u.aes3rx.dwSource = phm->u.c.dwParam1;
 	case HPI_CONTROL_SAMPLECLOCK:
 		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
