@@ -119,10 +119,15 @@ static int oxygen_open(struct snd_pcm_substream *substream,
 
 	runtime->private_data = (void *)(uintptr_t)channel;
 	runtime->hw = *oxygen_hardware[channel];
-	if (channel == PCM_C) {
+	switch (channel) {
+	case PCM_C:
 		runtime->hw.rates &= ~(SNDRV_PCM_RATE_32000 |
 				       SNDRV_PCM_RATE_64000);
 		runtime->hw.rate_min = 44100;
+		break;
+	case PCM_MULTICH:
+		runtime->hw.channels_max = chip->model->dac_channels;
+		break;
 	}
 	if (chip->model->pcm_hardware_filter)
 		chip->model->pcm_hardware_filter(channel, &runtime->hw);
@@ -248,8 +253,10 @@ static unsigned int oxygen_rate(struct snd_pcm_hw_params *hw_params)
 
 static unsigned int oxygen_i2s_mclk(struct snd_pcm_hw_params *hw_params)
 {
-	return params_rate(hw_params) <= 96000
-		? OXYGEN_I2S_MCLK_256 : OXYGEN_I2S_MCLK_128;
+	if (params_rate(hw_params) <= 96000)
+		return OXYGEN_I2S_MCLK_256;
+	else
+		return OXYGEN_I2S_MCLK_128;
 }
 
 static unsigned int oxygen_i2s_bits(struct snd_pcm_hw_params *hw_params)
@@ -334,9 +341,6 @@ static int oxygen_rec_a_hw_params(struct snd_pcm_substream *substream,
 			      OXYGEN_I2S_FORMAT_MASK |
 			      OXYGEN_I2S_MCLK_MASK |
 			      OXYGEN_I2S_BITS_MASK);
-	oxygen_write8_masked(chip, OXYGEN_REC_ROUTING,
-			     OXYGEN_REC_A_ROUTE_I2S_ADC_1,
-			     OXYGEN_REC_A_ROUTE_MASK);
 	spin_unlock_irq(&chip->reg_lock);
 
 	mutex_lock(&chip->mutex);
@@ -368,9 +372,6 @@ static int oxygen_rec_b_hw_params(struct snd_pcm_substream *substream,
 			      OXYGEN_I2S_FORMAT_MASK |
 			      OXYGEN_I2S_MCLK_MASK |
 			      OXYGEN_I2S_BITS_MASK);
-	oxygen_write8_masked(chip, OXYGEN_REC_ROUTING,
-			     OXYGEN_REC_B_ROUTE_I2S_ADC_2,
-			     OXYGEN_REC_B_ROUTE_MASK);
 	spin_unlock_irq(&chip->reg_lock);
 
 	mutex_lock(&chip->mutex);
@@ -393,9 +394,6 @@ static int oxygen_rec_c_hw_params(struct snd_pcm_substream *substream,
 	oxygen_write8_masked(chip, OXYGEN_REC_FORMAT,
 			     oxygen_format(hw_params) << OXYGEN_REC_FORMAT_C_SHIFT,
 			     OXYGEN_REC_FORMAT_C_MASK);
-	oxygen_write8_masked(chip, OXYGEN_REC_ROUTING,
-			     OXYGEN_REC_C_ROUTE_SPDIF,
-			     OXYGEN_REC_C_ROUTE_MASK);
 	spin_unlock_irq(&chip->reg_lock);
 	return 0;
 }
@@ -448,11 +446,6 @@ static int oxygen_multich_hw_params(struct snd_pcm_substream *substream,
 			      OXYGEN_I2S_RATE_MASK |
 			      OXYGEN_I2S_FORMAT_MASK |
 			      OXYGEN_I2S_BITS_MASK);
-	oxygen_write16_masked(chip, OXYGEN_PLAY_ROUTING,
-			      OXYGEN_PLAY_MULTICH_I2S_DAC,
-			      OXYGEN_PLAY_MUTE01 | OXYGEN_PLAY_MUTE23 |
-			      OXYGEN_PLAY_MUTE45 | OXYGEN_PLAY_MUTE67 |
-			      OXYGEN_PLAY_MULTICH_MASK);
 	oxygen_update_dac_routing(chip);
 	oxygen_update_spdif_source(chip);
 	spin_unlock_irq(&chip->reg_lock);
