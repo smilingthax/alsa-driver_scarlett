@@ -96,7 +96,6 @@ enum {
 	STAC_92HD83XXX_PWR_REF,
 	STAC_DELL_S14,
 	STAC_DELL_VOSTRO_3500,
-	STAC_92HD83XXX_HP,
 	STAC_92HD83XXX_HP_cNB11_INTQUAD,
 	STAC_HP_DV7_4000,
 	STAC_92HD83XXX_MODELS
@@ -1692,7 +1691,6 @@ static const char * const stac92hd83xxx_models[STAC_92HD83XXX_MODELS] = {
 	[STAC_92HD83XXX_PWR_REF] = "mic-ref",
 	[STAC_DELL_S14] = "dell-s14",
 	[STAC_DELL_VOSTRO_3500] = "dell-vostro-3500",
-	[STAC_92HD83XXX_HP] = "hp",
 	[STAC_92HD83XXX_HP_cNB11_INTQUAD] = "hp_cNB11_intquad",
 	[STAC_HP_DV7_4000] = "hp-dv7-4000",
 };
@@ -1707,8 +1705,6 @@ static const struct snd_pci_quirk stac92hd83xxx_cfg_tbl[] = {
 		      "unknown Dell", STAC_DELL_S14),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x1028,
 		      "Dell Vostro 3500", STAC_DELL_VOSTRO_3500),
-	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xff00, 0x3600,
-			  "HP", STAC_92HD83XXX_HP),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1656,
 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1657,
@@ -2875,7 +2871,7 @@ static inline int stac92xx_add_jack_mode_control(struct hda_codec *codec,
 	}
 
 	if (control) {
-		strcpy(name, hda_get_input_pin_label(codec, nid, 1));
+		strcpy(name, snd_hda_get_pin_label(codec, nid, NULL));
 		return stac92xx_add_control(codec->spec, control,
 					strcat(name, " Jack Mode"), nid);
 	}
@@ -3566,7 +3562,7 @@ static int stac92xx_auto_create_dmic_input_ctls(struct hda_codec *codec,
 		if (index < 0)
 			continue;
 
-		label = hda_get_input_pin_label(codec, nid, 1);
+		label = snd_hda_get_pin_label(codec, nid, NULL);
 		snd_hda_add_imux_item(dimux, label, index, &type_idx);
 		if (snd_hda_get_bool_hint(codec, "separate_dmux") != 1)
 			snd_hda_add_imux_item(imux, label, index, &type_idx);
@@ -4903,7 +4899,7 @@ static void set_hp_led_gpio(struct hda_codec *codec)
  * Need more information on whether it is true across the entire series.
  * -- kunal
  */
-static int find_mute_led_gpio(struct hda_codec *codec, int default_polarity)
+static int find_mute_led_cfg(struct hda_codec *codec, int default_polarity)
 {
 	struct sigmatel_spec *spec = codec->spec;
 	const struct dmi_device *dev = NULL;
@@ -4939,9 +4935,11 @@ static int find_mute_led_gpio(struct hda_codec *codec, int default_polarity)
 
 		/*
 		 * Fallback case - if we don't find the DMI strings,
-		 * we statically set the GPIO - if not a B-series system.
+		 * we statically set the GPIO - if not a B-series system
+		 * and default polarity is provided
 		 */
-		if (!hp_blike_system(codec->subsystem_id)) {
+		if (!hp_blike_system(codec->subsystem_id) &&
+			(default_polarity == 0 || default_polarity == 1)) {
 			set_hp_led_gpio(codec);
 			spec->gpio_led_polarity = default_polarity;
 			return 1;
@@ -5651,7 +5649,7 @@ again:
 
 	codec->patch_ops = stac92xx_patch_ops;
 
-	if (find_mute_led_gpio(codec, 0))
+	if (find_mute_led_cfg(codec, -1/*no default cfg*/))
 		snd_printd("mute LED gpio %d polarity %d\n",
 				spec->gpio_led,
 				spec->gpio_led_polarity);
@@ -5964,7 +5962,7 @@ again:
 		}
 	}
 
-	if (find_mute_led_gpio(codec, 1))
+	if (find_mute_led_cfg(codec, 1))
 		snd_printd("mute LED gpio %d polarity %d\n",
 				spec->gpio_led,
 				spec->gpio_led_polarity);

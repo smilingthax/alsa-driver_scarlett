@@ -17,7 +17,6 @@
 #include <linux/gpio.h>
 #include <linux/pm.h>
 #include <linux/i2c.h>
-#include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -442,14 +441,14 @@ static int ak4641_set_bias_level(struct snd_soc_codec *codec,
 			 SNDRV_PCM_RATE_16000)
 #define AK4641_FORMATS	(SNDRV_PCM_FMTBIT_S16_LE)
 
-static struct snd_soc_dai_ops ak4641_i2s_dai_ops = {
+static const struct snd_soc_dai_ops ak4641_i2s_dai_ops = {
 	.hw_params    = ak4641_i2s_hw_params,
 	.set_fmt      = ak4641_i2s_set_dai_fmt,
 	.digital_mute = ak4641_mute,
 	.set_sysclk   = ak4641_set_dai_sysclk,
 };
 
-static struct snd_soc_dai_ops ak4641_pcm_dai_ops = {
+static const struct snd_soc_dai_ops ak4641_pcm_dai_ops = {
 	.hw_params    = NULL, /* rates are controlled by BT chip */
 	.set_fmt      = ak4641_pcm_set_dai_fmt,
 	.digital_mute = ak4641_mute,
@@ -499,7 +498,7 @@ static struct snd_soc_dai_driver ak4641_dai[] = {
 },
 };
 
-static int ak4641_suspend(struct snd_soc_codec *codec, pm_message_t state)
+static int ak4641_suspend(struct snd_soc_codec *codec)
 {
 	ak4641_set_bias_level(codec, SND_SOC_BIAS_OFF);
 	return 0;
@@ -603,7 +602,8 @@ static int __devinit ak4641_i2c_probe(struct i2c_client *i2c,
 	struct ak4641_priv *ak4641;
 	int ret;
 
-	ak4641 = kzalloc(sizeof(struct ak4641_priv), GFP_KERNEL);
+	ak4641 = devm_kzalloc(&i2c->dev, sizeof(struct ak4641_priv),
+			      GFP_KERNEL);
 	if (!ak4641)
 		return -ENOMEM;
 
@@ -611,16 +611,12 @@ static int __devinit ak4641_i2c_probe(struct i2c_client *i2c,
 
 	ret = snd_soc_register_codec(&i2c->dev, &soc_codec_dev_ak4641,
 				ak4641_dai, ARRAY_SIZE(ak4641_dai));
-	if (ret < 0)
-		kfree(ak4641);
-
 	return ret;
 }
 
 static int __devexit ak4641_i2c_remove(struct i2c_client *i2c)
 {
 	snd_soc_unregister_codec(&i2c->dev);
-	kfree(i2c_get_clientdata(i2c));
 	return 0;
 }
 

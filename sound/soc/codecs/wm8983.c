@@ -974,7 +974,7 @@ static int wm8983_set_bias_level(struct snd_soc_codec *codec,
 }
 
 #ifdef CONFIG_PM
-static int wm8983_suspend(struct snd_soc_codec *codec, pm_message_t state)
+static int wm8983_suspend(struct snd_soc_codec *codec)
 {
 	wm8983_set_bias_level(codec, SND_SOC_BIAS_OFF);
 	return 0;
@@ -1035,7 +1035,7 @@ static int wm8983_probe(struct snd_soc_codec *codec)
 	return 0;
 }
 
-static struct snd_soc_dai_ops wm8983_dai_ops = {
+static const struct snd_soc_dai_ops wm8983_dai_ops = {
 	.digital_mute = wm8983_dac_mute,
 	.hw_params = wm8983_hw_params,
 	.set_fmt = wm8983_set_fmt,
