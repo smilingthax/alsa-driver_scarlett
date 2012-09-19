@@ -489,7 +489,7 @@ static void snd_emu10k1_audigy_write_op(emu10k1_fx8010_code_t *icode, unsigned i
 #define A_OP(icode, ptr, op, r, a, x, y) \
 	snd_emu10k1_audigy_write_op(icode, ptr, op, r, a, x, y)
 
-void snd_emu10k1_efx_write(emu10k1_t *emu, unsigned int pc, unsigned int data)
+static void snd_emu10k1_efx_write(emu10k1_t *emu, unsigned int pc, unsigned int data)
 {
 	pc += emu->audigy ? A_MICROCODEBASE : MICROCODEBASE;
 	snd_emu10k1_ptr_write(emu, pc, 0, data);
@@ -1351,8 +1351,12 @@ A_OP(icode, &ptr, iMAC0, A_GPR(var), A_GPR(var), A_GPR(vol), A_EXTIN(input))
 	A_PUT_OUTPUT(A_EXTOUT_LFE, playback+5 + SND_EMU10K1_PLAYBACK_CHANNELS);
 
 	/* ADC buffer */
+#ifdef EMU10K1_CAPTURE_DIGITAL_OUT
+	A_PUT_STEREO_OUTPUT(A_EXTOUT_ADC_CAP_L, A_EXTOUT_ADC_CAP_R, playback + SND_EMU10K1_PLAYBACK_CHANNELS);
+#else
 	A_PUT_OUTPUT(A_EXTOUT_ADC_CAP_L, capture);
 	A_PUT_OUTPUT(A_EXTOUT_ADC_CAP_R, capture+1);
+#endif
 
 	/*
 	 * ok, set up done..

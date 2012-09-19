@@ -840,10 +840,10 @@ typedef struct {
 ((route[0] | (route[1] << 4) | (route[2] << 8) | (route[3] << 12)) << 16)
 
 #define snd_emu10k1_compose_audigy_fxrt1(route) \
-(((unsigned int)route[0] | ((unsigned int)route[1] << 8) | ((unsigned int)route[2] << 16) | ((unsigned int)route[3] << 12)) << 24)
+((unsigned int)route[0] | ((unsigned int)route[1] << 8) | ((unsigned int)route[2] << 16) | ((unsigned int)route[3] << 24))
 
 #define snd_emu10k1_compose_audigy_fxrt2(route) \
-(((unsigned int)route[4] | ((unsigned int)route[5] << 8) | ((unsigned int)route[6] << 16) | ((unsigned int)route[7] << 12)) << 24)
+((unsigned int)route[4] | ((unsigned int)route[5] << 8) | ((unsigned int)route[6] << 16) | ((unsigned int)route[7] << 24))
 
 typedef struct snd_emu10k1_memblk {
 	snd_util_memblk_t mem;
@@ -1037,7 +1037,6 @@ int snd_emu10k1_fx8010_tram_setup(emu10k1_t *emu, u32 size);
 /* I/O functions */
 unsigned int snd_emu10k1_ptr_read(emu10k1_t * emu, unsigned int reg, unsigned int chn);
 void snd_emu10k1_ptr_write(emu10k1_t *emu, unsigned int reg, unsigned int chn, unsigned int data);
-void snd_emu10k1_efx_write(emu10k1_t *emu, unsigned int pc, unsigned int data);
 unsigned int snd_emu10k1_efx_read(emu10k1_t *emu, unsigned int pc);
 void snd_emu10k1_intr_enable(emu10k1_t *emu, unsigned int intrenb);
 void snd_emu10k1_intr_disable(emu10k1_t *emu, unsigned int intrenb);
@@ -1051,7 +1050,6 @@ static inline unsigned int snd_emu10k1_wc(emu10k1_t *emu) { return (inl(emu->por
 unsigned short snd_emu10k1_ac97_read(ac97_t *ac97, unsigned short reg);
 void snd_emu10k1_ac97_write(ac97_t *ac97, unsigned short reg, unsigned short data);
 unsigned int snd_emu10k1_rate_to_pitch(unsigned int rate);
-unsigned char snd_emu10k1_sum_vol_attn(unsigned int value);
 
 /* memory allocation */
 snd_util_memblk_t *snd_emu10k1_alloc_pages(emu10k1_t *emu, snd_pcm_substream_t *substream);
