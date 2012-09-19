@@ -1042,7 +1042,8 @@ static int snd_via82xx_pcm_open(via82xx_t *chip, viadev_t *viadev, snd_pcm_subst
 	ratep = &chip->rates[viadev->direction];
 	spin_lock_irqsave(&ratep->lock, flags);
 	ratep->used++;
-	if (chip->dxs_fixed) {
+	if (chip->dxs_fixed && viadev->reg_offset < 0x40) {
+		/* fixed DXS playback rate */
 		runtime->hw.rates = SNDRV_PCM_RATE_48000;
 		runtime->hw.rate_min = runtime->hw.rate_max = 48000;
 	} else if (! ratep->rate) {
@@ -1967,6 +1968,7 @@ static int __devinit check_dxs_list(struct pci_dev *pci)
 {
 	static struct dxs_whitelist whitelist[] = {
 		{ .vendor = 0x1019, .device = 0x0996, .action = VIA_DXS_48K },
+		{ .vendor = 0x1297, .device = 0xc160, .action = VIA_DXS_ENABLE }, /* Shuttle SK41G */
 		{ } /* terminator */
 	};
 	struct dxs_whitelist *w;
@@ -2070,10 +2072,11 @@ static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 		if (chip_type == TYPE_VIA8233A) {
 			if ((err = snd_via8233a_pcm_new(chip)) < 0)
 				goto __error;
+			chip->dxs_fixed = 1; /* use 48k for DXS #3 */
 		} else {
 			if ((err = snd_via8233_pcm_new(chip)) < 0)
 				goto __error;
-			if (dxs_support[dev] == 3)
+			if (dxs_support[dev] == VIA_DXS_48K)
 				chip->dxs_fixed = 1;
 		}
 		if ((err = snd_via8233_init_misc(chip, dev)) < 0)
