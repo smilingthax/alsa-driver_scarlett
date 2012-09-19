@@ -1213,7 +1213,7 @@ static void snd_cs46xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 					if (ins->pcm_channels[i].active &&
 					    ins->pcm_channels[i].private_data &&
 					    !ins->pcm_channels[i].unlinked) {
-						cpcm = snd_magic_cast(cs46xx_pcm_t, ins->pcm_channels[i].private_data, goto _invalid_pointer);
+						cpcm = snd_magic_cast(cs46xx_pcm_t, ins->pcm_channels[i].private_data, continue);
 						snd_pcm_period_elapsed(cpcm->substream);
 					}
 				}
@@ -1223,15 +1223,11 @@ static void snd_cs46xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				if (ins->pcm_channels[i].active && 
 				    ins->pcm_channels[i].private_data &&
 				    !ins->pcm_channels[i].unlinked) {
-					cpcm = snd_magic_cast(cs46xx_pcm_t, ins->pcm_channels[i].private_data, goto _invalid_pointer);
+					cpcm = snd_magic_cast(cs46xx_pcm_t, ins->pcm_channels[i].private_data, continue);
 					snd_pcm_period_elapsed(cpcm->substream);
 				}
 			}
 		}
-
-		continue;
-	_invalid_pointer:
-		printk (KERN_ERR "cs46xx: (interrupt) invalid pointer at pcm_channel[%d]\n",i);
 	}
 
 #else

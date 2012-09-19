@@ -219,6 +219,10 @@ static inline int ac97_is_rev22(ac97_t * ac97)
 {
 	return (ac97->ext_id & AC97_EI_REV_MASK) == AC97_EI_REV_22;
 }
+static inline int ac97_can_amap(ac97_t * ac97)
+{
+	return (ac97->ext_id & AC97_EI_AMAP) != 0;
+}
 
 /* functions */
 int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97);
