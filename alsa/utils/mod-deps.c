@@ -185,6 +185,7 @@ static char *no_cards[] = {
 	"#SND_SOC_WM8750",
 	"#SND_SOC_WM8753",
 	"#SND_SOC_WM9712",
+	"#SND_SOC_CS4270",
 	"#SND_PXA2XX_PCM",
 	"#SND_PXA2XX_AC97",
 	"#SND_PXA2XX_SOC_AC97",
