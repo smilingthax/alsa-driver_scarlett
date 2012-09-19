@@ -26,6 +26,3 @@ endif
 endif
 
 include $(TOPDIR)/Rules.make
-
-snd-isapnp.o: $(snd-isapnp-objs)
-	$(LD) $(LD_RFLAG) -r -o $@ $(snd-isapnp-objs)
