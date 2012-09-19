@@ -1921,17 +1921,18 @@ static void alc880_lg_unsol_event(struct hda_codec *codec, unsigned int res)
  * Pin assignment:
  *   Speaker-out: 0x14
  *   Mic-In: 0x18
- *   Built-in Mic-In: 0x19 (?)
- *   HP-Out: 0x1b
+ *   Built-in Mic-In: 0x19
+ *   Line-In: 0x1b
+ *   HP-Out: 0x1a
  *   SPDIF-Out: 0x1e
  */
 
-/* seems analog CD is not working */
 static struct hda_input_mux alc880_lg_lw_capture_source = {
-	.num_items = 2,
+	.num_items = 3,
 	.items = {
 		{ "Mic", 0x0 },
 		{ "Internal Mic", 0x1 },
+		{ "Line In", 0x2 },
 	},
 };
 
@@ -6609,6 +6610,7 @@ static struct snd_pci_quirk alc883_cfg_tbl[] = {
 	SND_PCI_QUIRK(0x17aa, 0x2085, "Lenovo NB0763", ALC883_LENOVO_NB0763),
 	SND_PCI_QUIRK(0x103c, 0x2a61, "HP Nettle", ALC888_HP_NETTLE),
 	SND_PCI_QUIRK(0x103c, 0x2a60, "HP Lucknow", ALC888_HP_LUCKNOW),
+	SND_PCI_QUIRK(0x103c, 0x2a4f, "HP Samba", ALC888_HP_LUCKNOW),
 	SND_PCI_QUIRK(0x17c0, 0x4071, "MEDION MD2", ALC883_MEDION_MD2),
 	{}
 };
