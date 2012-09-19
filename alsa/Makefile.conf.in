@@ -59,6 +59,7 @@ endif
 CONFIG_SND_RTCTIMER	= @CONFIG_SND_RTCTIMER@
 CONFIG_RTC		= @CONFIG_RTC@
 CONFIG_USB		= @CONFIG_USB@
+CONFIG_SND_BIT32_EMUL	= @CONFIG_SND_BIT32_EMUL@
 
 INCLUDE		= -I$(TOPDIR)/include -I$(CONFIG_SND_KERNELDIR)/include
 CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
