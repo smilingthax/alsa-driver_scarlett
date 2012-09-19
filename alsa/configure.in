@@ -2590,14 +2590,15 @@ dnl Output files...
 AC_OUTPUT(version Makefile.conf snddevices \
 	  utils/alsa-driver.spec utils/buildrpm toplevel.config \
 	  utils/alsasound utils/alsasound.posix \
-	  include/pci_ids_compat.h)
+	  include/pci_ids_compat.h include/i2c-id_compat.h)
 
 dnl Make right rights for scripts
 chmod 755 $srcdir/snddevices
 
-dnl Hack pci_ids.h if necessary
+dnl Hack pci_ids.h and i2c-id.h if necessary
 mkdir -p include/linux
 ln -sf ../pci_ids_compat.h include/linux/pci_ids.h
+ln -sf ../i2c-id_compat.h include/linux/i2c-id.h
 
 dnl Hack autoconf.h if necessary
 if test "$CONFIG_SND_MODULE" = y; then
