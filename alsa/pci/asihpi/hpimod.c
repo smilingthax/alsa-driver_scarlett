@@ -520,7 +520,11 @@ static void hpimod_cleanup(
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 14)
 	if (asihpi_class) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)
+		device_destroy(asihpi_class, MKDEV(major, 0));
+#else
 		class_device_destroy(asihpi_class, MKDEV(major, 0));
+#endif
 		class_destroy(asihpi_class);
 	}
 #endif
@@ -600,8 +604,12 @@ static int __init hpimod_init(
 		printk(KERN_ERR "Error creating asihpi class.\n");
 		hpimod_cleanup();
 	} else {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)
+		device_create(asihpi_class, NULL, MKDEV(major, 0), "asihpi");
+#else
 		class_device_create(asihpi_class, NULL, MKDEV(major, 0), NULL,
 			"asihpi");
+#endif
 	}
 #endif
 	return 0;
