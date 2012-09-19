@@ -1608,14 +1608,9 @@ static inline const char *dev_name(struct device *dev)
 	return dev->bus_id;
 }
 
-static inline int dev_set_name(struct device *dev, const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	vsnprintf(dev->bus_id, sizeof(dev->bus_id), fmt, ap);
-	va_end(ap);
-	return 0;
-}
+/* FIXME: return value is invalid */
+#define dev_set_name(dev, fmt, args...) \
+	snprintf((dev)->bus_id, sizeof((dev)->bus_id), fmt, ##args) 
 #endif /* < 2.6.26 */
 
 #ifndef WARN

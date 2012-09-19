@@ -150,6 +150,8 @@ static char *kernel_deps[] = {
 	"BROKEN",
 	/* sound common */
 	"AC97_BUS",
+	/* workaround */
+	"SND_SOC_ALL_CODECS",
 	NULL
 };
 
