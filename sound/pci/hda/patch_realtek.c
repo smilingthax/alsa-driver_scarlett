@@ -2499,6 +2499,7 @@ static int alc_build_pcms(struct hda_codec *codec)
 		codec->num_pcms = 2;
 		info = spec->pcm_rec + 1;
 		info->name = spec->stream_name_digital;
+		info->pcm_type = HDA_PCM_TYPE_SPDIF;
 		if (spec->multiout.dig_out_nid &&
 		    spec->stream_digital_playback) {
 			info->stream[SNDRV_PCM_STREAM_PLAYBACK] = *(spec->stream_digital_playback);
@@ -9834,11 +9835,6 @@ static struct hda_input_mux alc268_capture_source = {
 
 #ifdef CONFIG_SND_DEBUG
 static struct snd_kcontrol_new alc268_test_mixer[] = {
-	HDA_CODEC_VOLUME("Front Playback Volume", 0x2, 0x0, HDA_OUTPUT),
-	HDA_CODEC_MUTE("Front Playback Switch", 0x14, 0x0, HDA_OUTPUT),
-	HDA_CODEC_VOLUME("Headphone Playback Volume", 0x3, 0x0, HDA_OUTPUT),
-	HDA_CODEC_MUTE("Headphone Playback Switch", 0x15, 0x0, HDA_OUTPUT),
-
 	/* Volume widgets */
 	HDA_CODEC_VOLUME("LOUT1 Playback Volume", 0x02, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME("LOUT2 Playback Volume", 0x03, 0x0, HDA_OUTPUT),
