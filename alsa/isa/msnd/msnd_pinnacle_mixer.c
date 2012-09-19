@@ -297,7 +297,8 @@ DUMMY_VOLUME(	"Monitor",	0, MSND_MIXER_IMIX),
 int __init snd_msndmix_new( multisound_dev_t * msnd)
 {
 	snd_card_t *card = msnd->card;
-	int idx, err;
+	unsigned int idx;
+	int err;
 
 	snd_assert(msnd != NULL, return -EINVAL);
 	// spin_lock_init(&msnd->mixer_lock);

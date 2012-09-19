@@ -105,7 +105,7 @@ static int vx_send_irq_dsp(vx_core_t *chip, int num)
 		return -EIO;
 
 	nirq = num;
-	if (chip->type >= VX_TYPE_VXPOCKET)
+	if (chip->type != VX_TYPE_BOARD)
 		nirq += VXP_IRQ_OFFSET;
 	vx_outb(chip, CVR, (nirq >> 1) | CVR_HC);
 	return 0;
@@ -436,7 +436,7 @@ int vx_send_rih(vx_core_t *chip, int cmd)
  */
 int snd_vx_load_boot_image(vx_core_t *chip, const struct snd_vx_image *boot)
 {
-	int c, i;
+	unsigned int c, i;
 	int no_fillup = chip->type != VX_TYPE_BOARD;
 
 	snd_printdd(KERN_DEBUG "loading boot: size = %d\n", boot->length);
@@ -478,7 +478,8 @@ int snd_vx_load_boot_image(vx_core_t *chip, const struct snd_vx_image *boot)
 static int vx_load_dsp(vx_core_t *chip)
 {
 	const struct snd_vx_image *dsp = &chip->hw->dsp;
-	int i, err;
+	unsigned int i;
+	int err;
 	unsigned int csum = 0;
 	unsigned char *cptr;
 
@@ -524,7 +525,7 @@ static int vx_load_dsp(vx_core_t *chip)
  *
  * called from irq handler only
  */
-static int vx_test_irq_src(vx_core_t *chip, int *ret)
+static int vx_test_irq_src(vx_core_t *chip, unsigned int *ret)
 {
 	int err;
 
@@ -546,7 +547,7 @@ static int vx_test_irq_src(vx_core_t *chip, int *ret)
 static void vx_interrupt(unsigned long private_data)
 {
 	vx_core_t *chip = snd_magic_cast(vx_core_t, (void*)private_data, return);
-	int i, events;
+	unsigned int i, events;
 	vx_pipe_t *pipe;
 		
 	if (chip->is_stale)
@@ -756,7 +757,7 @@ vx_core_t *snd_vx_create(snd_card_t *card, struct snd_vx_hardware *hw,
  */
 void snd_vx_suspend(vx_core_t *chip)
 {
-	int i;
+	unsigned int i;
 
 	chip->in_suspend = 1;
 	for (i = 0; i < chip->hw->num_codecs; i++)

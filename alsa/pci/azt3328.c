@@ -466,8 +466,8 @@ static int snd_azf3328_info_mixer_enum(snd_kcontrol_t *kcontrol, snd_ctl_elem_in
         uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
         uinfo->count = (reg.reg == IDX_MIXER_REC_SELECT) ? 2 : 1;
         uinfo->value.enumerated.items = reg.enum_c;
-        if (uinfo->value.enumerated.item > reg.enum_c - 1)
-                uinfo->value.enumerated.item = reg.enum_c - 1;
+        if (uinfo->value.enumerated.item > reg.enum_c - 1U)
+                uinfo->value.enumerated.item = reg.enum_c - 1U;
 	if (reg.reg == IDX_MIXER_ADVCTL2)
 	{
 		if (reg.lchan_shift == 8) /* modem out sel */
@@ -511,15 +511,15 @@ static int snd_azf3328_put_mixer_enum(snd_kcontrol_t * kcontrol, snd_ctl_elem_va
 	val = oreg;
 	if (reg.reg == IDX_MIXER_REC_SELECT)
 	{
-        	if (ucontrol->value.enumerated.item[0] > (reg.enum_c - 1) ||
-            	ucontrol->value.enumerated.item[1] > (reg.enum_c - 1))
+        	if (ucontrol->value.enumerated.item[0] > reg.enum_c - 1U ||
+            	ucontrol->value.enumerated.item[1] > reg.enum_c - 1U)
                 	return -EINVAL;
         	val = (ucontrol->value.enumerated.item[0] << 8) |
         	      (ucontrol->value.enumerated.item[1] << 0);
 	}
 	else
 	{
-        	if (ucontrol->value.enumerated.item[0] > (reg.enum_c - 1))
+        	if (ucontrol->value.enumerated.item[0] > reg.enum_c - 1U)
                 	return -EINVAL;
 		val &= ~((reg.enum_c - 1) << reg.lchan_shift);
         	val |= (ucontrol->value.enumerated.item[0] << reg.lchan_shift);
@@ -610,7 +610,8 @@ static int __devinit snd_azf3328_mixer_new(azf3328_t *chip)
 {
 	snd_card_t *card;
 	snd_kcontrol_new_t *sw;
-	int idx, err;
+	unsigned int idx;
+	int err;
 
 	snd_azf3328_dbgcallenter();
 	snd_assert(chip != NULL && chip->card != NULL, return -EINVAL);

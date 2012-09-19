@@ -218,7 +218,7 @@ static void vx_change_clock_source(vx_core_t *chip, int source)
 /*
  * set the internal clock
  */
-void vx_set_internal_clock(vx_core_t *chip, int freq)
+void vx_set_internal_clock(vx_core_t *chip, unsigned int freq)
 {
 	int clock;
 	unsigned long flags;
@@ -256,7 +256,7 @@ void vx_set_iec958_status(vx_core_t *chip, unsigned int bits)
 /*
  * vx_set_clock - change the clock and audio source if necessary
  */
-int vx_set_clock(vx_core_t *chip, int freq)
+int vx_set_clock(vx_core_t *chip, unsigned int freq)
 {
 	int src_changed = 0;
 

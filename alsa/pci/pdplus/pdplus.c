@@ -1491,15 +1491,15 @@ static void __exit pdplus_unmap_pci_mem (snd_iomem_t *mem)
  * Output unit: frame
  */
 static int pdplus_fit_period_size (
-        int block_size,
+        unsigned int block_size,
         int is_adat,
-        int sample_rate)
+        unsigned int sample_rate)
 {
-        int lauf;
-        int frames_per_tick = sample_rate / PDPLUS_INTERRUPTS_PER_SEC;
+        unsigned int lauf;
+        unsigned int frames_per_tick = sample_rate / PDPLUS_INTERRUPTS_PER_SEC;
         u_long hw_ptr_block = BIT_VAL (PDPLUS_COUNTER_SHIFT_FRAME (is_adat));
         u_long buffer_size_frame =  PDPLUS_BUFFER_SIZE_FRAME (is_adat);
-        int minimum_block_size = PDPLUS_UPROUND (
+        unsigned int minimum_block_size = PDPLUS_UPROUND (
                 frames_per_tick,
                 hw_ptr_block);
 
@@ -2164,9 +2164,9 @@ static int pdplus_d_play_silence_ll (
  *     0 - out of range
  *     96000, 88200, 48000, 44100, 32000 - rate in Hertz +- 4%
  */
-static int pdplus_d_capt_rate_llr (pdplus_t *scard)
+static unsigned int pdplus_d_capt_rate_llr (pdplus_t *scard)
 {
-        static int const code2rate[8]= { 0, 0, 0, 96000, 88200, 48000, 44100, 32000 };
+        static unsigned int const code2rate[8]= { 0, 0, 0, 96000, 88200, 48000, 44100, 32000 };
         int rate_code = 0;
         int reg_value;
         PDPLUS_LOCAL_VADDR (scard);
@@ -2912,7 +2912,7 @@ BOOL pdplus_is_next_period (
         else {
                 /* with more than one period generate interrupt
                  * if the period is not equal to the last one. */
-                int cur_pos = hw_ptr >> ring_ptr->shift;
+                unsigned int cur_pos = hw_ptr >> ring_ptr->shift;
 
                 if (cur_pos != ring_ptr->playing) {
                         pdplus_next_ring_ptr (ring_ptr);
@@ -3382,7 +3382,7 @@ static int pdplus_analog_find_and_programme_clock_ll (
                 /*
                  * FFG is usable (do not programme FFG if frequency is matching.  Maybe
                  * this generates disturbances.  It is safe to check in any case. */
-                if (PDPLUS_EXTRACT_CACHE (scard, FPGA, FFG, FREQ) != fixclock)
+                if ((int)PDPLUS_EXTRACT_CACHE (scard, FPGA, FFG, FREQ) != fixclock)
                         PDPLUS_REPLACE (scard, FPGA, FFG, FREQ, fixclock);
 
                 /* Set FFG clock for analog device */
@@ -3454,7 +3454,7 @@ static int pdplus_digital_find_and_programme_clock_ll (
                 snd_assert (scard != NULL, return -ENXIO);
                 snd_assert (scard->a_capt != NULL, return -ENXIO);
                 snd_assert (scard->a_capt->runtime != NULL, return -ENXIO);
-                snd_assert (a_rate == -1 || a_rate == scard->a_capt->runtime->rate,
+                snd_assert (a_rate == -1 || a_rate == (int)scard->a_capt->runtime->rate,
 			    return -ENXIO);
 
                 a_prepared = TRUE;
@@ -3473,7 +3473,7 @@ static int pdplus_digital_find_and_programme_clock_ll (
                 /*
                  * FFG is usable (do not programme FFG if frequency is matching.  Maybe
                  * this generates disturbances.  It is safe to check in any case. */
-                if (PDPLUS_EXTRACT_CACHE (scard, FPGA, FFG, FREQ) != fixclock)
+                if ((int)PDPLUS_EXTRACT_CACHE (scard, FPGA, FFG, FREQ) != fixclock)
                         PDPLUS_REPLACE (scard, FPGA, FFG, FREQ, fixclock);
 
                 /* Set FFG clock for digital device */
@@ -3586,7 +3586,7 @@ static int pdplus_a_play_prepare (snd_pcm_substream_t *substream)
                 snd_assert (scard->a_capt != NULL, return -ENXIO);
                 snd_assert (scard->a_capt->runtime != NULL, return -ENXIO);
 
-                if (scard->a_capt->runtime->rate != rate) {
+                if ((int)scard->a_capt->runtime->rate != rate) {
                         err = -EBUSY;
                         goto raus;
                 }
@@ -3650,7 +3650,7 @@ static int pdplus_a_capt_prepare (snd_pcm_substream_t *substream)
                 snd_assert (scard->a_play != NULL, return -ENXIO);
                 snd_assert (scard->a_play->runtime != NULL, return -ENXIO);
 
-                if (scard->a_play->runtime->rate != rate) {
+                if ((int)scard->a_play->runtime->rate != rate) {
                         err = -EBUSY;
                         goto raus;
                 }
@@ -4605,7 +4605,7 @@ static void pdplus_info_enumerated (
         snd_ctl_elem_info_t *u,
         int count,
         char const *const *text,
-        int max)
+        unsigned int max)
 {
         u->type=   SNDRV_CTL_ELEM_TYPE_ENUMERATED;
         u->count= count;
@@ -4846,7 +4846,7 @@ static int pdplus_soft_ramp_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *u)
 }
 
 
-static int pdplus_soft_ramp_get_raw_llr (pdplus_t *scard)
+static unsigned int pdplus_soft_ramp_get_raw_llr (pdplus_t *scard)
 {
         if (PDPLUS_EXTRACT_CACHE (scard, CS4222, DAC_CTRL, SOFT_MUTE))
                 return PDPLUS_EXTRACT_CACHE (scard, CS4222, DAC_CTRL, SOFT_STEP);
@@ -5257,7 +5257,7 @@ static int __devinit pdplus_mixer_new (pdplus_t *scard)
 {
         snd_card_t *card;
         snd_kcontrol_t *k;
-        int i;
+        unsigned int i;
         int err= 0;
 
         snd_assert (scard != NULL, return -ENXIO);

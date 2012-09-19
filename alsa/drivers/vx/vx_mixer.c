@@ -125,7 +125,7 @@ static void vx_set_analog_output_level(vx_core_t *chip, int codec, int left, int
 
 void vx_toggle_dac_mute(vx_core_t *chip, int mute)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < chip->hw->num_codecs; i++)
 		vx_set_codec_reg(chip, i, XX_CODEC_DAC_CONTROL_REGISTER,
 				 mute ? DAC_ATTEN_MAX : DAC_ATTEN_MIN);
@@ -136,7 +136,7 @@ void vx_toggle_dac_mute(vx_core_t *chip, int mute)
  */
 void vx_reset_codec(vx_core_t *chip)
 {
-	int i;
+	unsigned int i;
 	int port = chip->type >= VX_TYPE_VXPOCKET ? 0x75 : 0x65;
 
 	chip->ops->reset_codec(chip);
@@ -319,7 +319,7 @@ static int vx_set_audio_gain(vx_core_t *chip, int audio, int capture, int level)
  */
 static void vx_reset_audio_levels(vx_core_t *chip)
 {
-	int i, c;
+	unsigned int i, c;
 	struct vx_audio_level info;
 
 	memset(chip->audio_gain, 0, sizeof(chip->audio_gain));
@@ -813,7 +813,8 @@ static snd_kcontrol_new_t vx_control_saturation = {
 
 int snd_vx_mixer_new(vx_core_t *chip)
 {
-	int i, c, err;
+	unsigned int i, c;
+	int err;
 	snd_kcontrol_new_t temp;
 	snd_card_t *card = chip->card;
 	char name[32];
