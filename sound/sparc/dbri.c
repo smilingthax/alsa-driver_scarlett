@@ -104,16 +104,14 @@ static char *cmds[] = {
 
 #define dprintk(a, x...) if(dbri_debug & a) printk(KERN_DEBUG x)
 
-#define DBRI_CMD(cmd, intr, value) ((cmd << 28) |			\
-				    (1 << 27) | \
-				    value)
 #else
 #define dprintk(a, x...)
 
-#define DBRI_CMD(cmd, intr, value) ((cmd << 28) |			\
-				    (intr << 27) | \
-				    value)
 #endif				/* DBRI_DEBUG */
+
+#define DBRI_CMD(cmd, intr, value) ((cmd << 28) |	\
+				    (intr << 27) |	\
+				    value)
 
 /***************************************************************************
 	CS4215 specific definitions and structures
@@ -240,12 +238,6 @@ static struct {
 #define REG9	0x24UL		/* Interrupt Queue Pointer */
 
 #define DBRI_NO_CMDS	64
-#define DBRI_NO_INTS	1	/* Note: the value of this define was
-				 * originally 2.  The ringbuffer to store
-				 * interrupts in dma is currently broken.
-				 * This is a temporary fix until the ringbuffer
-				 * is fixed.
-				 */
 #define DBRI_INT_BLK	64
 #define DBRI_NO_DESCS	64
 #define DBRI_NO_PIPES	32
@@ -270,7 +262,7 @@ struct dbri_mem {
  */
 struct dbri_dma {
 	volatile s32 cmd[DBRI_NO_CMDS];	/* Place for commands       */
-	volatile s32 intr[DBRI_NO_INTS * DBRI_INT_BLK];	/* Interrupt field  */
+	volatile s32 intr[DBRI_INT_BLK];	/* Interrupt field  */
 	struct dbri_mem desc[DBRI_NO_DESCS];	/* Xmit/receive descriptors */
 };
 
@@ -690,7 +682,6 @@ static volatile s32 *dbri_cmdlock(struct snd_dbri * dbri, enum dbri_lock get)
 static void dbri_cmdsend(struct snd_dbri * dbri, volatile s32 * cmd)
 {
 	volatile s32 *ptr;
-	u32	reg;
 
 	for (ptr = &dbri->dma->cmd[0]; ptr < cmd; ptr++) {
 		dprintk(D_CMD, "cmd: %lx:%08x\n", (unsigned long)ptr, *ptr);
@@ -709,9 +700,6 @@ static void dbri_cmdsend(struct snd_dbri * dbri, volatile s32 * cmd)
 
 	/* Set command pointer and signal it is valid. */
 	sbus_writel(dbri->dma_dvma, dbri->regs + REG8);
-	reg = sbus_readl(dbri->regs + REG0);
-	reg |= D_P;
-	sbus_writel(reg, dbri->regs + REG0);
 
 	/*spin_unlock(&dbri->lock); */
 }
@@ -747,18 +735,6 @@ static void dbri_initialize(struct snd_dbri * dbri)
 	dprintk(D_GEN, "init: cmd: %p, int: %p\n",
 		&dbri->dma->cmd[0], &dbri->dma->intr[0]);
 
-	/*
-	 * Initialize the interrupt ringbuffer.
-	 */
-	for (n = 0; n < DBRI_NO_INTS - 1; n++) {
-		dma_addr = dbri->dma_dvma;
-		dma_addr += dbri_dma_off(intr, ((n + 1) & DBRI_INT_BLK));
-		dbri->dma->intr[n * DBRI_INT_BLK] = dma_addr;
-	}
-	dma_addr = dbri->dma_dvma + dbri_dma_off(intr, 0);
-	dbri->dma->intr[n * DBRI_INT_BLK] = dma_addr;
-	dbri->dbri_irqp = 1;
-
 	/* Initialize pipes */
 	for (n = 0; n < DBRI_NO_PIPES; n++)
 		dbri->pipes[n].desc = dbri->pipes[n].first_desc = -1;
@@ -771,9 +747,14 @@ static void dbri_initialize(struct snd_dbri * dbri)
 	sbus_writel(tmp, dbri->regs + REG0);
 
 	/*
-	 * Set up the interrupt queue
+	 * Initialize the interrupt ringbuffer.
 	 */
 	dma_addr = dbri->dma_dvma + dbri_dma_off(intr, 0);
+	dbri->dma->intr[0] = dma_addr;
+	dbri->dbri_irqp = 1;
+	/*
+	 * Set up the interrupt queue
+	 */
 	*(cmd++) = DBRI_CMD(D_IIQ, 0, 0);
 	*(cmd++) = dma_addr;
 
@@ -1957,10 +1938,8 @@ static void dbri_process_interrupt_buffer(struct snd_dbri * dbri)
 	while ((x = dbri->dma->intr[dbri->dbri_irqp]) != 0) {
 		dbri->dma->intr[dbri->dbri_irqp] = 0;
 		dbri->dbri_irqp++;
-		if (dbri->dbri_irqp == (DBRI_NO_INTS * DBRI_INT_BLK))
+		if (dbri->dbri_irqp == DBRI_INT_BLK)
 			dbri->dbri_irqp = 1;
-		else if ((dbri->dbri_irqp & (DBRI_INT_BLK - 1)) == 0)
-			dbri->dbri_irqp++;
 
 		dbri_process_one_interrupt(dbri, x);
 	}
