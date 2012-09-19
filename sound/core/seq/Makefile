@@ -42,6 +42,7 @@ obj-$(CONFIG_SND_AD1816A) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-m
 obj-$(CONFIG_SND_CS4231) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o
 obj-$(CONFIG_SND_CS4232) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o snd-seq-midi-emul.o snd-seq-instr.o
 obj-$(CONFIG_SND_CS4236) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o snd-seq-midi-emul.o snd-seq-instr.o
+obj-$(CONFIG_SND_PC98_CS4232) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o snd-seq-midi-emul.o snd-seq-instr.o
 obj-$(CONFIG_SND_ES1688) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o snd-seq-midi-emul.o snd-seq-instr.o
 obj-$(CONFIG_SND_GUSCLASSIC) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o snd-seq-midi-emul.o snd-seq-instr.o
 obj-$(CONFIG_SND_GUSMAX) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o snd-seq-midi-emul.o snd-seq-instr.o

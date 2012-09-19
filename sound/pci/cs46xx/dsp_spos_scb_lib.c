@@ -150,17 +150,11 @@ static void _dsp_unlink_scb (cs46xx_t *chip,dsp_scb_descriptor_t * scb)
 		spin_lock_irqsave(&chip->reg_lock, flags);    
 
 		/* update parent first entry in DSP RAM */
-		snd_cs46xx_poke(chip,
-				(scb->parent_scb_ptr->address + SCBsubListPtr) << 2,
-				(scb->parent_scb_ptr->sub_list_ptr->address << 0x10) |
-				(scb->parent_scb_ptr->next_scb_ptr->address));
+		cs46xx_dsp_spos_update_scb(chip,scb->parent_scb_ptr);
 
 		/* then update entry in DSP RAM */
-		snd_cs46xx_poke(chip,
-				(scb->address + SCBsubListPtr) << 2,
-				(scb->sub_list_ptr->address << 0x10) |
-				(scb->next_scb_ptr->address));
-    
+		cs46xx_dsp_spos_update_scb(chip,scb);
+
 		scb->parent_scb_ptr = NULL;
 		spin_unlock_irqrestore(&chip->reg_lock, flags);
 	}
@@ -173,6 +167,7 @@ static void _dsp_clear_sample_buffer (cs46xx_t *chip, u32 sample_buffer_addr, in
   
 	for (i = 0; i < dword_count ; ++i ) {
 		writel(0, dst);
+		dst += 4;
 	}  
 }
 
@@ -328,11 +323,9 @@ _dsp_create_generic_scb (cs46xx_t *chip,char * name, u32 * scb_data,u32 dest,
 		}
 
 		spin_lock_irqsave(&chip->reg_lock, flags);
+
 		/* update entry in DSP RAM */
-		snd_cs46xx_poke(chip,
-				(scb->parent_scb_ptr->address + SCBsubListPtr) << 2,
-				(scb->parent_scb_ptr->sub_list_ptr->address << 0x10) |
-				(scb->parent_scb_ptr->next_scb_ptr->address));
+		cs46xx_dsp_spos_update_scb(chip,scb->parent_scb_ptr);
 
 		spin_unlock_irqrestore(&chip->reg_lock, flags);
 	}
@@ -1242,6 +1235,83 @@ pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,
 	return (ins->pcm_channels + pcm_index);
 }
 
+int cs46xx_dsp_pcm_channel_set_period (cs46xx_t * chip,
+				       pcm_channel_descriptor_t * pcm_channel,
+				       int period_size)
+{
+	u32 temp = snd_cs46xx_peek (chip,pcm_channel->pcm_reader_scb->address << 2);
+	temp &= ~DMA_RQ_C1_SOURCE_SIZE_MASK;
+
+	switch (period_size) {
+	case 2048:
+		temp |= DMA_RQ_C1_SOURCE_MOD1024;
+		break;
+	case 1024:
+		temp |= DMA_RQ_C1_SOURCE_MOD512;
+		break;
+	case 512:
+		temp |= DMA_RQ_C1_SOURCE_MOD256;
+		break;
+	case 256:
+		temp |= DMA_RQ_C1_SOURCE_MOD128;
+		break;
+	case 128:
+		temp |= DMA_RQ_C1_SOURCE_MOD64;
+		break;
+	case 64:
+		temp |= DMA_RQ_C1_SOURCE_MOD32;
+		break;		      
+	case 32:
+		temp |= DMA_RQ_C1_SOURCE_MOD16;
+		break; 
+	default:
+		snd_printdd ("period size (%d) not supported by HW\n");
+		return -EINVAL;
+	}
+
+	snd_cs46xx_poke (chip,pcm_channel->pcm_reader_scb->address << 2,temp);
+
+	return 0;
+}
+
+int cs46xx_dsp_pcm_ostream_set_period (cs46xx_t * chip,
+				       int period_size)
+{
+	u32 temp = snd_cs46xx_peek (chip,WRITEBACK_SCB_ADDR << 2);
+	temp &= ~DMA_RQ_C1_DEST_SIZE_MASK;
+
+	switch (period_size) {
+	case 2048:
+		temp |= DMA_RQ_C1_DEST_MOD1024;
+		break;
+	case 1024:
+		temp |= DMA_RQ_C1_DEST_MOD512;
+		break;
+	case 512:
+		temp |= DMA_RQ_C1_DEST_MOD256;
+		break;
+	case 256:
+		temp |= DMA_RQ_C1_DEST_MOD128;
+		break;
+	case 128:
+		temp |= DMA_RQ_C1_DEST_MOD64;
+		break;
+	case 64:
+		temp |= DMA_RQ_C1_DEST_MOD32;
+		break;		      
+	case 32:
+		temp |= DMA_RQ_C1_DEST_MOD16;
+		break; 
+	default:
+		snd_printdd ("period size (%d) not supported by HW\n");
+		return -EINVAL;
+	}
+
+	snd_cs46xx_poke (chip,WRITEBACK_SCB_ADDR << 2,temp);
+
+	return 0;
+}
+
 void cs46xx_dsp_destroy_pcm_channel (cs46xx_t * chip,pcm_channel_descriptor_t * pcm_channel)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
@@ -1323,17 +1393,13 @@ int cs46xx_dsp_pcm_link (cs46xx_t * chip,pcm_channel_descriptor_t * pcm_channel)
 	snd_assert (pcm_channel->pcm_reader_scb->parent_scb_ptr == NULL, ; );
 	pcm_channel->pcm_reader_scb->parent_scb_ptr = parent_scb;
 
-	/* update entry in DSP RAM */
 	spin_lock_irqsave(&chip->reg_lock, flags);
-	snd_cs46xx_poke(chip,
-			(pcm_channel->pcm_reader_scb->address + SCBsubListPtr) << 2,
-			(pcm_channel->pcm_reader_scb->sub_list_ptr->address << 0x10) |
-			(pcm_channel->pcm_reader_scb->next_scb_ptr->address));
-    
-	snd_cs46xx_poke(chip,
-			(parent_scb->address + SCBsubListPtr) << 2,
-			(parent_scb->sub_list_ptr->address << 0x10) |
-			(parent_scb->next_scb_ptr->address));
+
+	/* update SCB entry in DSP RAM */
+	cs46xx_dsp_spos_update_scb(chip,pcm_channel->pcm_reader_scb);
+
+	/* update parent SCB entry */
+	cs46xx_dsp_spos_update_scb(chip,parent_scb);
 
 	pcm_channel->unlinked = 0;
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
@@ -1455,11 +1521,88 @@ int cs46xx_src_link(cs46xx_t *chip,dsp_scb_descriptor_t * src)
 	src->parent_scb_ptr = parent_scb;
 
 	/* update entry in DSP RAM */
-	snd_cs46xx_poke(chip,
-			(parent_scb->address + SCBsubListPtr) << 2,
-			(parent_scb->sub_list_ptr->address << 0x10) |
-			(parent_scb->next_scb_ptr->address));
+	cs46xx_dsp_spos_update_scb(chip,parent_scb);
   
+	return 0;
+}
+
+int cs46xx_dsp_enable_spdif_out (cs46xx_t *chip)
+{
+	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+
+	if ( ! (ins->spdif_status_out & DSP_SDPIF_STATUS_PLAYBACK_OPEN) ) {
+		cs46xx_dsp_enable_spdif_hw (chip);
+	}
+
+	/* dont touch anything if SPDIF is open */
+	if ( ins->spdif_status_out & DSP_SDPIF_STATUS_PLAYBACK_OPEN) {
+		/* when cs46xx_iec958_post_close(...) is called it
+		   will call this function if necesary depending on
+		   this bit */
+		ins->spdif_status_out |= DSP_SDPIF_STATUS_OUTPUT_ENABLED;
+
+		return -EBUSY;
+	}
+
+	snd_assert (ins->asynch_tx_scb == NULL, return -EINVAL);
+	snd_assert (ins->master_mix_scb->next_scb_ptr == ins->the_null_scb, return -EINVAL);
+
+	/* reset output snooper sample buffer pointer */
+	snd_cs46xx_poke (chip, (ins->ref_snoop_scb->address + 2) << 2,
+			 (OUTPUT_SNOOP_BUFFER + 0x10) << 0x10 );
+	
+	/* The asynch. transfer task */
+	ins->asynch_tx_scb = cs46xx_dsp_create_asynch_fg_tx_scb(chip,"AsynchFGTxSCB",ASYNCTX_SCB_ADDR,
+								SPDIFO_SCB_INST,
+								SPDIFO_IP_OUTPUT_BUFFER1,
+								ins->master_mix_scb,
+								SCB_ON_PARENT_NEXT_SCB);
+	if (!ins->asynch_tx_scb) return -ENOMEM;
+
+	ins->spdif_pcm_input_scb = cs46xx_dsp_create_pcm_serial_input_scb(chip,"PCMSerialInput_II",
+									  PCMSERIALINII_SCB_ADDR,
+									  ins->ref_snoop_scb,
+									  ins->asynch_tx_scb,
+									  SCB_ON_PARENT_SUBLIST_SCB);
+  
+	
+	if (!ins->spdif_pcm_input_scb) return -ENOMEM;
+
+	/* monitor state */
+	ins->spdif_status_out |= DSP_SDPIF_STATUS_OUTPUT_ENABLED;
+
+	return 0;
+}
+
+int  cs46xx_dsp_disable_spdif_out (cs46xx_t *chip)
+{
+	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+
+	/* dont touch anything if SPDIF is open */
+	if ( ins->spdif_status_out & DSP_SDPIF_STATUS_PLAYBACK_OPEN) {
+		ins->spdif_status_out &= ~DSP_SDPIF_STATUS_OUTPUT_ENABLED;
+		return -EBUSY;
+	}
+
+	/* check integrety */
+	snd_assert (ins->asynch_tx_scb != NULL, return -EINVAL);
+	snd_assert (ins->spdif_pcm_input_scb != NULL,return -EINVAL);
+	snd_assert (ins->master_mix_scb->next_scb_ptr == ins->asynch_tx_scb, return -EINVAL);
+	snd_assert (ins->asynch_tx_scb->parent_scb_ptr == ins->master_mix_scb, return -EINVAL);
+
+	cs46xx_dsp_remove_scb (chip,ins->spdif_pcm_input_scb);
+	cs46xx_dsp_remove_scb (chip,ins->asynch_tx_scb);
+
+	ins->spdif_pcm_input_scb = NULL;
+	ins->asynch_tx_scb = NULL;
+
+	/* clear buffer to prevent any undesired noise */
+	_dsp_clear_sample_buffer(chip,SPDIFO_IP_OUTPUT_BUFFER1,256);
+
+	/* monitor state */
+	ins->spdif_status_out  &= ~DSP_SDPIF_STATUS_OUTPUT_ENABLED;
+
+
 	return 0;
 }
 
@@ -1467,12 +1610,26 @@ int cs46xx_iec958_pre_open (cs46xx_t *chip)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 
-	snd_assert (ins->spdif_pcm_input_scb != NULL);
-	snd_assert (ins->asynch_tx_scb->sub_list_ptr == ins->spdif_pcm_input_scb);
+	if ( ins->spdif_status_out & DSP_SDPIF_STATUS_OUTPUT_ENABLED ) {
+		/* remove AsynchFGTxSCB and and PCMSerialInput_II */
+		cs46xx_dsp_disable_spdif_out (chip);
 
-	/*cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12) | (1 << 2)); */
+		/* save state */
+		ins->spdif_status_out |= DSP_SDPIF_STATUS_OUTPUT_ENABLED;
+	}
 
-	_dsp_unlink_scb (chip,ins->spdif_pcm_input_scb);
+	/* Create the asynch. transfer task  for playback */
+	ins->asynch_tx_scb = cs46xx_dsp_create_asynch_fg_tx_scb(chip,"AsynchFGTxSCB",ASYNCTX_SCB_ADDR,
+								SPDIFO_SCB_INST,
+								SPDIFO_IP_OUTPUT_BUFFER1,
+								ins->master_mix_scb,
+								SCB_ON_PARENT_NEXT_SCB);
+
+	/* cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 15) | 
+	   (1 << 14) | (1 << 2) | (1 << 3)); */
+
+	ins->spdif_status_out  |= DSP_SDPIF_STATUS_PLAYBACK_OPEN;
+
 	return 0;
 }
 
@@ -1480,22 +1637,20 @@ int cs46xx_iec958_post_close (cs46xx_t *chip)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 
-	snd_assert (ins->spdif_pcm_input_scb != NULL);
-	snd_assert (ins->asynch_tx_scb->sub_list_ptr == ins->the_null_scb);
-	snd_assert (ins->spdif_pcm_input_scb->parent_scb_ptr == NULL);
+	snd_assert (ins->asynch_tx_scb != NULL, return -EINVAL);
 
-	/* relink the SPDIF output PCM ref */
-	ins->asynch_tx_scb->sub_list_ptr = ins->spdif_pcm_input_scb;
-	ins->spdif_pcm_input_scb->parent_scb_ptr = ins->asynch_tx_scb;
+	ins->spdif_status_out  &= ~DSP_SDPIF_STATUS_PLAYBACK_OPEN;
 
+	/*cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12));*/
+	
+	/* deallocate stuff */
+	cs46xx_dsp_remove_scb (chip,ins->asynch_tx_scb);
+	ins->asynch_tx_scb = NULL;
 
-	/* cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12)); */
-
-	/* update entry in DSP RAM */
-	snd_cs46xx_poke(chip,
-			(ins->asynch_tx_scb->address + SCBsubListPtr) << 2,
-			(ins->asynch_tx_scb->sub_list_ptr->address << 0x10) |
-			(ins->asynch_tx_scb->next_scb_ptr->address));
-
+	/* restore state */
+	if ( ins->spdif_status_out & DSP_SDPIF_STATUS_OUTPUT_ENABLED ) {
+		cs46xx_dsp_enable_spdif_out (chip);
+	}
+	
 	return 0;
 }
