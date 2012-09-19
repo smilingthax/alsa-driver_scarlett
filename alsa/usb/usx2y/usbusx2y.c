@@ -1,6 +1,10 @@
 /*
  * usbus428.c - ALSA USB US-428 Driver
  *
+2004-01-14 Karsten Wiese
+	Version 0.5.1:
+	Runs with 2.6.1 kernel.
+
 2003-12-30 Karsten Wiese
 	Version 0.4.1:
 	Fix 24Bit 4Channel capturing for the us428.
@@ -142,7 +146,7 @@ void snd_usX2Y_In04Int(struct urb* urb)
 	int			err = 0;
 	usX2Ydev_t		*usX2Y = urb->context;
 	us428ctls_sharedmem_t	*us428ctls = usX2Y->us428ctls_sharedmem;
-	
+
 	usX2Y->In04IntCalls++;
 
 	if (urb->status) {
@@ -210,6 +214,11 @@ void snd_usX2Y_In04Int(struct urb* urb)
 	if (err) {
 		snd_printk("In04Int() usb_submit_urb err=%i\n", err);
 	}
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+	urb->dev = usX2Y->chip.dev;
+	usb_submit_urb(urb, GFP_ATOMIC);
+#endif
 }
 
 static void snd_usX2Y_unlinkSeq(snd_usX2Y_AsyncSeq_t* S)
@@ -361,14 +370,16 @@ static void snd_usX2Y_usb_disconnect(struct usb_device* device, void* ptr)
 	if (ptr) {
 		usX2Ydev_t* usX2Y = usX2Y((snd_card_t*)ptr);
 		struct list_head* p;
+		if (usX2Y->chip_status == USX2Y_STAT_CHIP_HUP)	// on 2.6.1 kernel snd_usbmidi_disconnect()
+			return;					// calls us back. better leave :-) .
 		usX2Y->chip_status = USX2Y_STAT_CHIP_HUP;
 		snd_usX2Y_unlinkSeq(&usX2Y->AS04);
 		usb_unlink_urb(usX2Y->In04urb);
+		snd_card_disconnect((snd_card_t*)ptr);
 		/* release the midi resources */
 		list_for_each(p, &usX2Y->chip.midi_list) {
 			snd_usbmidi_disconnect(p, &snd_usX2Y_usb_driver);
 		}
-		snd_card_disconnect((snd_card_t*)ptr);
 		if (usX2Y->us428ctls_sharedmem) 
 			wake_up(&usX2Y->us428ctls_wait_queue_head);
 		snd_card_free_in_thread((snd_card_t*)ptr);

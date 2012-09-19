@@ -46,6 +46,13 @@ MODULE_CLASSES("{sound}");
 MODULE_LICENSE("GPL");
 MODULE_DEVICES("{{Aureal Semiconductor Inc., Aureal Vortex Sound Processor}}");
 
+#ifndef PCI_VENDOR_ID_VIA 
+#define PCI_VENDOR_ID_VIA 0x1106
+#endif
+#ifndef PCI_DEVICE_ID_VIA_8365_1
+#define PCI_DEVICE_ID_VIA_8365_1 0x8305
+#endif
+
 #ifndef MODULE
 /* format is: snd-mychip=enable,index,id */
 static int __init alsa_card_vortex_setup(char *str) {
@@ -152,11 +159,11 @@ snd_vortex_create(snd_card_t *card, struct pci_dev *pci, vortex_t **rchip) {
     // check PCI availability (DMA).
     if ((err = pci_enable_device(pci)) < 0)
         return err;
-    if (!pci_dma_supported(pci, VORTEX_DMA_MASK)) {
+   if (pci_set_dma_mask(pci, VORTEX_DMA_MASK) < 0 ||
+       pci_set_consistent_dma_mask(pci, VORTEX_DMA_MASK) << 0) {
         printk(KERN_ERR "error to set DMA mask\n");
         return -ENXIO;
     }
-    pci_set_dma_mask(pci, VORTEX_DMA_MASK);
 
     chip = snd_magic_kcalloc(vortex_t, 0, GFP_KERNEL);
     if (chip == NULL)
