@@ -1046,7 +1046,7 @@ static int snd_ca0106_free(struct snd_ca0106 *chip)
 
 	// release the irq
 	if (chip->irq >= 0)
-		free_irq(chip->irq, (void *)chip);
+		free_irq(chip->irq, chip);
 	pci_disable_device(chip->pci);
 	kfree(chip);
 	return 0;
@@ -1267,8 +1267,7 @@ static int __devinit snd_ca0106_create(struct snd_card *card,
 	}
 
 	if (request_irq(pci->irq, snd_ca0106_interrupt,
-			IRQF_DISABLED|IRQF_SHARED, "snd_ca0106",
-			(void *)chip)) {
+			IRQF_SHARED, "snd_ca0106", chip)) {
 		snd_ca0106_free(chip);
 		printk(KERN_ERR "cannot grab irq\n");
 		return -EBUSY;
@@ -1283,7 +1282,7 @@ static int __devinit snd_ca0106_create(struct snd_card *card,
 
 	pci_set_master(pci);
 	/* read revision & serial */
-	pci_read_config_byte(pci, PCI_REVISION_ID, (char *)&chip->revision);
+	pci_read_config_byte(pci, PCI_REVISION_ID, &chip->revision);
 	pci_read_config_dword(pci, PCI_SUBSYSTEM_VENDOR_ID, &chip->serial);
 	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &chip->model);
 #if 1

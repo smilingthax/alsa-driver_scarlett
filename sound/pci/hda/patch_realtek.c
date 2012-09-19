@@ -101,6 +101,7 @@ enum {
 	ALC861_UNIWILL_M31,
 	ALC861_TOSHIBA,
 	ALC861_ASUS,
+	ALC861_ASUS_LAPTOP,
 	ALC861_AUTO,
 	ALC861_MODEL_LAST,
 };
@@ -2427,7 +2428,6 @@ static struct hda_board_config alc880_cfg_tbl[] = {
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x8196, .config = ALC880_6ST }, /* ASUS P5GD1-HVM */
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x81b4, .config = ALC880_6ST },
 	{ .pci_subvendor = 0x1019, .pci_subdevice = 0xa884, .config = ALC880_6ST }, /* Acer APFV */
-	{ .pci_subvendor = 0x1458, .pci_subdevice = 0xa102, .config = ALC880_6ST }, /* Gigabyte K8N51 */
 
 	{ .modelname = "6stack-digout", .config = ALC880_6ST_DIG },
 	{ .pci_subvendor = 0x2668, .pci_subdevice = 0x8086, .config = ALC880_6ST_DIG },
@@ -2441,6 +2441,7 @@ static struct hda_board_config alc880_cfg_tbl[] = {
 	{ .pci_subvendor = 0x1297, .pci_subdevice = 0xc790, .config = ALC880_6ST_DIG }, /* Shuttle ST20G5 */
 	{ .pci_subvendor = 0x1509, .pci_subdevice = 0x925d, .config = ALC880_6ST_DIG }, /* FIC P4M-915GD1 */
 	{ .pci_subvendor = 0x1695, .pci_subdevice = 0x4012, .config = ALC880_5ST_DIG }, /* Epox EP-5LDA+ GLi */
+	{ .pci_subvendor = 0x1458, .pci_subdevice = 0xa102, .config = ALC880_6ST_DIG }, /* Gigabyte K8N51 */
 
 	{ .modelname = "asus", .config = ALC880_ASUS },
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x1964, .config = ALC880_ASUS_DIG },
@@ -5114,7 +5115,7 @@ static struct snd_kcontrol_new alc883_3ST_6ch_mixer[] = {
 	{ } /* end */
 };
 
-static snd_kcontrol_new_t alc883_fivestack_mixer[] = {
+static struct snd_kcontrol_new alc883_fivestack_mixer[] = {
 	HDA_CODEC_VOLUME("Front Playback Volume", 0x0c, 0x0, HDA_OUTPUT),
 	HDA_CODEC_MUTE("Front Playback Switch", 0x14, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME("Surround Playback Volume", 0x0d, 0x0, HDA_OUTPUT),
@@ -5478,6 +5479,8 @@ static struct hda_board_config alc883_cfg_tbl[] = {
 	{ .pci_subvendor = 0x161f, .pci_subdevice = 0x2054,
 	  .modelname = "medion", .config = ALC883_MEDION },
 	{ .modelname = "laptop-eapd", .config = ALC883_LAPTOP_EAPD },
+	{ .pci_subvendor = 0x1071, .pci_subdevice = 0x8258,
+	  .config = ALC883_LAPTOP_EAPD }, /* Evesham Voyager C530RD */
 	{ .pci_subvendor = 0x1558, .pci_subdevice = 0,
 	  .config = ALC883_LAPTOP_EAPD }, /* Clevo */
 	{ .modelname = "auto", .config = ALC883_AUTO },
@@ -6438,6 +6441,9 @@ static struct hda_board_config alc262_cfg_tbl[] = {
 	{ .modelname = "hippo",
 	  .pci_subvendor =0x1002, .pci_subdevice = 0x437b,
 	  .config = ALC262_HIPPO},
+	{ .modelname = "hippo",
+	  .pci_subvendor = 0x104d, .pci_subdevice = 0x8203,
+	  .config = ALC262_HIPPO }, /* Sony UX-90s */
 	{ .modelname = "hippo_1",
 	  .pci_subvendor =0x17ff, .pci_subdevice = 0x058f,
 	  .config = ALC262_HIPPO_1},
@@ -6791,7 +6797,7 @@ static struct snd_kcontrol_new alc861_3ST_mixer[] = {
 	{ } /* end */
 };
 
-static snd_kcontrol_new_t alc861_toshiba_mixer[] = {
+static struct snd_kcontrol_new alc861_toshiba_mixer[] = {
         /* output mixer control */
 	HDA_CODEC_MUTE("Master Playback Switch", 0x03, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x15, 0x01, HDA_INPUT),
@@ -6894,9 +6900,17 @@ static struct snd_kcontrol_new alc861_asus_mixer[] = {
                 .private_value = ARRAY_SIZE(alc861_asus_modes),
 	},
 	{ }
-};			
+};
 
-	
+/* additional mixer */
+static struct snd_kcontrol_new alc861_asus_laptop_mixer[] = {
+	HDA_CODEC_VOLUME("CD Playback Volume", 0x15, 0x0, HDA_INPUT),
+	HDA_CODEC_MUTE("CD Playback Switch", 0x15, 0x0, HDA_INPUT),
+	HDA_CODEC_VOLUME("PC Beep Playback Volume", 0x23, 0x0, HDA_OUTPUT),
+	HDA_CODEC_MUTE("PC Beep Playback Switch", 0x23, 0x0, HDA_OUTPUT),
+	{ }
+};
+
 /*
  * generic initialization of ADC, input mixers and output mixers
  */
@@ -6917,7 +6931,7 @@ static struct hda_verb alc861_base_init_verbs[] = {
 	/* port-E for HP out (front panel) */
 	{ 0x0f, AC_VERB_SET_PIN_WIDGET_CONTROL, 0xc0 },
 	/* route front PCM to HP */
-	{ 0x0f, AC_VERB_SET_CONNECT_SEL, 0x01 },
+	{ 0x0f, AC_VERB_SET_CONNECT_SEL, 0x00 },
 	/* port-F for mic-in (front panel) with vref */
 	{ 0x10, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24 },
 	/* port-G for CLFE (rear panel) */
@@ -6981,7 +6995,7 @@ static struct hda_verb alc861_threestack_init_verbs[] = {
 	/* port-E for HP out (front panel) */
 	{ 0x0f, AC_VERB_SET_PIN_WIDGET_CONTROL, 0xc0 },
 	/* route front PCM to HP */
-	{ 0x0f, AC_VERB_SET_CONNECT_SEL, 0x01 },
+	{ 0x0f, AC_VERB_SET_CONNECT_SEL, 0x00 },
 	/* port-F for mic-in (front panel) with vref */
 	{ 0x10, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24 },
 	/* port-G for CLFE (rear panel) */
@@ -7041,7 +7055,7 @@ static struct hda_verb alc861_uniwill_m31_init_verbs[] = {
 	/* port-E for HP out (front panel) */
 	{ 0x0f, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24 }, // this has to be set to VREF80
 	/* route front PCM to HP */
-	{ 0x0f, AC_VERB_SET_CONNECT_SEL, 0x01 },
+	{ 0x0f, AC_VERB_SET_CONNECT_SEL, 0x00 },
 	/* port-F for mic-in (front panel) with vref */
 	{ 0x10, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24 },
 	/* port-G for CLFE (rear panel) */
@@ -7103,7 +7117,7 @@ static struct hda_verb alc861_asus_init_verbs[] = {
 	/* port-E for HP out (front panel) */
 	{ 0x0f, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24 }, /* this has to be set to VREF80 */
 	/* route front PCM to HP */
-	{ 0x0f, AC_VERB_SET_CONNECT_SEL, 0x01 },
+	{ 0x0f, AC_VERB_SET_CONNECT_SEL, 0x00 },
 	/* port-F for mic-in (front panel) with vref */
 	{ 0x10, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24 },
 	/* port-G for CLFE (rear panel) */
@@ -7146,6 +7160,12 @@ static struct hda_verb alc861_asus_init_verbs[] = {
 	{ }
 };
 
+/* additional init verbs for ASUS laptops */
+static struct hda_verb alc861_asus_laptop_init_verbs[] = {
+	{ 0x0f, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x45 }, /* HP-out */
+	{ 0x15, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(2) }, /* mute line-in */
+	{ }
+};
 
 /*
  * generic initialization of ADC, input mixers and output mixers
@@ -7523,8 +7543,11 @@ static struct hda_board_config alc861_cfg_tbl[] = {
 	{ .modelname = "asus", .config = ALC861_ASUS},
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x1393,
 	  .config = ALC861_ASUS },
+	{ .modelname = "asus-laptop", .config = ALC861_ASUS_LAPTOP },
+	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x1335,
+	  .config = ALC861_ASUS_LAPTOP }, /* ASUS F2/F3 */
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x1338,
-	  .config = ALC861_ASUS },
+	  .config = ALC861_ASUS_LAPTOP }, /* ASUS F2/F3 */
 	{ .modelname = "auto", .config = ALC861_AUTO },
 	{}
 };
@@ -7619,7 +7642,21 @@ static struct alc_config_preset alc861_presets[] = {
 		.adc_nids = alc861_adc_nids,
 		.input_mux = &alc861_capture_source,
 	},
-};	
+	[ALC861_ASUS_LAPTOP] = {
+		.mixers = { alc861_toshiba_mixer, alc861_asus_laptop_mixer },
+		.init_verbs = { alc861_asus_init_verbs,
+				alc861_asus_laptop_init_verbs },
+		.num_dacs = ARRAY_SIZE(alc861_dac_nids),
+		.dac_nids = alc861_dac_nids,
+		.dig_out_nid = ALC861_DIGOUT_NID,
+		.num_channel_mode = ARRAY_SIZE(alc883_3ST_2ch_modes),
+		.channel_mode = alc883_3ST_2ch_modes,
+		.need_dac_fix = 1,
+		.num_adc_nids = ARRAY_SIZE(alc861_adc_nids),
+		.adc_nids = alc861_adc_nids,
+		.input_mux = &alc861_capture_source,
+	},
+};
 
 
 static int patch_alc861(struct hda_codec *codec)

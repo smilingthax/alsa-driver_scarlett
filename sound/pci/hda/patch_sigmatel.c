@@ -301,7 +301,7 @@ static struct snd_kcontrol_new stac9227_mixer[] = {
 	{ } /* end */
 };
 
-static snd_kcontrol_new_t stac927x_mixer[] = {
+static struct snd_kcontrol_new stac927x_mixer[] = {
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 		.name = "Input Source",
@@ -316,7 +316,7 @@ static snd_kcontrol_new_t stac927x_mixer[] = {
 	{ } /* end */
 };
 
-static snd_kcontrol_new_t stac9205_mixer[] = {
+static struct snd_kcontrol_new stac9205_mixer[] = {
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 		.name = "Digital Input Source",
@@ -1201,7 +1201,7 @@ static int stac92xx_auto_create_hp_ctls(struct hda_codec *codec,
 }
 
 /* labels for dmic mux inputs */
-const char *stac92xx_dmic_labels[5] = {
+static const char *stac92xx_dmic_labels[5] = {
 	"Analog Inputs", "Digital Mic 1", "Digital Mic 2",
 	"Digital Mic 3", "Digital Mic 4"
 };

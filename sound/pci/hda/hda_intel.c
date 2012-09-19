@@ -55,7 +55,7 @@ static char *model;
 static int position_fix;
 static int probe_mask = -1;
 static int single_cmd;
-static int disable_msi;
+static int enable_msi;
 
 module_param(index, int, 0444);
 MODULE_PARM_DESC(index, "Index value for Intel HD audio interface.");
@@ -69,8 +69,8 @@ module_param(probe_mask, int, 0444);
 MODULE_PARM_DESC(probe_mask, "Bitmask to probe codecs (default = -1).");
 module_param(single_cmd, bool, 0444);
 MODULE_PARM_DESC(single_cmd, "Use single command to communicate with codecs (for debugging only).");
-module_param(disable_msi, int, 0);
-MODULE_PARM_DESC(disable_msi, "Disable Message Signaled Interrupt (MSI)");
+module_param(enable_msi, int, 0);
+MODULE_PARM_DESC(enable_msi, "Enable Message Signaled Interrupt (MSI)");
 
 
 /* just for backward compatibility */
@@ -83,6 +83,7 @@ MODULE_SUPPORTED_DEVICE("{{Intel, ICH6},"
 			 "{Intel, ICH7},"
 			 "{Intel, ESB2},"
 			 "{Intel, ICH8},"
+			 "{Intel, ICH9},"
 			 "{ATI, SB450},"
 			 "{ATI, SB600},"
 			 "{ATI, RS600},"
@@ -1380,7 +1381,8 @@ static int __devinit azx_init_stream(struct azx *chip)
 
 static int azx_acquire_irq(struct azx *chip, int do_disconnect)
 {
-	if (request_irq(chip->pci->irq, azx_interrupt, IRQF_DISABLED|IRQF_SHARED,
+	if (request_irq(chip->pci->irq, azx_interrupt,
+			chip->msi ? 0 : IRQF_SHARED,
 			"HDA Intel", chip)) {
 		printk(KERN_ERR "hda-intel: unable to grab IRQ %d, "
 		       "disabling device\n", chip->pci->irq);
@@ -1389,6 +1391,7 @@ static int azx_acquire_irq(struct azx *chip, int do_disconnect)
 		return -1;
 	}
 	chip->irq = chip->pci->irq;
+	pci_intx(chip->pci, !chip->msi);
 	return 0;
 }
 
@@ -1531,7 +1534,7 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 	chip->pci = pci;
 	chip->irq = -1;
 	chip->driver_type = driver_type;
-	chip->msi = !disable_msi;
+	chip->msi = enable_msi;
 
 	chip->position_fix = position_fix;
 	chip->single_cmd = single_cmd;
@@ -1710,6 +1713,8 @@ static struct pci_device_id azx_ids[] = {
 	{ 0x8086, 0x27d8, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ICH }, /* ICH7 */
 	{ 0x8086, 0x269a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ICH }, /* ESB2 */
 	{ 0x8086, 0x284b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ICH }, /* ICH8 */
+	{ 0x8086, 0x293e, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ICH }, /* ICH9 */
+	{ 0x8086, 0x293f, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ICH }, /* ICH9 */
 	{ 0x1002, 0x437b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ATI }, /* ATI SB450 */
 	{ 0x1002, 0x4383, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ATI }, /* ATI SB600 */
 	{ 0x1002, 0x793b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, AZX_DRIVER_ATIHDMI }, /* ATI RS600 HDMI */
