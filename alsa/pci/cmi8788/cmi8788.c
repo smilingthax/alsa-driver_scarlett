@@ -114,11 +114,6 @@ static int cmi8788_init_controller_chip(struct cmi8788 *chip)
 	chip->capture_volume_init = 0;
 
 	chip->capture_source = CAPTURE_AC97_MIC;
-	chip->CMI8788IC_revision = CMI8788IC_Revision1;
-
-	/* CMI878 IC Revision */
-	if (snd_cmipci_read_w(chip, PCI_RevisionRegister) & 0x0008)
-		chip->CMI8788IC_revision = CMI8788IC_Revision2;
 
 	if (chip->CMI8788IC_revision == CMI8788IC_Revision1) {
 		tmp = snd_cmipci_read_b(chip, PCI_Misc);
@@ -393,6 +388,7 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	struct snd_card *card;
 	struct cmi8788 *chip;
 	int err;
+	u8 rev;
 
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;
@@ -447,9 +443,13 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	snd_card_set_dev(card, &pci->dev);
 	synchronize_irq(chip->irq);
 
-	sprintf(card->shortname, "C-Media PCI %s", card->driver);
-	sprintf(card->longname, "%s at 0x%lx, irq %i",
-		card->shortname, chip->addr, chip->irq);
+	rev = snd_cmipci_read_w(chip, PCI_RevisionRegister);
+	chip->CMI8788IC_revision =
+		rev & 0x08 ? CMI8788IC_Revision2 : CMI8788IC_Revision1;
+
+	sprintf(card->shortname, "C-Media PCI %d", 8787 + (rev != 0x14));
+	sprintf(card->longname, "%s rev %u at 0x%lx, irq %i", card->shortname,
+		chip->CMI8788IC_revision, chip->addr, chip->irq);
 
 	/* init_MUTEX(&chip->codec_mutex); */
 

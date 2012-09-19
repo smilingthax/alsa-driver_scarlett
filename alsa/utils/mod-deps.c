@@ -63,6 +63,9 @@ struct dep {
 	struct dep *next;
 	// bool?
 	int is_bool;
+	// int?
+	int is_int;
+	int int_val;
 	// hitflag?
 	int hitflag;
 };
@@ -335,6 +338,16 @@ static int read_file_1(const char *filename, struct cond **template)
 				add_dep(dep, buffer + 9, *template);
 			else if (!strncmp(buffer, "\tselect ", 8))
 				add_select(dep, buffer + 8, *template);
+			else if (!strncmp(buffer, "\tint ", 5))
+				dep->is_int = 1;
+			if (!strncmp(buffer, "\tdefault ", 9)) {
+				if (dep->is_int) {
+					char *p = buffer + 9;
+					for (; *p && !isdigit(*p); p++)
+						;
+					dep->int_val = strtol(p, NULL, 0);
+				}
+			}
 			continue;
 		case READ_STATE_MENU:
 			if (!strncmp(buffer, "\tdepends ", 9)) {
@@ -408,6 +421,12 @@ static struct cond * create_cond(char *line)
 			for (i = 1; i < strlen(word) + 1; i++)
 				word[i - 1] = word[i];
 			cond->left++;
+			if (!word[0]) {
+				if (!get_word(line, word)) {
+					fprintf(stderr, "Unbalanced open-parenthesis\n");
+					exit(EXIT_FAILURE);
+				}
+			}
 		}
 		/* hack for !XXX */
 		if (word[0] == '!' && isascii(word[1])) {
@@ -445,7 +464,11 @@ static struct cond * create_cond(char *line)
 				continue;
 			} else if (!strcmp(word, "!=n"))
 				continue;
-			else {
+			else if (*word == ')') {
+				for (i = 0; word[i]; i++)
+					if (word[i] == ')')
+						cond->right++;
+			} else {
 				fprintf(stderr, "Wrong condition %s\n", word);
 				exit(EXIT_FAILURE);
 			}
@@ -1164,7 +1187,10 @@ static void output_acinclude(void)
 			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
 		}
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		printf("      %s=\"%c\"\n", text, tempdep->is_bool ? 'y' : 'm');
+		if (tempdep->is_int)
+			printf("      %s=\"%d\"\n", text, tempdep->int_val);
+		else
+			printf("      %s=\"%c\"\n", text, tempdep->is_bool ? 'y' : 'm');
 		free(text);
 		printf("      probed=1\n");
 		if (put_if)
@@ -1226,6 +1252,8 @@ static void output_acinclude(void)
 		for (sel = tempdep->sel; sel; sel = sel->next)
 			sel_print_acinclude(sel);			
 		for (sel = tempdep->sel; sel; sel = sel->next) {
+			if (sel->dep->is_int)
+				continue;
 			if (is_always_true(sel->dep))
 				continue;
 			printf("      ");
@@ -1264,7 +1292,10 @@ static void output_acinclude(void)
 			continue;
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("if test -n \"$%s\"; then\n", text);
-		if (tempdep->is_bool)
+		if (tempdep->is_int) {
+			printf("  AC_DEFINE_UNQUOTED([%s], [%d])\n",
+			       text, tempdep->int_val);
+		} else if (tempdep->is_bool)
 			printf("  AC_DEFINE(%s)\n", text);
 		else
 			printf("  AC_DEFINE(%s_MODULE)\n", text);
