@@ -194,11 +194,10 @@ static int snd_usX2Y_AsyncSeq04_init(usX2Ydev_t* usX2Y)
 {
 	int	err = 0,
 		i;
-	usX2Y->Seq04 = 0;
 
 	if (NULL == (usX2Y->AS04.buffer = kmalloc(URB_DataLen_AsyncSeq*URBS_AsyncSeq, GFP_KERNEL))) {
 		err = -ENOMEM;
-	}else
+	} else
 		for (i = 0; i < URBS_AsyncSeq; ++i) {
 			if (NULL == (usX2Y->AS04.urb[i] = usb_alloc_urb(0, GFP_KERNEL))) {
 				err = -ENOMEM;

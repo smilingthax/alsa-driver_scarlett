@@ -1245,7 +1245,7 @@ static int snd_usX2Y_audio_stream_new(snd_card_t* card)
 	    					     snd_dma_continuous_data(GFP_KERNEL),
 						     usX2Y_capt_substream->endpoints * 64*1024,
 						     usX2Y_capt_substream->endpoints * 128*1024)) ||
-	    (usX2Y(card)->chip.dev->descriptor.idProduct == USB_ID_US428 &&
+	    (usX2Y(card)->chip.dev->descriptor.idProduct != USB_ID_US122 &&
 	     0 > (err = usX2Y_rate_set(usX2Y_stream, 44100)))) {	// Lets us428 recognize output-volume settings, disturbs us122.
 		snd_usX2Y_audio_stream_free(usX2Y_stream);
 		return err;

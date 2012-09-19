@@ -29,8 +29,6 @@ typedef struct {
 	char			In04Last[24];
 	unsigned		In04IntCalls;
 	snd_usX2Y_urbSeq_t*	US04;
-	int			Seq04;
-	int 			Seq04Complete;
 	wait_queue_head_t	In04WaitQueue;
 	snd_usX2Y_AsyncSeq_t	AS04;
 	unsigned int		rate,
@@ -56,10 +54,6 @@ void snd_usX2Y_In04Int(struct urb* urb, struct pt_regs *regs);
 #else
 void snd_usX2Y_Out04Int(struct urb* urb);
 void snd_usX2Y_In04Int(struct urb* urb);
-#endif
-
-#ifndef CONFIG_SND_DEBUG
-#define snd_usX2Y_Out04Int 0
 #endif
 
 #define NAME_ALLCAPS "US-X2Y"
