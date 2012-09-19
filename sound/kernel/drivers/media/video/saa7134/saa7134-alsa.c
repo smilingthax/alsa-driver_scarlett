@@ -54,10 +54,12 @@ MODULE_PARM_DESC(debug,"enable debug messages [alsa]");
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
-static int enable[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS - 1)] = 0};
+static int enable[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS - 1)] = 1};
 
 module_param_array(index, int, NULL, 0444);
+module_param_array(enable, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for SAA7134 capture interface(s).");
+MODULE_PARM_DESC(enable, "Enable (or not) the SAA7134 capture interface(s).");
 
 #define dprintk(fmt, arg...)    if (debug) \
 	printk(KERN_DEBUG "%s/alsa: " fmt, dev->name , ##arg)
@@ -306,8 +308,7 @@ static int dsp_buffer_init(struct saa7134_dev *dev)
 
 static int dsp_buffer_free(struct saa7134_dev *dev)
 {
-	if (!dev->dmasound.blksize)
-		BUG();
+	BUG_ON(!dev->dmasound.blksize);
 
 	videobuf_dma_free(&dev->dmasound.dma);
 
@@ -506,7 +507,7 @@ static int snd_card_saa7134_hw_params(struct snd_pcm_substream * substream,
 	/* release the old buffer */
 	if (substream->runtime->dma_area) {
 		saa7134_pgtable_free(dev->pci, &dev->dmasound.pt);
-		videobuf_dma_pci_unmap(dev->pci, &dev->dmasound.dma);
+		videobuf_pci_dma_unmap(dev->pci, &dev->dmasound.dma);
 		dsp_buffer_free(dev);
 		substream->runtime->dma_area = NULL;
 	}
@@ -522,12 +523,12 @@ static int snd_card_saa7134_hw_params(struct snd_pcm_substream * substream,
 		return err;
 	}
 
-	if (0 != (err = videobuf_dma_pci_map(dev->pci, &dev->dmasound.dma))) {
+	if (0 != (err = videobuf_pci_dma_map(dev->pci, &dev->dmasound.dma))) {
 		dsp_buffer_free(dev);
 		return err;
 	}
 	if (0 != (err = saa7134_pgtable_alloc(dev->pci,&dev->dmasound.pt))) {
-		videobuf_dma_pci_unmap(dev->pci, &dev->dmasound.dma);
+		videobuf_pci_dma_unmap(dev->pci, &dev->dmasound.dma);
 		dsp_buffer_free(dev);
 		return err;
 	}
@@ -536,7 +537,7 @@ static int snd_card_saa7134_hw_params(struct snd_pcm_substream * substream,
 						dev->dmasound.dma.sglen,
 						0))) {
 		saa7134_pgtable_free(dev->pci, &dev->dmasound.pt);
-		videobuf_dma_pci_unmap(dev->pci, &dev->dmasound.dma);
+		videobuf_pci_dma_unmap(dev->pci, &dev->dmasound.dma);
 		dsp_buffer_free(dev);
 		return err;
 	}
@@ -570,7 +571,7 @@ static int snd_card_saa7134_hw_free(struct snd_pcm_substream * substream)
 
 	if (substream->runtime->dma_area) {
 		saa7134_pgtable_free(dev->pci, &dev->dmasound.pt);
-		videobuf_dma_pci_unmap(dev->pci, &dev->dmasound.dma);
+		videobuf_pci_dma_unmap(dev->pci, &dev->dmasound.dma);
 		dsp_buffer_free(dev);
 		substream->runtime->dma_area = NULL;
 	}
@@ -610,12 +611,12 @@ static int snd_card_saa7134_capture_open(struct snd_pcm_substream * substream)
 	struct saa7134_dev *dev = saa7134->dev;
 	int err;
 
-	down(&dev->dmasound.lock);
+	mutex_lock(&dev->dmasound.lock);
 
 	dev->dmasound.read_count  = 0;
 	dev->dmasound.read_offset = 0;
 
-	up(&dev->dmasound.lock);
+	mutex_unlock(&dev->dmasound.lock);
 
 	pcm = kzalloc(sizeof(*pcm), GFP_KERNEL);
 	if (pcm == NULL)
@@ -939,7 +940,7 @@ static int alsa_card_saa7134_create(struct saa7134_dev *dev, int devnum)
 
 	chip->irq = dev->pci->irq;
 
-	init_MUTEX(&dev->dmasound.lock);
+	mutex_init(&dev->dmasound.lock);
 
 	if ((err = snd_card_saa7134_new_mixer(chip)) < 0)
 		goto __nodev;
