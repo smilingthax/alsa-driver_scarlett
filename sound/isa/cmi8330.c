@@ -182,8 +182,8 @@ static const struct isapnp_card_id *snd_cmi8330_isapnp_id[SNDRV_CARDS] __devinit
 #define ISAPNP_CMI8330(_va, _vb, _vc, _device, _audio1, _audio2) \
 	{ \
 		ISAPNP_CARD_ID(_va, _vb, _vc, _device), \
-		devs : { ISAPNP_DEVICE_ID('@', '@', '@', _audio1), \
-			 ISAPNP_DEVICE_ID('@', 'X', '@', _audio2), } \
+		.devs = { ISAPNP_DEVICE_ID('@', '@', '@', _audio1), \
+			  ISAPNP_DEVICE_ID('@', 'X', '@', _audio2), } \
 	}
 
 static struct isapnp_card_id snd_cmi8330_pnpids[] __devinitdata =

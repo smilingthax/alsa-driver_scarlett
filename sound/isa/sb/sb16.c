@@ -168,12 +168,12 @@ static const struct isapnp_card_id *snd_sb16_isapnp_id[SNDRV_CARDS] = SNDRV_DEFA
 #define ISAPNP_SB16(_va, _vb, _vc, _device, _audio) \
 	{ \
 		ISAPNP_CARD_ID(_va, _vb, _vc, _device), \
-		devs : { ISAPNP_DEVICE_ID(_va, _vb, _vc, _audio), } \
+		.devs = { ISAPNP_DEVICE_ID(_va, _vb, _vc, _audio), } \
 	}
 #define ISAPNP_SBAWE(_va, _vb, _vc, _device, _audio, _awe) \
 	{ \
 		ISAPNP_CARD_ID(_va, _vb, _vc, _device), \
-		devs : { ISAPNP_DEVICE_ID(_va, _vb, _vc, _audio), \
+		.devs = { ISAPNP_DEVICE_ID(_va, _vb, _vc, _audio), \
 			 ISAPNP_DEVICE_ID(_va, _vb, _vc, _awe), } \
 	}
 
