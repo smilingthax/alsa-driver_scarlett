@@ -497,7 +497,7 @@ static inline void class_simple_device_remove(int devnum) { return; }
 #include <linux/moduleparam.h>
 #undef module_param
 #define SNDRV_MODULE_TYPE_int	"i"
-#define SNDRV_MODULE_TYPE_bool	"b"
+#define SNDRV_MODULE_TYPE_bool	"i"
 #define SNDRV_MODULE_TYPE_uint	"i"
 #define SNDRV_MODULE_TYPE_charp	"s"
 #define SNDRV_MODULE_TYPE_long	"l"
