@@ -566,7 +566,7 @@ static int snd_intel8x0_codec_semaphore(intel8x0_t *chip, unsigned int codec)
 	 * continue the access. We don't need the semaphore anyway. */
 	snd_printk("codec_semaphore: semaphore is not ready [0x%x][0x%x]\n",
 			igetbyte(chip, ICHREG(ACC_SEMA)), igetdword(chip, ICHREG(GLOB_STA)));
-	iaputword(chip, 0, 0);	/* clear semaphore flag */
+	iagetword(chip, 0);	/* clear semaphore flag */
 	/* I don't care about the semaphore */
 	return -EBUSY;
 }
