@@ -11,7 +11,7 @@ include $(SND_TOPDIR)/Makefile.conf
 
 clean-files := cs4281.c es1968.c intel8x0.c maestro3.c
 
-obj-$(CONFIG_SND) += pdplus/ mixart/ au88x0/
+obj-$(CONFIG_SND) += pdplus/
 
 snd-intel8x0m-objs := intel8x0m.o
 snd-hdspm-objs := hdspm.o
