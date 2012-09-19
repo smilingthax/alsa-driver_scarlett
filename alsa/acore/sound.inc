@@ -45,8 +45,10 @@ EXPORT_SYMBOL(snd_compat_kstrdup);
 EXPORT_SYMBOL(snd_compat_kzalloc);
 #endif
 #endif
+#ifdef CONFIG_PCI
 #ifndef CONFIG_HAVE_PCI_DEV_PRESENT
 EXPORT_SYMBOL(snd_pci_dev_present);
+#endif
 #endif
 #ifndef CONFIG_HAVE_MSLEEP
 EXPORT_SYMBOL(snd_compat_msleep);
