@@ -226,7 +226,7 @@ struct cmi8788 {
 
 	/* locks */
 	spinlock_t reg_lock;
-	struct semaphore open_mutex;
+	/* struct mutex open_mutex; */
 
 	/* PCM */
 	int PCM_Count;
@@ -236,7 +236,7 @@ struct cmi8788 {
 	struct cmi_codec codec_list[MAX_CODEC_NUM];
 	int num_ac97_codecs;
 	struct cmi_codec ac97_codec_list[MAX_AC97_CODEC_NUM];
-	struct semaphore codec_mutex;
+	/* struct mutex codec_mutex; */
 
 	u8  playback_volume_init;
 	u8  capture_volume_init;

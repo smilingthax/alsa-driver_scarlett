@@ -1227,13 +1227,16 @@ case "$processor" in
       CONFIG_X86_32=y
     fi
     mach_dir=""
-    if test -d $CONFIG_SND_KERNELDIR/include/asm-i386/mach-default; then
-      mach_dir="$CONFIG_SND_KERNELDIR/include/asm-i386"
-    elif test -n "$kernelbuild" -a -d $kernelbuild/include/asm-i386/mach-default; then
-      mach_dir="$kernelbuild/include/asm-i386"
-    elif test -n "$kernelbuild" -a -d $kernelbuild/include2/asm-i386/mach-default; then
-      mach_dir="$kernelbuild/include2/asm-i386"
-    fi
+    for i in include/asm-x86 include/asm-i386 include2/asm-x86 include2/asm-i386; do
+      if test -d $CONFIG_SND_KERNELDIR/$i/mach-default; then
+        mach_dir="$CONFIG_SND_KERNELDIR/$i"
+	break
+      fi  
+      if test -n "$kernelbuild" -a -d $kernelbuild/$i/mach-default; then
+	mach_dir="$kernelbuild/$i"
+	break
+      fi  
+    done
     if test -n "$mach_dir"; then
 	AC_MSG_CHECKING(for i386 machine type)
 	machine="default"
