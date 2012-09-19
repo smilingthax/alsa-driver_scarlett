@@ -23,9 +23,9 @@
 
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-    $Id: rme9652_mem.c,v 1.1 2001/12/18 16:12:29 perex Exp $
+    $Id: rme9652_mem.c,v 1.2 2001/12/30 09:26:47 perex Exp $
 
 
     Tue Oct 17 2000  Jaroslav Kysela <perex@suse.cz>
