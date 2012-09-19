@@ -296,6 +296,7 @@ enum { AC97_TUNE_HP_ONLY, AC97_TUNE_SWAP_HP };
 struct ac97_quirk {
 	unsigned short vendor;
 	unsigned short device;
+	const char *name;
 	int type;
 };
 

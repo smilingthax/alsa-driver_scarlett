@@ -2477,6 +2477,7 @@ static int remove_ctl(ac97_t *ac97, const char *name)
 	snd_ctl_elem_id_t id;
 	memset(&id, 0, sizeof(id));
 	strcpy(id.name, name);
+	id.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
 	return snd_ctl_remove_id(ac97->card, &id);
 }
 
@@ -2485,8 +2486,10 @@ static int rename_ctl(ac97_t *ac97, const char *src, const char *dst)
 	snd_ctl_elem_id_t sid, did;
 	memset(&sid, 0, sizeof(sid));
 	strcpy(sid.name, src);
+	sid.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
 	memset(&did, 0, sizeof(did));
 	strcpy(did.name, dst);
+	did.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
 	return snd_ctl_rename_id(ac97->card, &sid, &did);
 }
 
@@ -2530,14 +2533,14 @@ int snd_ac97_tune_hardware(ac97_t *ac97, struct pci_dev *pci, struct ac97_quirk 
 
 	for (; quirk->vendor; quirk++) {
 		if (quirk->vendor == vendor && quirk->device == device) {
-			snd_printdd("ac97 quirk for %04x:%04x\n", vendor, device);
+			snd_printdd("ac97 quirk for %s (%04x:%04x)\n", quirk->name, vendor, device);
 			switch (quirk->type) {
 			case AC97_TUNE_HP_ONLY:
 				return swap_headphone(ac97, 1);
 			case AC97_TUNE_SWAP_HP:
 				return swap_headphone(ac97, 0);
 			}
-			snd_printk(KERN_ERR "invalid quirk type %d\n", quirk->type);
+			snd_printk(KERN_ERR "invalid quirk type %d for %s\n", quirk->type, quirk->name);
 			return -EINVAL;
 		}
 	}

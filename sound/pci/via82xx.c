@@ -939,8 +939,8 @@ static int snd_via8233_multi_prepare(snd_pcm_substream_t *substream)
 	case 2: slots = (1<<0) | (2<<4); break;
 	case 3: slots = (1<<0) | (2<<4) | (5<<8); break;
 	case 4: slots = (1<<0) | (2<<4) | (3<<8) | (4<<12); break;
-	case 5: slots = (1<<0) | (2<<4) | (5<<8) | (3<<12) | (4<<16); break;
-	case 6: slots = (1<<0) | (2<<4) | (5<<8) | (6<<12) | (3<<16) | (4<<20); break;
+	case 5: slots = (1<<0) | (2<<4) | (3<<8) | (4<<12) | (5<<16); break;
+	case 6: slots = (1<<0) | (2<<4) | (3<<8) | (4<<12) | (5<<16) | (6<<20); break;
 	default: slots = 0; break;
 	}
 	/* STOP index is never reached */
@@ -1458,7 +1458,7 @@ static void snd_via82xx_mixer_free_ac97(ac97_t *ac97)
 }
 
 static struct ac97_quirk ac97_quirks[] = {
-	{ 0x1106, 0x4161, AC97_TUNE_HP_ONLY }, /* ASRock K7VT2 */
+	{ 0x1106, 0x4161, "ASRock K7VT2", AC97_TUNE_HP_ONLY },
 	{ } /* terminator */
 };
 
@@ -1477,7 +1477,7 @@ static int __devinit snd_via82xx_mixer_new(via82xx_t *chip)
 	if ((err = snd_ac97_mixer(chip->card, &ac97, &chip->ac97)) < 0)
 		return err;
 
-	snd_ac97_tune_hardware(&chip->ac97, chip->pci, ac97_quirks);
+	snd_ac97_tune_hardware(chip->ac97, chip->pci, ac97_quirks);
 
 	if (chip->chip_type != TYPE_VIA686) {
 		/* use slot 10/11 */
