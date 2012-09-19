@@ -1611,6 +1611,33 @@ if test "$CONFIG_HAVE_MSLEEP_INTERRUPTIBLE" = "1"; then
 fi
 fi
 
+dnl Check for msecs_to_jiffies
+AC_MSG_CHECKING(for msecs_to_jiffies)
+msleep="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/jiffies.h>
+],[
+  unsigned int (*func)(const unsigned long);
+  func = msec_to_jiffies;
+],
+    AC_MSG_RESULT("yes");msecs_to_jiffies="1",
+    AC_MSG_RESULT("no");msecs_to_jiffies="0",
+    AC_MSG_RESULT("unknown");msecs_to_jiffies="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_MSECS_TO_JIFFIES=$msecs_to_jiffies
+dnl AC_SUBST(CONFIG_HAVE_MSECS_TO_JIFFIES)
+if test "$CONFIG_HAVE_MSECS_TO_JIFFIES" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_MSECS_TO_JIFFIES)
+fi
+
 dnl Check for tty->count is the atomic type
 AC_MSG_CHECKING(for tty->count is the atomic type)
 tty_count_atomic="0"
