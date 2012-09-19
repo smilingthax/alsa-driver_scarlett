@@ -1139,7 +1139,7 @@ EXPORT_SYMBOL(snd_pcm_hw_constraint_step);
 
 static int snd_pcm_hw_rule_pow2(struct snd_pcm_hw_params *params, struct snd_pcm_hw_rule *rule)
 {
-	static int pow2_sizes[] = {
+	static unsigned int pow2_sizes[] = {
 		1<<0, 1<<1, 1<<2, 1<<3, 1<<4, 1<<5, 1<<6, 1<<7,
 		1<<8, 1<<9, 1<<10, 1<<11, 1<<12, 1<<13, 1<<14, 1<<15,
 		1<<16, 1<<17, 1<<18, 1<<19, 1<<20, 1<<21, 1<<22, 1<<23,
@@ -1497,14 +1497,18 @@ void snd_pcm_tick_prepare(struct snd_pcm_substream *substream)
 		avail = snd_pcm_capture_avail(runtime);
 	}
 	if (avail < runtime->control->avail_min) {
-		snd_pcm_sframes_t n = runtime->control->avail_min - avail;
-		if (n > 0 && frames > (snd_pcm_uframes_t)n)
-			frames = n;
+		snd_pcm_sframes_t to_avail_min =
+			runtime->control->avail_min - avail;
+		if (to_avail_min > 0 &&
+		    frames > (snd_pcm_uframes_t)to_avail_min)
+			frames = to_avail_min;
 	}
 	if (avail < runtime->buffer_size) {
-		snd_pcm_sframes_t n = runtime->buffer_size - avail;
-		if (n > 0 && frames > (snd_pcm_uframes_t)n)
-			frames = n;
+		snd_pcm_sframes_t to_buffer_size =
+			runtime->buffer_size - avail;
+		if (to_buffer_size > 0 &&
+		    frames > (snd_pcm_uframes_t)to_buffer_size)
+			frames = to_buffer_size;
 	}
 	if (frames == ULONG_MAX) {
 		snd_pcm_tick_set(substream, 0);
