@@ -26,10 +26,17 @@ struct usbmix_name_map {
 	int control;
 };
 
+struct usbmix_selector_map {
+	int id;
+	int count;
+	const char **names;
+};
+
 struct usbmix_ctl_map {
 	int vendor;
 	int product;
 	const struct usbmix_name_map *map;
+	const struct usbmix_selector_map *selector_map;
 	int ignore_ctl_error;
 };
 
@@ -118,6 +125,69 @@ static struct usbmix_name_map mp3plus_map[] = {
 	{ 0 } /* terminator */
 };
 
+/* Topology of SB Audigy 2 NX
+
+          +----------------------------->EU[27]--+
+          |                                      v
+          | +----------------------------------->SU[29]---->FU[22]-->Dig_OUT[24]
+          | |                                    ^
+USB_IN[1]-+------------+              +->EU[17]->+->FU[11]-+
+            |          v              |          v         |
+Dig_IN[4]---+->FU[6]-->MU[16]->FU[18]-+->EU[21]->SU[31]----->FU[30]->Hph_OUT[20]
+            |          ^              |                    |
+Lin_IN[7]-+--->FU[8]---+              +->EU[23]->FU[28]------------->Spk_OUT[19]
+          | |                                              v
+          +--->FU[12]------------------------------------->SU[14]--->USB_OUT[15]
+            |                                              ^
+            +->FU[13]--------------------------------------+
+*/
+static struct usbmix_name_map audigy2nx_map[] = {
+	/* 1: IT pcm playback */
+	/* 4: IT digital in */
+	{ 6, "Digital In Playback" }, /* FU */
+	/* 7: IT line in */
+	{ 8, "Line Playback" }, /* FU */
+	{ 11, "What-U-Hear Capture" }, /* FU */
+	{ 12, "Line Capture" }, /* FU */
+	{ 13, "Digital In Capture" }, /* FU */
+	{ 14, "Capture Source" }, /* SU */
+	/* 15: OT pcm capture */
+	/* 16: MU w/o controls */
+	{ 17, NULL }, /* DISABLED: EU (for what?) */
+	{ 18, "Master Playback" }, /* FU */
+	/* 19: OT speaker */
+	/* 20: OT headphone */
+	{ 21, NULL }, /* DISABLED: EU (for what?) */
+	{ 22, "Digital Out Playback" }, /* FU */
+	{ 23, NULL }, /* DISABLED: EU (for what?) */
+	/* 24: OT digital out */
+	{ 27, NULL }, /* DISABLED: EU (for what?) */
+	{ 28, "Speaker Playback" }, /* FU */
+	{ 29, "Digital Out Source" }, /* SU */
+	{ 30, "Headphone Playback" }, /* FU */
+	{ 31, "Headphone Source" }, /* SU */
+	{ 0 } /* terminator */
+};
+
+static struct usbmix_selector_map audigy2nx_selectors[] = {
+	{
+		.id = 14, /* Capture Source */
+		.count = 3,
+		.names = (const char*[]) {"Line", "Digital In", "What-U-Hear"}
+	},
+	{
+		.id = 29, /* Digital Out Source */
+		.count = 3,
+		.names = (const char*[]) {"Front", "PCM", "Digital In"}
+	},
+	{
+		.id = 31, /* Headphone Source */
+		.count = 2,
+		.names = (const char*[]) {"Front", "Side"}
+	},
+	{ 0 } /* terminator */
+};
+
 /* LineX FM Transmitter entry - needed to bypass controls bug */
 static struct usbmix_name_map linex_map[] = {
 	/* 1: IT pcm */
@@ -154,10 +224,29 @@ static struct usbmix_name_map justlink_map[] = {
  */
 
 static struct usbmix_ctl_map usbmix_ctl_maps[] = {
-	{ 0x41e, 0x3000, extigy_map, 1 },
-	{ 0x41e, 0x3010, mp3plus_map, 0 },
-	{ 0x8bb, 0x2702, linex_map, 1 },
-	{ 0xc45, 0x1158, justlink_map, 0 },
+	{
+		.vendor = 0x41e, .product = 0x3000,
+		.map = extigy_map,
+		.ignore_ctl_error = 1,
+	},
+	{
+		.vendor = 0x41e, .product = 0x3010,
+		.map = mp3plus_map,
+	},
+	{
+		.vendor = 0x41e, .product = 0x3020,
+		.map = audigy2nx_map,
+		.selector_map = audigy2nx_selectors,
+	},
+	{
+		.vendor = 0x8bb, .product = 0x2702,
+		.map = linex_map,
+		.ignore_ctl_error = 1,
+	},
+	{
+		.vendor = 0xc45, .product = 0x1158,
+		.map = justlink_map,
+	},
 	{ 0 } /* terminator */
 };
 
