@@ -575,10 +575,11 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 	}
 
 	dbg("asoc: %s <-> %s info:\n", rtd->codec_dai->name, rtd->cpu_dai->name);
-	dbg("asoc: rate mask 0x%x \nasoc: min ch %d max ch %d\n"
-		"asoc: min rate %d max rate %d\n",
-		runtime->hw.rates, runtime->hw.channels_min,
-		runtime->hw.channels_max, runtime->hw.rate_min, runtime->hw.rate_max);
+	dbg("asoc: rate mask 0x%x\n", runtime->hw.rates);
+	dbg("asoc: min ch %d max ch %d\n", runtime->hw.channels_min,
+		runtime->hw.channels_max);
+	dbg("asoc: min rate %d max rate %d\n", runtime->hw.rate_min,
+		runtime->hw.rate_max);
 
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
@@ -1437,12 +1438,18 @@ int snd_soc_register_card(struct snd_soc_device *socdev)
 {
 	struct snd_soc_codec *codec = socdev->codec;
 	struct snd_soc_machine *machine = socdev->machine;
-	int ret = 0, i, ac97 = 0;
+	int ret = 0, i, ac97 = 0, err = 0;
 
 	mutex_lock(&codec->mutex);
 	for(i = 0; i < machine->num_links; i++) {
-		if (socdev->machine->dai_link[i].init)
-			socdev->machine->dai_link[i].init(codec);
+		if (socdev->machine->dai_link[i].init) {
+			err = socdev->machine->dai_link[i].init(codec);
+			if (err < 0) {
+				printk(KERN_ERR "asoc: failed to init %s\n",
+					socdev->machine->dai_link[i].stream_name);
+				continue;
+			}
+		}
 		if (socdev->machine->dai_link[i].cpu_dai->type == SND_SOC_DAI_AC97)
 			ac97 = 1;
 	}
@@ -1455,17 +1462,28 @@ int snd_soc_register_card(struct snd_soc_device *socdev)
 	if (ret < 0) {
 		printk(KERN_ERR "asoc: failed to register soundcard for codec %s\n",
 				codec->name);
-		mutex_unlock(&codec->mutex);
-		return ret;
+		goto out;
 	}
 
 #ifdef CONFIG_SND_SOC_AC97_BUS
-	if (ac97)
-		soc_ac97_dev_register(codec);
+	if (ac97) {
+		ret = soc_ac97_dev_register(codec);
+		if (ret < 0) {
+			printk(KERN_ERR "asoc: AC97 device register failed\n");
+			snd_card_free(codec->card);
+			goto out;
+		}
+	}
 #endif
 
-	snd_soc_dapm_sys_add(socdev->dev);
-	device_create_file(socdev->dev, &dev_attr_codec_reg);
+	err = snd_soc_dapm_sys_add(socdev->dev);
+	if (err < 0)
+		printk(KERN_WARNING "asoc: failed to add dapm sysfs entries\n");
+
+	err = device_create_file(socdev->dev, &dev_attr_codec_reg);
+	if (err < 0)
+		printk(KERN_WARNING "asoc: failed to add codec sysfs entries\n");
+out:
 	mutex_unlock(&codec->mutex);
 	return ret;
 }
