@@ -26,14 +26,9 @@ Please note that the CM8x38 DAC doesn't support continuous playback
 rate but only fixed rates: 5512, 8000, 11025, 16000, 22050, 32000,
 44100 and 48000 Hz.
 
-The 2nd DAC is enabled when "Four Channel Mode" switch is enabled.
+The rear output can be heard only when "Four Channel Mode" switch is
+disabled.  Otherwise no signal will be routed to the rear speakers.
 As default it's turned on.
-It looks like the 2nd DAC has no independent mixer control, i.e.
-the volume of rear channel is identical with the volume of front
-speakers, PCM and Master volumes.
-
-When the 2nd channel is used as ADC, the signals to the 1st DAC are
-copied (duplicated) to the rear speakers, too.
 
 *** WARNING ***
 When "Four Channel Mode" switch is off, the output from rear speakers
@@ -41,6 +36,13 @@ will be FULL VOLUME regardless of Master and PCM volumes.
 This might damage your audio equipment.  Please disconnect speakers
 before your turn off this switch.
 *** WARNING ***
+
+[ Well.. I once got the output with correct volume (i.e. same with the
+  front one) and was so excited.  It was even with "Four Channel" bit
+  on and "double DAC" mode.  Actually I could hear separate 4 channels
+  from front and rear speakers!  But.. after reboot, all was gone.
+  It's a very pity that I didn't save the register dump at that
+  time..  Maybe there is an unknown register to achieve this... ]
 
 If your card has an extra output jack for the rear output, the rear
 playback should be routed there as default.  If not, there is a
@@ -92,7 +94,16 @@ The CM8x38 provides the excellent SPDIF capability with very chip
 price (yes, that's the reason I bought the card :)
 
 The SPDIF playback and capture are done via the third PCM device
-(hw:0,2).  The available rate is 44100 and 48000 Hz.
+(hw:0,2).  Usually this is assigned to the PCM device "spdif".
+The available rates are 44100 and 48000 Hz.
+For playback with aplay, you can run like below:
+
+	% aplay -Dhw:0,2 foo.wav
+
+or
+
+	% aplay -Dspdif foo.wav
+
 So far, only S16LE format is supported.  Still no 24bit.  Sorry, not
 enough info for this.
 
@@ -143,9 +154,9 @@ access it via alsa-lib.  See alsa-lib documents for more details.
 
 On the raw digital mode, the "PCM Playback Switch" is automatically
 turned off so that non-audio data is heard from the analog line-out.
-Similarly the following switches are off: "IEC958 DAC to Out", "Out To
-DAC" and "IEC958 Loop".  The switches are resumed after closing the
-SPDIF PCM device automatically to the previous state.
+Similarly the following switches are off: "IEC958 Mix Analog" and
+"IEC958 Loop".  The switches are resumed after closing the SPDIF PCM
+device automatically to the previous state.
 
 
 ANALOG MIXER INTERFACE
