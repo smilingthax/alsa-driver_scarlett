@@ -612,7 +612,7 @@ static int wm8971_resume(struct snd_soc_codec *codec)
 
 	/* Sync reg_cache with the hardware */
 	for (i = 0; i < ARRAY_SIZE(wm8971_reg); i++) {
-		if (i + 1 == WM8971_RESET)
+		if (i == WM8971_RESET)
 			continue;
 		data[0] = (i << 1) | ((cache[i] >> 8) & 0x0001);
 		data[1] = cache[i] & 0x00ff;
@@ -660,25 +660,14 @@ static int wm8971_probe(struct snd_soc_codec *codec)
 		msecs_to_jiffies(1000));
 
 	/* set the update bits */
-	reg = snd_soc_read(codec, WM8971_LDAC);
-	snd_soc_write(codec, WM8971_LDAC, reg | 0x0100);
-	reg = snd_soc_read(codec, WM8971_RDAC);
-	snd_soc_write(codec, WM8971_RDAC, reg | 0x0100);
-
-	reg = snd_soc_read(codec, WM8971_LOUT1V);
-	snd_soc_write(codec, WM8971_LOUT1V, reg | 0x0100);
-	reg = snd_soc_read(codec, WM8971_ROUT1V);
-	snd_soc_write(codec, WM8971_ROUT1V, reg | 0x0100);
-
-	reg = snd_soc_read(codec, WM8971_LOUT2V);
-	snd_soc_write(codec, WM8971_LOUT2V, reg | 0x0100);
-	reg = snd_soc_read(codec, WM8971_ROUT2V);
-	snd_soc_write(codec, WM8971_ROUT2V, reg | 0x0100);
-
-	reg = snd_soc_read(codec, WM8971_LINVOL);
-	snd_soc_write(codec, WM8971_LINVOL, reg | 0x0100);
-	reg = snd_soc_read(codec, WM8971_RINVOL);
-	snd_soc_write(codec, WM8971_RINVOL, reg | 0x0100);
+	snd_soc_update_bits(codec, WM8971_LDAC, 0x0100, 0x0100);
+	snd_soc_update_bits(codec, WM8971_RDAC, 0x0100, 0x0100);
+	snd_soc_update_bits(codec, WM8971_LOUT1V, 0x0100, 0x0100);
+	snd_soc_update_bits(codec, WM8971_ROUT1V, 0x0100, 0x0100);
+	snd_soc_update_bits(codec, WM8971_LOUT2V, 0x0100, 0x0100);
+	snd_soc_update_bits(codec, WM8971_ROUT2V, 0x0100, 0x0100);
+	snd_soc_update_bits(codec, WM8971_LINVOL, 0x0100, 0x0100);
+	snd_soc_update_bits(codec, WM8971_RINVOL, 0x0100, 0x0100);
 
 	snd_soc_add_controls(codec, wm8971_snd_controls,
 				ARRAY_SIZE(wm8971_snd_controls));
