@@ -1,9 +1,0 @@
-menu "ALSA Sparc devices"
-	depends on SND!=n && (SPARC32 || SPARC64)
-
-config SND_SUN_DBRI
-	tristate "Sun DBRI"
-	depends on SND && SBUS
-	select SND_PCM
-
-endmenu

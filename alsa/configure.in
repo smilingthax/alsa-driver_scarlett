@@ -2103,7 +2103,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   new_ioctl="0"
   ac_save_CFLAGS="$CFLAGS"
   ac_save_CC="$CC"
-  CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
