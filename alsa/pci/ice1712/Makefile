@@ -5,3 +5,5 @@ include $(TOPDIR)/Makefile.conf
 
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/pci/ice1712/Makefile
+
+include $(TOPDIR)/Rules.make

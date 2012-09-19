@@ -9,3 +9,5 @@ CONFIG_SND_SB16_CSP=y
 
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/isa/sb/Makefile
+
+include $(TOPDIR)/Rules.make

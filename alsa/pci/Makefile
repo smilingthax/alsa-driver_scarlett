@@ -20,6 +20,4 @@ extra-obj-$(CONFIG_SND_AZT3328) += snd-azt3328.o
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/pci/Makefile
 
-#
-# ALSA extra rules
-#
+include $(TOPDIR)/Rules.make

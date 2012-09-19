@@ -9,3 +9,5 @@ TOPDIR = $(MAINSRCDIR)
 export-objs := usbaudio.o
 
 include $(TOPDIR)/alsa-kernel/usb/Makefile
+
+include $(TOPDIR)/Rules.make

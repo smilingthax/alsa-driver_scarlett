@@ -10,3 +10,5 @@ obj-$(CONFIG_SND_AZT3328) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-m
 
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/core/seq/Makefile
+
+include $(TOPDIR)/Rules.make
