@@ -1017,6 +1017,7 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 	dsp_scb_descriptor_t * codec_in_scb;
 	dsp_scb_descriptor_t * src_task_scb;
 	dsp_scb_descriptor_t * master_mix_scb;
+	dsp_scb_descriptor_t * rear_mix_scb;
 	dsp_scb_descriptor_t * record_mix_scb;
 	dsp_scb_descriptor_t * write_back_scb;
 	dsp_scb_descriptor_t * vari_decimate_scb;
@@ -1309,18 +1310,29 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 
 	/* create secondary CODEC output */
 	sec_codec_out_scb = cs46xx_dsp_create_codec_out_scb(chip,"CodecOutSCB_II",0x0010,0x0040,
-							    OUTPUTSNOOP_SCB_ADDR,
+							    REAR_MIXER_SCB_ADDR,
 							    SEC_CODECOUT_SCB_ADDR,codec_in_scb,
 							    SCB_ON_PARENT_NEXT_SCB);
 	if (!sec_codec_out_scb) goto _fail_end;
+
+
+	/* create the rear PCM channel  mixer SCB */
+	rear_mix_scb = cs46xx_dsp_create_mix_only_scb(chip,"RearMixerSCB",
+                                                  MIX_SAMPLE_BUF3,
+                                                  REAR_MIXER_SCB_ADDR,
+                                                  sec_codec_out_scb,
+                                                  SCB_ON_PARENT_SUBLIST_SCB);
+	ins->rear_mix_scb = rear_mix_scb;
+	if (!rear_mix_scb) goto _fail_end;
 
 	/* the magic snooper */
 	magic_snoop_scb = cs46xx_dsp_create_magic_snoop_scb (chip,"MagicSnoopSCB_I",OUTPUTSNOOP_SCB_ADDR,
 							     OUTPUT_SNOOP_BUFFER,
 							     codec_out_scb,
 							     sec_codec_out_scb,
-							     SCB_ON_PARENT_SUBLIST_SCB);
+							     SCB_ON_PARENT_NEXT_SCB);
 
+    
 	if (!magic_snoop_scb) goto _fail_end;
 	ins->ref_snoop_scb = magic_snoop_scb;
 
@@ -1329,10 +1341,11 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 	asynch_tx_scb = cs46xx_dsp_create_asynch_fg_tx_scb(chip,"AsynchFGTxSCB",ASYNCTX_SCB_ADDR,
 							   SPDIFO_SCB_INST,
 							   SPDIFO_IP_OUTPUT_BUFFER1,
-							   magic_snoop_scb,
+							   master_mix_scb,
 							   SCB_ON_PARENT_NEXT_SCB);
 
 	if (!asynch_tx_scb) goto _fail_end;
+	ins->asynch_tx_scb = asynch_tx_scb;
 
 	/* pcm input */
 	pcm_serial_input_task = cs46xx_dsp_create_pcm_serial_input_scb(chip,"PCMSerialInput_II",
@@ -1341,13 +1354,13 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 								       SCB_ON_PARENT_SUBLIST_SCB);
   
 	if (!pcm_serial_input_task) goto _fail_end;
+	ins->spdif_pcm_input_scb = pcm_serial_input_task; 
 
 	/* SP IO access */
 	if (!cs46xx_dsp_create_spio_write_scb(chip,"SPIOWriteSCB",SPIOWRITE_SCB_ADDR,
 					      asynch_tx_scb,
 					      SCB_ON_PARENT_NEXT_SCB))
 		goto _fail_end;
-
 
 	/* SPDIF input sampel rate converter */
 	src_task_scb = cs46xx_dsp_create_src_task_scb(chip,"SrcTaskSCB_SPDIFI",

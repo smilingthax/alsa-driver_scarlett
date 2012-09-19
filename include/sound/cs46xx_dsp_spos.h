@@ -54,6 +54,12 @@
 #define DSP_MAX_PCM_CHANNELS 32
 #define DSP_MAX_SRC_NR       6
 
+#define DSP_PCM_MAIN_CHANNEL    1
+#define DSP_PCM_REAR_CHANNEL    2
+#define DSP_PCM_CENTER_CHANNEL  3
+#define DSP_PCM_LFE_CHANNEL     4
+#define DSP_IEC958_CHANNEL      5
+
 struct _dsp_module_desc_t;
 
 typedef struct _symbol_entry_t {
@@ -129,6 +135,8 @@ typedef struct _pcm_channel_descriptor_t {
 	u32 unlinked;
 	dsp_scb_descriptor_t * pcm_reader_scb;
 	dsp_scb_descriptor_t * src_scb;
+	dsp_scb_descriptor_t * mixer_scb;
+	int pcm_channel_id;
 
 	void * private_data;
 } pcm_channel_descriptor_t;
@@ -141,8 +149,12 @@ typedef struct _dsp_spos_instance_t {
 
 	segment_desc_t code;
 
-	/* PCM playback */
+	/* Main PCM playback mixer */
 	dsp_scb_descriptor_t * master_mix_scb;
+
+	/* Rear PCM playback mixer */
+	dsp_scb_descriptor_t * rear_mix_scb;
+
 	int npcm_channels;
 	int nsrc_scb;
 	pcm_channel_descriptor_t pcm_channels[DSP_MAX_PCM_CHANNELS];
@@ -190,6 +202,12 @@ typedef struct _dsp_spos_instance_t {
 
 	/* reference snooper */
 	dsp_scb_descriptor_t * ref_snoop_scb;
+
+	/* SPDIF output  PCM reference  */
+	dsp_scb_descriptor_t * spdif_pcm_input_scb;
+
+	/* asynch TX task */
+	dsp_scb_descriptor_t * asynch_tx_scb;
 
 	/* record sources */
 	dsp_scb_descriptor_t * pcm_input;

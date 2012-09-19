@@ -168,7 +168,7 @@ static void *sgbuf_get_addr(snd_pcm_substream_t *substream, unsigned long offset
 	idx = offset >> PAGE_SHIFT;
 	if (idx >= sgbuf->pages)
 		return 0;
-	return virt_to_page(sgbuf->table[idx].buf);
+	return sgbuf->table[idx].buf;
 }
 
 /*

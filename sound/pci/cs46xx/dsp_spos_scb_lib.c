@@ -1093,15 +1093,40 @@ static u32 src_delay_buffer_addr[DSP_MAX_SRC_NR] = {
 };
 
 
-pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,u32 sample_rate, void * private_data, u32 hw_dma_addr)
+pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,
+                                                          u32 sample_rate, void * private_data, 
+                                                          u32 hw_dma_addr,
+                                                          int pcm_channel_id)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
-	dsp_scb_descriptor_t * src_scb = NULL,* pcm_scb;
+	dsp_scb_descriptor_t * src_scb = NULL,* pcm_scb, * mixer_scb = NULL;
 	/*dsp_scb_descriptor_t * pcm_parent_scb;*/
 	char scb_name[DSP_MAX_SCB_NAME];
 	int i,pcm_index = -1, insert_point, src_index = -1;
 	unsigned long flags;
 
+	switch (pcm_channel_id) {
+	case DSP_PCM_MAIN_CHANNEL:
+		mixer_scb = ins->master_mix_scb;
+		break;
+	case DSP_PCM_REAR_CHANNEL:
+		mixer_scb = ins->rear_mix_scb;
+		break;
+	case DSP_PCM_CENTER_CHANNEL:
+		/* TODO */
+		snd_assert(0);
+		break;
+	case DSP_PCM_LFE_CHANNEL:
+		/* TODO */
+		snd_assert(0);
+		break;
+	case DSP_IEC958_CHANNEL:
+		mixer_scb = ins->asynch_tx_scb;
+		break;
+	default:
+		snd_assert (0);
+		return NULL;
+	}
 	/* default sample rate is 44100 */
 	if (!sample_rate) sample_rate = 44100;
 
@@ -1114,7 +1139,9 @@ pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,u32 sa
 		if (i == CS46XX_DSP_CAPTURE_CHANNEL) continue;
 
 		if (ins->pcm_channels[i].active) {
-			if (!src_scb && ins->pcm_channels[i].sample_rate == sample_rate) {
+			if (!src_scb && 
+			    ins->pcm_channels[i].sample_rate == sample_rate &&
+			    ins->pcm_channels[i].mixer_scb == mixer_scb) {
 				src_scb = ins->pcm_channels[i].src_scb;
 				ins->pcm_channels[i].src_scb->ref_count ++;
 				src_index = ins->pcm_channels[i].src_slot;
@@ -1148,11 +1175,11 @@ pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,u32 sa
 		snd_assert (src_index != -1,return NULL);
 
 		/* we need to create a new SRC SCB */
-		if (ins->master_mix_scb->sub_list_ptr == ins->the_null_scb) {
-			src_parent_scb = ins->master_mix_scb;
+		if (mixer_scb->sub_list_ptr == ins->the_null_scb) {
+			src_parent_scb = mixer_scb;
 			insert_point = SCB_ON_PARENT_SUBLIST_SCB;
 		} else {
-			src_parent_scb = find_next_free_scb(chip,ins->master_mix_scb->sub_list_ptr);
+			src_parent_scb = find_next_free_scb(chip,mixer_scb->sub_list_ptr);
 			insert_point = SCB_ON_PARENT_NEXT_SCB;
 		}
 
@@ -1180,7 +1207,8 @@ pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,u32 sa
   
 	snprintf (scb_name,DSP_MAX_SCB_NAME,"PCMReader_SCB%d",pcm_index);
 
-	snd_printdd( "dsp_spos: creating PCM \"%s\"\n",scb_name);
+	snd_printdd( "dsp_spos: creating PCM \"%s\" (%d)\n",scb_name,
+                 pcm_channel_id);
 
 	pcm_scb = cs46xx_dsp_create_pcm_reader_scb(chip,scb_name,
 						   pcm_reader_buffer_addr[pcm_index],
@@ -1206,6 +1234,8 @@ pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,u32 sa
 	ins->pcm_channels[pcm_index].src_slot = src_index;
 	ins->pcm_channels[pcm_index].active = 1;
 	ins->pcm_channels[pcm_index].pcm_slot = pcm_index;
+	ins->pcm_channels[pcm_index].mixer_scb = mixer_scb;
+	ins->pcm_channels[pcm_index].pcm_channel_id = pcm_channel_id;
 	ins->npcm_channels ++;
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 
@@ -1430,5 +1460,42 @@ int cs46xx_src_link(cs46xx_t *chip,dsp_scb_descriptor_t * src)
 			(parent_scb->sub_list_ptr->address << 0x10) |
 			(parent_scb->next_scb_ptr->address));
   
+	return 0;
+}
+
+int cs46xx_iec958_pre_open (cs46xx_t *chip)
+{
+	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+
+	snd_assert (ins->spdif_pcm_input_scb != NULL);
+	snd_assert (ins->asynch_tx_scb->sub_list_ptr == ins->spdif_pcm_input_scb);
+
+	/*cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12) | (1 << 2)); */
+
+	_dsp_unlink_scb (chip,ins->spdif_pcm_input_scb);
+	return 0;
+}
+
+int cs46xx_iec958_post_close (cs46xx_t *chip)
+{
+	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+
+	snd_assert (ins->spdif_pcm_input_scb != NULL);
+	snd_assert (ins->asynch_tx_scb->sub_list_ptr == ins->the_null_scb);
+	snd_assert (ins->spdif_pcm_input_scb->parent_scb_ptr == NULL);
+
+	/* relink the SPDIF output PCM ref */
+	ins->asynch_tx_scb->sub_list_ptr = ins->spdif_pcm_input_scb;
+	ins->spdif_pcm_input_scb->parent_scb_ptr = ins->asynch_tx_scb;
+
+
+	/* cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12)); */
+
+	/* update entry in DSP RAM */
+	snd_cs46xx_poke(chip,
+			(ins->asynch_tx_scb->address + SCBsubListPtr) << 2,
+			(ins->asynch_tx_scb->sub_list_ptr->address << 0x10) |
+			(ins->asynch_tx_scb->next_scb_ptr->address));
+
 	return 0;
 }

@@ -952,6 +952,8 @@ static void output_acinclude(void)
 			printf("\tif test \"$CONFIG_PPC\" = \"y\"; then\n");
 		else if (strstr(tempdep->dir, "/arm"))
 			printf("\tif test \"$CONFIG_ARM\" = \"y\"; then\n");
+		else if (strstr(tempdep->name, "/pcmcia"))
+			printf("\tif test \"$CONFIG_PCMCIA\" = \"y\"; then\n");
 		else
 			put_if = 0;
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
