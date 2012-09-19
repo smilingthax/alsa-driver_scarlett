@@ -26,6 +26,7 @@
 #include <linux/init.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
+#include <linux/moduleparam.h>
 #include <linux/slab.h>
 #include <linux/pci.h>
 
@@ -57,29 +58,31 @@ static int line_outs_monitor[SNDRV_CARDS];
 /* Enable Analog Outs on Channel 63/64 by default */
 static int enable_monitor[SNDRV_CARDS];
 
-MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+static int boot_devs;
+
+module_param_array(index, int, boot_devs, 0444);
 MODULE_PARM_DESC(index, "Index value for RME HDSPM interface.");
 MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
 
-MODULE_PARM(id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
+module_param_array(id, charp, boot_devs, 0444);
 MODULE_PARM_DESC(id, "ID string for RME HDSPM interface.");
 MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
 
-MODULE_PARM(enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+module_param_array(enable, bool, boot_devs, 0444);
 MODULE_PARM_DESC(enable, "Enable/disable specific HDSPM soundcards.");
 MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 
-MODULE_PARM(precise_ptr, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+module_param_array(precise_ptr, bool, boot_devs, 0444);
 MODULE_PARM_DESC(precise_ptr, "Enable precise pointer, or disable.");
 MODULE_PARM_SYNTAX(precise_ptr, SNDRV_ENABLED "," SNDRV_BOOLEAN_TRUE_DESC);
 
-MODULE_PARM(line_outs_monitor, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+module_param_array(line_outs_monitor, bool, boot_devs, 0444);
 MODULE_PARM_DESC(line_outs_monitor,
 		 "Send playback streams to analog outs by default.");
 MODULE_PARM_SYNTAX(line_outs_monitor,
 		   SNDRV_ENABLED "," SNDRV_BOOLEAN_FALSE_DESC);
 
-MODULE_PARM(enable_monitor, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+module_param_array(enable_monitor, bool, boot_devs, 0444);
 MODULE_PARM_DESC(enable_monitor,
 		 "Enable Analog Out on Channel 63/64 by default.");
 MODULE_PARM_SYNTAX(enable_monitor,
@@ -3785,24 +3788,6 @@ static void __exit alsa_card_hdspm_exit(void)
 }
 
 module_init(alsa_card_hdspm_init)
-    module_exit(alsa_card_hdspm_exit)
-#ifndef MODULE
-/* format is: snd-hdspm=enable,index,id */
-static int __init alsa_card_hdspm_setup(char *str)
-{
-	static unsigned __initdata nr_dev = 0;
-
-	if (nr_dev >= SNDRV_CARDS)
-		return 0;
-	(void) (get_option(&str, &enable[nr_dev]) == 2 &&
-		get_option(&str, &index[nr_dev]) == 2 &&
-		get_id(&str, &id[nr_dev]) == 2);
-	nr_dev++;
-	return 1;
-}
-
-__setup("snd-hdspm=", alsa_card_hdspm_setup);
-
-#endif				/* ifndef MODULE */
+module_exit(alsa_card_hdspm_exit)
 
 EXPORT_NO_SYMBOLS;

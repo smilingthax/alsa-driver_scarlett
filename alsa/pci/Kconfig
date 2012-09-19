@@ -18,4 +18,12 @@ config SND_HDSPM
 	  Say 'Y' or 'M' to include support for RME Hammerfall DSP MADI
 	  soundcards.
 
+config SND_EMU10K1X
+	tristate "EMU10K1X (Dell OEM Version)"
+	depends on SND
+	select SND_AC97_CODEC
+	help
+	  Say 'Y' or 'M' to include support for Sound Blaster Live Dell
+	  OEM version.
+
 endmenu
