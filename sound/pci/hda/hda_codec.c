@@ -516,6 +516,7 @@ static int snd_hda_bus_dev_register(struct snd_device *device)
 	struct hda_codec *codec;
 	list_for_each_entry(codec, &bus->codec_list, list) {
 		snd_hda_hwdep_add_sysfs(codec);
+		snd_hda_hwdep_add_power_sysfs(codec);
 	}
 	return 0;
 }
@@ -2464,9 +2465,11 @@ static void hda_call_codec_suspend(struct hda_codec *codec)
 			    codec->afg ? codec->afg : codec->mfg,
 			    AC_PWRST_D3);
 #ifdef CONFIG_SND_HDA_POWER_SAVE
+	snd_hda_update_power_acct(codec);
 	cancel_delayed_work(&codec->power_work);
 	codec->power_on = 0;
 	codec->power_transition = 0;
+	codec->power_jiffies = jiffies;
 #endif
 }
 
@@ -2889,14 +2892,15 @@ static int set_pcm_default_values(struct hda_codec *codec,
 	return 0;
 }
 
+const char *snd_hda_pcm_type_name[HDA_PCM_NTYPES] = {
+	"Audio", "SPDIF", "HDMI", "Modem"
+};
+
 /*
  * get the empty PCM device number to assign
  */
 static int get_empty_pcm_device(struct hda_bus *bus, int type)
 {
-	static const char *dev_name[HDA_PCM_NTYPES] = {
-		"Audio", "SPDIF", "HDMI", "Modem"
-	};
 	/* audio device indices; not linear to keep compatibility */
 	static int audio_idx[HDA_PCM_NTYPES][5] = {
 		[HDA_PCM_TYPE_AUDIO] = { 0, 2, 4, 5, -1 },
@@ -2915,7 +2919,7 @@ static int get_empty_pcm_device(struct hda_bus *bus, int type)
 		if (!test_and_set_bit(audio_idx[type][i], bus->pcm_dev_bits))
 			return audio_idx[type][i];
 
-	snd_printk(KERN_WARNING "Too many %s devices\n", dev_name[type]);
+	snd_printk(KERN_WARNING "Too many %s devices\n", snd_hda_pcm_type_name[type]);
 	return -EAGAIN;
 }
 
@@ -3202,6 +3206,17 @@ static void hda_keep_power_on(struct hda_codec *codec)
 {
 	codec->power_count++;
 	codec->power_on = 1;
+	codec->power_jiffies = jiffies;
+}
+
+void snd_hda_update_power_acct(struct hda_codec *codec)
+{
+	unsigned long delta = jiffies - codec->power_jiffies;
+	if (codec->power_on)
+		codec->power_on_acct += delta;
+	else
+		codec->power_off_acct += delta;
+	codec->power_jiffies += delta;
 }
 
 void snd_hda_power_up(struct hda_codec *codec)
@@ -3212,7 +3227,9 @@ void snd_hda_power_up(struct hda_codec *codec)
 	if (codec->power_on || codec->power_transition)
 		return;
 
+	snd_hda_update_power_acct(codec);
 	codec->power_on = 1;
+	codec->power_jiffies = jiffies;
 	if (bus->ops.pm_notify)
 		bus->ops.pm_notify(bus);
 	hda_call_codec_resume(codec);
@@ -3415,6 +3432,24 @@ static void cleanup_dig_out_stream(struct hda_codec *codec, hda_nid_t nid)
 			snd_hda_codec_cleanup_stream(codec, *d);
 	}
 }
+
+/* call each reboot notifier */
+void snd_hda_bus_reboot_notify(struct hda_bus *bus)
+{
+	struct hda_codec *codec;
+
+	if (!bus)
+		return;
+	list_for_each_entry(codec, &bus->codec_list, list) {
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+		if (!codec->power_on)
+			continue;
+#endif
+		if (codec->patch_ops.reboot_notify)
+			codec->patch_ops.reboot_notify(codec);
+	}
+}
+EXPORT_SYMBOL_HDA(snd_hda_bus_reboot_notify);
 
 /*
  * open the digital out in the exclusive mode

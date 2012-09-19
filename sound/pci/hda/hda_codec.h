@@ -674,6 +674,7 @@ struct hda_codec_ops {
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	int (*check_power_status)(struct hda_codec *codec, hda_nid_t nid);
 #endif
+	void (*reboot_notify)(struct hda_codec *codec);
 };
 
 /* record for amp information cache */
@@ -811,6 +812,9 @@ struct hda_codec {
 	unsigned int power_transition :1; /* power-state in transition */
 	int power_count;	/* current (global) power refcount */
 	struct delayed_work power_work; /* delayed task for powerdown */
+	unsigned long power_on_acct;
+	unsigned long power_off_acct;
+	unsigned long power_jiffies;
 #endif
 
 	/* codec-specific additional proc output */
@@ -910,6 +914,7 @@ int snd_hda_is_supported_format(struct hda_codec *codec, hda_nid_t nid,
  * Misc
  */
 void snd_hda_get_codec_name(struct hda_codec *codec, char *name, int namelen);
+void snd_hda_bus_reboot_notify(struct hda_bus *bus);
 
 /*
  * power management
@@ -933,6 +938,7 @@ const char *snd_hda_get_jack_location(u32 cfg);
 void snd_hda_power_up(struct hda_codec *codec);
 void snd_hda_power_down(struct hda_codec *codec);
 #define snd_hda_codec_needs_resume(codec) codec->power_count
+void snd_hda_update_power_acct(struct hda_codec *codec);
 #else
 static inline void snd_hda_power_up(struct hda_codec *codec) {}
 static inline void snd_hda_power_down(struct hda_codec *codec) {}
