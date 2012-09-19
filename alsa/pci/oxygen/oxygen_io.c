@@ -20,6 +20,7 @@
 
 #include <sound/driver.h>
 #include <linux/delay.h>
+#include <linux/sched.h>
 #include <sound/core.h>
 #include <asm/io.h>
 #include "oxygen.h"
@@ -84,33 +85,45 @@ void oxygen_write32_masked(struct oxygen *chip, unsigned int reg,
 }
 EXPORT_SYMBOL(oxygen_write32_masked);
 
+static int oxygen_ac97_wait(struct oxygen *chip, unsigned int mask)
+{
+	unsigned long timeout = jiffies + msecs_to_jiffies(1);
+	do {
+		udelay(5);
+		cond_resched();
+		if (oxygen_read8(chip, OXYGEN_AC97_INTERRUPT_STATUS) & mask)
+			return 0;
+	} while (time_after_eq(timeout, jiffies));
+	return -EIO;
+}
+
+/*
+ * About 10% of AC'97 register reads or writes fail to complete, but even those
+ * where the controller indicates completion aren't guaranteed to have actually
+ * happened.
+ *
+ * It's hard to assign blame to either the controller or the codec because both
+ * were made by C-Media ...
+ */
+
 void oxygen_write_ac97(struct oxygen *chip, unsigned int codec,
 		       unsigned int index, u16 data)
 {
-	unsigned int tries, count;
+	unsigned int count, succeeded;
 	u32 reg;
 
 	reg = data;
 	reg |= index << OXYGEN_AC97_REG_ADDR_SHIFT;
 	reg |= OXYGEN_AC97_REG_DIR_WRITE;
 	reg |= codec << OXYGEN_AC97_REG_CODEC_SHIFT;
-	/*
-	 * AC'97 writes are extremely unreliable with this controller, about
-	 * 10% of them do not complete.  We better try multiple times.
-	 */
-	for (tries = 3; tries > 0; --tries) {
+	succeeded = 0;
+	for (count = 5; count > 0; --count) {
+		udelay(5);
 		oxygen_write32(chip, OXYGEN_AC97_REGS, reg);
-		/* should not need more than 20.8 us (1 / 48 kHz) */
-		count = 50;
-		for (;;) {
-			if (oxygen_read8(chip, OXYGEN_AC97_INTERRUPT_STATUS) &
-			    OXYGEN_AC97_WRITE_COMPLETE)
-				return;
-			if (count == 0)
-				break;
-			udelay(1);
-			--count;
-		}
+		/* require two "completed" writes, just to be sure */
+		if (oxygen_ac97_wait(chip, OXYGEN_AC97_WRITE_COMPLETE) >= 0 &&
+		    ++succeeded >= 2)
+			return;
 	}
 	snd_printk(KERN_ERR "AC'97 write timeout\n");
 }
@@ -119,32 +132,45 @@ EXPORT_SYMBOL(oxygen_write_ac97);
 u16 oxygen_read_ac97(struct oxygen *chip, unsigned int codec,
 		     unsigned int index)
 {
-	unsigned int tries, count;
+	unsigned int count;
+	unsigned int last_read = UINT_MAX;
 	u32 reg;
 
 	reg = index << OXYGEN_AC97_REG_ADDR_SHIFT;
 	reg |= OXYGEN_AC97_REG_DIR_READ;
 	reg |= codec << OXYGEN_AC97_REG_CODEC_SHIFT;
-	/* AC'97 reads are just as unreliable */
-	for (tries = 3; tries > 0; --tries) {
+	for (count = 5; count > 0; --count) {
+		udelay(5);
 		oxygen_write32(chip, OXYGEN_AC97_REGS, reg);
-		/* should not need more than 41.7 us (2 / 48 kHz) */
-		udelay(30);
-		count = 50;
-		for (;;) {
-			if (oxygen_read8(chip, OXYGEN_AC97_INTERRUPT_STATUS) &
-			    OXYGEN_AC97_READ_COMPLETE)
-				return oxygen_read16(chip, OXYGEN_AC97_REGS);
-			if (count == 0)
-				break;
-			udelay(1);
-			--count;
+		udelay(10);
+		if (oxygen_ac97_wait(chip, OXYGEN_AC97_READ_COMPLETE) >= 0) {
+			u16 value = oxygen_read16(chip, OXYGEN_AC97_REGS);
+			/* we require two consecutive reads of the same value */
+			if (value == last_read)
+				return value;
+			last_read = value;
+			/*
+			 * Invert the register value bits to make sure that two
+			 * consecutive unsuccessful reads do not return the same
+			 * value.
+			 */
+			reg ^= 0xffff;
 		}
 	}
 	snd_printk(KERN_ERR "AC'97 read timeout on codec %u\n", codec);
 	return 0;
 }
 EXPORT_SYMBOL(oxygen_read_ac97);
+
+void oxygen_write_ac97_masked(struct oxygen *chip, unsigned int codec,
+			      unsigned int index, u16 data, u16 mask)
+{
+	u16 value = oxygen_read_ac97(chip, codec, index);
+	value &= ~mask;
+	value |= data & mask;
+	oxygen_write_ac97(chip, codec, index, value);
+}
+EXPORT_SYMBOL(oxygen_write_ac97_masked);
 
 void oxygen_write_spi(struct oxygen *chip, u8 control, unsigned int data)
 {

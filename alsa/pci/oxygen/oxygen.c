@@ -70,9 +70,6 @@ static struct pci_device_id oxygen_ids[] __devinitdata = {
 };
 MODULE_DEVICE_TABLE(pci, oxygen_ids);
 
-/* maps ALSA channel pair number to actual codec number */
-#define CH_CODEC(x) (-i & 3)
-
 #define AK4396_WRITE	0x2000
 
 /* register 0 */
@@ -101,8 +98,9 @@ MODULE_DEVICE_TABLE(pci, oxygen_ids);
 static void ak4396_write(struct oxygen *chip, unsigned int codec,
 			 u8 reg, u8 value)
 {
+	/* maps ALSA channel pair number to SPI output */
 	static const u8 codec_spi_map[4] = {
-		0, 1, 2, 4
+		0, 4, 2, 1
 	};
 	oxygen_write_spi(chip, OXYGEN_SPI_TRIGGER_WRITE |
 			 OXYGEN_SPI_DATA_LENGTH_2 |
@@ -190,8 +188,8 @@ static void update_ak4396_volume(struct oxygen *chip)
 	unsigned int i;
 
 	for (i = 0; i < 4; ++i) {
-		ak4396_write(chip, CH_CODEC(i), 3, chip->dac_volume[i * 2]);
-		ak4396_write(chip, CH_CODEC(i), 4, chip->dac_volume[i * 2 + 1]);
+		ak4396_write(chip, i, 3, chip->dac_volume[i * 2]);
+		ak4396_write(chip, i, 4, chip->dac_volume[i * 2 + 1]);
 	}
 }
 

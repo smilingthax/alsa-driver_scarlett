@@ -173,6 +173,14 @@ static int oxygen_open(struct snd_pcm_substream *substream,
 
 	runtime->private_data = (void *)channel;
 	runtime->hw = oxygen_hardware[channel];
+	err = snd_pcm_hw_constraint_step(runtime, 0,
+					 SNDRV_PCM_HW_PARAM_PERIOD_BYTES, 32);
+	if (err < 0)
+		return err;
+	err = snd_pcm_hw_constraint_step(runtime, 0,
+					 SNDRV_PCM_HW_PARAM_BUFFER_BYTES, 32);
+	if (err < 0)
+		return err;
 	if (runtime->hw.formats & SNDRV_PCM_FMTBIT_S32_LE) {
 		err = snd_pcm_hw_constraint_msbits(runtime, 0, 32, 24);
 		if (err < 0)
@@ -286,11 +294,42 @@ static unsigned int oxygen_play_channels(struct snd_pcm_hw_params *hw_params)
 	}
 }
 
-static int oxygen_rec_a_hw_params(struct snd_pcm_substream *substream,
-				  struct snd_pcm_hw_params *hw_params)
+static unsigned int oxygen_spdif_rate(struct snd_pcm_hw_params *hw_params)
+{
+	switch (params_rate(hw_params)) {
+	case 32000:
+		return 0x00003000;
+	case 44100:
+		return 0x00000000;
+	default: /* 48000 */
+		return 0x00002000;
+	case 64000:
+		return 0x0000b000;
+	case 88200:
+		return 0x00008000;
+	case 96000:
+		return 0x0000a000;
+	case 176400:
+		return 0x0000c000;
+	case 192000:
+		return 0x0000e000;
+	}
+}
+
+static const unsigned int channel_base_registers[PCM_COUNT] = {
+	[PCM_A] = OXYGEN_DMA_A_ADDRESS,
+	[PCM_B] = OXYGEN_DMA_B_ADDRESS,
+	[PCM_C] = OXYGEN_DMA_C_ADDRESS,
+	[PCM_SPDIF] = OXYGEN_DMA_SPDIF_ADDRESS,
+	[PCM_MULTICH] = OXYGEN_DMA_MULTICH_ADDRESS,
+	[PCM_AC97] = OXYGEN_DMA_AC97_ADDRESS,
+};
+
+static int oxygen_hw_params(struct snd_pcm_substream *substream,
+			    struct snd_pcm_hw_params *hw_params)
 {
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
-	struct snd_pcm_runtime *runtime = substream->runtime;
+	unsigned int channel = (unsigned int)substream->runtime->private_data;
 	int err;
 
 	err = snd_pcm_lib_malloc_pages(substream,
@@ -298,11 +337,32 @@ static int oxygen_rec_a_hw_params(struct snd_pcm_substream *substream,
 	if (err < 0)
 		return err;
 
-	oxygen_write32(chip, OXYGEN_DMA_A_ADDRESS, (u32)runtime->dma_addr);
-	oxygen_write16(chip, OXYGEN_DMA_A_COUNT,
-		       params_buffer_bytes(hw_params) / 4 - 1);
-	oxygen_write16(chip, OXYGEN_DMA_A_TCOUNT,
-		       params_period_bytes(hw_params) / 4 - 1);
+	oxygen_write32(chip, channel_base_registers[channel],
+		       (u32)substream->runtime->dma_addr);
+	if (channel == PCM_MULTICH) {
+		oxygen_write32(chip, OXYGEN_DMA_MULTICH_COUNT,
+			       params_buffer_bytes(hw_params) / 4 - 1);
+		oxygen_write32(chip, OXYGEN_DMA_MULTICH_TCOUNT,
+			       params_period_bytes(hw_params) / 4 - 1);
+	} else {
+		oxygen_write16(chip, channel_base_registers[channel] + 4,
+			       params_buffer_bytes(hw_params) / 4 - 1);
+		oxygen_write16(chip, channel_base_registers[channel] + 6,
+			       params_period_bytes(hw_params) / 4 - 1);
+	}
+	return 0;
+}
+
+static int oxygen_rec_a_hw_params(struct snd_pcm_substream *substream,
+				  struct snd_pcm_hw_params *hw_params)
+{
+	struct oxygen *chip = snd_pcm_substream_chip(substream);
+	int err;
+
+	err = oxygen_hw_params(substream, hw_params);
+	if (err < 0)
+		return err;
+
 	spin_lock_irq(&chip->reg_lock);
 	oxygen_write8_masked(chip, OXYGEN_REC_FORMAT,
 			     oxygen_format(hw_params) << OXYGEN_REC_FORMAT_A_SHIFT,
@@ -316,6 +376,7 @@ static int oxygen_rec_a_hw_params(struct snd_pcm_substream *substream,
 			     OXYGEN_I2S_FORMAT_MASK);
 	oxygen_clear_bits8(chip, OXYGEN_REC_ROUTING, 0x08);
 	spin_unlock_irq(&chip->reg_lock);
+
 	chip->model->set_adc_params(chip, hw_params);
 	return 0;
 }
@@ -324,19 +385,12 @@ static int oxygen_rec_b_hw_params(struct snd_pcm_substream *substream,
 				  struct snd_pcm_hw_params *hw_params)
 {
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
-	struct snd_pcm_runtime *runtime = substream->runtime;
 	int err;
 
-	err = snd_pcm_lib_malloc_pages(substream,
-				       params_buffer_bytes(hw_params));
+	err = oxygen_hw_params(substream, hw_params);
 	if (err < 0)
 		return err;
 
-	oxygen_write32(chip, OXYGEN_DMA_B_ADDRESS, (u32)runtime->dma_addr);
-	oxygen_write16(chip, OXYGEN_DMA_B_COUNT,
-		       runtime->dma_bytes / 4 - 1);
-	oxygen_write16(chip, OXYGEN_DMA_B_TCOUNT,
-		       params_period_bytes(hw_params) / 4 - 1);
 	spin_lock_irq(&chip->reg_lock);
 	oxygen_write8_masked(chip, OXYGEN_REC_FORMAT,
 			     oxygen_format(hw_params) << OXYGEN_REC_FORMAT_B_SHIFT,
@@ -350,6 +404,7 @@ static int oxygen_rec_b_hw_params(struct snd_pcm_substream *substream,
 			     OXYGEN_I2S_FORMAT_MASK);
 	oxygen_clear_bits8(chip, OXYGEN_REC_ROUTING, 0x10);
 	spin_unlock_irq(&chip->reg_lock);
+
 	chip->model->set_adc_params(chip, hw_params);
 	return 0;
 }
@@ -358,19 +413,12 @@ static int oxygen_rec_c_hw_params(struct snd_pcm_substream *substream,
 				  struct snd_pcm_hw_params *hw_params)
 {
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
-	struct snd_pcm_runtime *runtime = substream->runtime;
 	int err;
 
-	err = snd_pcm_lib_malloc_pages(substream,
-				       params_buffer_bytes(hw_params));
+	err = oxygen_hw_params(substream, hw_params);
 	if (err < 0)
 		return err;
 
-	oxygen_write32(chip, OXYGEN_DMA_C_ADDRESS, (u32)runtime->dma_addr);
-	oxygen_write16(chip, OXYGEN_DMA_C_COUNT,
-		       runtime->dma_bytes / 4 - 1);
-	oxygen_write16(chip, OXYGEN_DMA_C_TCOUNT,
-		       params_period_bytes(hw_params) / 4 - 1);
 	spin_lock_irq(&chip->reg_lock);
 	oxygen_write8_masked(chip, OXYGEN_REC_FORMAT,
 			     oxygen_format(hw_params) << OXYGEN_REC_FORMAT_C_SHIFT,
@@ -384,27 +432,26 @@ static int oxygen_spdif_hw_params(struct snd_pcm_substream *substream,
 				  struct snd_pcm_hw_params *hw_params)
 {
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
-	struct snd_pcm_runtime *runtime = substream->runtime;
 	int err;
 
-	err = snd_pcm_lib_malloc_pages(substream,
-				       params_buffer_bytes(hw_params));
+	err = oxygen_hw_params(substream, hw_params);
 	if (err < 0)
 		return err;
 
-	oxygen_write32(chip, OXYGEN_DMA_SPDIF_ADDRESS, (u32)runtime->dma_addr);
-	oxygen_write16(chip, OXYGEN_DMA_SPDIF_COUNT,
-		       runtime->dma_bytes / 4 - 1);
-	oxygen_write16(chip, OXYGEN_DMA_SPDIF_TCOUNT,
-		       params_period_bytes(hw_params) / 4 - 1);
 	spin_lock_irq(&chip->reg_lock);
+	oxygen_clear_bits32(chip, OXYGEN_SPDIF_CONTROL,
+			    OXYGEN_SPDIF_OUT_ENABLE);
 	oxygen_write8_masked(chip, OXYGEN_PLAY_FORMAT,
 			     oxygen_format(hw_params) << OXYGEN_SPDIF_FORMAT_SHIFT,
 			     OXYGEN_SPDIF_FORMAT_MASK);
 	oxygen_write32_masked(chip, OXYGEN_SPDIF_CONTROL,
 			      oxygen_rate(hw_params) << OXYGEN_SPDIF_OUT_RATE_SHIFT,
 			      OXYGEN_SPDIF_OUT_RATE_MASK);
+	oxygen_write32_masked(chip, OXYGEN_SPDIF_OUTPUT_BITS,
+			      oxygen_spdif_rate(hw_params),
+			      OXYGEN_SPDIF_OUTPUT_RATE_MASK);
 	oxygen_clear_bits16(chip, OXYGEN_PLAY_ROUTING, 0x00e0);
+	oxygen_set_bits32(chip, OXYGEN_SPDIF_CONTROL, OXYGEN_SPDIF_OUT_ENABLE);
 	spin_unlock_irq(&chip->reg_lock);
 	return 0;
 }
@@ -413,20 +460,12 @@ static int oxygen_multich_hw_params(struct snd_pcm_substream *substream,
 				    struct snd_pcm_hw_params *hw_params)
 {
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
-	struct snd_pcm_runtime *runtime = substream->runtime;
 	int err;
 
-	err = snd_pcm_lib_malloc_pages(substream,
-				       params_buffer_bytes(hw_params));
+	err = oxygen_hw_params(substream, hw_params);
 	if (err < 0)
 		return err;
 
-	oxygen_write32(chip, OXYGEN_DMA_MULTICH_ADDRESS,
-		       (u32)runtime->dma_addr);
-	oxygen_write32(chip, OXYGEN_DMA_MULTICH_COUNT,
-		       runtime->dma_bytes / 4 - 1);
-	oxygen_write32(chip, OXYGEN_DMA_MULTICH_TCOUNT,
-		       params_period_bytes(hw_params) / 4 - 1);
 	spin_lock_irq(&chip->reg_lock);
 	oxygen_write8_masked(chip, OXYGEN_PLAY_CHANNELS,
 			     oxygen_play_channels(hw_params),
@@ -440,6 +479,7 @@ static int oxygen_multich_hw_params(struct snd_pcm_substream *substream,
 	oxygen_clear_bits16(chip, OXYGEN_PLAY_ROUTING, 0x001f);
 	oxygen_update_dac_routing(chip);
 	spin_unlock_irq(&chip->reg_lock);
+
 	chip->model->set_dac_params(chip, hw_params);
 	return 0;
 }
@@ -448,19 +488,12 @@ static int oxygen_ac97_hw_params(struct snd_pcm_substream *substream,
 				 struct snd_pcm_hw_params *hw_params)
 {
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
-	struct snd_pcm_runtime *runtime = substream->runtime;
 	int err;
 
-	err = snd_pcm_lib_malloc_pages(substream,
-				       params_buffer_bytes(hw_params));
+	err = oxygen_hw_params(substream, hw_params);
 	if (err < 0)
 		return err;
 
-	oxygen_write32(chip, OXYGEN_DMA_AC97_ADDRESS, (u32)runtime->dma_addr);
-	oxygen_write16(chip, OXYGEN_DMA_AC97_COUNT,
-		       runtime->dma_bytes / 4 - 1);
-	oxygen_write16(chip, OXYGEN_DMA_AC97_TCOUNT,
-		       params_period_bytes(hw_params) / 4 - 1);
 	spin_lock_irq(&chip->reg_lock);
 	oxygen_write8_masked(chip, OXYGEN_PLAY_FORMAT,
 			     oxygen_format(hw_params) << OXYGEN_AC97_FORMAT_SHIFT,
@@ -484,6 +517,17 @@ static int oxygen_hw_free(struct snd_pcm_substream *substream)
 	spin_unlock_irq(&chip->reg_lock);
 
 	return snd_pcm_lib_free_pages(substream);
+}
+
+static int oxygen_spdif_hw_free(struct snd_pcm_substream *substream)
+{
+	struct oxygen *chip = snd_pcm_substream_chip(substream);
+
+	spin_lock_irq(&chip->reg_lock);
+	oxygen_clear_bits32(chip, OXYGEN_SPDIF_CONTROL,
+			    OXYGEN_SPDIF_OUT_ENABLE);
+	spin_unlock_irq(&chip->reg_lock);
+	return oxygen_hw_free(substream);
 }
 
 static int oxygen_prepare(struct snd_pcm_substream *substream)
@@ -541,22 +585,14 @@ static int oxygen_trigger(struct snd_pcm_substream *substream, int cmd)
 
 static snd_pcm_uframes_t oxygen_pointer(struct snd_pcm_substream *substream)
 {
-	static const unsigned int address_reg[PCM_COUNT] = {
-		[PCM_A] = OXYGEN_DMA_A_ADDRESS,
-		[PCM_B] = OXYGEN_DMA_B_ADDRESS,
-		[PCM_C] = OXYGEN_DMA_C_ADDRESS,
-		[PCM_SPDIF] = OXYGEN_DMA_SPDIF_ADDRESS,
-		[PCM_MULTICH] = OXYGEN_DMA_MULTICH_ADDRESS,
-		[PCM_AC97] = OXYGEN_DMA_AC97_ADDRESS,
-	};
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	unsigned int channel = (unsigned int)runtime->private_data;
+	u32 curr_addr;
 
 	/* no spinlock, this read should be atomic */
-	return bytes_to_frames(runtime,
-			       oxygen_read32(chip, address_reg[channel])
-			       - (u32)runtime->dma_addr);
+	curr_addr = oxygen_read32(chip, channel_base_registers[channel]);
+	return bytes_to_frames(runtime, curr_addr - (u32)runtime->dma_addr);
 }
 
 static struct snd_pcm_ops oxygen_rec_a_ops = {
@@ -597,7 +633,7 @@ static struct snd_pcm_ops oxygen_spdif_ops = {
 	.close     = oxygen_close,
 	.ioctl     = snd_pcm_lib_ioctl,
 	.hw_params = oxygen_spdif_hw_params,
-	.hw_free   = oxygen_hw_free,
+	.hw_free   = oxygen_spdif_hw_free,
 	.prepare   = oxygen_prepare,
 	.trigger   = oxygen_trigger,
 	.pointer   = oxygen_pointer,
