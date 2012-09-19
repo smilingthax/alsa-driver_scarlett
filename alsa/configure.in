@@ -1638,6 +1638,7 @@ AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
 #include <linux/jiffies.h>
+#include <linux/time.h>
 ],[
   unsigned int (*func)(const unsigned long);
   func = msecs_to_jiffies;

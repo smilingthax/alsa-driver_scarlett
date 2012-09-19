@@ -11,7 +11,7 @@ include $(SND_TOPDIR)/Makefile.conf
 
 clean-files := bt87x.c intel8x0.c maestro3.c
 
-obj-$(CONFIG_SND) += pdplus/ pcxhr/ echoaudio/
+obj-$(CONFIG_SND) += pdplus/ pcxhr/ echoaudio/ riptide/
 
 snd-asihpi-objs := asihpi.o
 
