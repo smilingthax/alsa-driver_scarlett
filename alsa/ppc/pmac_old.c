@@ -824,7 +824,7 @@ static int snd_pmac_free(struct snd_pmac *chip)
 		int i;
 
 		for (i = 0; i < 3; i++) {
-			if (chip->of_requested & (1 << i)) {
+			if (chip->requested & (1 << i)) {
 				if (chip->is_k2)
 					release_OF_resource(chip->node->parent,
 							    i);
@@ -1204,7 +1204,7 @@ int __init snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
 				err = -ENODEV;
 				goto __error;
 			}
-			chip->of_requested |= (1 << i);
+			chip->requested |= (1 << i);
 #endif /* CONFIG_PPC64 */
 			ctrl_addr = np->parent->addrs[0].address;
 			txdma_addr = np->parent->addrs[1].address;
@@ -1225,7 +1225,7 @@ int __init snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
 				err = -ENODEV;
 				goto __error;
 			}
-			chip->of_requested |= (1 << i);
+			chip->requested |= (1 << i);
 #endif /* CONFIG_PPC64 */
 			ctrl_addr = np->addrs[0].address;
 			txdma_addr = np->addrs[1].address;
