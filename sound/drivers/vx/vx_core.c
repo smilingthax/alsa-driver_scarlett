@@ -631,6 +631,9 @@ static void vx_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 	snd_iprintf(buffer, "Frequency: %d\n", chip->freq);
 	snd_iprintf(buffer, "Detected Frequency: %d\n", chip->freq_detected);
 	snd_iprintf(buffer, "Detected UER type: %s\n", uer_type[chip->uer_detected]);
+	snd_iprintf(buffer, "Min/Max/Cur IBL: %d/%d/%d (granularity=%d)\n",
+		    chip->ibl.min_size, chip->ibl.max_size, chip->ibl.size,
+		    chip->ibl.granularity);
 }
 
 static void vx_proc_init(vx_core_t *chip)
