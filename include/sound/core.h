@@ -43,9 +43,6 @@
 #ifdef CONFIG_PCI
 struct pci_dev;
 #endif
-#ifdef CONFIG_SBUS
-struct sbus_dev;
-#endif
 
 /* device allocation stuff */
 
@@ -116,7 +113,7 @@ struct snd_card {
 	char shortname[32];		/* short name of this soundcard */
 	char longname[80];		/* name of this soundcard */
 	char mixername[80];		/* mixer name */
-	char components[80];		/* card components delimited with
+	char components[128];		/* card components delimited with
 								space */
 	struct module *module;		/* top-level module */
 

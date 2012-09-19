@@ -1,7 +1,7 @@
 /*
  * ALSA SoC TLV320AIC3X codec driver
  *
- * Author:      Vladimir Barinov, <vbarinov@ru.mvista.com>
+ * Author:      Vladimir Barinov, <vbarinov@embeddedalley.com>
  * Copyright:   (C) 2007 MontaVista Software, Inc., <source@mvista.com>
  *
  * Based on sound/soc/codecs/wm8753.c by Liam Girdwood
@@ -48,7 +48,6 @@
 
 #include "tlv320aic3x.h"
 
-#define AUDIO_NAME "aic3x"
 #define AIC3X_VERSION "0.2"
 
 /* codec private data */
@@ -991,7 +990,7 @@ EXPORT_SYMBOL_GPL(aic3x_headset_detected);
 			 SNDRV_PCM_FMTBIT_S24_3LE | SNDRV_PCM_FMTBIT_S32_LE)
 
 struct snd_soc_dai aic3x_dai = {
-	.name = "aic3x",
+	.name = "tlv320aic3x",
 	.playback = {
 		.stream_name = "Playback",
 		.channels_min = 1,
@@ -1055,7 +1054,7 @@ static int aic3x_init(struct snd_soc_device *socdev)
 	struct aic3x_setup_data *setup = socdev->codec_data;
 	int reg, ret = 0;
 
-	codec->name = "aic3x";
+	codec->name = "tlv320aic3x";
 	codec->owner = THIS_MODULE;
 	codec->read = aic3x_read_reg_cache;
 	codec->write = aic3x_write;
