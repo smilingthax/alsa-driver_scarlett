@@ -1655,58 +1655,54 @@ if test "$CONFIG_HAVE_VIDEO_GET_DRVDATA" = "1"; then
 fi
 fi
 
-dnl Check for old remap_page_range()
-AC_MSG_CHECKING(for remap_pfn_range)
-remap_pfn_range="0"
+dnl Check for old io_remap_page_range()
+AC_MSG_CHECKING(for io_remap_pfn_range)
+io_remap_pfn_range="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="-Werror-implicit-function-declaration $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
 #include <linux/mm.h>
 ],[
-  int (*func)(struct vm_area_struct *, unsigned long, unsigned long, unsigned long, pgprot_t);
-  pgprot_t p;
-  func = remap_pfn_range;
-  remap_pfn_range(NULL, 0, 0, 0, p);
+  static pgprot_t p;
+  io_remap_pfn_range(NULL, 0, 0, 0, p);
 ],
-    AC_MSG_RESULT("yes");remap_pfn_range="1",
-    AC_MSG_RESULT("no");remap_pfn_range="0",
-    AC_MSG_RESULT("unknown");remap_pfn_range="0"
+    AC_MSG_RESULT("yes");io_remap_pfn_range="1",
+    AC_MSG_RESULT("no");io_remap_pfn_range="0",
+    AC_MSG_RESULT("unknown");io_remap_pfn_range="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
-if test "$remap_pfn_range" = "1"; then
-  AC_DEFINE(CONFIG_HAVE_REMAP_PFN_RANGE)
+if test "$io_remap_pfn_range" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_IO_REMAP_PFN_RANGE)
 fi
 
-if test "$remap_pfn_range" != "1"; then
-AC_MSG_CHECKING(for new remap_page_range)
-new_remap="0"
+if test "$io_remap_pfn_range" != "1"; then
+AC_MSG_CHECKING(for new io_remap_page_range)
+new_io_remap="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="-Werror-implicit-function-declaration $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
 #include <linux/mm.h>
 ],[
-  int (*func)(struct vm_area_struct *, unsigned long, unsigned long, unsigned long, pgprot_t);
-  pgprot_t p;
-  func = remap_page_range;
-  remap_page_range(NULL, 0, 0, 0, p);
+  static pgprot_t p;
+  io_remap_page_range(NULL, 0, 0, 0, p);
 ],
-    AC_MSG_RESULT("yes");new_remap="1",
-    AC_MSG_RESULT("no");new_remap="0",
-    AC_MSG_RESULT("unknown");new_remap="0"
+    AC_MSG_RESULT("yes");new_io_remap="1",
+    AC_MSG_RESULT("no");new_io_remap="0",
+    AC_MSG_RESULT("unknown");new_io_remap="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
-if test "$new_remap" != "1"; then
-  AC_DEFINE(CONFIG_OLD_REMAP_PAGE_RANGE)
+if test "$new_io_remap" != "1"; then
+  AC_DEFINE(CONFIG_OLD_IO_REMAP_PAGE_RANGE)
 fi
 fi
 
