@@ -4950,7 +4950,7 @@ static int alc260_parse_auto_config(struct hda_codec *codec)
 	/* check whether NID 0x04 is valid */
 	wcap = get_wcaps(codec, 0x04);
 	wcap = (wcap & AC_WCAP_TYPE) >> AC_WCAP_TYPE_SHIFT; /* get type */
-	if (wcap != AC_WID_AUD_IN) {
+	if (wcap != AC_WID_AUD_IN || spec->input_mux->num_items == 1) {
 		spec->adc_nids = alc260_adc_nids_alt;
 		spec->num_adc_nids = ARRAY_SIZE(alc260_adc_nids_alt);
 		spec->mixers[spec->num_mixers] = alc260_capture_alt_mixer;
@@ -9506,6 +9506,22 @@ static struct snd_kcontrol_new alc268_base_mixer[] = {
 	{ }
 };
 
+/* bind Beep switches of both NID 0x0f and 0x10 */
+static struct hda_bind_ctls alc268_bind_beep_sw = {
+	.ops = &snd_hda_bind_sw,
+	.values = {
+		HDA_COMPOSE_AMP_VAL(0x0f, 3, 1, HDA_INPUT),
+		HDA_COMPOSE_AMP_VAL(0x10, 3, 1, HDA_INPUT),
+		0
+	},
+};
+
+static struct snd_kcontrol_new alc268_beep_mixer[] = {
+	HDA_CODEC_VOLUME("Beep Playback Volume", 0x1d, 0x0, HDA_INPUT),
+	HDA_BIND_SW("Beep Playback Switch", &alc268_bind_beep_sw),
+	{ }
+};
+
 static struct hda_verb alc268_eapd_verbs[] = {
 	{0x14, AC_VERB_SET_EAPD_BTLENABLE, 2},
 	{0x15, AC_VERB_SET_EAPD_BTLENABLE, 2},
@@ -9702,7 +9718,11 @@ static struct hda_verb alc268_base_init_verbs[] = {
 	{0x19, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_MUTE},
 	{0x1a, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_MUTE},
 	{0x1c, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_MUTE},
-	{0x1d, AC_VERB_SET_AMP_GAIN_MUTE, (0x7000 | (0x00 << 8))},
+
+	/* set PCBEEP vol = 0, mute connections */
+	{0x1d, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_UNMUTE(0)},
+	{0x0f, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(1)},
+	{0x10, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(1)},
 
 	/* Unmute Selector 23h,24h and set the default input to mic-in */
 	
@@ -9741,8 +9761,10 @@ static struct hda_verb alc268_volume_init_verbs[] = {
 	{0x1a, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_MUTE},
 	{0x1c, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_MUTE},
 
-	/* set PCBEEP vol = 0 */
-	{0x1d, AC_VERB_SET_AMP_GAIN_MUTE, (0xb000 | (0x00 << 8))},
+	/* set PCBEEP vol = 0, mute connections */
+	{0x1d, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_UNMUTE(0)},
+	{0x0f, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(1)},
+	{0x10, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_MUTE(1)},
 
 	{ }
 };
@@ -10031,6 +10053,9 @@ static int alc268_parse_auto_config(struct hda_codec *codec)
 	if (spec->kctl_alloc)
 		spec->mixers[spec->num_mixers++] = spec->kctl_alloc;
 
+	if (spec->autocfg.speaker_pins[0] != 0x1d)
+		spec->mixers[spec->num_mixers++] = alc268_beep_mixer;
+
 	spec->init_verbs[spec->num_init_verbs++] = alc268_volume_init_verbs;
 	spec->num_mux_defs = 1;
 	spec->input_mux = &spec->private_imux;
@@ -10090,7 +10115,8 @@ static struct snd_pci_quirk alc268_cfg_tbl[] = {
 
 static struct alc_config_preset alc268_presets[] = {
 	[ALC268_3ST] = {
-		.mixers = { alc268_base_mixer, alc268_capture_alt_mixer },
+		.mixers = { alc268_base_mixer, alc268_capture_alt_mixer,
+			    alc268_beep_mixer },
 		.init_verbs = { alc268_base_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc268_dac_nids),
 		.dac_nids = alc268_dac_nids,
@@ -10104,7 +10130,8 @@ static struct alc_config_preset alc268_presets[] = {
 		.input_mux = &alc268_capture_source,
 	},
 	[ALC268_TOSHIBA] = {
-		.mixers = { alc268_base_mixer, alc268_capture_alt_mixer },
+		.mixers = { alc268_base_mixer, alc268_capture_alt_mixer,
+			    alc268_beep_mixer },
 		.init_verbs = { alc268_base_init_verbs, alc268_eapd_verbs,
 				alc268_toshiba_verbs },
 		.num_dacs = ARRAY_SIZE(alc268_dac_nids),
@@ -10120,7 +10147,8 @@ static struct alc_config_preset alc268_presets[] = {
 		.init_hook = alc268_toshiba_automute,
 	},
 	[ALC268_ACER] = {
-		.mixers = { alc268_acer_mixer, alc268_capture_alt_mixer },
+		.mixers = { alc268_acer_mixer, alc268_capture_alt_mixer,
+			    alc268_beep_mixer },
 		.init_verbs = { alc268_base_init_verbs, alc268_eapd_verbs,
 				alc268_acer_verbs },
 		.num_dacs = ARRAY_SIZE(alc268_dac_nids),
@@ -10136,7 +10164,7 @@ static struct alc_config_preset alc268_presets[] = {
 		.init_hook = alc268_acer_init_hook,
 	},
 	[ALC268_DELL] = {
-		.mixers = { alc268_dell_mixer },
+		.mixers = { alc268_dell_mixer, alc268_beep_mixer },
 		.init_verbs = { alc268_base_init_verbs, alc268_eapd_verbs,
 				alc268_dell_verbs },
 		.num_dacs = ARRAY_SIZE(alc268_dac_nids),
@@ -10149,7 +10177,8 @@ static struct alc_config_preset alc268_presets[] = {
 		.input_mux = &alc268_capture_source,
 	},
 	[ALC268_ZEPTO] = {
-		.mixers = { alc268_base_mixer, alc268_capture_alt_mixer },
+		.mixers = { alc268_base_mixer, alc268_capture_alt_mixer,
+			    alc268_beep_mixer },
 		.init_verbs = { alc268_base_init_verbs, alc268_eapd_verbs,
 				alc268_toshiba_verbs },
 		.num_dacs = ARRAY_SIZE(alc268_dac_nids),
@@ -10231,13 +10260,22 @@ static int patch_alc268(struct hda_codec *codec)
 	spec->stream_name_digital = "ALC268 Digital";
 	spec->stream_digital_playback = &alc268_pcm_digital_playback;
 
+	if (!query_amp_caps(codec, 0x1d, HDA_INPUT))
+		/* override the amp caps for beep generator */
+		snd_hda_override_amp_caps(codec, 0x1d, HDA_INPUT,
+					  (0x0c << AC_AMPCAP_OFFSET_SHIFT) |
+					  (0x0c << AC_AMPCAP_NUM_STEPS_SHIFT) |
+					  (0x07 << AC_AMPCAP_STEP_SIZE_SHIFT) |
+					  (0 << AC_AMPCAP_MUTE_SHIFT));
+
 	if (!spec->adc_nids && spec->input_mux) {
 		/* check whether NID 0x07 is valid */
 		unsigned int wcap = get_wcaps(codec, 0x07);
+		int i;
 
 		/* get type */
 		wcap = (wcap & AC_WCAP_TYPE) >> AC_WCAP_TYPE_SHIFT;
-		if (wcap != AC_WID_AUD_IN) {
+		if (wcap != AC_WID_AUD_IN || spec->input_mux->num_items == 1) {
 			spec->adc_nids = alc268_adc_nids_alt;
 			spec->num_adc_nids = ARRAY_SIZE(alc268_adc_nids_alt);
 			spec->mixers[spec->num_mixers] =
@@ -10251,6 +10289,11 @@ static int patch_alc268(struct hda_codec *codec)
 			spec->num_mixers++;
 		}
 		spec->capsrc_nids = alc268_capsrc_nids;
+		/* set default input source */
+		for (i = 0; i < spec->num_adc_nids; i++)
+			snd_hda_codec_write_cache(codec, alc268_capsrc_nids[i],
+				0, AC_VERB_SET_CONNECT_SEL,
+				spec->input_mux->items[0].index);
 	}
 
 	spec->vmaster_nid = 0x02;
@@ -12751,7 +12794,7 @@ static hda_nid_t alc662_adc_nids[1] = {
 	0x09,
 };
 
-static hda_nid_t alc662_capsrc_nids[1] = { 0x23 };
+static hda_nid_t alc662_capsrc_nids[1] = { 0x22 };
 
 /* input MUX */
 /* FIXME: should be a matrix-type input source selection */
