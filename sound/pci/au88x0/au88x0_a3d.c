@@ -765,7 +765,7 @@ snd_vortex_a3d_filter_info(snd_kcontrol_t *
 static int
 snd_vortex_a3d_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	//a3dsrc_t *a = (a3dsrc_t*)(kcontrol->private_value);
+	//a3dsrc_t *a = kcontrol->private_data;
 	/* No read yet. Would this be really useable/needed ? */
 
 	return 0;
@@ -775,7 +775,7 @@ static int
 snd_vortex_a3d_hrtf_put(snd_kcontrol_t *
 			kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	a3dsrc_t *a = (a3dsrc_t *) (kcontrol->private_value);
+	a3dsrc_t *a = kcontrol->private_data;
 	int changed = 1, i;
 	int coord[6];
 	for (i = 0; i < 6; i++)
@@ -792,7 +792,7 @@ static int
 snd_vortex_a3d_itd_put(snd_kcontrol_t *
 		       kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	a3dsrc_t *a = (a3dsrc_t *) (kcontrol->private_value);
+	a3dsrc_t *a = kcontrol->private_data;
 	int coord[6];
 	int i, changed = 1;
 	for (i = 0; i < 6; i++)
@@ -811,7 +811,7 @@ static int
 snd_vortex_a3d_ild_put(snd_kcontrol_t *
 		       kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	a3dsrc_t *a = (a3dsrc_t *) (kcontrol->private_value);
+	a3dsrc_t *a = kcontrol->private_data;
 	int changed = 1;
 	int l, r;
 	/* There may be some scale tranlation needed here. */
@@ -828,7 +828,7 @@ static int
 snd_vortex_a3d_filter_put(snd_kcontrol_t
 			  * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	a3dsrc_t *a = (a3dsrc_t *) (kcontrol->private_value);
+	a3dsrc_t *a = kcontrol->private_data;
 	int i, changed = 1;
 	int params[6];
 	for (i = 0; i < 6; i++)
@@ -846,12 +846,12 @@ snd_vortex_a3d_filter_put(snd_kcontrol_t
 }
 
 static snd_kcontrol_new_t vortex_a3d_kcontrol __devinitdata = {
-	.iface = SNDRV_CTL_ELEM_IFACE_PCM,.name =
-	    "Playback PCM advanced processing",.index =
-	    0,.access =
-	    SNDRV_CTL_ELEM_ACCESS_READWRITE,.private_value =
-	    0,.info = snd_vortex_a3d_hrtf_info,.get =
-	    snd_vortex_a3d_get,.put = snd_vortex_a3d_hrtf_put
+	.iface = SNDRV_CTL_ELEM_IFACE_PCM,
+	.name = "Playback PCM advanced processing",
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
+	.info = snd_vortex_a3d_hrtf_info,
+	.get = snd_vortex_a3d_get,
+	.put = snd_vortex_a3d_hrtf_put,
 };
 
 /* Control (un)registration. */
@@ -862,9 +862,8 @@ static int vortex_a3d_register_controls(vortex_t * vortex)
 	/* HRTF controls. */
 	for (i = 0; i < NR_A3D; i++) {
 		if ((kcontrol =
-		     snd_ctl_new1(&vortex_a3d_kcontrol, vortex)) == NULL)
+		     snd_ctl_new1(&vortex_a3d_kcontrol, &vortex->a3d[i])) == NULL)
 			return -ENOMEM;
-		kcontrol->private_value = (long)&(vortex->a3d[i]);
 		kcontrol->id.numid = CTRLID_HRTF;
 		kcontrol->info = snd_vortex_a3d_hrtf_info;
 		kcontrol->put = snd_vortex_a3d_hrtf_put;
@@ -874,9 +873,8 @@ static int vortex_a3d_register_controls(vortex_t * vortex)
 	/* ITD controls. */
 	for (i = 0; i < NR_A3D; i++) {
 		if ((kcontrol =
-		     snd_ctl_new1(&vortex_a3d_kcontrol, vortex)) == NULL)
+		     snd_ctl_new1(&vortex_a3d_kcontrol, &vortex->a3d[i])) == NULL)
 			return -ENOMEM;
-		kcontrol->private_value = (long)&(vortex->a3d[i]);
 		kcontrol->id.numid = CTRLID_ITD;
 		kcontrol->info = snd_vortex_a3d_itd_info;
 		kcontrol->put = snd_vortex_a3d_itd_put;
@@ -886,9 +884,8 @@ static int vortex_a3d_register_controls(vortex_t * vortex)
 	/* ILD (gains) controls. */
 	for (i = 0; i < NR_A3D; i++) {
 		if ((kcontrol =
-		     snd_ctl_new1(&vortex_a3d_kcontrol, vortex)) == NULL)
+		     snd_ctl_new1(&vortex_a3d_kcontrol, &vortex->a3d[i])) == NULL)
 			return -ENOMEM;
-		kcontrol->private_value = (long)&(vortex->a3d[i]);
 		kcontrol->id.numid = CTRLID_GAINS;
 		kcontrol->info = snd_vortex_a3d_ild_info;
 		kcontrol->put = snd_vortex_a3d_ild_put;
@@ -898,9 +895,8 @@ static int vortex_a3d_register_controls(vortex_t * vortex)
 	/* Filter controls. */
 	for (i = 0; i < NR_A3D; i++) {
 		if ((kcontrol =
-		     snd_ctl_new1(&vortex_a3d_kcontrol, vortex)) == NULL)
+		     snd_ctl_new1(&vortex_a3d_kcontrol, &vortex->a3d[i])) == NULL)
 			return -ENOMEM;
-		kcontrol->private_value = (long)&(vortex->a3d[i]);
 		kcontrol->id.numid = CTRLID_FILTER;
 		kcontrol->info = snd_vortex_a3d_filter_info;
 		kcontrol->put = snd_vortex_a3d_filter_put;
