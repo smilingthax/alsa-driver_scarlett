@@ -119,13 +119,13 @@ static int pcsp_pcspkr_put(struct snd_kcontrol *kcontrol,
 	.put =		pcsp_##ctl_type##_put, \
 }
 
-static struct snd_kcontrol_new __initdata snd_pcsp_controls[] = {
+static struct snd_kcontrol_new __devinitdata snd_pcsp_controls[] = {
 	PCSP_MIXER_CONTROL(enable, "Master Playback Switch"),
 	PCSP_MIXER_CONTROL(treble, "BaseFRQ Playback Volume"),
 	PCSP_MIXER_CONTROL(pcspkr, "PC Speaker Playback Switch"),
 };
 
-int __init snd_pcsp_new_mixer(struct snd_pcsp *chip)
+int __devinit snd_pcsp_new_mixer(struct snd_pcsp *chip)
 {
 	struct snd_card *card = chip->card;
 	int i, err;

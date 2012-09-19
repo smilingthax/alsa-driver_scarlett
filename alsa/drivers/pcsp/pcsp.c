@@ -8,6 +8,7 @@
 #include "adriver.h"
 #include <linux/init.h>
 #include <linux/moduleparam.h>
+#include <linux/platform_device.h>
 #include <sound/core.h>
 #include <sound/initval.h>
 #include <sound/pcm.h>
@@ -22,6 +23,7 @@ MODULE_AUTHOR("Stas Sergeev <stsp@users.sourceforge.net>");
 MODULE_DESCRIPTION("PC-Speaker driver");
 MODULE_LICENSE("GPL");
 MODULE_SUPPORTED_DEVICE("{{PC-Speaker, pcsp}}");
+MODULE_ALIAS("platform:pcspkr");
 
 static int index = SNDRV_DEFAULT_IDX1;	/* Index 0-MAX */
 static char *id = SNDRV_DEFAULT_STR1;	/* ID for this card */
@@ -36,7 +38,7 @@ MODULE_PARM_DESC(enable, "dummy");
 
 struct snd_pcsp pcsp_chip;
 
-static int __init snd_pcsp_create(struct snd_card *card)
+static int __devinit snd_pcsp_create(struct snd_card *card)
 {
 	static struct snd_device_ops ops = { };
 	struct timespec tp;
@@ -87,12 +89,12 @@ static int __init snd_pcsp_create(struct snd_card *card)
 	return 0;
 }
 
-static int __init snd_card_pcsp_probe(int dev)
+static int __devinit snd_card_pcsp_probe(int devnum, struct device *dev)
 {
 	struct snd_card *card;
 	int err;
 
-	if (dev != 0)
+	if (devnum != 0)
 		return -EINVAL;
 
 	hrtimer_init(&pcsp_chip.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
@@ -119,6 +121,8 @@ static int __init snd_card_pcsp_probe(int dev)
 		return err;
 	}
 
+	snd_card_set_dev(pcsp_chip.card, dev);
+
 	strcpy(card->driver, "PC-Speaker");
 	strcpy(card->shortname, "pcsp");
 	sprintf(card->longname, "Internal PC-Speaker at port 0x%x",
@@ -130,18 +134,12 @@ static int __init snd_card_pcsp_probe(int dev)
 		return err;
 	}
 
-	err = pcspkr_input_init(&pcsp_chip.input_dev);
-	if (err < 0) {
-		snd_card_free(card);
-		return err;
-	}
-
 	return 0;
 }
 
-static int __init alsa_card_pcsp_init(void)
+static int __devinit alsa_card_pcsp_init(struct device *dev)
 {
-	int dev = 0, cards = 0;
+	int devnum = 0, cards = 0;
 
 #ifdef CONFIG_DEBUG_PAGEALLOC
 	/* Well, CONFIG_DEBUG_PAGEALLOC makes the sound horrible. Lets alert */
@@ -154,22 +152,91 @@ static int __init alsa_card_pcsp_init(void)
 #endif
 
 	if (enable) {
-		if (snd_card_pcsp_probe(dev) >= 0)
+		if (snd_card_pcsp_probe(devnum, dev) >= 0)
 			cards++;
-	}
-	if (!cards) {
-		printk(KERN_ERR "PC-Speaker initialization failed.\n");
-		return -ENODEV;
+		if (!cards) {
+			printk(KERN_ERR "PC-Speaker initialization failed.\n");
+			return -ENODEV;
+		}
 	}
 
 	return 0;
 }
 
-static void __exit alsa_card_pcsp_exit(void)
+static void __devexit alsa_card_pcsp_exit(struct snd_pcsp *chip)
 {
-	pcspkr_input_remove(pcsp_chip.input_dev);
-	snd_card_free(pcsp_chip.card);
+	snd_card_free(chip->card);
 }
 
-module_init(alsa_card_pcsp_init);
-module_exit(alsa_card_pcsp_exit);
+static int __devinit pcsp_probe(struct platform_device *dev)
+{
+	int err;
+	err = pcspkr_input_init(&pcsp_chip.input_dev, &dev->dev);
+	if (err < 0)
+		return err;
+
+	err = alsa_card_pcsp_init(&dev->dev);
+	if (err < 0) {
+		pcspkr_input_remove(pcsp_chip.input_dev);
+		return err;
+	}
+
+	platform_set_drvdata(dev, &pcsp_chip);
+	return 0;
+}
+
+static int __devexit pcsp_remove(struct platform_device *dev)
+{
+	struct snd_pcsp *chip = platform_get_drvdata(dev);
+	alsa_card_pcsp_exit(chip);
+	pcspkr_input_remove(chip->input_dev);
+	platform_set_drvdata(dev, NULL);
+	return 0;
+}
+
+static void pcsp_stop_beep(struct snd_pcsp *chip)
+{
+	unsigned long flags;
+	spin_lock_irqsave(&chip->substream_lock, flags);
+	if (!chip->playback_substream)
+		pcspkr_stop_sound();
+	spin_unlock_irqrestore(&chip->substream_lock, flags);
+}
+
+static int pcsp_suspend(struct platform_device *dev, pm_message_t state)
+{
+	struct snd_pcsp *chip = platform_get_drvdata(dev);
+	pcsp_stop_beep(chip);
+	snd_pcm_suspend_all(chip->pcm);
+	return 0;
+}
+
+static void pcsp_shutdown(struct platform_device *dev)
+{
+	struct snd_pcsp *chip = platform_get_drvdata(dev);
+	pcsp_stop_beep(chip);
+}
+
+static struct platform_driver pcsp_platform_driver = {
+	.driver		= {
+		.name	= "pcspkr",
+		.owner	= THIS_MODULE,
+	},
+	.probe		= pcsp_probe,
+	.remove		= __devexit_p(pcsp_remove),
+	.suspend	= pcsp_suspend,
+	.shutdown	= pcsp_shutdown,
+};
+
+static int __init pcsp_init(void)
+{
+	return platform_driver_register(&pcsp_platform_driver);
+}
+
+static void __exit pcsp_exit(void)
+{
+	platform_driver_unregister(&pcsp_platform_driver);
+}
+
+module_init(pcsp_init);
+module_exit(pcsp_exit);

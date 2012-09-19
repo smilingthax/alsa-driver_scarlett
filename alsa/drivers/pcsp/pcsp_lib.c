@@ -7,12 +7,19 @@
  * Copyright (C) 2001-2008  Stas Sergeev
  */
 
+#include <linux/module.h>
+#include <linux/moduleparam.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <linux/interrupt.h>
 #include <asm/io.h>
 #include <asm/i8253.h>
 #include "pcsp.h"
+
+static int nforce_wa;
+module_param(nforce_wa, bool, 0444);
+MODULE_PARM_DESC(nforce_wa, "Apply NForce chipset workaround "
+		"(expect bad sound)");
 
 #define DMIX_WANTS_S16	1
 
@@ -46,10 +53,21 @@ enum hrtimer_restart pcsp_do_timer(struct hrtimer *handle)
 	unsigned long flags;
 	unsigned char timer_cnt, val;
 	int fmt_size, periods_elapsed;
+	u64 ns;
 	size_t period_bytes, buffer_bytes;
 	struct snd_pcm_substream *substream;
 	struct snd_pcm_runtime *runtime;
 	struct snd_pcsp *chip = container_of(handle, struct snd_pcsp, timer);
+
+	if (chip->thalf) {
+		outb(chip->val61, 0x61);
+		chip->thalf = 0;
+		if (!atomic_read(&chip->timer_active))
+			return HRTIMER_NORESTART;
+		hrtimer_forward(&chip->timer, chip->timer.expires,
+				ktime_set(0, chip->ns_rem));
+		return HRTIMER_RESTART;
+	}
 
 	/* hrtimer calls us from both hardirq and softirq contexts,
 	 * so irqsave :( */
@@ -88,9 +106,14 @@ enum hrtimer_restart pcsp_do_timer(struct hrtimer *handle)
 
 	if (timer_cnt && chip->enable) {
 		spin_lock(&i8253_lock);
-		outb_p(chip->val61, 0x61);
-		outb_p(timer_cnt, 0x42);
-		outb(chip->val61 ^ 1, 0x61);
+		if (!nforce_wa) {
+			outb_p(chip->val61, 0x61);
+			outb_p(timer_cnt, 0x42);
+			outb(chip->val61 ^ 1, 0x61);
+		} else {
+			outb(chip->val61 ^ 2, 0x61);
+			chip->thalf = 1;
+		}
 		spin_unlock(&i8253_lock);
 	}
 
@@ -121,8 +144,11 @@ enum hrtimer_restart pcsp_do_timer(struct hrtimer *handle)
 
 	if (!atomic_read(&chip->timer_active))
 		return HRTIMER_NORESTART;
-	hrtimer_forward(&chip->timer, chip->timer.expires,
-			ktime_set(0, PCSP_PERIOD_NS()));
+
+	chip->ns_rem = PCSP_PERIOD_NS();
+	ns = (chip->thalf ? PCSP_CALC_NS(timer_cnt) : chip->ns_rem);
+	chip->ns_rem -= ns;
+	hrtimer_forward(&chip->timer, chip->timer.expires, ktime_set(0, ns));
 	return HRTIMER_RESTART;
 
 exit_nr_unlock2:
@@ -134,6 +160,9 @@ exit_nr_unlock1:
 
 static void pcsp_start_playing(struct snd_pcsp *chip)
 {
+#if PCSP_DEBUG
+	printk(KERN_INFO "PCSP: start_playing called\n");
+#endif
 	if (atomic_read(&chip->timer_active)) {
 		printk(KERN_ERR "PCSP: Timer already active\n");
 		return;
@@ -144,12 +173,16 @@ static void pcsp_start_playing(struct snd_pcsp *chip)
 	outb_p(0x92, 0x43);	/* binary, mode 1, LSB only, ch 2 */
 	spin_unlock(&i8253_lock);
 	atomic_set(&chip->timer_active, 1);
+	chip->thalf = 0;
 
 	tasklet_schedule(&pcsp_start_timer_tasklet);
 }
 
 static void pcsp_stop_playing(struct snd_pcsp *chip)
 {
+#if PCSP_DEBUG
+	printk(KERN_INFO "PCSP: stop_playing called\n");
+#endif
 	if (!atomic_read(&chip->timer_active))
 		return;
 
@@ -290,22 +323,23 @@ static struct snd_pcm_ops snd_pcsp_playback_ops = {
 	.pointer = snd_pcsp_playback_pointer,
 };
 
-int __init snd_pcsp_new_pcm(struct snd_pcsp *chip)
+int __devinit snd_pcsp_new_pcm(struct snd_pcsp *chip)
 {
-	struct snd_pcm *pcm;
 	int err;
 
-	err = snd_pcm_new(chip->card, "pcspeaker", 0, 1, 0, &pcm);
+	err = snd_pcm_new(chip->card, "pcspeaker", 0, 1, 0, &chip->pcm);
 	if (err < 0)
 		return err;
 
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_pcsp_playback_ops);
+	snd_pcm_set_ops(chip->pcm, SNDRV_PCM_STREAM_PLAYBACK,
+			&snd_pcsp_playback_ops);
 
-	pcm->private_data = chip;
-	pcm->info_flags = SNDRV_PCM_INFO_HALF_DUPLEX;
-	strcpy(pcm->name, "pcsp");
+	chip->pcm->private_data = chip;
+	chip->pcm->info_flags = SNDRV_PCM_INFO_HALF_DUPLEX;
+	strcpy(chip->pcm->name, "pcsp");
 
-	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_CONTINUOUS,
+	snd_pcm_lib_preallocate_pages_for_all(chip->pcm,
+					      SNDRV_DMA_TYPE_CONTINUOUS,
 					      snd_dma_continuous_data
 					      (GFP_KERNEL), PCSP_BUFFER_SIZE,
 					      PCSP_BUFFER_SIZE);
