@@ -35,4 +35,8 @@ void snd_compat_driver_unregister(struct device_driver *driver);
 #define dev_set_drvdata(dev,ptr)	((dev)->private_data = (ptr))
 #define dev_get_drvdata(dev)	(dev)->private_data
 
+#ifndef MODULE_ALIAS_CHARDEV
+#define MODULE_ALIAS_CHARDEV(x, y)
+#endif
+
 #endif
