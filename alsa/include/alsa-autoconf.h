@@ -1,6 +1,7 @@
 /*
  * include autoconf.h/config.h from proper location
  */
+#include "kconfig.h"
 #if defined(CONFIG_HAVE_GENERATED_AUTOCONF_H)
 #include <generated/autoconf.h>
 #elif defined(CONFIG_HAVE_DEPRECATED_CONFIG_H)

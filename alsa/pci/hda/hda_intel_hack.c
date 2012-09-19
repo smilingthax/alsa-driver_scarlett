@@ -3,7 +3,7 @@
 /* workaround for the vga-switcheroo audio client handling */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
 #undef CONFIG_VGA_SWITCHEROO
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 34)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 34) && (!defined(RHEL_RELEASE_CODE) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6, 0))
 #define vga_switcheroo_unregister_client(pci)
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 33)

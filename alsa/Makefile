@@ -131,7 +131,6 @@ $(ALSAKERNELFILE):
 			# alsa-kmirror tree \
 			ln -sf $(ALSAKERNELDIR) alsa-kernel ; \
 		fi; \
-		ln -sf alsa-kernel sound ; \
 	fi \
 	}
 
