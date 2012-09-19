@@ -539,6 +539,12 @@ struct snd_ice1712_card_info snd_ice1712_delta_cards[] __devinitdata = {
 		snd_ice1712_delta_add_controls,
 	},
 	{
+		ICE1712_SUBDEVICE_DELTA410,
+		"M Audio Delta 410",
+		snd_ice1712_delta_init,
+		snd_ice1712_delta_add_controls,
+	},
+	{
 		ICE1712_SUBDEVICE_DELTA1010LT,
 		"M Audio Delta 1010LT",
 		snd_ice1712_delta_init,
