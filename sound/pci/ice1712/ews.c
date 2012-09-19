@@ -221,16 +221,17 @@ static void snd_ice1712_ews_cs8404_spdif_write(ice1712_t *ice, unsigned char bit
 	snd_i2c_lock(ice->i2c);
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_EWS88MT:
-		snd_runtime_check(snd_i2c_sendbytes(ice->cs8404, &bits, 1) == 1, snd_i2c_unlock(ice->i2c); return);
+		snd_runtime_check(snd_i2c_sendbytes(ice->cs8404, &bits, 1) == 1, goto _error);
 		break;
 	case ICE1712_SUBDEVICE_EWS88D:
-		snd_runtime_check(snd_i2c_readbytes(ice->i2cdevs[0], bytes, 2) == 2, snd_i2c_unlock(ice->i2c); return);
+		snd_runtime_check(snd_i2c_readbytes(ice->i2cdevs[0], bytes, 2) == 2, goto _error);
 		if (bits != bytes[1]) {
 			bytes[1] = bits;
-			snd_runtime_check(snd_i2c_readbytes(ice->i2cdevs[0], bytes, 2) == 2, snd_i2c_unlock(ice->i2c); return);
+			snd_runtime_check(snd_i2c_readbytes(ice->i2cdevs[0], bytes, 2) == 2, goto _error);
 		}
 		break;
 	}
+ _error:
 	snd_i2c_unlock(ice->i2c);
 }
 
@@ -567,6 +568,7 @@ static int snd_ice1712_ews88mt_input_sense_get(snd_kcontrol_t *kcontrol, snd_ctl
 	}
 	/* reversed; high = +4dBu, low = -10dBV */
 	ucontrol->value.enumerated.item[0] = data & (1 << channel) ? 0 : 1;
+	snd_i2c_unlock(ice->i2c);
 	return 0;
 }
 
