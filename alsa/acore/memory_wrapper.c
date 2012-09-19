@@ -57,3 +57,44 @@ struct page *snd_compat_vmalloc_to_page(void *pageptr)
 	return page;
 }    
 #endif
+
+#ifndef CONFIG_HAVE_STRLCPY
+size_t snd_compat_strlcpy(char *dest, const char *src, size_t size)
+{
+	size_t ret = strlen(src);
+
+	if (size) {
+		size_t len = (ret >= size) ? size-1 : ret;
+		memcpy(dest, src, len);
+		dest[len] = '\0';
+	}
+	return ret;
+}
+#endif
+
+#ifndef CONFIG_HAVE_SNPRINTF
+int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+{
+	char *ptr = (void *) __get_free_pages(GFP_KERNEL, 0);
+	if (ptr == NULL) {	/* should not happen - GFP_KERNEL has wait flag */
+		if (size > 0)
+			buf[0] = 0;
+		return 0;
+	}
+	vsprintf(ptr, fmt, args);
+	strlcpy(buf, ptr, size);
+	free_pages((unsigned long) ptr, 0);
+	return strlen(buf);
+}
+
+int snd_compat_snprintf(char *buf, size_t size, const char * fmt, ...)
+{
+	int res;
+	va_list args;
+
+	va_start(args, fmt);
+	res = snd_compat_vsnprintf(buf, size, fmt, args);
+	va_end(args);
+	return res;
+}
+#endif

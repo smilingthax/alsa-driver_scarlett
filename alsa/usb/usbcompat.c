@@ -145,5 +145,6 @@ void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *driver,
 
 EXPORT_SYMBOL(snd_compat_usb_register);
 EXPORT_SYMBOL(snd_compat_usb_deregister);
+EXPORT_SYMBOL(snd_compat_usb_driver_claim_interface);
 
 #endif /* LINUX_VERSION < 2.3.0 */
