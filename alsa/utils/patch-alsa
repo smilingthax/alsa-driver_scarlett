@@ -11,7 +11,7 @@ case $dst in
 	xtmp=`dirname $dst | sed -e s@/acore@/core@ -e s@alsa-driver/@alsa-driver/alsa-kernel/@`/`basename $dst`
 	echo copying file $xtmp
 	cp -v $xtmp $dst || exit 1
-	patch -p0 $dst $pat || exit 1
+	patch -p0 $dst $pat || { rm $dst; exit 1; }
 	;;
 *)
 	curd=`/bin/pwd`
@@ -19,7 +19,7 @@ case $dst in
 	xtmp=`echo $MODCURDIR | sed -e 's/^acore/core/'`/$dst
 	echo copying file alsa-kernel/$xtmp
 	cp $SND_TOPDIR/alsa-kernel/$xtmp $@ || exit 1
-	patch -p0 -i $pat || exit 1
+	patch -p0 -i $pat || { rm $dst; exit 1; }
 	;;
 esac
 exit 0
