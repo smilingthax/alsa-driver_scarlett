@@ -2084,8 +2084,10 @@ int patch_cm9761(ac97_t *ac97)
 		val = 0x0214;
 	else
 		val = 0x321c;
-	snd_ac97_write_cache(ac97, AC97_CM9761_MULTI_CHAN, val);
 #endif
+	val = snd_ac97_read(ac97, AC97_CM9761_MULTI_CHAN);
+	val |= (1 << 4);
+	snd_ac97_write_cache(ac97, AC97_CM9761_MULTI_CHAN, val);
 
 	/* FIXME: set up GPIO */
 	snd_ac97_write_cache(ac97, 0x70, 0x0100);
