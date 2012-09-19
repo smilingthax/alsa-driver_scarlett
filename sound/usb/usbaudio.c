@@ -74,6 +74,21 @@ MODULE_PARM_SYNTAX(snd_pid, SNDRV_ENABLED ",allows:{{-1,0xffff}},base:16");
 
 
 /*
+ * for using ASYNC unlink mode, define the following.
+ * this will make the driver quicker response for request to STOP-trigger,
+ * but it may cause oops by some unknown reason (bug of usb driver?),
+ * so turning off might be sure.
+ */
+/* #define SND_USE_ASYNC_UNLINK */
+
+#ifdef SND_USB_ASYNC_UNLINK
+#define UNLINK_FLAGS	USB_ASYNC_UNLINK
+#else
+#define UNLINK_FLAGS	0
+#endif
+
+
+/*
  *
  */
 
@@ -536,6 +551,10 @@ static int deactivate_urbs(snd_usb_substream_t *subs)
 
 	subs->running = 0;
 
+#ifndef SND_USB_ASYNC_UNLINK
+	if (in_interrupt())
+		return 0;
+#endif
 	alive = 0;
 	for (i = 0; i < subs->nurbs; i++) {
 		if (test_bit(i, &subs->active_mask)) {
@@ -553,7 +572,11 @@ static int deactivate_urbs(snd_usb_substream_t *subs)
 			}
 		}
 	}
+#ifdef SND_USB_ASYNC_UNLINK
 	return alive;
+#else
+	return 0;
+#endif
 }
 
 
@@ -743,6 +766,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 		subs->curpacksize = subs->maxpacksize;
 	else
 		subs->curpacksize = maxsize;
+	subs->curframesize = bytes_to_frames(runtime, subs->curpacksize);
 
 	/* allocate a temporary buffer for playback */
 	if (is_playback) {
@@ -811,7 +835,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 		}
 		u->urb->dev = subs->dev;
 		u->urb->pipe = subs->datapipe;
-		u->urb->transfer_flags = USB_ISO_ASAP | USB_ASYNC_UNLINK;
+		u->urb->transfer_flags = USB_ISO_ASAP | UNLINK_FLAGS;
 		u->urb->number_of_packets = u->packets;
 		u->urb->context = u;
 		u->urb->complete = snd_complete_urb;
@@ -833,7 +857,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 			u->urb->transfer_buffer_length = NRPACKS * 3;
 			u->urb->dev = subs->dev;
 			u->urb->pipe = subs->syncpipe;
-			u->urb->transfer_flags = USB_ISO_ASAP | USB_ASYNC_UNLINK;
+			u->urb->transfer_flags = USB_ISO_ASAP | UNLINK_FLAGS;
 			u->urb->number_of_packets = u->packets;
 			u->urb->context = u;
 			u->urb->complete = snd_complete_sync_urb;
