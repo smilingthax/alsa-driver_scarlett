@@ -5,7 +5,7 @@ dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>
 AC_INIT(acore/sound.c)
 AM_CONDITIONAL(INSTALL_M4, test "x${ACLOCAL}" = "xaclocal")
 AC_PREFIX_DEFAULT(/usr)
-CONFIG_SND_VERSION="0.9.0beta12"
+CONFIG_SND_VERSION="0.9.0rc1"
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -81,6 +81,8 @@ sources (default is /usr/src/linux).
 EOF
   exit 1
 fi
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_CACHE_VAL(kaversion,
 [AC_TRY_RUN([
 #include <stdio.h>
@@ -123,6 +125,7 @@ int main()
 }],kaversion=`cat conftestdata`,
 kaversion="",
 kaversion="")])
+CFLAGS=$ac_save_CFLAGS
 kversion=`echo $kaversion | cut -d : -f 1`
 kpatchlevel=`echo $kaversion | cut -d : -f 2`
 ksublevel=`echo $kaversion | cut -d : -f 3`
