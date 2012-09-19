@@ -323,9 +323,9 @@ static int __init snd_card_pc98_probe(int dev)
 		snd_printk(KERN_ERR IDENT ": specify port\n");
 		return -EINVAL;
 	}
-	card = snd_card_new(index[dev], id[dev], THIS_MODULE, 0);
-	if (card == NULL)
-		return -ENOMEM;
+	err = snd_card_create(index[dev], id[dev], THIS_MODULE, 0, &card);
+	if (err < 0)
+		return err;
 
 	if ((err = pc98_cs4231_chip_init(dev)) < 0) {
 		snd_card_free(card);

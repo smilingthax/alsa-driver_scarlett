@@ -98,7 +98,7 @@ static int snd_pdacf_dev_free(struct snd_device *device)
  */
 static int snd_pdacf_attach(struct pcmcia_device *p_dev)
 {
-	int i;
+	int i, err;
 	dev_link_t *link;               /* Info for cardmgr */
 	struct snd_pdacf *pdacf;
 	struct snd_card *card;
@@ -120,10 +120,10 @@ static int snd_pdacf_attach(struct pcmcia_device *p_dev)
 		return -ENODEV; /* disabled explicitly */
 
 	/* ok, create a card instance */
-	card = snd_card_new(index[i], id[i], THIS_MODULE, 0);
-	if (card == NULL) {
+	err = snd_card_create(index[i], id[i], THIS_MODULE, 0, &card);
+	if (err < 0) {
 		snd_printk(KERN_ERR "pdacf: cannot create a card instance\n");
-		return -ENOMEM;
+		return err;
 	}
 
 	pdacf = snd_pdacf_create(card);
