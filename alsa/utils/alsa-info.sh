@@ -400,6 +400,12 @@ ESDINST=$(which esd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 PAINST=$(which pulseaudio 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 ARTSINST=$(which artsd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 JACKINST=$(which jackd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
+DMIDECODE=$(which dmidecode 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
+
+if [ -x $DMIDECODE ]; then
+    DMI_SYSTEM_MANUFACTURER=$($DMIDECODE -s system-manufacturer 2>/dev/null)
+    DMI_SYSTEM_PRODUCT_NAME=$($DMIDECODE -s system-product-name 2>/dev/null)
+fi
 
 cat /proc/asound/modules 2>/dev/null|awk {'print $2'}>$TEMPDIR/alsamodules.tmp
 cat /proc/asound/cards >$TEMPDIR/alsacards.tmp
@@ -429,6 +435,13 @@ echo "!!Linux Distribution" >> $FILE
 echo "!!------------------" >> $FILE
 echo "" >> $FILE
 echo $DISTRO >> $FILE
+echo "" >> $FILE
+echo "" >> $FILE
+echo "!!DMI Information" >> $FILE
+echo "!!---------------" >> $FILE
+echo "" >> $FILE
+echo "Manufacturer:      $DMI_SYSTEM_MANUFACTURER" >> $FILE
+echo "Product Name:      $DMI_SYSTEM_PRODUCT_NAME" >> $FILE
 echo "" >> $FILE
 echo "" >> $FILE
 echo "!!Kernel Information" >> $FILE
