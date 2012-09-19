@@ -586,7 +586,10 @@ static void delayed_work_timer_fn(unsigned long __data)
 	struct work_struct *work = (struct work_struct *)__data;
 	struct workqueue_struct *wq = work->wq_data;
 	
-	__x_queue_work(wq, work);
+	if (wq)
+		__x_queue_work(wq, work);
+	else
+		snd_compat_schedule_work(work);
 }
 
 int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct work_struct *work, unsigned long delay)
@@ -602,6 +605,16 @@ int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct work_struc
 		return 1;
 	}
 	return 0;
+}
+
+int snd_compat_cancel_delayed_work(struct work_struct *work)
+{
+	int ret;
+
+	ret = del_timer_sync(&work->timer);
+	if (ret)
+		clear_bit(0, &work->pending);
+	return ret;
 }
 
 #endif
