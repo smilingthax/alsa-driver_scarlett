@@ -33,25 +33,55 @@ Quick install
    of the kernel, so there is necessary to resolve all symbol dependencies
    between the used kernel and ALSA driver code. Partly installed kernels
    (for example from distributor makers) can be unuseable for this action.
+
 2) You must turn on sound support (soundcore module).
+
 3) Run './configure' script.
+
+ * General Options
    If you do not want ISA PnP support, use --with-isapnp=no switch.
-   If you want sequencer support, use --with-sequencer=yes switch.
+   If you do not want sequencer support, use --with-sequencer=no switch.
    If you do not want OSS/Free emulation, use --with-oss=no switch.
-   If you want turn on debug mode use --with-debug=full switch.
-   If you want debug soundcard detection try --with-debug=detect switch.
-   If you have kernel source code in another directory than /usr/src/linux,
-   use --with-kernel=<kernel_directory>.
-   For specifying the separated kernel build directory for 2.6 kernels,
-   use --with-build=<kernel_build_dir> option.
-   Example: ./configure --with-debug=full
+   If you want to turn on debug mode, use --with-debug=full switch.
+   If you want to debug soundcard detection, try --with-debug=detect switch.
+
+ * Kernel Source Tree
+   On 2.4/2.6 kernels, the location of the kernel source tree is
+   parsed automatilly from the running kernel.
+   If it's not in the standard place, specify the path via
+   --with-kernel=<kernel_directory>. 
+   On 2.6 kernels, the build directory has to be given via
+   --with-build=<kernel_build_dir> option additionally, too.
+
+ * Drivers to Compile
+   The card drivers to be compiled can be selected via --with-cards option.
+   Pass the card driver name without "snd-" prefix.  To specify
+   multiple drivers, list names with comma (,).
+   Passing "all" will compile all possible drivers (and this is the
+   default choice).
+   Some drivers have compile options.  They can be passed via
+   --with-card-options option.  Multiple options can be passed with comma,
+   too.  The default is "all".
+   For available cards and options, see ./configure --help.
+
+ * Example
+      ./configure --with-debug=full
+      ./configure --with-cards=sb16,emu10k1 --with-card-options=sb16-csp
+
 4) Run 'make'.
-5) Run 'make install'.
+
+5) Run 'make install' as root.
    If you have already a system with ALSA init script, you should install
-   just only modules via 'make install-modules'.
+   just only modules via 'make install-modules' so that the existing init
+   script won't be replaced.
+
 6) Run the './snddevices' script to create new sound devices in /dev directory.
-   Skip this step, if you have a kernel with the DEVFS support.
-7) Edit your /etc/modules.conf (see the kmod support section below).
+   Skip this step, if you have already /dev/snd/* files, or if you're
+   using a DEVFS or udev.
+
+7) Edit your kernel module config (either /etc/modprobe.conf or
+  /etc/modules.conf, depending on the kernel version).
+
 8) Run 'modprobe snd-xxxx' where xxxx is the name of your card.
    Note: All ALSA ISA drivers support ISA PnP natively, so you don't need
          isapnptools any more.  Don't use both together.  It will
@@ -71,8 +101,8 @@ Note: This document notices the /etc/modules.conf file. Many current
       valid.
 
 
-Basic Configurations
-====================
+Kernel Module Configurations
+============================
 
 See alsa-kernel/Documentation/ALSA-Configuration.txt
 (or Documentation/sounds/alsa/ALSA-Configuration.txt in linux-2.6
@@ -129,8 +159,8 @@ Example:
 For 2.6 kernels, pass the same kernel path to --with-build option, too. 
 
 
-Autoloading on Older Kernels
-============================
+Autoloading on 2.2/2.4 Kernels
+==============================
 
 On 2.2 or 2.4 kernels, you have to set the additional aliases for
 auto-loading via kmod in /etc/modules.conf:
@@ -169,8 +199,8 @@ If you want to autoclean your modules, you should put below line to your
 You may also want to extend the soundcard list to follow your requirements.
 
 
-Additional Modules
-==================
+Information about Additional Modules
+====================================
 
   Module snd-msnd-pinnacle
   ------------------------

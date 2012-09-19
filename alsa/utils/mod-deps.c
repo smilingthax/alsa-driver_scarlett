@@ -901,19 +901,15 @@ static void output_acinclude(void)
 	       "  [                        'all' compiles all drivers; ]\n"
 	       "  [                        Possible cards are: ]\n");
 	output_card_list(all_deps, 26, 50, 1);
-	printf(" ]\n");
-	printf("  [                        Possible additional options are: ]\n");
-	output_card_list(all_deps, 26, 50, 0);
 	printf(" ],\n");
 	printf("  cards=\"$withval\", cards=\"all\")\n");
-
+	printf("SELECTED_CARDS=`echo $cards | sed 's/,/ /g'`\n");
 	/* check cards */
-	printf("cards=`echo $cards | sed 's/,/ /g'`\n");
-	printf("for card in $cards; do\n"
+	printf("for card in $SELECTED_CARDS; do\n"
 	       "  probed=\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		int put_if;
-		if (!is_toplevel(tempdep))
+		if (!is_toplevel(tempdep) || tempdep->is_bool)
 			continue;
 		text = get_card_name(tempdep->name);
 		if (! text)
@@ -951,7 +947,7 @@ static void output_acinclude(void)
 			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
 		}
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		printf("      %s=\"%c\"\n", text, tempdep->is_bool ? 'y' : 'm');
+		printf("      %s=\"m\"\n", text);
 		free(text);
 		printf("      probed=1\n");
 		if (put_if)
@@ -966,7 +962,76 @@ static void output_acinclude(void)
 	       "    AC_MSG_ERROR(Unsupported soundcard $card)\n"
 	       "  fi\n"
 	       "done\n\n");
-	printf("AC_MSG_RESULT($cards)\n\n");
+	/* options */
+	printf("AC_ARG_WITH(card_options,\n"
+	       "  [  --with-card-options=<list> enable driver options in <list>; ]\n"
+	       "  [                        options may be separated with commas; ]\n"
+	       "  [                        'all' enables all options; ]\n"
+	       "  [                        Possible options are: ]\n");
+	output_card_list(all_deps, 26, 50, 0);
+	printf(" ],\n");
+	printf("  cards=\"$withval\", cards=\"all\")\n");
+	printf("SELECTED_OPTIONS=`echo $cards | sed 's/,/ /g'`\n");
+	/* check cards */
+	printf("for card in $SELECTED_OPTIONS; do\n"
+	       "  probed=\n");
+	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		int put_if;
+		if (!is_toplevel(tempdep) || !tempdep->is_bool)
+			continue;
+		text = get_card_name(tempdep->name);
+		if (! text)
+			continue;
+		printf("  if test \"$card\" = \"all\" -o \"$card\" = \"%s\"; then\n", text);
+		free(text);
+		put_if = 0;
+		for (cond = tempdep->cond, cond_prev = NULL; cond; cond = cond->next) {
+			if (!put_if)
+				printf("    if ");
+			else {
+				printf(cond_prev->type == COND_AND ? " &&" : " ||");
+				printf("\n      ");
+			}
+			if (cond->not)
+				printf(" ! ");
+			for (j = 0; j < cond->left; j++)
+				printf("( ");
+			printf("( test \"$CONFIG_%s\" = \"y\" -o \"$CONFIG_%s\" = \"m\" )", cond->name, cond->name);
+			for (j = 0; j < cond->right; j++)
+				printf(" )");
+			put_if = 1;
+			cond_prev = cond;
+		}
+		if (put_if)
+			printf("; then\n");
+
+		sel_remove_hitflags();
+		for (sel = tempdep->sel; sel; sel = sel->next)
+			sel_print_acinclude(sel);			
+		for (sel = tempdep->sel; sel; sel = sel->next) {
+			if (is_always_true(sel->dep))
+				continue;
+			printf("      CONFIG_%s=\"%c\"\n", sel->name,
+			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
+		}
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("      %s=\"y\"\n", text);
+		free(text);
+		printf("      probed=1\n");
+		if (put_if)
+			printf("    elif test -z \"$probed\"; then\n"
+			       "      probed=0\n"
+			       "    fi\n");
+		printf("  fi\n");
+	}
+	printf("  if test -z \"$probed\"; then\n"
+	       "    AC_MSG_ERROR(Unknown option $card)\n"
+	       "  elif test \"$probed\" = \"0\"; then\n"
+	       "    AC_MSG_ERROR(Unsupported option $card)\n"
+	       "  fi\n"
+	       "done\n\n");
+
+	printf("AC_MSG_RESULT($SELECTED_CARDS)\n\n");
 	printf("CONFIG_SND=\"m\"\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		if (!is_toplevel(tempdep))
