@@ -465,7 +465,7 @@ static opl4_voice_t *snd_opl4_get_voice(opl4_t *opl4)
 	return list_entry(opl4->on_voices.next, opl4_voice_t, list);
 }
 
-void snd_opl4_wait_for_wave_headers(opl4_t *opl4)
+static void snd_opl4_wait_for_wave_headers(opl4_t *opl4)
 {
 	int timeout = 200;
 
