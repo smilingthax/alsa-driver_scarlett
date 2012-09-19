@@ -12,4 +12,8 @@
 #endif
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
+#define CONFIG_USE_MIXARTLOADER
+#endif
+
 #include "../../alsa-kernel/pci/mixart/mixart_hwdep.c"
