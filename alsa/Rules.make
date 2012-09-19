@@ -246,7 +246,7 @@ else
 	genksyms_smp_prefix := 
 endif
 
-$(MODINCL)/$(MODPREFIX)%.ver: %.c
+$(MODINCL)/$(MODPREFIX)%.ver: %.c update-sndvers
 	@if [ ! -r $(MODINCL)/$(MODPREFIX)$*.stamp -o $(MODINCL)/$(MODPREFIX)$*.stamp -ot $< ]; then \
 		if [ ! -f $(CONFIG_SND_KERNELDIR)/include/linux/modules/$*.stamp ]; then \
 		echo '$(CC) -D__KERNEL__ $(CPPFLAGS) $(EXTRA_CFLAGS) -E -D__GENKSYMS__ $<'; \
@@ -267,7 +267,8 @@ fastdep: $(addprefix $(MODINCL)/$(MODPREFIX),$(export-objs:.o=.ver))
 endif # export-objs 
 
 define update-sndvers
-	@(echo "#ifndef _LINUX_SNDVERSIONS_H"; \
+	(tmpfile=`echo $(SNDVERSIONS).tmp`; \
+	(echo "#ifndef _LINUX_SNDVERSIONS_H"; \
 	  echo "#define _LINUX_SNDVERSIONS_H"; \
 	  echo "#include <linux/modsetver.h>"; \
 	  cd $(TOPDIR)/include/modules; \
@@ -275,14 +276,14 @@ define update-sndvers
 	    if [ -f $$f ]; then echo "#include \"modules/$${f}\""; fi; \
 	  done; \
 	  echo "#endif"; \
-	) > $(SNDVERSIONS).tmp
-	@if [ -r $(SNDVERSIONS) ] && cmp -s $(SNDVERSIONS) $(SNDVERSIONS).tmp; then \
+	) > $${tmpfile}; \
+	if [ -r $(SNDVERSIONS) ] && cmp -s $(SNDVERSIONS) $${tmpfile}; then \
 		echo $(SNDVERSIONS) was not updated; \
-		rm -f $(SNDVERSIONS).tmp; \
+		rm -f $${tmpfile}; \
 	else \
 		echo $(SNDVERSIONS) was updated; \
-		mv -f $(SNDVERSIONS).tmp $(SNDVERSIONS); \
-	fi
+		mv -f $${tmpfile} $(SNDVERSIONS); \
+	fi)
 endef
 
 $(SNDVERSIONS):
