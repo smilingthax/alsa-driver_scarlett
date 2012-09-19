@@ -23,7 +23,7 @@
  /*
   * generic device without a proper bus using platform_device
   * (e.g. ISA)
-@@ -749,6 +753,23 @@
+@@ -749,6 +753,24 @@
  		snd_card_set_dev(card, &card->generic_dev->pdev.dev);
  	return 0;
  }
@@ -31,6 +31,7 @@
 +
 +int snd_card_set_generic_dev(snd_card_t *card)
 +{
++	return 0;
 +}
 +
 +static void snd_generic_device_unregister(snd_card_t *card)
