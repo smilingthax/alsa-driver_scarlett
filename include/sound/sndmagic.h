@@ -193,6 +193,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define snd_usb_midi_in_endpoint_t_magic	0xa15a3f03
 #define ak4117_t_magic				0xa15a4000
 #define psic_t_magic				0xa15a4100
+#define opl4_t_magic				0xa15a2602
 
 
 #else
