@@ -844,9 +844,6 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #define snd_card_set_dev(card,dev) /* no struct device */
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
-#define snd_card_set_dev(card,devptr) ((card)->dev = (devptr))
-#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 #define snd_dma_pci_data(pci)	((struct device *)(pci))
@@ -1388,6 +1385,10 @@ extern struct pt_regs *snd_irq_regs;
 #undef pci_intx
 #define pci_intx(pci,x)
 #endif
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
+#define CONFIG_SYSFS_DEPRECATED	1
 #endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */

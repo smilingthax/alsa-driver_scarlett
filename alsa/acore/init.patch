@@ -48,29 +48,3 @@
  	.mmap =		snd_disconnect_mmap,
  	.fasync =	snd_disconnect_fasync
  };
-@@ -361,8 +376,10 @@
- 		snd_printk(KERN_WARNING "unable to free card info\n");
- 		/* Not fatal error */
- 	}
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
- 	if (card->dev)
- 		device_unregister(card->dev);
-+#endif
- 	kfree(card);
- 	return 0;
- }
-@@ -497,12 +514,14 @@
- 	int err;
- 
- 	snd_assert(card != NULL, return -EINVAL);
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
- 	if (!card->dev) {
- 		card->dev = device_create(sound_class, card->parent, 0,
- 					  "card%i", card->number);
- 		if (IS_ERR(card->dev))
- 			card->dev = NULL;
- 	}
-+#endif
- 	if ((err = snd_device_register_all(card)) < 0)
- 		return err;
- 	mutex_lock(&snd_card_mutex);
