@@ -27,6 +27,7 @@ HPI Operating System Specific macros for Linux
 (C) Copyright AudioScience Inc. 1997-2003
 ******************************************************************************/
 
+#include <sound/driver.h>
 #include <linux/ioctl.h>
 
 struct hpi_ioctl_linux

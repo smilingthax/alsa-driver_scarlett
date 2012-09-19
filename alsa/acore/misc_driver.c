@@ -1,7 +1,9 @@
+#define __NO_VERSION__
 #include <sound/driver.h>
 #include <linux/smp_lock.h>
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
+#include <linux/platform_device.h>
 #include <sound/core.h>
 
 /*
@@ -16,7 +18,7 @@ struct bus_type snd_platform_bus_type;
 int snd_compat_driver_register(struct device_driver *driver)
 {
 	list_add(&driver->list, &snd_driver_list);
-	init_list_head(&driver->device_list);
+	INIT_LIST_HEAD(&driver->device_list);
 	return 0;
 }
 
@@ -26,7 +28,7 @@ void snd_compat_driver_unregister(struct device_driver *driver)
 
 	list_del(&driver->list);
 	list_for_each_safe(p, n, &driver->device_list) {
-		struct platform_devce *dev = list_entry(p, struct platform_device, list);
+		struct platform_device *dev = list_entry(p, struct platform_device, list);
 		list_del(p);
 		if (driver->remove)
 			driver->remove((struct device *)dev);
@@ -34,7 +36,7 @@ void snd_compat_driver_unregister(struct device_driver *driver)
 	}
 }
 
-static int snd_device_pm_callback(struct pm_dev *dev, pm_request_t rqst, void *data)
+static int snd_device_pm_callback(struct pm_dev *pm_dev, pm_request_t rqst, void *data)
 {
 	struct device *dev = data;
 	switch (rqst) {
@@ -56,10 +58,11 @@ snd_platform_device_register_simple(const char *name, int id,
 {
 	struct list_head *p;
 	struct platform_device *dev;
+	int err;
 
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (! dev)
-		return -ENOMEM;
+		return ERR_PTR(-ENOMEM);
 
 	list_for_each(p, &snd_driver_list) {
 		struct device_driver *driver = list_entry(p, struct device_driver, list);
@@ -108,7 +111,7 @@ struct saved_config_tbl {
 	struct pci_dev *pci;
 	u32 config[16];
 };
-statuc struct saved_config_tbl saved_tbl[16];
+static struct saved_config_tbl saved_tbl[16];
 
 void snd_pci_compat_save_state(struct pci_dev *pci)
 {
@@ -258,7 +261,7 @@ static int snd_apm_callback(apm_event_t ev)
 	}
 	/* platform_device */
 	list_for_each(entry, &snd_driver_list) {
-		struct device_driver *driver = list_entry(p, struct device_driver, entry);
+		struct device_driver *driver = list_entry(entry, struct device_driver, list);
 		struct list_head *p;
 		if (rqst == PM_SUSPEND) {
 			if (! driver->suspend)
@@ -268,7 +271,7 @@ static int snd_apm_callback(apm_event_t ev)
 				continue;
 		}
 		list_for_each(p, &driver->device_list) {
-			struct platform_devce *dev = list_entry(p, struct platform_device, list);
+			struct platform_device *dev = list_entry(p, struct platform_device, list);
 			if (rqst == PM_SUSPEND)
 				driver->suspend((struct device *)dev, PMSG_SUSPEND);
 			else
@@ -814,5 +817,3 @@ int snd_pnp_register_card_driver(struct snd_pnp_card_driver *driver)
 #endif
 #endif
 #endif
-
-// vim: ft=c

@@ -56,6 +56,13 @@
 #include <linux/isapnp.h>
 #include <linux/pnp.h>
 #else
+#include <linux/pm.h>
+#ifndef PMSG_FREEZE
+typedef u32 pm_message_t;
+#define PMSG_FREEZE	3
+#define PMSG_SUSPEND	3
+#define PMSG_ON		0
+#endif
 #undef CONFIG_ISAPNP
 #define CONFIG_ISAPNP
 #include <linux/isapnp.h>

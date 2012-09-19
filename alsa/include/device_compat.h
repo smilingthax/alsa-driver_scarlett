@@ -4,6 +4,7 @@
 struct device {
 	void *private_data;
 	struct device_driver *driver;
+	struct pm_dev *pm_dev;
 };
 
 struct bus_type {
@@ -12,7 +13,7 @@ struct bus_type {
 struct device_driver {
 	const char *name;
 	struct bus_type *bus;
-	struct module *owner
+	struct module *owner;
 	int (*probe)(struct device *dev);
 	int (*remove)(struct device *dev);
 	void (*shutdown)(struct device *dev);

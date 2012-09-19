@@ -1,7 +1,9 @@
 /* misc.c */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-EXPORT_SYMBOL(snd_comat_driver_register);
-EXPORT_SYMBOL(snd_comat_driver_unregister);
+#include <linux/device.h>
+#include <linux/platform_device.h>
+EXPORT_SYMBOL(snd_compat_driver_register);
+EXPORT_SYMBOL(snd_compat_driver_unregister);
 EXPORT_SYMBOL(snd_platform_device_register_simple);
 EXPORT_SYMBOL(snd_platform_bus_type);
 #endif
@@ -60,9 +62,11 @@ EXPORT_SYMBOL(snd_compat_kzalloc);
 #ifndef CONFIG_HAVE_PCI_DEV_PRESENT
 EXPORT_SYMBOL(snd_pci_dev_present);
 #endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 #ifndef CONFIG_HAVE_NEW_PCI_SAVE_STATE
 EXPORT_SYMBOL(snd_pci_compat_save_state);
 EXPORT_SYMBOL(snd_pci_compat_restore_state);
+#endif
 #endif
 #endif /* CONFIG_PCI */
 #ifndef CONFIG_HAVE_MSLEEP
