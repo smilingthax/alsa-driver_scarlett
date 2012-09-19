@@ -718,6 +718,17 @@ def main():
 		diffall(0, from_cvs_time, to_cvs_time)
 		if FATAL_LSYNC_ERROR > 0:
 			print 'Error during merge, see %s file...' % PATCH_UPDATE
+	elif args[0] == 'cvslocal':
+		if len(args) <= 1:
+			print 'Specify time, please'
+			sys.exit(1)
+		to_cvs_time = parse_time(args[1])
+		CVSROOT = '~/alsa.local'
+		os.chdir(os.path.expanduser('~/'))
+		os.system('rm -rf alsa.local')
+		os.system('mkdir alsa.local')
+		os.chdir(os.path.expanduser('~/alsa.local'))
+		os.system('cvs -d/home/src/alsa co -P %s alsa-driver alsa-kernel' % get_cvs_date_param1(to_cvs_time))
 	elif args[0] == 'filename':
 		ver = 1
 		if len(args) > 1:
