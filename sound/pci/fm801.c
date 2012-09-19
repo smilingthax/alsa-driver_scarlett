@@ -2,6 +2,7 @@
  *  The driver for the ForteMedia FM801 based soundcards
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
  *
+ *  Support FM only card by Andy Shevchenko <andy@smile.org.ua>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -54,6 +55,7 @@ static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card *
  *    1 = MediaForte 256-PCS
  *    2 = MediaForte 256-PCPR
  *    3 = MediaForte 64-PCR
+ *   16 = setup tuner only (this is additional bit), i.e. SF-64-PCR FM card
  *  High 16-bits are video (radio) device number + 1
  */
 static int tea575x_tuner[SNDRV_CARDS];
@@ -158,6 +160,7 @@ struct fm801 {
 	unsigned int multichannel: 1,	/* multichannel support */
 		     secondary: 1;	/* secondary codec */
 	unsigned char secondary_addr;	/* address of the secondary codec */
+	unsigned int tea575x_tuner;	/* tuner flags */
 
 	unsigned short ply_ctrl; /* playback control */
 	unsigned short cap_ctrl; /* capture control */
@@ -1253,6 +1256,9 @@ static int snd_fm801_chip_init(struct fm801 *chip, int resume)
 	int id;
 	unsigned short cmdw;
 
+	if (chip->tea575x_tuner & 0x0010)
+		goto __ac97_ok;
+
 	/* codec cold reset + AC'97 warm reset */
 	outw((1<<5) | (1<<6), FM801_REG(chip, CODEC_CTRL));
 	inw(FM801_REG(chip, CODEC_CTRL)); /* flush posting data */
@@ -1290,6 +1296,8 @@ static int snd_fm801_chip_init(struct fm801 *chip, int resume)
 		wait_for_codec(chip, 0, AC97_VENDOR_ID1, msecs_to_jiffies(750));
 	}
 
+      __ac97_ok:
+
 	/* init volume */
 	outw(0x0808, FM801_REG(chip, PCM_VOL));
 	outw(0x9f1f, FM801_REG(chip, FM_VOL));
@@ -1298,9 +1306,12 @@ static int snd_fm801_chip_init(struct fm801 *chip, int resume)
 	/* I2S control - I2S mode */
 	outw(0x0003, FM801_REG(chip, I2S_MODE));
 
-	/* interrupt setup - unmask MPU, PLAYBACK & CAPTURE */
+	/* interrupt setup */
 	cmdw = inw(FM801_REG(chip, IRQ_MASK));
-	cmdw &= ~0x0083;
+	if (chip->irq < 0)
+		cmdw |= 0x00c3;		/* mask everything, no PCM nor MPU */
+	else
+		cmdw &= ~0x0083;	/* unmask MPU, PLAYBACK & CAPTURE */
 	outw(cmdw, FM801_REG(chip, IRQ_MASK));
 
 	/* interrupt clear */
@@ -1365,20 +1376,23 @@ static int __devinit snd_fm801_create(struct snd_card *card,
 	chip->card = card;
 	chip->pci = pci;
 	chip->irq = -1;
+	chip->tea575x_tuner = tea575x_tuner;
 	if ((err = pci_request_regions(pci, "FM801")) < 0) {
 		kfree(chip);
 		pci_disable_device(pci);
 		return err;
 	}
 	chip->port = pci_resource_start(pci, 0);
-	if (request_irq(pci->irq, snd_fm801_interrupt, IRQF_DISABLED|IRQF_SHARED,
-			"FM801", chip)) {
-		snd_printk(KERN_ERR "unable to grab IRQ %d\n", chip->irq);
-		snd_fm801_free(chip);
-		return -EBUSY;
+	if ((tea575x_tuner & 0x0010) == 0) {
+		if (request_irq(pci->irq, snd_fm801_interrupt, IRQF_DISABLED|IRQF_SHARED,
+				"FM801", chip)) {
+			snd_printk(KERN_ERR "unable to grab IRQ %d\n", chip->irq);
+			snd_fm801_free(chip);
+			return -EBUSY;
+		}
+		chip->irq = pci->irq;
+		pci_set_master(pci);
 	}
-	chip->irq = pci->irq;
-	pci_set_master(pci);
 
 	pci_read_config_byte(pci, PCI_REVISION_ID, &rev);
 	if (rev >= 0xb1)	/* FM801-AU */
@@ -1394,12 +1408,12 @@ static int __devinit snd_fm801_create(struct snd_card *card,
 	snd_card_set_dev(card, &pci->dev);
 
 #ifdef TEA575X_RADIO
-	if (tea575x_tuner > 0 && (tea575x_tuner & 0xffff) < 4) {
+	if (tea575x_tuner > 0 && (tea575x_tuner & 0x000f) < 4) {
 		chip->tea.dev_nr = tea575x_tuner >> 16;
 		chip->tea.card = card;
 		chip->tea.freq_fixup = 10700;
 		chip->tea.private_data = chip;
-		chip->tea.ops = &snd_fm801_tea_ops[(tea575x_tuner & 0xffff) - 1];
+		chip->tea.ops = &snd_fm801_tea_ops[(tea575x_tuner & 0x000f) - 1];
 		snd_tea575x_init(&chip->tea);
 	}
 #endif
@@ -1439,6 +1453,9 @@ static int __devinit snd_card_fm801_probe(struct pci_dev *pci,
 	sprintf(card->longname, "%s at 0x%lx, irq %i",
 		card->shortname, chip->port, chip->irq);
 
+	if (tea575x_tuner[dev] & 0x0010)
+		goto __fm801_tuner_only;
+
 	if ((err = snd_fm801_pcm(chip, 0, NULL)) < 0) {
 		snd_card_free(card);
 		return err;
@@ -1465,6 +1482,7 @@ static int __devinit snd_card_fm801_probe(struct pci_dev *pci,
 		return err;
 	}
 
+      __fm801_tuner_only:
 	if ((err = snd_card_register(card)) < 0) {
 		snd_card_free(card);
 		return err;
