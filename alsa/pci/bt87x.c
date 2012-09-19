@@ -746,6 +746,7 @@ static int __devinit snd_bt87x_create(snd_card_t *card,
 		snd_bt87x_free(chip);
 		return err;
 	}
+	snd_card_set_dev(card, &pci->dev);
 	*rchip = chip;
 	return 0;
 }

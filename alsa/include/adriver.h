@@ -420,13 +420,17 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 #define pci_set_consistent_dma_mask(p,x) 0 /* success */
 #endif
 
-/* devfs */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+/* sysfs */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 2)
 struct class_simple;
 static inline void class_simple_device_add(struct class_simple *class, int devnum, ...) { return; }
 static inline void class_simple_device_remove(int devnum) { return; }
 #endif
 
 #include "amagic.h"
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#define snd_card_set_dev(card,dev) /* no struct device */
+#endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */

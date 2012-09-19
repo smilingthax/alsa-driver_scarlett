@@ -1351,6 +1351,8 @@ static int __devinit snd_intel8x0m_create(snd_card_t * card,
 		return err;
 	}
 
+	snd_card_set_dev(card, &pci->dev);
+
 	*r_intel8x0 = chip;
 	return 0;
 }

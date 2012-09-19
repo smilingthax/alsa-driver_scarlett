@@ -282,6 +282,7 @@ static snd_card_t* snd_usX2Y_create_card(struct usb_device* device)
 		0,//us428(card)->usbmidi.ifnum,
 		usX2Y(card)->chip.dev->bus->busnum, usX2Y(card)->chip.dev->devnum
 		);
+	snd_card_set_dev(card, &device->dev);
 	return card;
 }
 
