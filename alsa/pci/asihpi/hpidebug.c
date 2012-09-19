@@ -66,7 +66,7 @@ void hpi_debug_printf(char *fmt, ...)
 
 typedef struct {
 	void *array;
-	int numElements;
+	unsigned int numElements;
 } treenode_t;
 
 #define make_treenode_from_array( nodename, array ) \
@@ -126,7 +126,7 @@ static char *hpi_object_string(unsigned int object)
 
 static char *hpi_function_string(unsigned int function)
 {
-	int object;
+	unsigned int object;
 	treenode_t *tmp;
 
 	object = function / HPI_OBJ_FUNCTION_SPACING;
@@ -149,21 +149,26 @@ void hpi_debug_message(HPI_MESSAGE * phm)
 {
 	if (phm) {
 		if ((phm->wObject <= HPI_OBJ_MAXINDEX) && phm->wObject) {
+			u16 wIndex = 0;
 
 			switch (phm->wObject) {
 			case HPI_OBJ_OSTREAM:
 			case HPI_OBJ_ISTREAM:
+				wIndex = phm->u.d.wStreamIndex;
+				break;
 			case HPI_OBJ_CONTROLEX:
+				wIndex = phm->u.cx.wControlIndex;
+				break;
 			case HPI_OBJ_CONTROL:
-				HPIOS_DEBUG_PRINTF("Adapter #%d %s #%d \n", phm->wAdapterIndex, hpi_function_string(phm->wFunction), phm->u.c.wControlIndex);	/* controlex, stream index at same offset */
+				wIndex = phm->u.c.wControlIndex;
 				break;
 			default:
-				HPIOS_DEBUG_PRINTF("Adapter #%d %s \n",
-						   phm->wAdapterIndex,
-						   hpi_function_string(phm->
-								       wFunction));
 				break;
 			}
+			HPIOS_DEBUG_PRINTF("Adapter #%d %s #%d \n",
+					   phm->wAdapterIndex,
+					   hpi_function_string(phm->wFunction),
+					   wIndex);
 		} else {
 			HPIOS_DEBUG_PRINTF("Adap=%d, Invalid Obj=%d, Func=%d\n",
 					   phm->wAdapterIndex, phm->wObject,
@@ -187,7 +192,7 @@ void hpi_debug_response(HPI_RESPONSE * phr)
 
 void hpi_debug_data(u16 * pdata, u32 len)
 {
-	int i;
+	u32 i;
 	int j;
 	int k;
 	int lines;

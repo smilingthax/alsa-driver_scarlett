@@ -256,13 +256,13 @@ void SyncControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 		break;
 	case HPI_CONTROL_MULTIPLEXER:	// mux does not return its setting on Set command.
 		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
-			pC->u.x.wSourceNodeType = phm->u.c.dwParam1;
-			pC->u.x.wSourceNodeIndex = phm->u.c.dwParam2;
+			pC->u.x.wSourceNodeType = (u16) phm->u.c.dwParam1;
+			pC->u.x.wSourceNodeIndex = (u16) phm->u.c.dwParam2;
 		}
 		break;
 	case HPI_CONTROL_CHANNEL_MODE:	// mux does not return its setting on Set command.
 		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
-			pC->u.m.wMode = phm->u.c.dwParam1;
+			pC->u.m.wMode = (u16) phm->u.c.dwParam1;
 		}
 		break;
 	case HPI_CONTROL_LEVEL:
@@ -280,14 +280,15 @@ void SyncControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 			pC->u.aes3rx.dwSource = phm->u.c.dwParam1;
 	case HPI_CONTROL_SAMPLECLOCK:
 		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
-			pC->u.clk.wSource = phm->u.c.dwParam1;
+			pC->u.clk.wSource = (u16) phm->u.c.dwParam1;
 		else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {
 			if (pC->u.clk.wSourceIndex ==
 			    HPI_ERROR_ILLEGAL_CACHE_VALUE) {
 				phr->u.c.dwParam1 = 0;
 				phr->wError = HPI_ERROR_INVALID_OPERATION;
 			} else
-				pC->u.clk.wSourceIndex = phm->u.c.dwParam1;
+				pC->u.clk.wSourceIndex =
+				    (u16) phm->u.c.dwParam1;
 		} else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SAMPLERATE)
 			pC->u.clk.dwSampleRate = phm->u.c.dwParam1;
 		break;

@@ -622,7 +622,7 @@ static int __init hpimod_init(void)
 	printk(KERN_INFO "ASIHPI driver %s debug=%d ",
 	       __stringify(DRIVER_VERSION), hpiDebugLevel);
 	printk("Spinlock on=%d Local copy=%d\n", USE_SPINLOCK, COPY_TO_LOCAL);
-	HPI_SubSysGetVersion(NULL, &dwVersion);
+	HPI_SubSysGetVersionEx(NULL, &dwVersion);
 	printk(KERN_INFO "HPI_SubSysGetVersion=%x\n", dwVersion);
 
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DRIVER_LOAD);

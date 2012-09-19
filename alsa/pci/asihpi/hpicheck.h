@@ -42,9 +42,11 @@ compile_time_assert(sizeof(sym)==(size),sizechk##sym)
 compile_time_assert((sizeof(sym)%(unit))==0,unitchk##sym)
 
 /* Each object MSG and RES must be multiple of 4 bytes */
-#define compile_time_obj_check(obj) \
+#define compile_time_obj_check(obj,msgsize,ressize) \
 compile_time_unit_check(obj##_MSG,4); \
-compile_time_unit_check(obj##_RES,4)
+compile_time_unit_check(obj##_RES,4); \
+compile_time_size_check(obj##_MSG,msgsize); \
+compile_time_size_check(obj##_RES,ressize); \
 
 /* Perform the checks */
 compile_time_size_check(u8, 1);
@@ -58,18 +60,18 @@ compile_time_size_check(HPI_MESSAGE, 44);
 
 compile_time_size_check(HPI_RESPONSE, 64);
 
-compile_time_obj_check(HPI_SUBSYS);
-compile_time_obj_check(HPI_ADAPTERX);
-compile_time_obj_check(HPI_STREAM);
-compile_time_obj_check(HPI_MIXER);
-compile_time_obj_check(HPI_CONTROL);
-compile_time_obj_check(HPI_CONTROLX);
-compile_time_obj_check(HPI_NVMEMORY);
-compile_time_obj_check(HPI_GPIO);
-compile_time_obj_check(HPI_WATCHDOG);
-compile_time_obj_check(HPI_CLOCK);
-compile_time_obj_check(HPI_PROFILE);
-compile_time_obj_check(HPI_ASYNC);
+compile_time_obj_check(HPI_SUBSYS, 8, 52);
+compile_time_obj_check(HPI_ADAPTER, 8, 32);
+compile_time_obj_check(HPI_ADAPTERX, 12, 32);
+compile_time_obj_check(HPI_STREAM, 32, 20);
+compile_time_obj_check(HPI_MIXER, 16, 12);
+compile_time_obj_check(HPI_CONTROL, 16, 12);
+compile_time_obj_check(HPI_CONTROLX, 20, 12);
+compile_time_obj_check(HPI_NVMEMORY, 4, 4);
+compile_time_obj_check(HPI_GPIO, 4, 8);
+compile_time_obj_check(HPI_CLOCK, 8, 12);
+compile_time_obj_check(HPI_PROFILE, 4, 32);
+compile_time_obj_check(HPI_ASYNC, 8, 16);
 
 /* API HPI_FORMAT must have fixed size */
 compile_time_size_check(HPI_FORMAT, 5 * 4);
@@ -80,6 +82,8 @@ compile_time_assert((sizeof(HPI_MSG_FORMAT) <= sizeof(HPI_FORMAT)), format_fit);
 #ifndef HPI_WITHOUT_HPI_DATA
 /* API HPI_FORMAT must have fixed size */
 compile_time_size_check(HPI_DATA, 7 * 4);
+compile_time_size_check(HPI_BUFFER, 7 * 4);
+compile_time_size_check(HPI_DATA_LEGACY32, 7 * 4);
 
 /* Message DATA must fit inside API data */
 compile_time_assert((sizeof(HPI_MSG_DATA) <= sizeof(HPI_DATA)), data_fit);
