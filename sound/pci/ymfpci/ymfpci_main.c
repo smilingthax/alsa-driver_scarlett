@@ -2252,8 +2252,10 @@ int __devinit snd_ymfpci_create(snd_card_t * card,
 		return -EIO;
 	}
 
-	if ((err = snd_ymfpci_ac3_init(chip)) < 0)
+	if ((err = snd_ymfpci_ac3_init(chip)) < 0) {
+		snd_ymfpci_free(chip);
 		return err;
+	}
 
 #ifdef CONFIG_PM
 	chip->saved_regs = vmalloc(YDSXGR_NUM_SAVED_REGS * sizeof(u32));
