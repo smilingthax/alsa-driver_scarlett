@@ -71,6 +71,7 @@
 #include <linux/pm.h>
 #include <linux/slab.h>
 #include <linux/pnp.h>
+#include <linux/isapnp.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
@@ -1987,7 +1988,7 @@ static int __devinit snd_audiodrive_pnp(int dev, struct snd_audiodrive *acard,
 		snd_printk(KERN_ERR PFX "PnP control configure failure (out of resources?)\n");
 		return -EAGAIN;
 	}
-	snd_printdd("pnp: port=0x%lx\n", acard->devc->resource[0].start);
+	snd_printdd("pnp: port=0x%lx\n", pnp_port_start(acard->devc, 0));
 	/* PnP initialization */
 	pdev = acard->dev;
 	pnp_init_resource_table(cfg);
@@ -2242,6 +2243,9 @@ static int __init alsa_card_es18xx_init(void)
 	cards += pnp_register_card_driver(&es18xx_pnpc_driver);
 #endif
 	if(!cards) {
+#ifdef CONFIG_PNP
+		pnp_unregister_card_driver(&es18xx_pnpc_driver);
+#endif
 #ifdef MODULE
 		snd_printk(KERN_ERR "ESS AudioDrive ES18xx soundcard not found or device busy\n");
 #endif
