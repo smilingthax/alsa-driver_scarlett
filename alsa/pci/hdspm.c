@@ -2733,7 +2733,7 @@ static char *hdspm_channel_buffer_location(hdspm_t * hdspm,
 /* dont know why need it ??? */
 static int snd_hdspm_playback_copy(snd_pcm_substream_t * substream,
 				   int channel, snd_pcm_uframes_t pos,
-				   void *src, snd_pcm_uframes_t count)
+				   void __user *src, snd_pcm_uframes_t count)
 {
 	hdspm_t *hdspm = _snd_pcm_substream_chip(substream);
 	char *channel_buf;
@@ -2752,7 +2752,7 @@ static int snd_hdspm_playback_copy(snd_pcm_substream_t * substream,
 
 static int snd_hdspm_capture_copy(snd_pcm_substream_t * substream,
 				  int channel, snd_pcm_uframes_t pos,
-				  void *dst, snd_pcm_uframes_t count)
+				  void __user *dst, snd_pcm_uframes_t count)
 {
 	hdspm_t *hdspm = _snd_pcm_substream_chip(substream);
 	char *channel_buf;
@@ -3293,17 +3293,17 @@ static int snd_hdspm_hwdep_ioctl(snd_hwdep_t * hw, struct file *file,
 	hdspm_version_t hdspm_version;
 	int err;
 	unsigned long flags;
-	hdspm_peak_rms_t *peak_rms;
+	hdspm_peak_rms_t __user *peak_rms;
 
 	switch (cmd) {
 
 		
 	case SNDRV_HDSPM_IOCTL_GET_PEAK_RMS:
 	
-		peak_rms = (hdspm_peak_rms_t *)arg;
+		peak_rms = (hdspm_peak_rms_t __user *)arg;
 
 		/* maybe there is a chance to memorymap in future so dont touch just copy */
-		if(copy_to_user_fromio((void *)peak_rms,
+		if(copy_to_user_fromio((void __user *)peak_rms,
 				       hdspm->iobase+HDSPM_MADI_peakrmsbase,
 				       sizeof(hdspm_peak_rms_t)) != 0 )
 			return -EFAULT;
@@ -3331,24 +3331,24 @@ static int snd_hdspm_hwdep_ioctl(snd_hwdep_t * hw, struct file *file,
 		info.line_out = (unsigned char) hdspm_line_out(hdspm);
 		info.passthru = 0;
 		spin_unlock_irqrestore(&hdspm->lock, flags);
-		if (copy_to_user((void *) arg, &info, sizeof(info)))
+		if (copy_to_user((void __user *) arg, &info, sizeof(info)))
 			return -EFAULT;
 		break;
 
 	case SNDRV_HDSPM_IOCTL_GET_VERSION:
 		hdspm_version.firmware_rev = hdspm->firmware_rev;
 		if ((err =
-		     copy_to_user((void *) arg, &hdspm_version,
+		     copy_to_user((void __user *) arg, &hdspm_version,
 				  sizeof(hdspm_version)))) {
 			return -EFAULT;
 		}
 		break;
 
 	case SNDRV_HDSPM_IOCTL_GET_MIXER:
-		if (copy_from_user(&mixer, (void *)arg, sizeof(mixer)))
+		if (copy_from_user(&mixer, (void __user *)arg, sizeof(mixer)))
 			return -EFAULT;
 		if (copy_to_user
-		    (mixer.mixer, hdspm->mixer, sizeof(hdspm_mixer_t)))
+		    ((void __user *)mixer.mixer, hdspm->mixer, sizeof(hdspm_mixer_t)))
 			return -EFAULT;
 		break;
 
