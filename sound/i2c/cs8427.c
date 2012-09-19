@@ -147,7 +147,7 @@ static int snd_cs8427_send_corudata(snd_i2c_device_t *device,
 	data[0] = CS8427_REG_AUTOINC | CS8427_REG_CORU_DATABUF;
 	for (idx = 0; idx < count; idx++)
 		data[idx + 1] = swapbits(ndata[idx]);
-	if (snd_i2c_sendbytes(device, data, count) != count)
+	if (snd_i2c_sendbytes(device, data, count + 1) != count + 1)
 		return -EIO;
 	return 1;
 }
