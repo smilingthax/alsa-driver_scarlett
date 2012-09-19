@@ -46,7 +46,10 @@ struct oxygen {
 	u8 ak4396_reg1;
 	u8 revision;
 	u8 has_2nd_ac97_codec;
+	u32 spdif_bits;
+	u32 spdif_pcm_bits;
 	struct snd_pcm_substream *streams[PCM_COUNT];
+	struct snd_kcontrol *spdif_pcm_ctl;
 };
 
 struct oxygen_model {

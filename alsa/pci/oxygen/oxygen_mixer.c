@@ -20,6 +20,7 @@
 
 #include <sound/driver.h>
 #include <sound/ac97_codec.h>
+#include <sound/asoundef.h>
 #include <sound/control.h>
 #include <sound/tlv.h>
 #include "oxygen.h"
@@ -171,21 +172,21 @@ static unsigned int oxygen_spdif_rate(unsigned int oxygen_rate)
 {
 	switch (oxygen_rate) {
 	case OXYGEN_RATE_32000:
-		return 0x00003000;
+		return IEC958_AES3_CON_FS_32000 << OXYGEN_SPDIF_CS_RATE_SHIFT;
 	case OXYGEN_RATE_44100:
-		return 0x00000000;
+		return IEC958_AES3_CON_FS_44100 << OXYGEN_SPDIF_CS_RATE_SHIFT;
 	default: /* OXYGEN_RATE_48000 */
-		return 0x00002000;
+		return IEC958_AES3_CON_FS_48000 << OXYGEN_SPDIF_CS_RATE_SHIFT;
 	case OXYGEN_RATE_64000:
-		return 0x0000b000;
+		return 0xb << OXYGEN_SPDIF_CS_RATE_SHIFT;
 	case OXYGEN_RATE_88200:
-		return 0x00008000;
+		return 0x8 << OXYGEN_SPDIF_CS_RATE_SHIFT;
 	case OXYGEN_RATE_96000:
-		return 0x0000a000;
+		return 0xa << OXYGEN_SPDIF_CS_RATE_SHIFT;
 	case OXYGEN_RATE_176400:
-		return 0x0000c000;
+		return 0xc << OXYGEN_SPDIF_CS_RATE_SHIFT;
 	case OXYGEN_RATE_192000:
-		return 0x0000e000;
+		return 0xe << OXYGEN_SPDIF_CS_RATE_SHIFT;
 	}
 }
 
@@ -219,9 +220,10 @@ void oxygen_update_spdif_source(struct oxygen *chip)
 		oxygen_write16(chip, OXYGEN_PLAY_ROUTING, new_routing);
 	}
 	if (new_control & OXYGEN_SPDIF_OUT_ENABLE)
-		oxygen_write32_masked(chip, OXYGEN_SPDIF_OUTPUT_BITS,
-				      oxygen_spdif_rate(oxygen_rate),
-				      OXYGEN_SPDIF_OUTPUT_RATE_MASK);
+		oxygen_write32(chip, OXYGEN_SPDIF_OUTPUT_BITS,
+			       oxygen_spdif_rate(oxygen_rate) |
+			       ((chip->pcm_active & (1 << PCM_SPDIF)) ?
+				chip->spdif_pcm_bits : chip->spdif_bits));
 	oxygen_write32(chip, OXYGEN_SPDIF_CONTROL, new_control);
 }
 
@@ -238,6 +240,116 @@ static int spdif_switch_put(struct snd_kcontrol *ctl,
 		spin_lock_irq(&chip->reg_lock);
 		oxygen_update_spdif_source(chip);
 		spin_unlock_irq(&chip->reg_lock);
+	}
+	mutex_unlock(&chip->mutex);
+	return changed;
+}
+
+static int spdif_info(struct snd_kcontrol *ctl, struct snd_ctl_elem_info *info)
+{
+	info->type = SNDRV_CTL_ELEM_TYPE_IEC958;
+	info->count = 1;
+	return 0;
+}
+
+static void oxygen_to_iec958(u32 bits, struct snd_ctl_elem_value *value)
+{
+	value->value.iec958.status[0] =
+		bits & (OXYGEN_SPDIF_NONAUDIO | OXYGEN_SPDIF_C |
+			OXYGEN_SPDIF_PREEMPHASIS);
+	value->value.iec958.status[1] = /* category and original */
+		bits >> OXYGEN_SPDIF_CATEGORY_SHIFT;
+}
+
+static u32 iec958_to_oxygen(struct snd_ctl_elem_value *value)
+{
+	u32 bits;
+
+	bits = value->value.iec958.status[0] &
+		(OXYGEN_SPDIF_NONAUDIO | OXYGEN_SPDIF_C |
+		 OXYGEN_SPDIF_PREEMPHASIS);
+	bits |= value->value.iec958.status[1] << OXYGEN_SPDIF_CATEGORY_SHIFT;
+	if (bits & OXYGEN_SPDIF_NONAUDIO)
+		bits |= OXYGEN_SPDIF_V;
+	return bits;
+}
+
+static inline void write_spdif_bits(struct oxygen *chip, u32 bits)
+{
+	oxygen_write32_masked(chip, OXYGEN_SPDIF_OUTPUT_BITS, bits,
+			      OXYGEN_SPDIF_NONAUDIO |
+			      OXYGEN_SPDIF_C |
+			      OXYGEN_SPDIF_PREEMPHASIS |
+			      OXYGEN_SPDIF_CATEGORY_MASK |
+			      OXYGEN_SPDIF_ORIGINAL |
+			      OXYGEN_SPDIF_V);
+}
+
+static int spdif_default_get(struct snd_kcontrol *ctl,
+			     struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+
+	mutex_lock(&chip->mutex);
+	oxygen_to_iec958(chip->spdif_bits, value);
+	mutex_unlock(&chip->mutex);
+	return 0;
+}
+
+static int spdif_default_put(struct snd_kcontrol *ctl,
+			     struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+	u32 new_bits;
+	int changed;
+
+	new_bits = iec958_to_oxygen(value);
+	mutex_lock(&chip->mutex);
+	changed = new_bits != chip->spdif_bits;
+	if (changed) {
+		chip->spdif_bits = new_bits;
+		if (!(chip->pcm_active & (1 << PCM_SPDIF)))
+			write_spdif_bits(chip, new_bits);
+	}
+	mutex_unlock(&chip->mutex);
+	return changed;
+}
+
+static int spdif_mask_get(struct snd_kcontrol *ctl,
+			  struct snd_ctl_elem_value *value)
+{
+	value->value.iec958.status[0] = IEC958_AES0_NONAUDIO |
+		IEC958_AES0_CON_NOT_COPYRIGHT | IEC958_AES0_CON_EMPHASIS;
+	value->value.iec958.status[1] =
+		IEC958_AES1_CON_CATEGORY | IEC958_AES1_CON_ORIGINAL;
+	return 0;
+}
+
+static int spdif_pcm_get(struct snd_kcontrol *ctl,
+			 struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+
+	mutex_lock(&chip->mutex);
+	oxygen_to_iec958(chip->spdif_pcm_bits, value);
+	mutex_unlock(&chip->mutex);
+	return 0;
+}
+
+static int spdif_pcm_put(struct snd_kcontrol *ctl,
+			 struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+	u32 new_bits;
+	int changed;
+
+	new_bits = iec958_to_oxygen(value);
+	mutex_lock(&chip->mutex);
+	changed = new_bits != chip->spdif_pcm_bits;
+	if (changed) {
+		chip->spdif_pcm_bits = new_bits;
+		if (chip->pcm_active & (1 << PCM_SPDIF))
+			write_spdif_bits(chip, new_bits);
 	}
 	mutex_unlock(&chip->mutex);
 	return changed;
@@ -389,6 +501,32 @@ static const struct snd_kcontrol_new controls[] = {
 		.get = spdif_switch_get,
 		.put = spdif_switch_put,
 	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
+		.device = 1,
+		.name = SNDRV_CTL_NAME_IEC958("", PLAYBACK, DEFAULT),
+		.info = spdif_info,
+		.get = spdif_default_get,
+		.put = spdif_default_put,
+	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
+		.device = 1,
+		.name = SNDRV_CTL_NAME_IEC958("", PLAYBACK, CON_MASK),
+		.access = SNDRV_CTL_ELEM_ACCESS_READ,
+		.info = spdif_info,
+		.get = spdif_mask_get,
+	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
+		.device = 1,
+		.name = SNDRV_CTL_NAME_IEC958("", PLAYBACK, PCM_STREAM),
+		.access = SNDRV_CTL_ELEM_ACCESS_READWRITE |
+			  SNDRV_CTL_ELEM_ACCESS_INACTIVE,
+		.info = spdif_info,
+		.get = spdif_pcm_get,
+		.put = spdif_pcm_put,
+	},
 	AC97_VOLUME("Mic Capture Volume", AC97_MIC),
 	AC97_SWITCH("Mic Capture Switch", AC97_MIC, 15, 1),
 	AC97_SWITCH("Mic Boost (+20dB)", AC97_MIC, 6, 0),
@@ -417,6 +555,9 @@ int oxygen_mixer_init(struct oxygen *chip)
 		err = snd_ctl_add(chip->card, ctl);
 		if (err < 0)
 			return err;
+		if (!strcmp(ctl->id.name,
+			    SNDRV_CTL_NAME_IEC958("", PLAYBACK, PCM_STREAM)))
+			chip->spdif_pcm_ctl = ctl;
 	}
 	return 0;
 }

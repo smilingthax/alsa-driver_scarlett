@@ -22,6 +22,7 @@
 #include <linux/interrupt.h>
 #include <linux/pci.h>
 #include <sound/ac97_codec.h>
+#include <sound/asoundef.h>
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/mpu401.h>
@@ -125,6 +126,9 @@ static void __devinit oxygen_init(struct oxygen *chip)
 	for (i = 0; i < 8; ++i)
 		chip->dac_volume[i] = 0xff;
 	chip->spdif_playback_enable = 1;
+	chip->spdif_bits = OXYGEN_SPDIF_C | OXYGEN_SPDIF_ORIGINAL |
+		(IEC958_AES1_CON_PCM_CODER << OXYGEN_SPDIF_CATEGORY_SHIFT);
+	chip->spdif_pcm_bits = chip->spdif_bits;
 
 	if (oxygen_read8(chip, OXYGEN_REVISION) & OXYGEN_REVISION_2)
 		chip->revision = 2;
@@ -142,6 +146,7 @@ static void __devinit oxygen_init(struct oxygen *chip)
 	oxygen_write16(chip, OXYGEN_I2S_B_FORMAT, 0x010a);
 	oxygen_write16(chip, OXYGEN_I2S_C_FORMAT, 0x010a);
 	oxygen_set_bits32(chip, OXYGEN_SPDIF_CONTROL, OXYGEN_SPDIF_MAGIC2);
+	oxygen_write32(chip, OXYGEN_SPDIF_OUTPUT_BITS, chip->spdif_bits);
 	oxygen_write16(chip, OXYGEN_PLAY_ROUTING, 0x6c00);
 	oxygen_write8(chip, OXYGEN_REC_ROUTING, 0x10);
 	oxygen_write8(chip, OXYGEN_ADC_MONITOR, 0x00);
