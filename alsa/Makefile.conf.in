@@ -3,9 +3,9 @@
 # Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
 #
 
-AS		= @AS@
-LD		= @LD@
-CC		= @CC@ -DALSA_BUILD
+AS		= $(CROSS_COMPILE)@AS@
+LD		= $(CROSS_COMPILE)@LD@
+CC		= $(CROSS_COMPILE)@CC@ -DALSA_BUILD
 CPP		= @CPP@ -M -DALSA_BUILD
 AR		= @AR@
 MODFLAGS	= -DMODULE=1
