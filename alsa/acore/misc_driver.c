@@ -39,6 +39,7 @@ void snd_compat_driver_unregister(struct device_driver *driver)
 }
 EXPORT_SYMBOL(snd_compat_driver_unregister);
 
+#ifdef CONFIG_PM
 static int snd_device_pm_callback(struct pm_dev *pm_dev, pm_request_t rqst, void *data)
 {
 	struct device *dev = data;
@@ -54,6 +55,7 @@ static int snd_device_pm_callback(struct pm_dev *pm_dev, pm_request_t rqst, void
 	}
 	return 0;
 }
+#endif
 
 struct platform_device *
 snd_platform_device_register_simple(const char *name, int id,
@@ -994,6 +996,7 @@ static int snd_isa_platform_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM
 static int snd_isa_platform_suspend(struct platform_device *pdev,
 				    pm_message_t state)
 {
@@ -1014,6 +1017,7 @@ static int snd_isa_platform_resume(struct platform_device *pdev)
 		return -EINVAL;
 	return p->isa->resume(&pdev->dev, n);
 }
+#endif
 
 int snd_isa_register_driver(struct isa_driver *driver, unsigned int nums)
 {
@@ -1035,10 +1039,12 @@ int snd_isa_register_driver(struct isa_driver *driver, unsigned int nums)
 	p->platform.driver.name = driver->driver.name;
 	if (driver->remove)
 		p->platform.remove = snd_isa_platform_remove;
+#ifdef CONFIG_PM
 	if (driver->suspend)
 		p->platform.suspend = snd_isa_platform_suspend;
 	if (driver->resume)
 		p->platform.resume = snd_isa_platform_resume;
+#endif
 	err = platform_driver_register(&p->platform);
 	if (err < 0) {
 		kfree(p);
