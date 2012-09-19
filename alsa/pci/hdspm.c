@@ -3741,7 +3741,7 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_hdspm_init(void)
 {
-	if (pci_module_init(&driver) >= 0) {
+	if (pci_register_driver(&driver) >= 0) {
 		snd_printdd("RME HDSPM: HDSPM card found\n");
 		return 0;
 	}

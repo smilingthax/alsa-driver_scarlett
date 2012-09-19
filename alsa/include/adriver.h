@@ -80,14 +80,6 @@ void snd_compat_request_module(const char *name, ...);
 #endif
 #endif /* LINUX_2_2 */
 
-#ifndef PCI_D0
-#define PCI_D0     0
-#define PCI_D1     1
-#define PCI_D2     2
-#define PCI_D3hot  3
-#define PCI_D3cold 4
-#endif
-
 #ifdef LINUX_2_4__donotuse
 #include <linux/init.h>
 #include <linux/pm.h>
@@ -729,6 +721,19 @@ typedef u32 /*__bitwise*/ pm_message_t;
 #define PMSG_FREEZE	3
 #define PMSG_SUSPEND	3
 #define PMSG_ON		0
+#endif
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 11)
+#ifdef CONFIG_PCI
+#include <linux/pci.h>
+#ifndef PCI_D0
+#define PCI_D0     0
+#define PCI_D1     1
+#define PCI_D2     2
+#define PCI_D3hot  3
+#define PCI_D3cold 4
+#endif
 #endif
 #endif
 
