@@ -1,5 +1,7 @@
-config SND_AZT3328
-	tristate "Aztech AZF3328 (PCI168)"
+config SND_PDPLUS
+	tristate "Digigram VX222"
 	depends on SND
 	help
-	  Say 'Y' or 'M' to include support for Aztech AZF3328 (PCI168) soundcards
+	  Say 'Y' or 'M' to include support for Sek'D/Marian Prodif Plus
+          soundcard.
+

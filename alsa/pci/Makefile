@@ -10,9 +10,6 @@ include $(TOPDIR)/Makefile.conf
 extra-subdir-y	:= pdplus
 extra-subdir-m	:= $(extra-subdir-y)
 
-snd-azt3328-objs := azt3328.o
-extra-obj-$(CONFIG_SND_AZT3328) += snd-azt3328.o
-
 #
 #
 #

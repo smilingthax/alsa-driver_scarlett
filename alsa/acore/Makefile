@@ -7,7 +7,6 @@ EXTRA_CLEAN = info.c pcm_native.c control.c hwdep.c init.c rawmidi.c sound.c tim
 
 obj-$(CONFIG_SND_SERIALMIDI) += snd-rawmidi.o snd.o
 obj-$(CONFIG_SND_MSND_PINNACLE) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o
-obj-$(CONFIG_SND_AZT3328) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o snd-hwdep.o
 
 export-objs := sound.o pcm.o pcm_lib.o rawmidi.o timer.o hwdep.o memalloc.o
 
