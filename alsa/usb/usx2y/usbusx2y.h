@@ -46,14 +46,14 @@ typedef struct {
 
 #define usX2Y(c) ((usX2Ydev_t*)(c)->private_data)
 
-int snd_usX2Y_audio_create(snd_card_t* card);
+int usX2Y_audio_create(snd_card_t* card);
 
 #ifndef OLD_USB
-void snd_usX2Y_Out04Int(struct urb* urb, struct pt_regs *regs);
-void snd_usX2Y_In04Int(struct urb* urb, struct pt_regs *regs);
+void i_usX2Y_Out04Int(struct urb* urb, struct pt_regs *regs);
+void i_usX2Y_In04Int(struct urb* urb, struct pt_regs *regs);
 #else
-void snd_usX2Y_Out04Int(struct urb* urb);
-void snd_usX2Y_In04Int(struct urb* urb);
+void i_usX2Y_Out04Int(struct urb* urb);
+void i_usX2Y_In04Int(struct urb* urb);
 #endif
 
 #define NAME_ALLCAPS "US-X2Y"

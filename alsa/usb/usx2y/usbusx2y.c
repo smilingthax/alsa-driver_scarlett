@@ -1,6 +1,11 @@
 /*
  * usbus428.c - ALSA USB US-428 Driver
  *
+2004-06-12 Karsten Wiese
+	Version 0.6.3:
+	Made it thus the following rule is enforced:
+	"All pcm substreams of one usX2Y have to operate at the same rate & format."
+
 2004-04-06 Karsten Wiese
 	Version 0.6.0:
 	Runs on 2.6.5 kernel without any "--with-debug=" things.
@@ -98,10 +103,10 @@
 
 
 MODULE_AUTHOR("Karsten Wiese <annabellesgarden@yahoo.de>");
-MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.6.1");
+MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.6.3");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
-MODULE_DEVICES("{{TASCAM(0x1604), "NAME_ALLCAPS"(0x8001)(0x8007) }}");
+MODULE_DEVICES("{{TASCAM(0x1604), "NAME_ALLCAPS"(0x8001)(0x8005)(0x8007) }}");
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX; /* Index 0-max */
 static char* id[SNDRV_CARDS] = SNDRV_DEFAULT_STR; /* Id for this card */
@@ -120,16 +125,16 @@ MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 
 static int snd_usX2Y_card_used[SNDRV_CARDS];
 
-static void snd_usX2Y_usb_disconnect(struct usb_device* usb_device, void* ptr);
+static void usX2Y_usb_disconnect(struct usb_device* usb_device, void* ptr);
 static void snd_usX2Y_card_private_free(snd_card_t *card);
 
 /* 
  * pipe 4 is used for switching the lamps, setting samplerate, volumes ....   
  */
 #ifndef OLD_USB
-void snd_usX2Y_Out04Int(struct urb* urb, struct pt_regs *regs)
+void i_usX2Y_Out04Int(struct urb* urb, struct pt_regs *regs)
 #else
-void snd_usX2Y_Out04Int(struct urb* urb)
+void i_usX2Y_Out04Int(struct urb* urb)
 #endif
 {
 #ifdef CONFIG_SND_DEBUG
@@ -137,15 +142,15 @@ void snd_usX2Y_Out04Int(struct urb* urb)
 		int 		i;
 		usX2Ydev_t*	usX2Y = urb->context;
 		for (i = 0; i < 10 && usX2Y->AS04.urb[i] != urb; i++);
-		snd_printd("snd_usX2Y_Out04Int() urb %i status=%i\n", i, urb->status);
+		snd_printd("i_usX2Y_Out04Int() urb %i status=%i\n", i, urb->status);
 	}
 #endif
 }
 
 #ifndef OLD_USB
-void snd_usX2Y_In04Int(struct urb* urb, struct pt_regs *regs)
+void i_usX2Y_In04Int(struct urb* urb, struct pt_regs *regs)
 #else
-void snd_usX2Y_In04Int(struct urb* urb)
+void i_usX2Y_In04Int(struct urb* urb)
 #endif
 {
 	int			err = 0;
@@ -205,7 +210,7 @@ void snd_usX2Y_In04Int(struct urb* urb)
 						usb_fill_bulk_urb(usX2Y->AS04.urb[j], usX2Y->chip.dev,
 								  usb_sndbulkpipe(usX2Y->chip.dev, 0x04), &p4out->val.vol, 
 								  p4out->type == eLT_Light ? sizeof(us428_lights_t) : 5,
-								  snd_usX2Y_Out04Int, usX2Y);
+								  i_usX2Y_Out04Int, usX2Y);
 #ifdef OLD_USB
 						usX2Y->AS04.urb[j]->transfer_flags = USB_QUEUE_BULK;
 #endif
@@ -226,7 +231,7 @@ void snd_usX2Y_In04Int(struct urb* urb)
 #endif
 }
 
-static void snd_usX2Y_unlinkSeq(snd_usX2Y_AsyncSeq_t* S)
+static void usX2Y_unlinkSeq(snd_usX2Y_AsyncSeq_t* S)
 {
 	int	i;
 	for (i = 0; i < URBS_AsyncSeq; ++i) {
@@ -260,7 +265,7 @@ static struct usb_device_id snd_usX2Y_usb_id_table[] = {
 	{ /* terminator */ }
 };
 
-static snd_card_t* snd_usX2Y_create_card(struct usb_device* device)
+static snd_card_t* usX2Y_create_card(struct usb_device* device)
 {
 	int		dev;
 	snd_card_t*	card;
@@ -291,15 +296,15 @@ static snd_card_t* snd_usX2Y_create_card(struct usb_device* device)
 }
 
 
-static void* snd_usX2Y_usb_probe(struct usb_device* device, struct usb_interface *intf, const struct usb_device_id* device_id)
+static void* usX2Y_usb_probe(struct usb_device* device, struct usb_interface *intf, const struct usb_device_id* device_id)
 {
 	int		err;
 	snd_card_t*	card;
 	if (device->descriptor.idVendor != 0x1604 ||
 	    (device->descriptor.idProduct != USB_ID_US122 && device->descriptor.idProduct != USB_ID_US224 && device->descriptor.idProduct != USB_ID_US428) ||
-	    !(card = snd_usX2Y_create_card(device)))
+	    !(card = usX2Y_create_card(device)))
 		return 0;
-	if ((err = snd_usX2Y_hwdep_new(card, device)) < 0  ||
+	if ((err = usX2Y_hwdep_new(card, device)) < 0  ||
 	    (err = snd_card_register(card)) < 0) {
 		snd_card_free(card);
 		return 0;
@@ -314,7 +319,7 @@ static void* snd_usX2Y_usb_probe(struct usb_device* device, struct usb_interface
 static int snd_usX2Y_probe(struct usb_interface *intf, const struct usb_device_id *id)
 {
 	void *chip;
-	chip = snd_usX2Y_usb_probe(interface_to_usbdev(intf), intf, id);
+	chip = usX2Y_usb_probe(interface_to_usbdev(intf), intf, id);
 	if (chip) {
 		dev_set_drvdata(&intf->dev, chip);
 		return 0;
@@ -324,7 +329,7 @@ static int snd_usX2Y_probe(struct usb_interface *intf, const struct usb_device_i
 
 static void snd_usX2Y_disconnect(struct usb_interface *intf)
 {
-	snd_usX2Y_usb_disconnect(interface_to_usbdev(intf),
+	usX2Y_usb_disconnect(interface_to_usbdev(intf),
 				 dev_get_drvdata(&intf->dev));
 }
 #else
@@ -333,12 +338,12 @@ static void snd_usX2Y_disconnect(struct usb_interface *intf)
  */
 static void *snd_usX2Y_probe(struct usb_device *dev, unsigned int ifnum, const struct usb_device_id *id)
 {
-	return snd_usX2Y_usb_probe(dev, usb_ifnum_to_if(dev, ifnum), id);
+	return usX2Y_usb_probe(dev, usb_ifnum_to_if(dev, ifnum), id);
 }
                                        
 static void snd_usX2Y_disconnect(struct usb_device *dev, void *ptr)
 {
-	snd_usX2Y_usb_disconnect(dev, ptr);
+	usX2Y_usb_disconnect(dev, ptr);
 }
 #endif
 
@@ -370,7 +375,7 @@ static void snd_usX2Y_card_private_free(snd_card_t *card)
 /*
  * Frees the device.
  */
-static void snd_usX2Y_usb_disconnect(struct usb_device* device, void* ptr)
+static void usX2Y_usb_disconnect(struct usb_device* device, void* ptr)
 {
 	if (ptr) {
 		usX2Ydev_t* usX2Y = usX2Y((snd_card_t*)ptr);
@@ -378,7 +383,7 @@ static void snd_usX2Y_usb_disconnect(struct usb_device* device, void* ptr)
 		if (usX2Y->chip_status == USX2Y_STAT_CHIP_HUP)	// on 2.6.1 kernel snd_usbmidi_disconnect()
 			return;					// calls us back. better leave :-) .
 		usX2Y->chip_status = USX2Y_STAT_CHIP_HUP;
-		snd_usX2Y_unlinkSeq(&usX2Y->AS04);
+		usX2Y_unlinkSeq(&usX2Y->AS04);
 		usb_unlink_urb(usX2Y->In04urb);
 		snd_card_disconnect((snd_card_t*)ptr);
 		/* release the midi resources */

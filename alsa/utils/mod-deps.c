@@ -1249,6 +1249,6 @@ static void usage(char *programname)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Options:\n");
 	fprintf(stderr, "       --basedir <basedir>\n");
-	fprintf(stderr, "       --hidendir <hidendir>\n");
+	fprintf(stderr, "       --hiddendir <hiddendir>\n");
 	exit(EXIT_FAILURE);
 }

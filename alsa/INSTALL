@@ -214,7 +214,7 @@ Additional Modules
   Module snd-usb-usx2y
   --------------------
 
-    Module for Tascam USB US-122 and US-428 devices.
+    Module for Tascam USB US-122, US-224 and US-428 devices.
 
     This module supports up to 8 cards, autoprobe and hotplugging.
 
