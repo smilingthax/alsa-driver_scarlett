@@ -148,6 +148,8 @@ static snd_timer_t *snd_timer_find(snd_timer_id_t *tid)
 
 static void snd_timer_request(snd_timer_id_t *tid)
 {
+	if (! current->fs->root)
+		return;
 	switch (tid->dev_class) {
 	case SNDRV_TIMER_CLASS_GLOBAL:
 		if (tid->device < timer_limit)
@@ -1381,8 +1383,8 @@ static int snd_timer_user_gstatus(struct file *file, snd_timer_gstatus_t *_gstat
 		if (t->hw.precise_resolution) {
 			t->hw.precise_resolution(t, &gstatus.resolution_num, &gstatus.resolution_den);
 		} else {
-			gstatus.resolution_num = 1;
-			gstatus.resolution_den = gstatus.resolution;
+			gstatus.resolution_num = gstatus.resolution;
+			gstatus.resolution_den = 1000000000uL;
 		}
 	} else {
 		err = -ENODEV;
