@@ -276,8 +276,6 @@ static int snd_msndmix_volume_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_
   .private_value = addr }
 
 
-#define MSND_CONTROLS (sizeof(snd_msnd_controls)/sizeof(snd_kcontrol_new_t))
-
 static snd_kcontrol_new_t snd_msnd_controls[] = {
 DUMMY_VOLUME(	"Master Volume",0, MSND_MIXER_VOLUME),
 DUMMY_VOLUME(	"PCM Volume",	0, MSND_MIXER_PCM),
@@ -306,7 +304,7 @@ int __init snd_msndmix_new( multisound_dev_t * msnd)
 	// spin_lock_init(&msnd->mixer_lock);
 	strcpy(card->mixername, "MSND Pinnacle Mixer");
 
-	for (idx = 0; idx < MSND_CONTROLS; idx++)
+	for (idx = 0; idx < ARRAY_SIZE(snd_msnd_controls); idx++)
 		if ( ( err = snd_ctl_add( card, snd_ctl_new1( snd_msnd_controls + idx, msnd))) < 0)
 			return err;
 
