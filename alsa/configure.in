@@ -1457,6 +1457,7 @@ CHECK_KERNEL_HEADER(asm/irq_regs.h)
 CHECK_KERNEL_HEADER(linux/seq_file.h)
 CHECK_KERNEL_HEADER(linux/debugfs.h)
 CHECK_KERNEL_HEADER(linux/gpio.h)
+CHECK_KERNEL_HEADER(linux/bug.h)
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
