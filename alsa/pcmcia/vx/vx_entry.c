@@ -139,6 +139,7 @@ dev_link_t *snd_vxpocket_attach(struct snd_vxp_entry *hw)
 	vxp = (struct snd_vxpocket *)chip;
 	vxp->index = i;
 	vxp->hw_entry = hw;
+	chip->ibl.size = hw->ibl[i];
 	hw->card_list[i] = chip;
 
 	link = &vxp->link;

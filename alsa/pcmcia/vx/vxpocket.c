@@ -57,6 +57,7 @@ static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable switches */
 static unsigned int irq_mask = 0xffff;
 static int irq_list[4] = { -1 };
+static int ibl[SNDRV_CARDS];
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(index, "Index value for " CARD_NAME " soundcard.");
@@ -70,7 +71,10 @@ MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 MODULE_PARM(irq_mask, "i");
 MODULE_PARM_DESC(irq_mask, "IRQ bitmask for " CARD_NAME " soundcard.");
 MODULE_PARM(irq_list, "1-4i");
-MODULE_PARM_DESC(irq_list, "List of Available interrupts for VXPocket soundcard.");
+MODULE_PARM_DESC(irq_list, "List of Available interrupts for " CARD_NAME " soundcard.");
+MODULE_PARM(ibl, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(ibl, "Capture IBL size for " CARD_NAME " soundcard.");
+MODULE_PARM_SYNTAX(ibl, SNDRV_ENABLED);
  
 
 /*
@@ -123,6 +127,7 @@ static struct snd_vxp_entry hw_entry = {
 	.enable_table = enable,
 	.irq_mask_p = &irq_mask,
 	.irq_list = irq_list,
+	.ibl = ibl,
 
 	/* h/w config */
 	.hardware = &vxp_hw,
