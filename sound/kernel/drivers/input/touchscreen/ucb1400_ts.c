@@ -492,14 +492,10 @@ static int ucb1400_ts_probe(struct device *dev)
 		goto err_free_devs;
 	}
 
-	if (!ucb->ac97->device_private_data) {
-		error = ucb1400_detect_irq(ucb);
-		if (error) {
-			printk(KERN_ERR "UCB1400: IRQ probe failed\n");
-			goto err_free_devs;
-		}
-	} else {
-		ucb->irq = (int) ucb->ac97->device_private_data;
+	error = ucb1400_detect_irq(ucb);
+	if (error) {
+		printk(KERN_ERR "UCB1400: IRQ probe failed\n");
+		goto err_free_devs;
 	}
 
 	error = request_irq(ucb->irq, ucb1400_hard_irq, IRQF_TRIGGER_RISING,
