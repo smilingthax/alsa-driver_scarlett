@@ -151,6 +151,7 @@ static char *no_cards[] = {
 	"SND_OSSEMUL",
 	"SND_RTCTIMER",
 	"SND_HPET",
+	"SND_DYNAMIC_MINORS",
 	"SND_DEBUG",
 	"SND_DEBUG_MEMORY",
 	"SND_DEBUG_DETECT",
