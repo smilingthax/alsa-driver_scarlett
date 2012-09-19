@@ -186,7 +186,7 @@ snd-trident-synth @if_sequencer snd-seq-midi-emul snd-ainstr-simple
 |snd-trident snd-pcm snd-ac97-codec snd-mpu401-uart snd-util-mem snd-trident-synth
 
 %dir linux/sound/pci/ymfpci
-|snd-ymfpci snd-pcm snd-ac97-codec snd-mpu401-uart
+|snd-ymfpci snd-pcm snd-ac97-codec snd-mpu401-uart snd-opl3-synth
 
 %dir linux/sound/ppc
 |snd-powermac snd-pcm

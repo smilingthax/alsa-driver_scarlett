@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# Syntax:
+#
+#   kmerge [kernel_directory] [[kernel sound directory]]
+#
 
 PATCH_FILE=patch-2.5
 
@@ -70,6 +75,19 @@ function copy_include_dir () {
 	ln -svf $KDIR/include/sound /usr/include/sound
 }
 
+function showdiff () {
+	if ! cmp $KDIR/$1 ../$2; then
+		diff -u $KDIR/$1 ../$2
+		echo -n "ok? (y/ ) "
+		read line
+		if [ -z "$line" ] || [ "$line" = "y" ] || [ "$line" = "Y" ]; then
+			echo "Continue"
+		else
+			exit 1
+		fi
+	fi
+}
+
 only_symlinks=n
 
 if [ ! -r $ADIR/core/sound.c ]; then
@@ -84,6 +102,12 @@ if [ ! -r $KDIR/drivers/sound/sound_core.c ]; then
     echo "Can't find kernel sources..."
     exit
   fi
+fi
+
+if [ "$only_symlinks" = "n" ]; then
+  showdiff drivers/sound/sound_core.c sound_core.c
+  showdiff drivers/sound/sound_firmware.c sound_firmware.c
+  showdiff drivers/sound/Makefile oss/Makefile
 fi
 
 pushd $PWD > /dev/null
@@ -136,6 +160,7 @@ copy_dir pci/ymfpci pci/ymfpci
 copy_dir ppc ppc
 copy_dir synth synth
 copy_dir synth/emux synth/emux
+rm -f $KDIR/include/sound/sound
 popd > /dev/null
 
 #
