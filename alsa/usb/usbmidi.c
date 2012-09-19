@@ -38,4 +38,6 @@ static void __old_snd_usbmidi_out_urb_complete(struct urb* urb)
 #endif
 
 EXPORT_SYMBOL(snd_usb_create_midi_interface);
+EXPORT_SYMBOL(snd_usbmidi_input_stop);
+EXPORT_SYMBOL(snd_usbmidi_input_start);
 EXPORT_SYMBOL(snd_usbmidi_disconnect);

@@ -993,12 +993,16 @@ static int snd_usX2Y_hw_params(snd_pcm_substream_t *substream,
 
 	if (usX2Y_stream->usX2Y->format != format) {
 		int alternate, unlink_err;
+		struct list_head* p;
 		if (format == SNDRV_PCM_FORMAT_S24_3LE) {
 			alternate = 2;
 			usX2Y_stream->usX2Y->stride = 6;
 		} else {
 			alternate = 1;
 			usX2Y_stream->usX2Y->stride = 4;
+		}
+		list_for_each(p, &usX2Y_stream->usX2Y->chip.midi_list) {
+			snd_usbmidi_input_stop(p);
 		}
 		unlink_err = usb_unlink_urb(usX2Y_stream->usX2Y->In04urb);
 		if ((err = usb_set_interface(usX2Y_stream->usX2Y->chip.dev, 0, alternate))) {
@@ -1008,6 +1012,9 @@ static int snd_usX2Y_hw_params(snd_pcm_substream_t *substream,
 		if (0 == unlink_err) {
 			usX2Y_stream->usX2Y->In04urb->dev = usX2Y_stream->usX2Y->chip.dev;
 			err = usb_submit_urb(usX2Y_stream->usX2Y->In04urb, GFP_KERNEL);
+		}
+		list_for_each(p, &usX2Y_stream->usX2Y->chip.midi_list) {
+			snd_usbmidi_input_start(p);
 		}
 		usX2Y_stream->usX2Y->format = format;
 		usX2Y_stream->usX2Y->rate = 0;

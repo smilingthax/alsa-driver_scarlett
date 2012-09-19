@@ -1,6 +1,11 @@
 /*
  * usbus428.c - ALSA USB US-428 Driver
  *
+2004-06-21 Karsten Wiese
+	Version 0.6.4:
+	Temporarely suspend midi input
+	to sanely call usb_set_interface() when setting format.
+
 2004-06-12 Karsten Wiese
 	Version 0.6.3:
 	Made it thus the following rule is enforced:
