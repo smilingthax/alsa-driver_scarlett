@@ -252,10 +252,6 @@ struct pci_device_id {
 	unsigned long driver_data;		/* Data private to the driver */
 };
 
-#ifndef PCI_OLD_SUSPEND
-#define PCI_OLD_SUSPEND
-#endif
-
 struct pci_driver {
 	struct list_head node;
 	struct pci_dev *dev;

@@ -79,6 +79,7 @@ static void pdacf_config(dev_link_t *link);
 static int pdacf_event(event_t event, int priority, event_callback_args_t *args);
 static void snd_pdacf_detach(dev_link_t *link);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 /*
  * print the error message related with cs
  */
@@ -87,11 +88,10 @@ static void cs_error(client_handle_t handle, int func, int ret)
 	error_info_t err = { func, ret };
 	CardServices(ReportError, handle, &err);
 }
+#endif
 
-static void pdacf_release(u_long arg)
+static void pdacf_release(dev_link_t *link)
 {
-	dev_link_t *link = (dev_link_t *)arg;
-	
 	if (link->state & DEV_CONFIG) {
 		/* release cs resources */
 		CardServices(ReleaseConfiguration, link->handle);
@@ -108,7 +108,7 @@ static int snd_pdacf_free(pdacf_t *pdacf)
 {
 	dev_link_t *link = &pdacf->link;
 
-	pdacf_release((u_long)link);
+	pdacf_release(link);
 
 	/* Break the link with Card Services */
 	if (link->handle)
@@ -191,10 +191,10 @@ static dev_link_t *snd_pdacf_attach(void)
 			link->irq.IRQInfo2 |= 1 << irq_list[i];
 	link->irq.Handler = pdacf_interrupt;
 	link->irq.Instance = pdacf;
-
-	link->release.function = &pdacf_release;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
+	link->release.function = (void (*)(unsigned long))pdacf_release;
 	link->release.data = (u_long)link;
-
+#endif
 	link->conf.Attributes = CONF_ENABLE_IRQ;
 	link->conf.IntType = INT_MEMORY_AND_IO;
 	link->conf.ConfigIndex = 1;
@@ -281,8 +281,9 @@ static void snd_pdacf_detach(dev_link_t *link)
 {
 	pdacf_t *chip = snd_magic_cast(pdacf_t, link->priv, return);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
 	del_timer(&link->release);
-
+#endif
 	snd_printdd(KERN_DEBUG "pdacf_detach called\n");
 	/* Remove the interface data from the linked list */
 	{
@@ -378,7 +379,9 @@ static int pdacf_event(event_t event, int priority, event_callback_args_t *args)
 		snd_printdd(KERN_DEBUG "CARD_REMOVAL..\n");
 		link->state &= ~DEV_PRESENT;
 		if (link->state & DEV_CONFIG) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
 			mod_timer(&link->release, jiffies + HZ/20);
+#endif
 			chip->chip_status |= PDAUDIOCF_STAT_IS_STALE;
 		}
 		break;

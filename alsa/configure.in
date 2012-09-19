@@ -930,6 +930,7 @@ AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
 #include "$CONFIG_SND_KERNELDIR/include/linux/kernel.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/string.h"
 ],[
   char buf[128];
   strlcpy(buf, "abcd", sizeof(buf));
@@ -978,7 +979,7 @@ AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
 #include "$CONFIG_SND_KERNELDIR/include/linux/time.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/slab.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/mm.h"
 ],[
   struct page * (*func)(void*);
   func = vmalloc_to_page;
@@ -1002,13 +1003,13 @@ CFLAGS="$CFLAGS -Wall -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/module.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/kmod.h"
 ],[
-	kmod("abcd", "def", "ixj");
+	request_module("abcd", "def", "ixj");
 ],
-    AC_MSG_RESULT("yes");old_kmod="1",
     AC_MSG_RESULT("no");old_kmod="0",
-    AC_MSG_RESULT("unknown");old_kmod="0"
+    AC_MSG_RESULT("yes");old_kmod="1",
+    AC_MSG_RESULT("unknown");old_kmod="1"
 )
 CFLAGS=$ac_save_CFLAGS
 CONFIG_HAVE_OLD_REQUEST_MODULE=$old_kmod

@@ -7,8 +7,10 @@
 #define NRURBS	        2	/* */
 #define NRPACKS		1	/* usb-frames/ms per urb */
 
+#ifndef LINUX_2_2
 typedef struct urb urb_t;
 typedef struct urb* purb_t;
+#endif
 
 #define URBS_AsyncSeq 10
 #define URB_DataLen_AsyncSeq 32
@@ -52,9 +54,15 @@ typedef struct {
 
 int snd_us428_audio_create(snd_card_t* card);
 
-#ifdef CONFIG_SND_DEBUG
-void snd_us428_Out04Int(urb_t* urb);
+#ifndef OLD_USB
+void snd_us428_Out04Int(urb_t* urb, struct pt_regs *regs);
+void snd_us428_In04Int(urb_t* urb, struct pt_regs *regs);
 #else
+void snd_us428_Out04Int(urb_t* urb);
+void snd_us428_In04Int(urb_t* urb);
+#endif
+
+#ifndef CONFIG_SND_DEBUG
 #define snd_us428_Out04Int 0
 #endif
 

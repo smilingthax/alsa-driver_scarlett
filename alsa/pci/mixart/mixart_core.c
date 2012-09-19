@@ -409,9 +409,9 @@ void snd_mixart_msg_tasklet( unsigned long arg)
 }
 
 
-void snd_mixart_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+irqreturn_t snd_mixart_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	mixart_mgr_t *mgr = snd_magic_cast(mixart_mgr_t, dev_id, return);
+	mixart_mgr_t *mgr = snd_magic_cast(mixart_mgr_t, dev_id, return IRQ_NONE);
 	int err;
 	mixart_msg_t resp;
 
@@ -424,7 +424,7 @@ void snd_mixart_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	if( !(it_reg & MIXART_OIDI) ) {
 		/* this device did not cause the interrupt */
 		spin_unlock(&mgr->lock);
-		return;
+		return IRQ_NONE;
 	}
 
 	/* mask all interrupts */
@@ -559,7 +559,7 @@ void snd_mixart_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 	spin_unlock(&mgr->lock);
 
-	return;
+	return IRQ_HANDLED;
 }
 
 

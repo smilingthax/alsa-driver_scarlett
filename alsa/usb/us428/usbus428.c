@@ -59,9 +59,10 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
+#define SND_NEED_USB_WRAPPER
+
 #include <sound/driver.h>
 #include <sound/core.h>
-#include <sound/seq_device.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 #include <sound/pcm.h>
@@ -103,7 +104,11 @@ static void snd_us428_card_private_free(snd_card_t *card);
 /* 
  * pipe 4 is used for switching the lamps, setting samplerate, volumes ....   
  */
+#ifndef OLD_USB
+void snd_us428_Out04Int(urb_t* urb, struct pt_regs *regs)
+#else
 void snd_us428_Out04Int(urb_t* urb)
+#endif
 {
 	if (urb->status) {
 		int 		i;
@@ -112,11 +117,14 @@ void snd_us428_Out04Int(urb_t* urb)
 		snd_printd("snd_us428_Out04Int() us428->Seq04=%i urb %i status=%i\n", us428->Seq04, i, urb->status);
 	}
 }
-#else
-#define snd_us428_Out04Int 0
 #endif
 
-void snd_us428_In04Int(urb_t* urb){
+#ifndef OLD_USB
+void snd_us428_In04Int(urb_t* urb, struct pt_regs *regs)
+#else
+void snd_us428_In04Int(urb_t* urb)
+#endif
+{
 	int			err = 0;
 	us428dev_t		*us428 = urb->context;
 	us428ctls_sharedmem_t	*us428ctls = us428->us428ctls_sharedmem;
@@ -153,7 +161,7 @@ void snd_us428_In04Int(urb_t* urb){
 	if (us428->US04) {
 		if (0 == us428->US04->submitted)
 			do
-				err = usb_submit_urb(us428->US04->urb[us428->US04->submitted++]);
+				err = usb_submit_urb(us428->US04->urb[us428->US04->submitted++], GFP_KERNEL);
 			while (!err && us428->US04->submitted < us428->US04->len);
 	} else
 		if (us428ctls && us428ctls->p4outLast >= 0 && us428ctls->p4outLast < N_us428_p4out_BUFS) {
@@ -171,8 +179,10 @@ void snd_us428_In04Int(urb_t* urb){
 								  usb_sndbulkpipe(us428->chip.dev, 0x04), &p4out->vol, 
 								  p4out->type == eLT_Light ? sizeof(us428_lights_t) : sizeof(usX2Y_volume_t),
 								  snd_us428_Out04Int, us428);
+#ifdef OLD_USB
 						us428->AS04.urb[j]->transfer_flags = USB_QUEUE_BULK;
-						usb_submit_urb(us428->AS04.urb[j]);
+#endif
+						usb_submit_urb(us428->AS04.urb[j], GFP_KERNEL);
 						us428ctls->p4outSent = send;
 						break;
 					}
@@ -210,44 +220,43 @@ static struct usb_device_id snd_us428_usb_id_table[] = {
 
 static snd_card_t* snd_us428_create_card(struct usb_device* device)
 {
-	int		err = 0, dev;
-	snd_card_t*	card = NULL;
-	do {
-		for (dev = 0; dev < SNDRV_CARDS; ++dev)
-			if (enable[dev] && !snd_us428_card_used[dev])
-				break;
+	int		dev;
+	snd_card_t*	card;
 
-		if (dev >= SNDRV_CARDS) {
-			err = -ENOENT;
-			break;
-		}
-		card = snd_card_new(index[dev], id[dev], THIS_MODULE, sizeof(us428dev_t));
-		if (!card) {
-			err = -ENOMEM;
-			break;
-		}
-		snd_us428_card_used[us428(card)->chip.index = dev] = 1;
-		card->private_free = snd_us428_card_private_free;
-		us428(card)->chip.dev = device;
-		us428(card)->chip.card = card;
-		init_MUTEX (&us428(card)->open_mutex);
-		INIT_LIST_HEAD(&us428(card)->chip.midi_list);
-		us428(card)->Seq04Complete = 1;
-		us428(card)->stride = 4;		// 16 Bit 
-		strcpy(card->driver, "USB "NAME_ALLCAPS"");
-		sprintf(card->shortname, "TASCAM "NAME_ALLCAPS"");
-		sprintf(card->longname, "%s (%x:%x if %d at %03d/%03d)",
-			card->shortname, 
-			snd_us428_usb_id_table[0].idVendor, snd_us428_usb_id_table[0].idProduct,
-			0,//us428(card)->usbmidi.ifnum,
-			us428(card)->chip.dev->bus->busnum, us428(card)->chip.dev->devnum
-			);
-	} while (0);
+	for (dev = 0; dev < SNDRV_CARDS; ++dev)
+		if (enable[dev] && !snd_us428_card_used[dev])
+			return NULL;
+
+	if (dev >= SNDRV_CARDS)
+		return NULL;
+
+	card = snd_card_new(index[dev], id[dev], THIS_MODULE, sizeof(us428dev_t));
+	if (!card)
+		return NULL;
+
+	snd_us428_card_used[us428(card)->chip.index = dev] = 1;
+	card->private_free = snd_us428_card_private_free;
+	us428(card)->chip.dev = device;
+	us428(card)->chip.card = card;
+	init_MUTEX (&us428(card)->open_mutex);
+	INIT_LIST_HEAD(&us428(card)->chip.midi_list);
+	us428(card)->Seq04Complete = 1;
+	us428(card)->stride = 4;		// 16 Bit 
+	strcpy(card->driver, "USB "NAME_ALLCAPS"");
+	sprintf(card->shortname, "TASCAM "NAME_ALLCAPS"");
+	sprintf(card->longname, "%s (%x:%x if %d at %03d/%03d)",
+		card->shortname, 
+		snd_us428_usb_id_table[0].idVendor, snd_us428_usb_id_table[0].idProduct,
+		0,//us428(card)->usbmidi.ifnum,
+		us428(card)->chip.dev->bus->busnum, us428(card)->chip.dev->devnum
+		);
 	return card;
 }
 
 
-static void* snd_us428_probe(struct usb_device* device, unsigned int ifnum, const struct usb_device_id* device_id)
+static void* snd_us428_usb_probe(struct usb_device* device,
+				 struct usb_interface *intf,
+				 const struct usb_device_id* device_id)
 {
 	int		err;
 	snd_card_t*	card;
@@ -270,19 +279,59 @@ static void* snd_us428_probe(struct usb_device* device, unsigned int ifnum, cons
 	return card;
 }
 
+#ifndef OLD_USB
+/*
+ * new 2.5 USB kernel API
+ */
+static int snd_us428_probe(struct usb_interface *intf,
+			   const struct usb_device_id *id)
+{
+	void *chip;
+	chip = snd_us428_usb_probe(interface_to_usbdev(intf), intf, id);
+	if (chip) {
+		dev_set_drvdata(&intf->dev, chip);
+		return 0;
+	} else
+		return -EIO;
+}
+
+static void snd_us428_disconnect(struct usb_interface *intf)
+{
+	snd_us428_usb_disconnect(interface_to_usbdev(intf),
+				 dev_get_drvdata(&intf->dev));
+}
+#else
+/*
+ * 2.4 USB kernel API
+ */
+static void *snd_us428_probe(struct usb_device *dev, unsigned int ifnum,
+			     const struct usb_device_id *id)
+{
+	return snd_us428_usb_probe(dev, usb_ifnum_to_if(dev, ifnum), id);
+}
+                                       
+static void snd_us428_disconnect(struct usb_device *dev, void *ptr)
+{
+	snd_us428_usb_disconnect(dev, ptr);
+}
+#endif
 
 MODULE_DEVICE_TABLE(usb, snd_us428_usb_id_table);
 static struct usb_driver snd_us428_usb_driver = {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 70)	/* FIXME: find right number */
+ 	.owner =	THIS_MODULE,
+#endif
 	.name =		"snd-usb-us428",
 	.probe =	snd_us428_probe,
-	.disconnect =	snd_us428_usb_disconnect,
+	.disconnect =	snd_us428_disconnect,
 	.id_table =	snd_us428_usb_id_table,
-	.driver_list =	LIST_HEAD_INIT(snd_us428_usb_driver.driver_list),
+#ifdef OLD_USB
+	.driver_list =	LIST_HEAD_INIT(snd_us428_usb_driver.driver_list), 
+#endif
 };
 
 static void snd_us428_card_private_free(snd_card_t *card)
 {
-	snd_printd("\n");
 	if (us428(card)->In04Buf)
 		kfree(us428(card)->In04Buf);
 	usb_free_urb(us428(card)->In04urb);

@@ -72,7 +72,7 @@
 #define __exit
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
+#ifndef module_init
 #define module_init(x)      int init_module(void) { return x(); }
 #define module_exit(x)      void cleanup_module(void) { x(); }
 #endif

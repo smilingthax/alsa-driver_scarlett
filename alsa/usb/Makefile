@@ -11,7 +11,7 @@ extra-snd-usb-audio-objs := usbcompat.o
 extra-subdir-y := us428
 extra-subdir-m	:= $(extra-subdir-y)
 
-export-objs := usbmidi.o
+export-objs := usbaudio.o usbmidi.o
 
 TOPDIR = $(MAINSRCDIR)
 
