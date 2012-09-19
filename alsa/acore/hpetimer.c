@@ -82,8 +82,7 @@ static int __init hpetimer_init(void)
 	int err;
 	snd_timer_t *timer;
 
-	if (frequency < 32 || frequency > 8192 ||
-	    (frequency & (frequency - 1))) {
+	if (frequency < 32 || frequency > 8192) {
 		snd_printk(KERN_ERR "invalid frequency %d\n", frequency);
 		return -EINVAL;
 	}
