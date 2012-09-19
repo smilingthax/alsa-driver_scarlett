@@ -1,5 +1,5 @@
-#ifndef __CS46XX_H
-#define __CS46XX_H
+#ifndef __SOUND_CS46XX_H
+#define __SOUND_CS46XX_H
 
 /*
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>,
@@ -1717,4 +1717,4 @@ void snd_cs46xx_suspend(cs46xx_t *chip, int can_schedule);
 void snd_cs46xx_resume(cs46xx_t *chip, int can_schedule);
 #endif
 
-#endif				/* __CS46XX_H */
+#endif /* __SOUND_CS46XX_H */

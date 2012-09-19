@@ -1,3 +1,6 @@
+#ifndef __SOUND_SEQ_KERNEL_H
+#define __SOUND_SEQ_KERNEL_H
+
 /*
  *  Main kernel header file for the ALSA sequencer
  *  Copyright (c) 1998 by Frank van de Pol <fvdpol@home.nl>
@@ -18,9 +21,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  */
-#ifndef __SND_SEQ_KERNEL_H
-#define __SND_SEQ_KERNEL_H
-
 #include "asequencer.h"
 
 typedef sndrv_seq_tick_time_t snd_seq_tick_time_t;
@@ -178,4 +178,4 @@ int snd_seq_event_port_attach(int client, snd_seq_port_callback_t *pcbp,
 			      int cap, int type, char *portname);
 int snd_seq_event_port_detach(int client, int port);
 
-#endif /* __SND_SEQ_KERNEL_H */
+#endif /* __SOUND_SEQ_KERNEL_H */

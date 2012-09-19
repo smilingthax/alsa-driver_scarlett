@@ -1,5 +1,5 @@
-#ifndef __INFO_H
-#define __INFO_H
+#ifndef __SOUND_INFO_H
+#define __SOUND_INFO_H
 
 /*
  *  Header file for info interface
@@ -181,6 +181,6 @@ static inline void snd_remove_proc_entry(struct proc_dir_entry *parent,
 extern int snd_oss_info_register(int dev, int num, char *string);
 #define snd_oss_info_unregister(dev, num) snd_oss_info_register(dev, num, NULL)
 
-#endif				/* CONFIG_SND_OSSEMUL */
+#endif /* CONFIG_SND_OSSEMUL */
 
-#endif				/* __INFO_H */
+#endif /* __SOUND_INFO_H */

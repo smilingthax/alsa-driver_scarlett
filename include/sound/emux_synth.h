@@ -1,5 +1,6 @@
-#ifndef __EMUX_SYNTH_H
-#define __EMUX_SYNTH_H
+#ifndef __SOUND_EMUX_SYNTH_H
+#define __SOUND_EMUX_SYNTH_H
+
 /*
  *  Defines for the Emu-series WaveTable chip
  *
@@ -233,4 +234,4 @@ void snd_emux_terminate_all(snd_emux_t *emu);
 void snd_emux_lock_voice(snd_emux_t *emu, int voice);
 void snd_emux_unlock_voice(snd_emux_t *emu, int voice);
 
-#endif /* __EMUX_SYNTH_H */
+#endif /* __SOUND_EMUX_SYNTH_H */

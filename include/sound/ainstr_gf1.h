@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef __AINSTR_GF1_H
-#define __AINSTR_GF1_H
+#ifndef __SOUND_AINSTR_GF1_H
+#define __SOUND_AINSTR_GF1_H
 
 #ifndef __KERNEL__
 #include <asm/types.h>
@@ -224,4 +224,4 @@ int snd_seq_gf1_init(snd_gf1_ops_t *ops,
 
 #endif
 
-#endif /* __SEQ_INSTR_GF1_H */
+#endif /* __SOUND_AINSTR_GF1_H */

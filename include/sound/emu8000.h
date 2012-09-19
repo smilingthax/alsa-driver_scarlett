@@ -1,5 +1,5 @@
-#ifndef __EMU8000_H
-#define __EMU8000_H
+#ifndef __SOUND_EMU8000_H
+#define __SOUND_EMU8000_H
 /*
  *  Defines for the emu8000 (AWE32/64)
  *
@@ -115,5 +115,4 @@ void snd_emu8000_update_equalizer(emu8000_t *emu);
 int snd_emu8000_load_chorus_fx(emu8000_t *emu, int mode, const void *buf, long len);
 int snd_emu8000_load_reverb_fx(emu8000_t *emu, int mode, const void *buf, long len);
 
-
-#endif
+#endif /* __SOUND_EMU8000_H */

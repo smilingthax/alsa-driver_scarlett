@@ -1,5 +1,5 @@
-#ifndef __SND_I2C_H
-#define __SND_I2C_H
+#ifndef __SOUND_I2C_H
+#define __SOUND_I2C_H
 
 /*
  *
@@ -89,4 +89,4 @@ int snd_i2c_sendbytes(snd_i2c_device_t *device, unsigned char *bytes, int count)
 int snd_i2c_readbytes(snd_i2c_device_t *device, unsigned char *bytes, int count);
 int snd_i2c_probeaddr(snd_i2c_bus_t *bus, unsigned short addr);
 
-#endif				/* __SND_I2C_H */
+#endif /* __SOUND_I2C_H */

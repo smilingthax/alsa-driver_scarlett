@@ -1,5 +1,5 @@
-#ifndef __TRID4DWAVE_H
-#define __TRID4DWAVE_H
+#ifndef __SOUND_TRIDENT_H
+#define __SOUND_TRIDENT_H
 
 /*
  *  audio@tridentmicro.com
@@ -473,4 +473,4 @@ void snd_trident_suspend(trident_t *trident, int can_schedule);
 void snd_trident_resume(trident_t *trident, int can_schedule);
 #endif
 
-#endif				/* __TRID4DWAVE_H */
+#endif /* __SOUND_TRIDENT_H */

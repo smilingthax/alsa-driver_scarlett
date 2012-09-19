@@ -1,5 +1,5 @@
-#ifndef __MINORS_H
-#define __MINORS_H
+#ifndef __SOUND_MINORS_H
+#define __SOUND_MINORS_H
 
 /*
  *  MINOR numbers
@@ -83,4 +83,4 @@
 
 #endif
 
-#endif				/* __MINORS_H */
+#endif /* __SOUND_MINORS_H */

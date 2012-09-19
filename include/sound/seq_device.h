@@ -1,3 +1,6 @@
+#ifndef __SOUND_SEQ_DEVICE_H
+#define __SOUND_SEQ_DEVICE_H
+
 /*
  *  ALSA sequencer device management
  *  Copyright (c) 1999 by Takashi Iwai <tiwai@suse.de>
@@ -17,9 +20,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  */
-
-#ifndef __SND_SEQ_DEVICE_H
-#define __SND_SEQ_DEVICE_H
 
 typedef struct snd_seq_device snd_seq_device_t;
 typedef struct snd_seq_dev_ops snd_seq_dev_ops_t;
@@ -85,4 +85,4 @@ int snd_seq_device_unregister_driver(char *id);
 #define SNDRV_SEQ_DEV_ID_OPL3		"synth-opl3"
 
 
-#endif
+#endif /* __SOUND_SEQ_DEVICE_H */

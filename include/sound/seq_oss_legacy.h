@@ -1,3 +1,6 @@
+#ifndef __SOUND_SEQ_OSS_LEGACY_H
+#define __SOUND_SEQ_OSS_LEGACY_H
+
 /*
  * OSS compatible macro definitions
  *
@@ -18,13 +21,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
 
-#ifndef __SEQ_OSS_LEGACY_H
-#define __SEQ_OSS_LEGACY_H
-
 #include <linux/soundcard.h>
 
 #ifndef SAMPLE_TYPE_AWE32
 #define SAMPLE_TYPE_AWE32		0x20
 #endif
 
-#endif
+#endif /* __SOUND_SEQ_OSS_LEGACY_H */
+

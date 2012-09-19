@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef __AINSTR_FM_H
-#define __AINSTR_FM_H
+#ifndef __SOUND_AINSTR_FM_H
+#define __SOUND_AINSTR_FM_H
 
 #ifndef __KERNEL__
 #include <asm/types.h>
@@ -129,4 +129,4 @@ int snd_seq_fm_init(snd_seq_kinstr_ops_t * ops,
 
 #endif
 
-#endif	/* __SEQ_INSTR_SIMPLE_H */
+#endif	/* __SOUND_AINSTR_FM_H */

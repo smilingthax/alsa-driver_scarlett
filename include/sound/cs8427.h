@@ -1,5 +1,5 @@
-#ifndef __SND_CS8427_H
-#define __SND_CS8427_H
+#ifndef __SOUND_CS8427_H
+#define __SOUND_CS8427_H
 
 /*
  *  Routines for Cirrus Logic CS8427
@@ -192,4 +192,4 @@ int snd_cs8427_iec958_build(snd_i2c_device_t *cs8427, snd_pcm_substream_t *playb
 int snd_cs8427_iec958_active(snd_i2c_device_t *cs8427, int active);
 int snd_cs8427_iec958_pcm(snd_i2c_device_t *cs8427, unsigned int rate);
 
-#endif /* __SND_CS8427_H */
+#endif /* __SOUND_CS8427_H */

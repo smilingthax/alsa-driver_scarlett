@@ -1,5 +1,5 @@
-#ifndef __OPL3_H
-#define __OPL3_H
+#ifndef __SOUND_OPL3_H
+#define __SOUND_OPL3_H
 
 /*
  * Definitions of the OPL-3 registers.
@@ -328,4 +328,4 @@ int snd_opl3_release(snd_hwdep_t * hw, struct file *file);
 
 void snd_opl3_reset(opl3_t * opl3);
 
-#endif				/* __OPL3_H */
+#endif /* __SOUND_OPL3_H */

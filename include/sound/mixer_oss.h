@@ -1,5 +1,5 @@
-#ifndef __MIXER_OSS_H
-#define __MIXER_OSS_H
+#ifndef __SOUND_MIXER_OSS_H
+#define __SOUND_MIXER_OSS_H
 
 /*
  *  OSS MIXER API
@@ -66,6 +66,6 @@ struct _snd_oss_file {
 	snd_mixer_oss_t *mixer;
 };
 
-#endif				/* CONFIG_SND_OSSEMUL */
+#endif /* CONFIG_SND_OSSEMUL */
 
-#endif				/* __MIXER_OSS_H */
+#endif /* __SOUND_MIXER_OSS_H */

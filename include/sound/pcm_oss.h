@@ -1,5 +1,5 @@
-#ifndef __PCM_OSS_H
-#define __PCM_OSS_H
+#ifndef __SOUND_PCM_OSS_H
+#define __SOUND_PCM_OSS_H
 
 /*
  *  Digital Audio (PCM) - OSS compatibility abstract layer
@@ -79,4 +79,4 @@ typedef struct _snd_pcm_oss {
 	int reg;
 } snd_pcm_oss_t;
 
-#endif /* __PCM_OSS_H */
+#endif /* __SOUND_PCM_OSS_H */

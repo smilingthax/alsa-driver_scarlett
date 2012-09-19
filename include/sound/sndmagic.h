@@ -1,5 +1,5 @@
-#ifndef __SNDMAGIC_H
-#define __SNDMAGIC_H
+#ifndef __SOUND_SNDMAGIC_H
+#define __SOUND_SNDMAGIC_H
 
 /*
  *  Magic allocation, deallocation, check
@@ -140,5 +140,4 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 
 #endif
 
-#endif /* __SNDMAGIC_H */
-
+#endif /* __SOUND_SNDMAGIC_H */

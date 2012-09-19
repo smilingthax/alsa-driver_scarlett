@@ -1,5 +1,5 @@
-#ifndef __YMFPCI_H
-#define __YMFPCI_H
+#ifndef __SOUND_YMFPCI_H
+#define __SOUND_YMFPCI_H
 
 /*
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
@@ -363,4 +363,4 @@ void snd_ymfpci_suspend(ymfpci_t *chip, int can_schedule);
 void snd_ymfpci_resume(ymfpci_t *chip, int can_schedule);
 #endif
 
-#endif				/* __YMFPCI_H */
+#endif /* __SOUND_YMFPCI_H */

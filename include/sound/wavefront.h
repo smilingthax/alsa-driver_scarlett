@@ -1,5 +1,5 @@
-#ifndef __WAVEFRONT_H__
-#define __WAVEFRONT_H__
+#ifndef __SOUND_WAVEFRONT_H__
+#define __SOUND_WAVEFRONT_H__
 
 /*
  *  Driver for Turtle Beach Wavefront cards (Maui,Tropez,Tropez+)
@@ -683,5 +683,4 @@ typedef struct wf_fx_info {
 
 #define WFFX_MEMSET              69
 
-#endif /* __WAVEFRONT_H__ */
-
+#endif /* __SOUND_WAVEFRONT_H__ */

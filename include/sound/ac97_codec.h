@@ -1,5 +1,5 @@
-#ifndef __AC97_CODEC_H
-#define __AC97_CODEC_H
+#ifndef __SOUND_AC97_CODEC_H
+#define __SOUND_AC97_CODEC_H
 
 /*
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
@@ -183,4 +183,4 @@ void snd_ac97_suspend(ac97_t *ac97);
 void snd_ac97_resume(ac97_t *ac97);
 #endif
 
-#endif				/* __AC97_CODEC_H */
+#endif /* __SOUND_AC97_CODEC_H */

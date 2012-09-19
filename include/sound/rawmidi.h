@@ -1,5 +1,5 @@
-#ifndef __MIDI_H
-#define __MIDI_H
+#ifndef __SOUND_RAWMIDI_H
+#define __SOUND_RAWMIDI_H
 
 /*
  *  Abstract layer for MIDI v1.0 stream
@@ -178,4 +178,4 @@ int snd_rawmidi_drain_input(snd_rawmidi_substream_t * substream);
 long snd_rawmidi_kernel_read(snd_rawmidi_substream_t * substream, unsigned char *buf, long count);
 long snd_rawmidi_kernel_write(snd_rawmidi_substream_t * substream, const unsigned char *buf, long count);
 
-#endif				/* __MIDI_H */
+#endif /* __SOUND_RAWMIDI_H */

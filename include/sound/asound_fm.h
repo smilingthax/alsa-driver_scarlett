@@ -1,3 +1,6 @@
+#ifndef __SOUND_ASOUND_FM_H
+#define __SOUND_ASOUND_FM_H
+
 /*
  *  Advanced Linux Sound Architecture - ALSA
  *
@@ -22,9 +25,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  */
-
-#ifndef __ASOUND_FM_H
-#define __ASOUND_FM_H
 
 #define SNDRV_DM_FM_MODE_OPL2	0x00
 #define SNDRV_DM_FM_MODE_OPL3	0x01
@@ -116,4 +116,4 @@ typedef struct snd_dm_fm_params {
 
 #endif
 
-#endif				/* __ASOUND_FM_H */
+#endif /* __SOUND_ASOUND_FM_H */

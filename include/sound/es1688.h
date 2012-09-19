@@ -1,5 +1,5 @@
-#ifndef __ES1688_H
-#define __ES1688_H
+#ifndef __SOUND_ES1688_H
+#define __SOUND_ES1688_H
 
 /*
  *  Header file for ES488/ES1688
@@ -122,4 +122,4 @@ int snd_es1688_create(snd_card_t * card,
 int snd_es1688_pcm(es1688_t *chip, int device, snd_pcm_t ** rpcm);
 int snd_es1688_mixer(es1688_t *chip);
 
-#endif				/* __ES1688_H */
+#endif /* __SOUND_ES1688_H */

@@ -1,5 +1,5 @@
-#ifndef __PCM_PARAMS_H
-#define __PCM_PARAMS_H
+#ifndef __SOUND_PCM_PARAMS_H
+#define __SOUND_PCM_PARAMS_H
 
 /*
  *  PCM params helpers
@@ -330,4 +330,5 @@ static inline unsigned int sub(unsigned int a, unsigned int b)
 #undef INLINE
 #undef assert
 
-#endif
+#endif /* __SOUND_PCM_PARAMS_H */
+

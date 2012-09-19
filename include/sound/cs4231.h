@@ -1,5 +1,5 @@
-#ifndef __CS4231_H
-#define __CS4231_H
+#ifndef __SOUND_CS4231_H
+#define __SOUND_CS4231_H
 
 /*
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
@@ -321,4 +321,4 @@ int snd_cs4231_put_double(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucon
 void snd_cs4231_debug(cs4231_t *chip);
 #endif
 
-#endif				/* __CS4231_H */
+#endif /* __SOUND_CS4231_H */

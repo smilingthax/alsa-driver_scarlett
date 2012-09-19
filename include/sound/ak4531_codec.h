@@ -1,5 +1,5 @@
-#ifndef __AK4531_CODEC_H
-#define __AK4531_CODEC_H
+#ifndef __SOUND_AK4531_CODEC_H
+#define __SOUND_AK4531_CODEC_H
 
 /*
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
@@ -78,4 +78,4 @@ struct _snd_ak4531 {
 
 int snd_ak4531_mixer(snd_card_t * card, ak4531_t * _ak4531, ak4531_t ** rak4531);
 
-#endif				/* __AK4531_CODEC_H */
+#endif /* __SOUND_AK4531_CODEC_H */

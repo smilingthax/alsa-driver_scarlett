@@ -1,5 +1,5 @@
-#ifndef __HWDEP_H
-#define __HWDEP_H
+#ifndef __SOUND_HWDEP_H
+#define __SOUND_HWDEP_H
 
 /*
  *  Hardware dependent layer 
@@ -60,4 +60,4 @@ struct _snd_hwdep {
 
 extern int snd_hwdep_new(snd_card_t * card, char *id, int device, snd_hwdep_t ** rhwdep);
 
-#endif				/* __HWDEP_H */
+#endif /* __SOUND_HWDEP_H */

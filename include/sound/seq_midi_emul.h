@@ -1,3 +1,6 @@
+#ifndef __SOUND_SEQ_MIDI_EMUL_H
+#define __SOUND_SEQ_MIDI_EMUL_H
+
 /*
  *  Midi channel definition for optional channel management.
  *
@@ -18,9 +21,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  */
-
-#ifndef __SEQ_MIDI_EMUL_H
-#define __SEQ_MIDI_EMUL_H
 
 #include "seq_kernel.h"
 
@@ -194,4 +194,4 @@ snd_midi_channel_t *snd_midi_channel_init_set(int n);
 snd_midi_channel_set_t *snd_midi_channel_alloc_set(int n);
 void snd_midi_channel_free_set(snd_midi_channel_set_t *chset);
 
-#endif /* __SEQ_MIDI_EMUL_H */
+#endif /* __SOUND_SEQ_MIDI_EMUL_H */

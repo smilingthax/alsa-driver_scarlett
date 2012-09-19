@@ -1,5 +1,5 @@
-#ifndef __UTIL_MEM_H
-#define __UTIL_MEM_H
+#ifndef __SOUND_UTIL_MEM_H
+#define __SOUND_UTIL_MEM_H
 /*
  *  Copyright (C) 2000 Takashi Iwai <tiwai@suse.de>
  *
@@ -61,4 +61,4 @@ snd_util_memblk_t *__snd_util_mem_alloc(snd_util_memhdr_t *hdr, int size);
 void __snd_util_mem_free(snd_util_memhdr_t *hdr, snd_util_memblk_t *blk);
 snd_util_memblk_t *__snd_util_memblk_new(snd_util_memhdr_t *hdr, snd_util_unit_t units, struct list_head *prev);
 
-#endif /* __UTIL_MEM_H */
+#endif /* __SOUND_UTIL_MEM_H */
