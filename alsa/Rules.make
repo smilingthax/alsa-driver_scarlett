@@ -19,6 +19,27 @@ comma = ,
 first_rule: modules
 
 #
+# Parse directories
+#
+
+__subdir-y      := $(patsubst %/,%,$(filter %/, $(obj-y)))
+subdir-y        += $(__subdir-y)
+__subdir-m      := $(patsubst %/,%,$(filter %/, $(obj-m)))
+subdir-m        += $(__subdir-m)
+__subdir-n      := $(patsubst %/,%,$(filter %/, $(obj-n)))
+subdir-n        += $(__subdir-n)
+__subdir-       := $(patsubst %/,%,$(filter %/, $(obj-)))
+subdir-         += $(__subdir-)
+obj-y           := $(patsubst %/, %/built-in.o, $(obj-y))
+obj-m           := $(filter-out %/, $(obj-m))
+
+ifndef O_TARGET
+ifndef L_TARGET
+O_TARGET	:= built-in.o
+endif
+endif
+
+#
 # ALSA hacks for extra code
 #
 
