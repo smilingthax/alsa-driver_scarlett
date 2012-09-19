@@ -1262,4 +1262,12 @@ static inline int pci_enable_msi(struct pci_dev *dev) { return -1; }
 static inline voidt pci_disable_msi(struct pci_dev *dev) {}
 #endif
 
+/* SEEK_XXX */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 18)
+#include <linux/fs.h>
+#define SEEK_SET	0
+#define SEEK_CUR	1
+#define SEEK_END	2
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
