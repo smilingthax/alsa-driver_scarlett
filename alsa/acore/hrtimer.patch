@@ -9,7 +9,7 @@
  		return -ENOMEM;
  	hrtimer_init(&stime->hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
  	stime->timer = t;
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29) && defined(HRTIMER_STATE_PENDING)
 +	stime->hrt.cb_mode = HRTIMER_CB_IRQSAFE_UNLOCKED;
 +#endif
  	stime->hrt.function = snd_hrtimer_callback;
