@@ -1813,7 +1813,7 @@ static int snd_ice1712_pro_internal_clock_put(snd_kcontrol_t * kcontrol, snd_ctl
 	return change;
 }
 
-static snd_kcontrol_new_t snd_ice1712_pro_internal_clock = __devinitdata {
+static snd_kcontrol_new_t snd_ice1712_pro_internal_clock __devinitdata = {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.name = "Multi Track Internal Clock",
 	.info = snd_ice1712_pro_internal_clock_info,
@@ -1832,16 +1832,20 @@ static int snd_ice1712_pro_rate_locking_info(snd_kcontrol_t *kcontrol, snd_ctl_e
 
 static int snd_ice1712_pro_rate_locking_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	ucontrol->value.integer.value[0] = PRO_RATE_LOCKED ? 1 : 0;
+	ucontrol->value.integer.value[0] = PRO_RATE_LOCKED;
 	return 0;
 }
 
 static int snd_ice1712_pro_rate_locking_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	int change = 0;
+	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
+	int change = 0, nval;
 
-	change = PRO_RATE_LOCKED ? 1 : 0 != ucontrol->value.integer.value[0] ? 1 : 0;
-	PRO_RATE_LOCKED = ucontrol->value.integer.value[0] ? 1 : 0;
+	nval = ucontrol->value.integer.value[0] ? 1 : 0;
+	spin_lock_irq(&ice->reg_lock);
+	change = PRO_RATE_LOCKED != nval;
+	PRO_RATE_LOCKED = nval;
+	spin_unlock_irq(&ice->reg_lock);
 	return change;
 }
 
@@ -1864,16 +1868,20 @@ static int snd_ice1712_pro_rate_reset_info(snd_kcontrol_t *kcontrol, snd_ctl_ele
 
 static int snd_ice1712_pro_rate_reset_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	ucontrol->value.integer.value[0] = PRO_RATE_RESET ? 1 : 0;
+	ucontrol->value.integer.value[0] = PRO_RATE_RESET;
 	return 0;
 }
 
 static int snd_ice1712_pro_rate_reset_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	int change = 0;
+	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
+	int change = 0, nval;
 
-	change = PRO_RATE_LOCKED ? 1 : 0 != ucontrol->value.integer.value[0] ? 1 : 0;
-	PRO_RATE_RESET = ucontrol->value.integer.value[0] ? 1 : 0;
+	nval = ucontrol->value.integer.value[0] ? 1 : 0;
+	spin_lock_irq(&ice->reg_lock);
+	change = PRO_RATE_RESET != nval;
+	PRO_RATE_RESET = nval;
+	spin_unlock_irq(&ice->reg_lock);
 	return change;
 }
 
