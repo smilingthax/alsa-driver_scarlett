@@ -119,6 +119,7 @@ COMMENT_MAP_DRIVER = [
 		('/isa/sb/sb8.*'	,'SB8 driver'),
 		('/isa/sb'		,'SB drivers'),
 		('/isa/opti9xx'		,'Opti9xx drivers'),
+		('/include/yss225.h'	,'Wavefront drivers'),
 		('/include/snd_wavefront.h', 'Wavefront drivers'),
 		('/isa/wavefront'	,'Wavefront drivers'),
 		('/isa/als100.c' 	,'ALS100 driver'),
@@ -201,8 +202,12 @@ COMMENT_MAP_DRIVER = [
 		('/i2c/l3'		,'L3 drivers'),
 		('/include/tea575x-tuner.h','TEA575x tuner'),
 		('/i2c/other/tea575x-tuner.c','TEA575x tuner'),
+		('/include/ak4114.h'	,'AK4114 receiver'),
+		('/i2c/other/ak4114.c'  ,'AK4114 receiver'),
 		('/include/ak4117.h'	,'AK4117 receiver'),
 		('/i2c/other/ak4117.c'  ,'AK4117 receiver'),
+		('/include/ak4xxx-adda.h','AK4XXX AD/DA converters'),
+		('/i2c/other/ak4xxx-adda.c','AK4XXX AD/DA converters'),
 		('/i2c/other'		,'Serial BUS drivers'),
 		('/include/i2c.h'	,'I2C lib core'),
 		('/i2c/i2c.c'		,'I2C lib core'),
@@ -1145,7 +1150,10 @@ def cvsps_merge1(f,t=0):
 	diffs = fp.readlines()
 	fp.close()
 	files = []
+	pline = ''
 	for line in diffs:
+		if line[:14] == "+++ /dev/null\t":
+			continue
 		if line[0:3] == '+++':
 			xx1 = string.split(line, ' ')
 			xx1 = string.split(xx1[1], '\t')
@@ -1161,6 +1169,7 @@ def cvsps_merge1(f,t=0):
 				else:
 					file = i
 			files.append(file)
+		pline = line
 	summary = ''
 	signed = []
 	log = []
@@ -1246,6 +1255,16 @@ def cvsps_merge1(f,t=0):
 		print 'BK patch import of %s error, xterm? (any key to continue or Control-C to abort)' % ff
 		sys.stdin.readline()
 		os.system("xterm")
+	pline = ''
+	for line in diffs:
+		if line[:14] == "+++ /dev/null\t" and pline != '':
+			file = pline[4:string.find(pline, '\t')]
+			file1 = remap_alsa_file(file[11:])[1:]
+			print 'Removing file %s...' % file1
+			os.system('bk rm %s' % file1)
+		pline = line
+
+	print 'Commiting...'
 	if os.system('bk commit -y"' + nlines + '"'):
 		print 'BK commit failed'
 		sys.exit(1)
