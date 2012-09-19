@@ -67,9 +67,13 @@ MAKE		+= $(m_opts)
 SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
 DEXPORT		= $(TOPDIR)/include/modules
 else
+# 2.6 kbuild
 EXTRA_CFLAGS += -DALSA_BUILD
+LINUXINCLUDE := -I$(MAINSRCDIR)/include $(LINUXINCLUDE)
 CPPFLAGS := -I$(MAINSRCDIR)/include $(CPPFLAGS)
-CFLAGS := -I$(MAINSRCDIR)/include $(CFLAGS)
+KBUILD_CPPFLAGS := -I$(MAINSRCDIR)/include $(KBUILD_CPPFLAGS)
+# 2.6.24 complains this override...
+# CFLAGS := -I$(MAINSRCDIR)/include $(CFLAGS)
 MAKE_ADDS = @MAKE_ADDS@
 endif
 

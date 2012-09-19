@@ -10,7 +10,7 @@
 #define __PCSP_H__
 
 #include <linux/hrtimer.h>
-#include <asm/8253pit.h>
+#include <asm/i8253.h>
 
 #define PCSP_SOUND_VERSION 0x400	/* read 4.00 */
 #define PCSP_DEBUG 0

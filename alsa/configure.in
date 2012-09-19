@@ -121,9 +121,9 @@ if test -n "$kernelbuild"; then
   fi
   if test -d "$kernelbuild/include2"; then
     kpath="$kpath -I$kernelbuild/include2"
+    MAKE_ADDS="O=$kernelbuild"
   fi
   KERNEL_INC="$kpath $KERNEL_INC"
-  MAKE_ADDS="O=$kernelbuild"
 fi
 HACK_KERNEL_INC=""
 ac_save_CFLAGS="$CFLAGS"
