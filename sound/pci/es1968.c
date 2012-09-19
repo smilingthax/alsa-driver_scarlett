@@ -2606,7 +2606,7 @@ static int __devinit snd_es1968_create(snd_card_t * card,
 	/* just to be sure */
 	pci_set_master(pci);
 
-	if (do_pm) {
+	if (do_pm > 1) {
 		/* disable power-management if not maestro2e or
 		 * if not on the whitelist
 		 */
