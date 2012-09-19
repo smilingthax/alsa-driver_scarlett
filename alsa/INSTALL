@@ -202,7 +202,7 @@ Compilation from Linux kernel tree
 If you have the linux kernel tree containing the corresponding ALSA
 kernel codes (the version must match), you can build with that instead
 of a separate alsa-kernel tree.  In this case, run
-utils/setup-alsa-kernel script on alsa-driver directory:
+utils/setup-alsa-kernel script in alsa-driver directory:
 
 	utils/setup-alsa-kernel YOUR-LINUX-KERNEL-TREE-PATH
 
