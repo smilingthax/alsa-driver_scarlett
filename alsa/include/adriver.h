@@ -892,6 +892,7 @@ void *snd_hidden_kcalloc(size_t n, size_t size, gfp_t flags);
 char *snd_hidden_kstrdup(const char *s, gfp_t flags);
 char *snd_hidden_kstrndup(const char *s, size_t len, gfp_t flags);
 void snd_hidden_kfree(const void *obj);
+size_t snd_hidden_ksize(const void *obj);
 
 static inline void *snd_wrapper_kmalloc(size_t size, gfp_t flags)
 {
@@ -907,6 +908,7 @@ static inline void snd_wrapper_kfree(const void *obj)
 #define kcalloc(n, size, flags) snd_hidden_kcalloc(n, size, flags)
 #define kstrdup(s, flags)  snd_hidden_kstrdup(s, flags)
 #define kstrndup(s, len, flags)  snd_hidden_kstrndup(s, len, flags)
+#define ksize(obj) snd_hidden_ksize(obj)
 #define kfree(obj) snd_hidden_kfree(obj)
 
 #define kmalloc_nocheck(size, flags) snd_wrapper_kmalloc(size, flags)
@@ -2000,9 +2002,9 @@ static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
 #endif
 
 /* krealloc() wrapper */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)) || defined(CONFIG_SND_DEBUG_MEMORY)
 #include <linux/slab.h>
-static inline void *krealloc(const void *p, size_t new_size, gfp_t flags)
+static inline void *snd_compat_krealloc(const void *p, size_t new_size, gfp_t flags)
 {
 	void *n;
 	if (!p)
@@ -2018,6 +2020,7 @@ static inline void *krealloc(const void *p, size_t new_size, gfp_t flags)
 	kfree(p);
 	return n;
 }
+#define krealloc(p, s, f)	snd_compat_krealloc(p, s, f)
 #endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
