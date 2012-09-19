@@ -91,6 +91,9 @@ ifdef USE_STANDARD_AS_RULE
 
 endif
 
+%.c: %.patch
+	patch -p0 $@ < $<
+
 %.isapnp: %.c
 	$(CPP) -C -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -D__isapnp_now__ -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) $< | $(TOPDIR)/utils/convert_isapnp_ids > $@
 
