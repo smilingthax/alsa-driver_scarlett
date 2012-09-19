@@ -17,3 +17,7 @@
 %dir linux/sound/isa/msnd
 |snd-msnd-pinnacle snd-pcm snd-seq-midi
 
+%dir linux/pcmcia/vx
+|snd-vxp-lib snd-pcm
+|snd-vxpocket snd-vxp-lib
+|snd-vxp440 snd-vxp-lib

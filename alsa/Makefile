@@ -53,6 +53,9 @@ endif
 ifeq (y,$(CONFIG_USB))
 SUBDIRS  += usb
 endif
+ifeq (y,$(CONFIG_PCMCIA))
+SUBDIRS  += pcmcia
+endif
 CSUBDIRS += include test utils
 
 .PHONY: all
