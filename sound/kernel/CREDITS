@@ -24,6 +24,11 @@ S: C. Negri 6, bl. D3
 S: Iasi 6600
 S: Romania
 
+N: Mark Adler
+E: madler@alumni.caltech.edu
+W: http://alumnus.caltech.edu/~madler/
+D: zlib decompression
+
 N: Monalisa Agrawal
 E: magrawal@nortelnetworks.com
 D: Basic Interphase 5575 driver with UBR and ABR support.
@@ -1573,12 +1578,8 @@ S: 160 00 Praha 6
 S: Czech Republic
 
 N: Niels Kristian Bech Jensen
-E: nkbj@image.dk
-W: http://www.image.dk/~nkbj
+E: nkbj1970@hotmail.com
 D: Miscellaneous kernel updates and fixes.
-S: Dr. Holsts Vej 34, lejl. 164
-S: DK-8230 Åbyhøj
-S: Denmark
 
 N: Michael K. Johnson
 E: johnsonm@redhat.com
