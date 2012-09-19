@@ -100,15 +100,15 @@ struct snd_card_als100 {
 
 static struct pnp_card_device_id snd_als100_pnpids[] __devinitdata = {
 	/* ALS100 - PRO16PNP */
-	{ .id = "ALS0001", .devs = { { "@@@0001" }, { "@X@0001" }, { "@H@0001" }, } },
+	{ .id = "ALS0001", .devs = { { "@@@0001" }, { "@X@0001" }, { "@H@0001" } } },
 	/* ALS110 - MF1000 - Digimate 3D Sound */
-	{ .id = "ALS0110", .devs = { { "@@@1001" }, { "@X@1001" }, { "@H@1001" }, } },
+	{ .id = "ALS0110", .devs = { { "@@@1001" }, { "@X@1001" }, { "@H@1001" } } },
 	/* ALS120 */
-	{ .id = "ALS0120", .devs = { { "@@@2001" }, { "@X@2001" }, { "@H@2001" }, } },
+	{ .id = "ALS0120", .devs = { { "@@@2001" }, { "@X@2001" }, { "@H@2001" } } },
 	/* ALS200 */
-	{ .id = "ALS0200", .devs = { { "@@@0020" }, { "@X@0020" }, { "@H@0001" }, } },
+	{ .id = "ALS0200", .devs = { { "@@@0020" }, { "@X@0020" }, { "@H@0001" } } },
 	/* RTL3000 */
-	{ .id = "RTL3000", .devs = { { "@@@2001" }, { "@X@2001" }, { "@H@2001" }, } },
+	{ .id = "RTL3000", .devs = { { "@@@2001" }, { "@X@2001" }, { "@H@2001" } } },
 	{ .id = "", } /* end */
 };
 
@@ -123,6 +123,7 @@ static int __devinit snd_card_als100_pnp(int dev, struct snd_card_als100 *acard,
 	struct pnp_dev *pdev;
 	struct pnp_resource_table *cfg = kmalloc(sizeof(*cfg), GFP_KERNEL);
 	int err;
+
 	if (!cfg)
 		return -ENOMEM;
 	acard->dev = pnp_request_card_device(card, id->devs[0].id, NULL);

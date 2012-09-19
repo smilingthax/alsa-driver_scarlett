@@ -2058,6 +2058,14 @@ static int snd_ymfpci_free(ymfpci_t *chip)
 	if (chip->saved_regs)
 		vfree(chip->saved_regs);
 #endif
+	if (chip->mpu_res) {
+		release_resource(chip->mpu_res);
+		kfree_nocheck(chip->mpu_res);
+	}
+	if (chip->fm_res) {
+		release_resource(chip->fm_res);
+		kfree_nocheck(chip->fm_res);
+	}
 	if (chip->reg_area_virt)
 		iounmap((void *)chip->reg_area_virt);
 	if (chip->work_ptr)

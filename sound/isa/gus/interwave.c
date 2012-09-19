@@ -648,6 +648,7 @@ static int __init snd_interwave_pnp(int dev, struct snd_interwave *iwcard,
 	port_tc[dev] = pnp_port_start(pdev, 0);
 	snd_printdd("isapnp IW: tone control port=0x%lx\n", port_tc[dev]);
 #endif
+	kfree(cfg);
 	return 0;
 }
 #endif /* CONFIG_PNP */

@@ -2032,6 +2032,7 @@ static int __devinit snd_audiodrive_pnp(int dev, struct snd_audiodrive *acard,
 	irq[dev] = pnp_irq(pdev, 0);
 	snd_printdd("PnP ES18xx: port=0x%lx, fm port=0x%lx, mpu port=0x%lx\n", port[dev], fm_port[dev], mpu_port[dev]);
 	snd_printdd("PnP ES18xx: dma1=%i, dma2=%i, irq=%i\n", dma1[dev], dma2[dev], irq[dev]);
+	kfree(cfg);
 	return 0;
 }
 #endif /* CONFIG_PNP_ */
@@ -2054,7 +2055,7 @@ static int __devinit snd_audiodrive_probe(int dev, struct pnp_card_link *pcard,
 	if (card == NULL)
 		return -ENOMEM;
 	acard = (struct snd_audiodrive *)card->private_data;
-#ifdef CONFIG_ISAPNP
+#ifdef CONFIG_PNP
 	if (isapnp[dev] && (err = snd_audiodrive_pnp(dev, acard, pcard, pid)) < 0) {
 		snd_card_free(card);
 		return err;

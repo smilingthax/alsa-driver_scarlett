@@ -22,6 +22,7 @@
 #ifndef __PMAC_H
 #define __PMAC_H
 
+#include <linux/version.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
 #include "awacs.h"

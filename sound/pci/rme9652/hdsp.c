@@ -3025,7 +3025,7 @@ static int snd_hdsp_set_defaults(hdsp_t *hdsp)
 		hdsp->mixer_matrix[i] = MINUS_INFINITY_GAIN;
 	}
 
-	for (i = 0; i < 2048; i++) {
+	for (i = 0; i < (hdsp_is_9652(hdsp) ? 1352 : HDSP_MATRIX_MIXER_SIZE); i++) {
 		if (hdsp_write_gain (hdsp, i, MINUS_INFINITY_GAIN)) {
 			return -EIO;
 		}

@@ -329,7 +329,7 @@ static int __devinit snd_card_cs4236_pnp(int dev, struct snd_card_cs4236 *acard,
 	sb_port[dev] = pnp_port_start(pdev, 2);
 	irq[dev] = pnp_irq(pdev, 0);
 	dma1[dev] = pnp_dma(pdev, 0);
-	dma2[dev] = pnp_dma(pdev, 1) == 4 ? -1 : pnp_dma(pdev, 1);
+	dma2[dev] = pnp_dma(pdev, 1) == 4 ? -1 : (int)pnp_dma(pdev, 1);
 	snd_printdd("isapnp WSS: wss port=0x%lx, fm port=0x%lx, sb port=0x%lx\n",
 			port[dev], fm_port[dev], sb_port[dev]);
 	snd_printdd("isapnp WSS: irq=%i, dma1=%i, dma2=%i\n",
@@ -379,6 +379,7 @@ static int __devinit snd_card_cs4236_pnp(int dev, struct snd_card_cs4236 *acard,
 		}
 		snd_printdd("isapnp MPU: port=0x%lx, irq=%i\n", mpu_port[dev], mpu_irq[dev]);
 	}
+	kfree(cfg);
 	return 0;
 }
 #endif
