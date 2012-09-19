@@ -49,8 +49,8 @@ PROGRAM = sys.argv[0]
 CVSROOT = '~/alsa'
 GITROOT = '~/git/repos/linux-2.6'
 PATCH_UPDATE = '~/alsa/alsa-kernel/scripts/kchanges/update'
-GIT_COMMITER_NAME = 'Jaroslav Kysela'
-GIT_COMMITER_EMAIL = 'perex@suse.cz'
+GIT_COMMITTER_NAME = 'Jaroslav Kysela'
+GIT_COMMITTER_EMAIL = 'perex@suse.cz'
 
 # exclude some files or directories
 ALSA_EXCLUDE = ['/include/version.h']
@@ -492,7 +492,21 @@ def extract_name(full):
 
 def extract_email(full):
 	x, y = string.split(full, '<')
-	return y[1:-1]
+	return y[:-1]
+
+def get_cvs_version():
+	filename = get_cvs_root() + '/include/version.h'
+	fp = open(filename)
+	lines = fp.readlines()
+	fp.close()
+	version = "unknown"
+	for line in lines:
+		str = '#define CONFIG_SND_VERSION'
+		if line[0:len(str)] == str:
+			d = string.split(line, '"')
+			version = d[1]
+			return version
+	return version
 
 def modify_version_file():
 	filename = get_cvs_root() + '/include/version.h'
@@ -1117,6 +1131,7 @@ def cvsps_merge1(f,t=0):
 	author = ''
 	date = ''
 	level = 'Devel'
+	from = ''
 	for line in diffs:
 		if line[:-1] == 'Log:':
 			ok = 1
@@ -1149,6 +1164,8 @@ def cvsps_merge1(f,t=0):
 				level = line[13:-1]
 			elif line[:13] == "Patch-Level: ":
 				level = line[13:-1]
+			elif line[:6] == "From: ":
+				from = line[6:-1]
 			else:
 				log.append(line)
 		elif ok == 2:
@@ -1184,8 +1201,14 @@ def cvsps_merge1(f,t=0):
 		lines = lines + 'L:' + i
 		nlines = nlines + i
 	signed_flag = 0
+	if from != '':
+		real_author = from
+	else:
+		real_author = author
 	for i in signed:
 		if not signed_flag:
+			if from == '':
+				real_author = i[15:]
 			nlines = nlines + '\n'
 			signed_flag = 1
 		lines = lines + i
@@ -1217,6 +1240,10 @@ def cvsps_merge1(f,t=0):
 			nfiles.append(file)
 	print 'New files: %s' % nfiles
 
+	os.system('find . -name "*.orig" -exec rm {} \;')
+	os.system('find . -name "*.rej" -exec rm {} \;')
+	os.system('find . -name "*~" -exec rm {} \;')
+
 	while 1:
 		sts, out = my_popen2('cat ' + ff + ' | cg-patch')
 		for o in out:
@@ -1241,12 +1268,12 @@ def cvsps_merge1(f,t=0):
 		pline = line
 
 	print 'Commiting...'
-	os.environ['AUTHOR_NAME'] = extract_name(author)
-	os.environ['AUTHOR_EMAIL'] = extract_email(author)
-	os.environ['AUTHOR_DATE'] = date
-	os.environ['COMMIT_AUTHOR_NAME'] = GIT_COMMITER_NAME
-	os.environ['COMMIT_AUTHOR_EMAIL'] = GIT_COMMITER_EMAIL
-	cmd = 'echo "' + nlines + '" | cg-commit'
+	os.environ['GIT_AUTHOR_NAME'] = extract_name(real_author)
+	os.environ['GIT_AUTHOR_EMAIL'] = extract_email(real_author)
+	os.environ['GIT_AUTHOR_DATE'] = date
+	os.environ['GIT_COMMITTER_NAME'] = GIT_COMMITTER_NAME
+	os.environ['GIT_COMMITTER_EMAIL'] = GIT_COMMITTER_EMAIL
+	cmd = 'echo -n "' + nlines + '" | cg-commit'
 	while os.system(cmd):
 		print 'cg-commit failed'
 		os.system('cg-cancel')
@@ -1275,15 +1302,6 @@ def cvsps_merge(start):
 			cvsps_merge1(f, t=1)
 	print 'Is this ok? Press Ctrl-C to abort...'
 	sys.stdin.readline()
-	get_cvs_files(get_cvs_root(), '/')
-	update_cvs_file('include/version.h')
-	modify_version_file()
-	do_alsa_kernel_diff('/include/version.h', '/include/sound/version.h', 0, 0)
-	os.remove(get_cvs_root() + '/include/version.h')
-	update_cvs_file('include/version.h')
-	os.chdir(get_git_root())
-	print 'Is this ok? Press Ctrl-C to abort...'
-	sys.stdin.readline()
 	for f in l:
 		if string.find(f, '.') > 0:
 			file, suff = string.split(f, '.')
@@ -1294,6 +1312,25 @@ def cvsps_merge(start):
 				continue
 			cvsps_merge1(f, t=0)
 	del l
+
+def git_version_patch():
+	get_cvs_files(get_cvs_root(), '/')
+	update_cvs_file('include/version.h')
+	modify_version_file()
+	do_alsa_kernel_diff('/include/version.h', '/include/sound/version.h', 0, 0)
+	os.remove(get_cvs_root() + '/include/version.h')
+	update_cvs_file('include/version.h')
+
+def git_version():
+	os.chdir(get_git_root())
+	os.system(get_cvs_root() + '/scripts/ksync git-version-patch | cg-patch')
+	log = '[ALSA] version %s' % get_cvs_version()
+	print log
+	os.environ['GIT_AUTHOR_NAME'] = GIT_COMMITTER_NAME
+	os.environ['GIT_AUTHOR_EMAIL'] = GIT_COMMITTER_EMAIL
+	os.environ['GIT_COMMITTER_NAME'] = GIT_COMMITTER_NAME
+	os.environ['GIT_COMMITTER_EMAIL'] = GIT_COMMITTER_EMAIL
+	os.system('echo "' + log + '" | cg-commit')
 
 def cvsps_changes1(changes, lines, module):
 	if module == 'alsa-kernel':
@@ -1609,6 +1646,12 @@ def main():
 		os.system('mkdir alsa.local')
 		os.chdir(os.path.expanduser('~/alsa.local'))
 		os.system('cvs -d/home/src/alsa co -P %s alsa-driver alsa-kernel' % get_cvs_date_param1(to_cvs_time))
+	elif args[0] == 'git-version-patch':
+		GITROOT = '~/git/repos/work'
+		git_version_patch()
+	elif args[0] == 'git-version':
+		GITROOT = '~/git/repos/work'
+		git_version()
 	elif args[0] == 'filename':
 		ver = 1
 		if len(args) > 1:
