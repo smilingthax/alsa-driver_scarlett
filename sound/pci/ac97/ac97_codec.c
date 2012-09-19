@@ -1039,17 +1039,17 @@ static int snd_ac97_try_volume_mix(ac97_t * ac97, int reg)
 		}
 		return 0;
 	case AC97_CENTER_LFE_MASTER:	/* center */
-		if ((ac97->ext_id & 0x40) == 0)
+		if ((ac97->ext_id & AC97_EI_CDAC) == 0)
 			return 0;
 		break;
 	case AC97_CENTER_LFE_MASTER+1:	/* lfe */
-		if ((ac97->ext_id & 0x100) == 0)
+		if ((ac97->ext_id & AC97_EI_LDAC) == 0)
 			return 0;
 		reg = AC97_CENTER_LFE_MASTER;
 		mask = 0x0080;
 		break;
 	case AC97_SURROUND_MASTER:
-		if ((ac97->ext_id & 0x80) == 0)
+		if ((ac97->ext_id & AC97_EI_SDAC) == 0)
 			return 0;
 		break;
 	}
@@ -1740,9 +1740,8 @@ int snd_ac97_mixer(ac97_bus_t * bus, ac97_t * _ac97, ac97_t ** rac97)
 		udelay(50);
 		if (ac97_reset_wait(ac97, HZ/2, 0) < 0 &&
 		    ac97_reset_wait(ac97, HZ/2, 1) < 0) {
-			snd_printk(KERN_ERR "AC'97 %d does not respond - RESET\n", ac97->num);
-			snd_ac97_free(ac97);
-			return -ENXIO;
+			snd_printk(KERN_WARNING "AC'97 %d does not respond - RESET\n", ac97->num);
+			/* proceed anyway - it's often non-critical */
 		}
 	}
       __access_ok:
