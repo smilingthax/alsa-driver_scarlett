@@ -122,11 +122,11 @@ static int snd_gus_free(snd_gus_card_t *gus)
       __hw_end:
 	if (gus->gf1.res_port1) {
 		release_resource(gus->gf1.res_port1);
-		kfree(gus->gf1.res_port1);
+		kfree_nocheck(gus->gf1.res_port1);
 	}
 	if (gus->gf1.res_port2) {
 		release_resource(gus->gf1.res_port2);
-		kfree(gus->gf1.res_port2);
+		kfree_nocheck(gus->gf1.res_port2);
 	}
 	if (gus->gf1.irq >= 0)
 		free_irq(gus->gf1.irq, (void *) gus);

@@ -1652,7 +1652,7 @@ static int snd_cs46xx_free(cs46xx_t *chip)
 			iounmap((void *) region->remap_addr);
 		if (region->resource) {
 			release_resource(region->resource);
-			kfree(region->resource);
+			kfree_nocheck(region->resource);
 		}
 	}
 	if (chip->irq >= 0)

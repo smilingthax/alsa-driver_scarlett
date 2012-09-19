@@ -387,7 +387,7 @@ static void snd_card_cs4236_free(snd_card_t *card)
 #endif
 		if (acard->res_sb_port) {
 			release_resource(acard->res_sb_port);
-			kfree(acard->res_sb_port);
+			kfree_nocheck(acard->res_sb_port);
 		}
 	}
 }

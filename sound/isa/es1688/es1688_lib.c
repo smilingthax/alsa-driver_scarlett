@@ -604,6 +604,7 @@ static int snd_es1688_free(es1688_t *chip)
 	if (chip->res_port) {
 		snd_es1688_init(chip, 0);
 		release_resource(chip->res_port);
+		kfree_nocheck(chip->res_port);
 	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *) chip);

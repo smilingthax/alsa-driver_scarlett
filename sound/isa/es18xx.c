@@ -1591,15 +1591,15 @@ static int snd_es18xx_free(es18xx_t *chip)
 {
 	if (chip->res_port) {
 		release_resource(chip->res_port);
-		kfree(chip->res_port);
+		kfree_nocheck(chip->res_port);
 	}
 	if (chip->res_ctrl_port) {
 		release_resource(chip->res_ctrl_port);
-		kfree(chip->res_ctrl_port);
+		kfree_nocheck(chip->res_ctrl_port);
 	}
 	if (chip->res_mpu_port) {
 		release_resource(chip->res_mpu_port);
-		kfree(chip->res_mpu_port);
+		kfree_nocheck(chip->res_mpu_port);
 	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *) chip);

@@ -878,7 +878,7 @@ static int snd_fm801_free(fm801_t *chip)
       __end_hw:
 	if (chip->res_port) {
 		release_resource(chip->res_port);
-		kfree(chip->res_port);
+		kfree_nocheck(chip->res_port);
 	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);

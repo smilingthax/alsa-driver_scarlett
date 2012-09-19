@@ -351,11 +351,11 @@ static int snd_opl3_free(opl3_t *opl3)
 {
 	if (opl3->res_l_port) {
 		release_resource(opl3->res_l_port);
-		kfree(opl3->res_l_port);
+		kfree_nocheck(opl3->res_l_port);
 	}
 	if (opl3->res_r_port) {
 		release_resource(opl3->res_r_port);
-		kfree(opl3->res_r_port);
+		kfree_nocheck(opl3->res_r_port);
 	}
 	snd_magic_kfree(opl3);
 	return 0;

@@ -699,7 +699,7 @@ static int snd_opl3sa2_free(opl3sa2_t *chip)
 		free_irq(chip->irq, (void *)chip);
 	if (chip->res_port) {
 		release_resource(chip->res_port);
-		kfree(chip->res_port);
+		kfree_nocheck(chip->res_port);
 	}
 	snd_magic_kfree(chip);
 	return 0;

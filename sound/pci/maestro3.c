@@ -2306,7 +2306,7 @@ static int snd_m3_free(m3_t *chip)
 
 	if (chip->iobase_res) {
 		release_resource(chip->iobase_res);
-		kfree(chip->iobase_res);
+		kfree_nocheck(chip->iobase_res);
 	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);

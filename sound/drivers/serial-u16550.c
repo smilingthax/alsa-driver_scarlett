@@ -747,7 +747,7 @@ static int snd_uart16550_free(snd_uart16550_t *uart)
 		free_irq(uart->irq, (void *)uart);
 	if (uart->res_base) {
 		release_resource(uart->res_base);
-		kfree(uart->res_base);
+		kfree_nocheck(uart->res_base);
 	}
 	snd_magic_kfree(uart);
 	return 0;

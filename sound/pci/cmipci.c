@@ -2448,7 +2448,7 @@ static int snd_cmipci_free(cmipci_t *cm)
 	}
 	if (cm->res_iobase) {
 		release_resource(cm->res_iobase);
-		kfree(cm->res_iobase);
+		kfree_nocheck(cm->res_iobase);
 	}
 	snd_magic_kfree(cm);
 	return 0;
@@ -2678,7 +2678,7 @@ static int __devinit snd_cmipci_probe(struct pci_dev *pci,
 		cm->iobase,
 		cm->irq);
 
-	snd_printd("%s is detected\n", card->longname);
+	//snd_printd("%s is detected\n", card->longname);
 
 	if ((err = snd_card_register(card)) < 0) {
 		snd_card_free(card);

@@ -126,7 +126,6 @@ static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 1-MAX */
 static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
 static int snd_total_bufsize[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1024 };
-static int snd_midi_enable[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 0 };
 static int snd_pcm_substreams_p[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 4 };
 static int snd_pcm_substreams_c[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1 };
 static int snd_clock[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 0};
@@ -143,9 +142,6 @@ MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 MODULE_PARM(snd_total_bufsize, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_total_bufsize, "Total buffer size in kB.");
 MODULE_PARM_SYNTAX(snd_total_bufsize, SNDRV_ENABLED ",allows:{{1,4096}},skill:advanced");
-MODULE_PARM(snd_midi_enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_midi_enable, "Midi enabled for " CARD_NAME " soundcard.");
-MODULE_PARM_SYNTAX(snd_midi_enable, SNDRV_ENABLED "," SNDRV_ENABLE_DESC);
 MODULE_PARM(snd_pcm_substreams_p, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_pcm_substreams_p, "PCM Playback substreams for " CARD_NAME " soundcard.");
 MODULE_PARM_SYNTAX(snd_pcm_substreams_p, SNDRV_ENABLED ",allows:{{1,8}}");
@@ -543,8 +539,6 @@ struct snd_esschan {
 
 struct snd_es1968 {
 	/* Module Config */
-	int midi_enabled;			/* bool */
-
 	int total_bufsize;			/* in bytes */
 
 	int playback_streams, capture_streams;
@@ -2324,12 +2318,7 @@ static void snd_es1968_chip_init(es1968_t *chip)
 	outb(0, iobase + ASSP_CONTROL_C);	/* M: Disable ASSP, ASSP IRQ's and FM Port */
 
 	/* Enable IRQ's */
-
-	if (chip->midi_enabled)
-		w = ESM_HIRQ_DSIE | ESM_HIRQ_MPU401;
-	else
-		w = ESM_HIRQ_DSIE;
-
+	w = ESM_HIRQ_DSIE | ESM_HIRQ_MPU401;
 	outw(w, iobase + ESM_PORT_HOST_IRQ);
 
 	/*
@@ -2504,7 +2493,7 @@ static int snd_es1968_free(es1968_t *chip)
 	chip->master_volume = NULL;
 	if (chip->res_io_port) {
 		release_resource(chip->res_io_port);
-		kfree(chip->res_io_port);
+		kfree_nocheck(chip->res_io_port);
 	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
@@ -2520,7 +2509,6 @@ static int snd_es1968_dev_free(snd_device_t *device)
 
 static int __devinit snd_es1968_create(snd_card_t * card,
 				    struct pci_dev *pci,
-				    int midi_enabled,
 				    int total_bufsize,
 				    int play_streams,
 				    int capt_streams,
@@ -2560,7 +2548,6 @@ static int __devinit snd_es1968_create(snd_card_t * card,
 	chip->card = card;
 	chip->pci = pci;
 	chip->irq = -1;
-	chip->midi_enabled = midi_enabled;
 	chip->total_bufsize = total_bufsize;	/* in bytes */
 	chip->playback_streams = play_streams;
 	chip->capture_streams = capt_streams;
@@ -2609,31 +2596,6 @@ static int __devinit snd_es1968_create(snd_card_t * card,
 	return 0;
 }
 
-/* *************
-   * Midi Part *
-   *************/
-static int __devinit
-snd_es1968_midi(es1968_t *chip, int device, snd_rawmidi_t ** rawmidi)
-{
-	unsigned long mpu_port;
-	int err;
-	snd_rawmidi_t *rm;
-
-	rm = NULL;
-
-	mpu_port = chip->io_port + ESM_MPU401_PORT;
-
-	err = snd_mpu401_uart_new(chip->card, device,
-				  MPU401_HW_MPU401,
-				  mpu_port, 1, chip->irq, 0, &rm);
-	if (err < 0)
-		return err;
-
-	chip->rmidi = rm;
-	if (rawmidi)
-		*rawmidi = rm;
-	return 0;
-}
 
 /*
  * joystick
@@ -2712,7 +2674,6 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
 	if (snd_total_bufsize[dev] > 4096)
 		snd_total_bufsize[dev] = 4096;
 	if ((err = snd_es1968_create(card, pci,
-				     snd_midi_enable[dev],
 				     snd_total_bufsize[dev] * 1024, /* in bytes */
 				     snd_pcm_substreams_p[dev], 
 				     snd_pcm_substreams_c[dev],
@@ -2746,11 +2707,10 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
 		return err;
 	}
 
-	if (snd_midi_enable[dev]) {
-		if ((err = snd_es1968_midi(chip, 0, NULL)) < 0) {
-			snd_card_free(card);
-			return err;
-		}
+	if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401,
+				       chip->io_port + ESM_MPU401_PORT, 1,
+				       chip->irq, 0, &chip->rmidi)) < 0) {
+		printk(KERN_INFO "es1968: skipping MPU-401 MIDI support..\n");
 	}
 
 	/* card switches */
