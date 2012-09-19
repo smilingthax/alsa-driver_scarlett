@@ -799,7 +799,9 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
 /**
  * snd_usb_endpoint_start: start an snd_usb_endpoint
  *
- * @ep: the endpoint to start
+ * @ep:		the endpoint to start
+ * @can_sleep:	flag indicating whether the operation is executed in
+ * 		non-atomic context
  *
  * A call to this function will increment the use count of the endpoint.
  * In case it is not already running, the URBs for this endpoint will be
@@ -809,7 +811,7 @@ int snd_usb_endpoint_set_params(struct snd_usb_endpoint *ep,
  *
  * Returns an error if the URB submission failed, 0 in all other cases.
  */
-int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
+int snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep)
 {
 	int err;
 	unsigned int i;
@@ -822,8 +824,9 @@ int snd_usb_endpoint_start(struct snd_usb_endpoint *ep)
 		return 0;
 
 	/* just to be sure */
-	deactivate_urbs(ep, 0, 1);
-	wait_clear_urbs(ep);
+	deactivate_urbs(ep, 0, can_sleep);
+	if (can_sleep)
+		wait_clear_urbs(ep);
 
 	ep->active_mask = 0;
 	ep->unlink_mask = 0;
