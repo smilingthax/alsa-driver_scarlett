@@ -185,3 +185,21 @@ Additional Modules
           in alsa-tools package.
 
 
+  Module snd-au8810, snd-au8820, snd-au8830
+  -----------------------------------------
+
+    Module for Aureal Vortex, Vortex2 and Advantage device.
+
+    This module supports all ADB PCM channels, ac97 mixer, SPDIF, hardware
+    EQ, mpu401, gameport. A3D and wavetable support are still in development.
+    Development and reverse engineering work is being coordinated at
+    http://savannah.nongnu.org/projects/openvortex/
+    SPDIF output has a copy of the AC97 codec output, unless you use the
+    "spdif" pcm device, which allows raw data passthru.
+    The hardware EQ hardware and SPDIF is only present in the Vortex2 and 
+    Advantage.
+
+    Note: Some ALSA mixer applicactions don't handle the SPDIF samplerate 
+           control correctly. If you have problems regarding this, try
+           another ALSA compliant mixer (alsamixer works).
+
