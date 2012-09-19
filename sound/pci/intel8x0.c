@@ -1002,7 +1002,7 @@ static int snd_intel8x0_pcm_open(snd_pcm_substream_t * substream, ichdev_t *ichd
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	static unsigned int i, rates[] = {
 		/* ATTENTION: these values depend on the definition in pcm.h! */
-		5512, 8000, 11025, 16000, 22050, 32000, 44100, 480000
+		5512, 8000, 11025, 16000, 22050, 32000, 44100, 48000
 	};
 	int err;
 
