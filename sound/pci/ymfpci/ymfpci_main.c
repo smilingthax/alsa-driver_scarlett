@@ -753,7 +753,7 @@ static void snd_ymfpci_irq_wait(struct snd_ymfpci *chip)
 	}
 }
 
-static irqreturn_t snd_ymfpci_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+static irqreturn_t snd_ymfpci_interrupt(int irq, void *dev_id)
 {
 	struct snd_ymfpci *chip = dev_id;
 	u32 status, nvoice, mode;
@@ -799,7 +799,7 @@ static irqreturn_t snd_ymfpci_interrupt(int irq, void *dev_id, struct pt_regs *r
 	snd_ymfpci_writew(chip, YDSXGR_INTFLAG, status);
 
 	if (chip->rawmidi)
-		snd_mpu401_uart_interrupt(irq, chip->rawmidi->private_data, regs);
+		snd_mpu401_uart_interrupt(irq, chip->rawmidi->private_data);
 	return IRQ_HANDLED;
 }
 
@@ -910,7 +910,7 @@ static int snd_ymfpci_playback_open(struct snd_pcm_substream *substream)
 	ypcm = runtime->private_data;
 	ypcm->output_front = 1;
 	ypcm->output_rear = chip->mode_dup4ch ? 1 : 0;
-	ypcm->swap_rear = chip->rear_swap;
+	ypcm->swap_rear = 0;
 	spin_lock_irq(&chip->reg_lock);
 	if (ypcm->output_rear) {
 		ymfpci_open_extension(chip);
@@ -936,6 +936,7 @@ static int snd_ymfpci_playback_spdif_open(struct snd_pcm_substream *substream)
 	ypcm = runtime->private_data;
 	ypcm->output_front = 0;
 	ypcm->output_rear = 1;
+	ypcm->swap_rear = 1;
 	spin_lock_irq(&chip->reg_lock);
 	snd_ymfpci_writew(chip, YDSXGR_SPDIFOUTCTRL,
 			  snd_ymfpci_readw(chip, YDSXGR_SPDIFOUTCTRL) | 2);
@@ -963,6 +964,7 @@ static int snd_ymfpci_playback_4ch_open(struct snd_pcm_substream *substream)
 	ypcm = runtime->private_data;
 	ypcm->output_front = 0;
 	ypcm->output_rear = 1;
+	ypcm->swap_rear = 0;
 	spin_lock_irq(&chip->reg_lock);
 	ymfpci_open_extension(chip);
 	chip->rear_opened++;
@@ -1755,7 +1757,7 @@ static void snd_ymfpci_mixer_free_ac97(struct snd_ac97 *ac97)
 	chip->ac97 = NULL;
 }
 
-int __devinit snd_ymfpci_mixer(struct snd_ymfpci *chip, int rear_switch, int rear_swap)
+int __devinit snd_ymfpci_mixer(struct snd_ymfpci *chip, int rear_switch)
 {
 	struct snd_ac97_template ac97;
 	struct snd_kcontrol *kctl;
@@ -1767,7 +1769,6 @@ int __devinit snd_ymfpci_mixer(struct snd_ymfpci *chip, int rear_switch, int rea
 		.read = snd_ymfpci_codec_read,
 	};
 
-	chip->rear_swap = rear_swap;
 	if ((err = snd_ac97_bus(chip->card, 0, &ops, chip, &chip->ac97_bus)) < 0)
 		return err;
 	chip->ac97_bus->private_free = snd_ymfpci_mixer_free_ac97_bus;
@@ -2315,7 +2316,6 @@ int __devinit snd_ymfpci_create(struct snd_card *card,
 		return -EIO;
 	}
 
-	chip->rear_swap = 1;
 	if ((err = snd_ymfpci_ac3_init(chip)) < 0) {
 		snd_ymfpci_free(chip);
 		return err;
