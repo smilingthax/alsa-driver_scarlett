@@ -401,12 +401,12 @@ module_exit(alsa_card_gusextreme_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-gusextreme=snd_enable,snd_index,snd_id,
-				  snd_port,snd_gf1_port,snd_mpu_port,
-				  snd_irq,snd_gf1_irq,snd_mpu_irq,
-				  snd_dma8,snd_dma1,
-				  snd_joystick_dac,
-				  snd_channels,snd_pcm_channels */
+/* format is: snd-gusextreme=snd_enable,snd_index,snd_id,
+			     snd_port,snd_gf1_port,snd_mpu_port,
+			     snd_irq,snd_gf1_irq,snd_mpu_irq,
+			     snd_dma8,snd_dma1,
+			     snd_joystick_dac,
+			     snd_channels,snd_pcm_channels */
 
 static int __init alsa_card_gusextreme_setup(char *str)
 {
@@ -429,6 +429,6 @@ static int __init alsa_card_gusextreme_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-gusextreme=", alsa_card_gusextreme_setup);
+__setup("snd-gusextreme=", alsa_card_gusextreme_setup);
 
 #endif /* ifndef MODULE */

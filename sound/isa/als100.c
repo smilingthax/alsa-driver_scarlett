@@ -380,9 +380,9 @@ module_exit(alsa_card_als100_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-als100=snd_enable,snd_index,snd_id,snd_port,
-			      snd_mpu_port,snd_fm_port,snd_irq,snd_mpu_irq,
-			      snd_dma8,snd_dma16 */
+/* format is: snd-als100=snd_enable,snd_index,snd_id,snd_port,
+			 snd_mpu_port,snd_fm_port,snd_irq,snd_mpu_irq,
+			 snd_dma8,snd_dma16 */
 
 static int __init alsa_card_als100_setup(char *str)
 {
@@ -404,6 +404,6 @@ static int __init alsa_card_als100_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-als100=", alsa_card_als100_setup);
+__setup("snd-als100=", alsa_card_als100_setup);
 
 #endif /* ifndef MODULE */

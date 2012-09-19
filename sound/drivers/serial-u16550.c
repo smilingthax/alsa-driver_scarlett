@@ -959,8 +959,8 @@ module_exit(alsa_card_serial_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-serial=snd_enable,snd_index,snd_id,
-			      snd_port,snd_irq,snd_speed,snd_base,snd_outs */
+/* format is: snd-serial=snd_enable,snd_index,snd_id,
+			 snd_port,snd_irq,snd_speed,snd_base,snd_outs */
 
 static int __init alsa_card_serial_setup(char *str)
 {
@@ -981,6 +981,6 @@ static int __init alsa_card_serial_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-serial=", alsa_card_serial_setup);
+__setup("snd-serial=", alsa_card_serial_setup);
 
 #endif /* ifndef MODULE */

@@ -786,12 +786,12 @@ module_exit(alsa_card_wavefront_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-wavefront=snd_enable,snd_index,snd_id,snd_isapnp,
-				 snd_cs4232_pcm_port,snd_cs4232_pcm_irq,
-				 snd_cs4232_mpu_port,snd_cs4232_mpu_irq,
-				 snd_ics2115_port,snd_ics2115_irq,
-				 snd_fm_port,snd_control_port,snd_wss_port,
-				 snd_dma1,snd_dma2 */
+/* format is: snd-wavefront=snd_enable,snd_index,snd_id,snd_isapnp,
+			    snd_cs4232_pcm_port,snd_cs4232_pcm_irq,
+			    snd_cs4232_mpu_port,snd_cs4232_mpu_irq,
+			    snd_ics2115_port,snd_ics2115_irq,
+			    snd_fm_port,snd_control_port,snd_wss_port,
+			    snd_dma1,snd_dma2 */
 
 static int __init alsa_card_wavefront_setup(char *str)
 {
@@ -818,6 +818,6 @@ static int __init alsa_card_wavefront_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-wavefront=", alsa_card_wavefront_setup);
+__setup("snd-wavefront=", alsa_card_wavefront_setup);
 
 #endif /* ifndef MODULE */

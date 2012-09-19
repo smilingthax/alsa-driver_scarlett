@@ -356,9 +356,9 @@ module_exit(alsa_card_dt0197h_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-dt0197h=snd_enable,snd_index,snd_id,snd_isapnp,
-			       snd_port,snd_mpu_port,snd_fm_port,
-			       snd_irq,snd_mpu_irq,snd_dma8,snd_dma8_size */
+/* format is: snd-dt0197h=snd_enable,snd_index,snd_id,snd_isapnp,
+			  snd_port,snd_mpu_port,snd_fm_port,
+			  snd_irq,snd_mpu_irq,snd_dma8,snd_dma8_size */
 
 static int __init alsa_card_dt0197h_setup(char *str)
 {
@@ -379,6 +379,6 @@ static int __init alsa_card_dt0197h_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-dt0197h=", alsa_card_dt0197h_setup);
+__setup("snd-dt0197h=", alsa_card_dt0197h_setup);
 
 #endif /* ifndef MODULE */

@@ -405,11 +405,11 @@ module_exit(alsa_card_gusmax_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-gusmax=snd_enable,snd_index,snd_id,
-			      snd_port,snd_irq,
-			      snd_dma1,snd_dma2,
-			      snd_joystick_dac,
-			      snd_channels,snd_pcm_channels */
+/* format is: snd-gusmax=snd_enable,snd_index,snd_id,
+			 snd_port,snd_irq,
+			 snd_dma1,snd_dma2,
+			 snd_joystick_dac,
+			 snd_channels,snd_pcm_channels */
 
 static int __init alsa_card_gusmax_setup(char *str)
 {
@@ -431,6 +431,6 @@ static int __init alsa_card_gusmax_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-gusmax=", alsa_card_gusmax_setup);
+__setup("snd-gusmax=", alsa_card_gusmax_setup);
 
 #endif /* ifndef MODULE */

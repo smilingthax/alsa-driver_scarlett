@@ -408,9 +408,9 @@ module_exit(alsa_card_azt2320_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-azt2320=snd_enable,snd_index,snd_id,snd_port,
-			       snd_wss_port,snd_mpu_port,snd_fm_port,
-			       snd_irq,snd_mpu_irq,snd_dma1,snd_dma2 */
+/* format is: snd-azt2320=snd_enable,snd_index,snd_id,snd_port,
+			  snd_wss_port,snd_mpu_port,snd_fm_port,
+			  snd_irq,snd_mpu_irq,snd_dma1,snd_dma2 */
 
 static int __init alsa_card_azt2320_setup(char *str)
 {
@@ -432,6 +432,6 @@ static int __init alsa_card_azt2320_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-azt2320=", alsa_card_azt2320_setup);
+__setup("snd-azt2320=", alsa_card_azt2320_setup);
 
 #endif /* ifndef MODULE */

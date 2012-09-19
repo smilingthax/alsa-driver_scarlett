@@ -1205,8 +1205,8 @@ module_exit(alsa_card_via686a_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-via686a=snd_enable,snd_index,snd_id,
-			       snd_mpu_port,snd_joystick,snd_ac97_clock */
+/* format is: snd-via686a=snd_enable,snd_index,snd_id,
+			  snd_mpu_port,snd_joystick,snd_ac97_clock */
 
 static int __init alsa_card_via686a_setup(char *str)
 {
@@ -1224,6 +1224,6 @@ static int __init alsa_card_via686a_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-via686a=", alsa_card_via686a_setup);
+__setup("snd-via686a=", alsa_card_via686a_setup);
 
 #endif /* ifndef MODULE */

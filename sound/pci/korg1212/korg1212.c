@@ -2268,7 +2268,7 @@ module_exit(alsa_card_korg1212_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-korg1212=snd_enable,snd_index,snd_id */
+/* format is: snd-korg1212=snd_enable,snd_index,snd_id */
 
 static int __init alsa_card_korg1212_setup(char *str)
 {
@@ -2283,7 +2283,7 @@ static int __init alsa_card_korg1212_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-korg1212=", alsa_card_korg1212_setup);
+__setup("snd-korg1212=", alsa_card_korg1212_setup);
 
 #endif /* ifndef MODULE */
 

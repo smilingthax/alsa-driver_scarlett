@@ -1659,9 +1659,9 @@ module_exit(alsa_card_nm256_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-nm256=snd_enable,snd_index,snd_id,
-			     snd_playback_bufsize,snd_capture_bufsize,
-			     snd_force_ac97,snd_buffer_top,snd_use_cache */
+/* format is: snd-nm256=snd_enable,snd_index,snd_id,
+			snd_playback_bufsize,snd_capture_bufsize,
+			snd_force_ac97,snd_buffer_top,snd_use_cache */
 
 static int __init alsa_card_nm256_setup(char *str)
 {
@@ -1681,6 +1681,6 @@ static int __init alsa_card_nm256_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-nm256=", alsa_card_nm256_setup);
+__setup("snd-nm256=", alsa_card_nm256_setup);
 
 #endif /* ifndef MODULE */

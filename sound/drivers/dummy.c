@@ -586,8 +586,8 @@ module_exit(alsa_card_dummy_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-dummy=snd_enable,snd_index,snd_id,
-			     snd_pcm_devs,snd_pcm_substreams */
+/* format is: snd-dummy=snd_enable,snd_index,snd_id,
+			snd_pcm_devs,snd_pcm_substreams */
 
 static int __init alsa_card_dummy_setup(char *str)
 {
@@ -604,6 +604,6 @@ static int __init alsa_card_dummy_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-dummy=", alsa_card_dummy_setup);
+__setup("snd-dummy=", alsa_card_dummy_setup);
 
 #endif /* ifndef MODULE */

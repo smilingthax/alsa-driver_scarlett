@@ -1553,8 +1553,8 @@ module_exit(alsa_card_sonicvibes_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-sonicvibes=snd_enable,snd_index,snd_id,
-				  snd_reverb,snd_mge,snd_dmaio */
+/* format is: snd-sonicvibes=snd_enable,snd_index,snd_id,
+			     snd_reverb,snd_mge,snd_dmaio */
 
 static int __init alsa_card_sonicvibes_setup(char *str)
 {
@@ -1572,6 +1572,6 @@ static int __init alsa_card_sonicvibes_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-sonicvibes=", alsa_card_sonicvibes_setup);
+__setup("snd-sonicvibes=", alsa_card_sonicvibes_setup);
 
 #endif /* ifndef MODULE */

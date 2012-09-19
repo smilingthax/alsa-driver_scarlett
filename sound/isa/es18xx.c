@@ -2163,9 +2163,9 @@ module_exit(alsa_card_es18xx_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-es18xx=snd_enable,snd_index,snd_id,snd_isapnp,
-			      snd_port,snd_mpu_port,snd_fm_port,snd_irq,
-			      snd_dma1,snd_dma2 */
+/* format is: snd-es18xx=snd_enable,snd_index,snd_id,snd_isapnp,
+			 snd_port,snd_mpu_port,snd_fm_port,snd_irq,
+			 snd_dma1,snd_dma2 */
 
 static int __init alsa_card_es18xx_setup(char *str)
 {
@@ -2192,6 +2192,6 @@ static int __init alsa_card_es18xx_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-es18xx=", alsa_card_es18xx_setup);
+__setup("snd-es18xx=", alsa_card_es18xx_setup);
 
 #endif /* ifndef MODULE */

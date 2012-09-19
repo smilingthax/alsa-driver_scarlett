@@ -92,7 +92,7 @@ snd-ad1816a-lib snd-pcm snd-timer
 snd-ad1848-lib snd-pcm
 |snd-ad1848 snd-ad1848-lib
 
-%dir linux/sound/isa/cs4231
+%dir linux/sound/isa/cs423x
 snd-cs4231-lib snd-pcm snd-timer
 |snd-cs4231 snd-cs4231-lib snd-mpu401-uart
 snd-cs4236-lib snd-cs4231-lib

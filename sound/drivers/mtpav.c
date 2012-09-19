@@ -788,8 +788,8 @@ module_exit(alsa_card_mtpav_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-mtpav=snd_enable,snd_index,snd_id,
-			     snd_port,snd_irq,snd_hwports */
+/* format is: snd-mtpav=snd_enable,snd_index,snd_id,
+			snd_port,snd_irq,snd_hwports */
 
 static int __init alsa_card_mtpav_setup(char *str)
 {
@@ -804,6 +804,6 @@ static int __init alsa_card_mtpav_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-mtpav=", alsa_card_mtpav_setup);
+__setup("snd-mtpav=", alsa_card_mtpav_setup);
 
 #endif /* ifndef MODULE */

@@ -361,9 +361,9 @@ module_exit(alsa_card_ad1816a_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-ad1816a=snd_enable,snd_index,snd_id,snd_port,
-			       snd_mpu_port,snd_fm_port,snd_irq,snd_mpu_irq,
-			       snd_dma1,snd_dma2 */
+/* format is: snd-ad1816a=snd_enable,snd_index,snd_id,snd_port,
+			  snd_mpu_port,snd_fm_port,snd_irq,snd_mpu_irq,
+			  snd_dma1,snd_dma2 */
 
 static int __init alsa_card_ad1816a_setup(char *str)
 {
@@ -385,6 +385,6 @@ static int __init alsa_card_ad1816a_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-ad1816a=", alsa_card_ad1816a_setup);
+__setup("snd-ad1816a=", alsa_card_ad1816a_setup);
 
 #endif /* ifndef MODULE */

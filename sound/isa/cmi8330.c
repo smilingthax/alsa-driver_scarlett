@@ -499,11 +499,11 @@ module_exit(alsa_card_cmi8330_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-cmi8330=snd_enable,snd_index,snd_id,snd_isapnp,
-			       snd_sbport,snd_sbirq,
-			       snd_sbdma8,snd_sbdma16,
-			       snd_wssport,snd_wssirq,
-			       snd_wssdma */
+/* format is: snd-cmi8330=snd_enable,snd_index,snd_id,snd_isapnp,
+			  snd_sbport,snd_sbirq,
+			  snd_sbdma8,snd_sbdma16,
+			  snd_wssport,snd_wssirq,
+			  snd_wssdma */
 
 static int __init alsa_card_cmi8330_setup(char *str)
 {
@@ -531,6 +531,6 @@ static int __init alsa_card_cmi8330_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-cmi8330=", alsa_card_cmi8330_setup);
+__setup("snd-cmi8330=", alsa_card_cmi8330_setup);
 
 #endif /* ifndef MODULE */

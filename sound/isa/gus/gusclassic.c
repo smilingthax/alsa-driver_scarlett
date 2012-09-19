@@ -269,11 +269,11 @@ module_exit(alsa_card_gusclassic_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-gusclassic=snd_enable,snd_index,snd_id,
-				  snd_port,snd_irq,
-				  snd_dma1,snd_dma2,
-				  snd_joystick_dac,
-				  snd_channels,snd_pcm_channels */
+/* format is: snd-gusclassic=snd_enable,snd_index,snd_id,
+			     snd_port,snd_irq,
+			     snd_dma1,snd_dma2,
+			     snd_joystick_dac,
+			     snd_channels,snd_pcm_channels */
 
 static int __init alsa_card_gusclassic_setup(char *str)
 {
@@ -295,6 +295,6 @@ static int __init alsa_card_gusclassic_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-gusclassic=", alsa_card_gusclassic_setup);
+__setup("snd-gusclassic=", alsa_card_gusclassic_setup);
 
 #endif /* ifndef MODULE */

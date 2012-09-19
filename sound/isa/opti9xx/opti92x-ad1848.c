@@ -2164,10 +2164,10 @@ module_exit(alsa_card_opti9xx_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-opti9xx=snd_enable,snd_index,snd_id,snd_isapnp,
-			       snd_port,snd_mpu_port,snd_fm_port,
-			       snd_irq,snd_mpu_irq,
-			       snd_dma1,[snd_dma2] */
+/* format is: snd-opti9xx=snd_enable,snd_index,snd_id,snd_isapnp,
+			  snd_port,snd_mpu_port,snd_fm_port,
+			  snd_irq,snd_mpu_irq,
+			  snd_dma1,[snd_dma2] */
 
 static int __init alsa_card_opti9xx_setup(char *str)
 {
@@ -2197,11 +2197,11 @@ static int __init alsa_card_opti9xx_setup(char *str)
 }
 
 #if defined(OPTi93X)
-__setup("snd-card-opti93x=", alsa_card_opti9xx_setup);
+__setup("snd-opti93x=", alsa_card_opti9xx_setup);
 #elif defined(CS4231)
-__setup("snd-card-opti92x-cs4231=", alsa_card_opti9xx_setup);
+__setup("snd-opti92x-cs4231=", alsa_card_opti9xx_setup);
 #else
-__setup("snd-card-opti92x-ad1848=", alsa_card_opti9xx_setup);
+__setup("snd-opti92x-ad1848=", alsa_card_opti9xx_setup);
 #endif
 
 #endif /* ifndef MODULE */

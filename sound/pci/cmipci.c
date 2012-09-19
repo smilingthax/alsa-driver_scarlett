@@ -2627,9 +2627,9 @@ module_exit(alsa_card_cmipci_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-cmipci=snd_enable,snd_index,snd_id,
-			      snd_enable_midi,snd_enable_fm,
-			      snd_mpu_port,snd_fm_port */
+/* format is: snd-cmipci=snd_enable,snd_index,snd_id,
+			 snd_enable_midi,snd_enable_fm,
+			 snd_mpu_port,snd_fm_port */
 
 static int __init alsa_card_cmipci_setup(char *str)
 {
@@ -2648,6 +2648,6 @@ static int __init alsa_card_cmipci_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-cmipci=", alsa_card_cmipci_setup);
+__setup("snd-cmipci=", alsa_card_cmipci_setup);
 
 #endif /* ifndef MODULE */
