@@ -14,6 +14,22 @@
 #
 first_rule: modules
 
+#
+# ALSA hacks for extra code
+#
+
+subdir-y	+= $(extra-subdir-y)
+subdir-m	+= $(extra-subdir-m)
+subdir-n	+= $(extra-subdir-n)
+
+obj-y		+= $(extra-obj-y)
+obj-m		+= $(extra-obj-m)
+obj-n		+= $(extra-obj-n)
+
+#
+#
+#
+
 both-m          := $(filter $(mod-subdirs), $(subdir-y))
 SUB_DIRS	:= $(subdir-y)
 MOD_SUB_DIRS	:= $(sort $(subdir-m) $(both-m))
