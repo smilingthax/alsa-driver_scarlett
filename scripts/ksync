@@ -100,6 +100,12 @@ def get_bk_root(root=''):
 		root = BKROOT
 	return os.path.expanduser(root)
 
+def my_popen(cmd):
+	fp = os.popen(cmd)
+	lines = fp.readlines()
+	fp.close()
+	return lines
+
 def print_file(fp, lines):
 	for line in lines:
 		fp.write(line)
@@ -169,6 +175,10 @@ def update_bk_file(file, root=''):
 	print_file(sys.stderr, lines)
 
 def change_diff_line(line, file):
+	if line[:6] == 'Index:':
+		return 'Index: ' + file + '\n'
+	if line[:7] == 'diff -u':
+		return 'diff -u ' + file + '.old ' + file + '\n'
 	if line[:4] == '--- ':
 		file = file + '.old'
 	if line[:4] == '--- ' or line[:4] == '+++ ':
@@ -730,6 +740,95 @@ def parse_time(str):
 	t = time.mktime(time.strptime(str, '%Y %m %d'))
 	return t - time.timezone
 
+def cvsps(changeset):
+	os.chdir(get_cvs_root())
+	lines = my_popen("cvsps | grep PatchSet | tail -n 1")
+	dummy, endchangeset = string.split(lines[0][0:-2], ' ')
+	changeset = int(changeset)
+	endchangeset = int(endchangeset)
+	print 'Generating CVS changesets %s..%s' % (changeset, endchangeset)
+	try:
+		os.mkdir(get_cvs_root() + '/scripts/changesets')
+	except OSError, msg:
+		a = 0
+	while changeset <= endchangeset:
+		print 'ChangeSet %s' % changeset
+		fp = open(get_cvs_root() + '/scripts/changesets/%s.patch' % changeset, 'w+')
+		lines = my_popen('cvsps -g -s %s' % changeset)
+		idx = 0
+		bkfile = ''
+		for i in lines:
+			if i[0:6] == 'Index:':
+				bkfile = remap_alsa_file(i[string.find(i, '/'):-1])
+				fp.write(change_diff_line(i, bkfile))
+				idx = 1
+			elif idx > 0 and idx < 4:
+				fp.write(change_diff_line(i, bkfile))
+			else:
+				fp.write(i)
+		fp.close()
+		changeset += 1				
+
+def cvsps_merge1(f):
+	print 'Trying merge patch ' + f
+	ff = get_cvs_root() + '/scripts/changesets/' + f
+	fp = open(ff, 'r')
+	lines = fp.readlines()
+	fp.close()
+	log = []
+	members = []
+	ok = 0
+	idx = 0
+	author = ''
+	date = ''
+	for line in lines:
+		if line[:-1] == 'Log:':
+			ok = 1
+		elif line[:-1] == 'Members: ':
+			ok = 2
+		elif line[:6] == 'Index:':
+			ok = 0
+		elif line[:5] == 'Date:':
+			date = line[6:-1]
+		elif line[:7] == 'Author:':
+			author = CVS_USER[line[8:-1]]
+		elif line[:8] == 'Members:':
+			ok = 2
+		elif ok == 1:
+			log.append(line)
+		elif ok == 2:
+			if line != '\n':
+				members.append(line[1:])
+	while log[len(log)-1] == '\n':
+		del log[len(log)-1]
+	lines = 'ALSA CVS update\n'
+	if date != '':
+		lines = lines + 'D:' + date + '\n'
+	if author != '':
+		lines = lines + 'A:' + author + '\n'
+	for i in members:
+		lines = lines + 'F:' + i
+	for i in log:
+		lines = lines + 'L:' + i
+	while os.system('bk import -tpatch -C -y"' + lines + '" ' + ff + ' .'):
+		print 'BK patch import error, xterm? (any key to continue or Control-C to abort)'
+		sys.stdin.readline()
+		xterm
+	if os.system('bk commit -y"' + lines + '"'):
+		print 'BK commit failed'
+		sys.exit(1)
+	
+def cvsps_merge():
+	os.chdir(get_bk_root())
+	l = dircache.listdir(get_cvs_root() + '/scripts/changesets')
+	for f in l:
+		if string.find(f, '.') > 0:
+			file, suff = string.split(f, '.')
+			if suff == 'patch':
+				cvsps_merge1(f)
+	del l
+
+
 def main():
 	global CVSROOT, BKROOT, BKROOT1, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP
 	try:
@@ -777,6 +876,15 @@ def main():
 			else:
 				print 'Ignoring extra arguments %s' % args[1:]
 		bkdiffall(reverse)
+	elif args[0] == 'cvsps':
+		reverse=0
+		if len(args) < 2:
+			print 'Please, give a starting changeset'
+			return
+		cvsps(args[1])
+	elif args[0] == 'cvsps-merge':
+		BKROOT = '~/bk/linux-sound/work'
+		cvsps_merge()
 	elif args[0] == 'lsync':
 		to_cvs_time = 0
 		patch = ''
