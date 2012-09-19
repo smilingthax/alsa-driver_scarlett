@@ -1772,6 +1772,18 @@ dnl Check for PC98 architecture support...
 CHECK_KERNEL_CONFIG(CONFIG_X86_PC9800, [PC9800 support in kernel])
 AC_SUBST(CONFIG_X86_PC9800)
 
+dnl Check for parallel port support
+if test "$kversion.$kpatchlevel" = "2.2"; then
+  CONFIG_PARPORT=""
+else
+  CHECK_KERNEL_CONFIG(CONFIG_PARPORT, [parallel port support])
+  if test "$CONFIG_PARPORT" != "y"; then
+    CHECK_KERNEL_CONFIG(CONFIG_PARPORT_MODULE, [parallel port module support])
+    CONFIG_PARPORT=$CONFIG_PARPORT_MODULE
+  fi
+fi
+AC_SUBST(CONFIG_PARPORT)
+
 dnl Check for HPK tree (for ASIHPI driver)
 CONFIG_ASIHPK=""
 AC_ARG_WITH(asihpk,
