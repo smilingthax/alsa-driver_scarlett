@@ -1,5 +1,12 @@
 # ALSA generic drivers
 
+config SND_SERIALMIDI
+	tristate "Generic driver for serial MIDI adapters"
+	depends on SND
+	select SND_RAWMIDI
+	help
+	  Say 'Y' or 'M' to include support for serial MIDI adapters.
+
 config SND_MPU401_ACPI
 	tristate "MPU401-UART ACPI driver"
 	depends on SND && ACPI_BUS

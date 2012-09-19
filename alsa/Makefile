@@ -164,13 +164,14 @@ endif
 
 .PHONY: install-scripts
 install-scripts:
-	if [ -d $(DESTDIR)/sbin/init.d ]; then \
-	  install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/sbin/init.d/alsasound; \
-	elif [ -d $(DESTDIR)/etc/rc.d/init.d ]; then \
-	  install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/etc/rc.d/init.d/alsasound; \
-	elif [ -d $(DESTDIR)/etc/init.d ]; then \
-	  install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/etc/init.d/alsasound; \
-	fi
+	@for d in /sbin/init.d /etc/rc.d/init.d /etc/init.d; do \
+	 if [ -d $(DESTDIR)$$d ]; then \
+	   if [ -f $(DESTDIR)$$d/alsasound ]; then \
+	     cmp -s utils/alsasound $(DESTDIR)$$d/alsasound || cp $(DESTDIR)$$d/alsasound $(DESTDIR)$$d/alsasound.old; \
+	   fi; \
+	   install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)$$d/alsasound; \
+	   break; \
+	fi; done
 
 .PHONY: check-snd-prefix
 check-snd-prefix:

@@ -360,8 +360,8 @@ static int atiixp_build_dma_packets(atiixp_t *chip, atiixp_dma_t *dma,
 
 	if (dma->desc_buf.area == NULL) {
 		memset(&dma->desc_dev, 0, sizeof(dma->desc_dev));
-		dma->desc_dev.type = SNDRV_DMA_TYPE_PCI;
-		dma->desc_dev.dev.pci = chip->pci;
+		dma->desc_dev.type = SNDRV_DMA_TYPE_DEV;
+		dma->desc_dev.dev = snd_dma_pci_data(chip->pci);
 		if (snd_dma_alloc_pages(&dma->desc_dev, ATI_DESC_LIST_SIZE, &dma->desc_buf) < 0)
 			return -ENOMEM;
 		dma->period_bytes = dma->periods = 0; /* clear */
@@ -1221,8 +1221,8 @@ static int __devinit snd_atiixp_pcm_new(atiixp_t *chip)
 	pcm->private_data = chip;
 	strcpy(pcm->name, "ATI IXP AC97");
 
-	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_PCI,
-					      chip->pci, 64*1024, 128*1024);
+	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
+					      snd_dma_pci_data(chip->pci), 64*1024, 128*1024);
 
 	/* no SPDIF support on codec? */
 	if (chip->dmas[ATI_DMA_SPDIF].pcm && ! chip->dmas[ATI_DMA_SPDIF].pcm->rates)
@@ -1236,8 +1236,8 @@ static int __devinit snd_atiixp_pcm_new(atiixp_t *chip)
 	pcm->private_data = chip;
 	strcpy(pcm->name, "ATI IXP IEC958");
 
-	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_PCI, chip->pci,
-					      64*1024, 128*1024);
+	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
+					      snd_dma_pci_data(chip->pci), 64*1024, 128*1024);
 
 	/* pre-select AC97 SPDIF slots 10/11 */
 	for (i = 0; i < 3; i++) {

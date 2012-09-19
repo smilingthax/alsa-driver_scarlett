@@ -2137,6 +2137,8 @@ static void isapnp_free_all_resources(void)
 #endif
 }
 
+#ifdef CONFIG_PCI
+
 __initfunc(static int isapnp_do_reserve_irq(int irq))
 {
 	int i;
@@ -2158,8 +2160,6 @@ __initfunc(static int isapnp_do_reserve_irq(int irq))
 	}
 	return -ENOMEM;
 }
-
-#ifdef CONFIG_PCI
 
 __initfunc(static void isapnp_pci_init(void))
 {
