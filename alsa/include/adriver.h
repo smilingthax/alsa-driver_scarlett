@@ -51,7 +51,7 @@ void snd_compat_request_module(const char *name, ...);
 #define request_module(name, args...) snd_compat_request_module(name, ##args)
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,9)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,12)
 #include <linux/compiler.h>
 #ifndef __iomem
 #define __iomem
@@ -59,11 +59,17 @@ void snd_compat_request_module(const char *name, ...);
 #ifndef __user
 #define __user
 #endif
+#ifndef __kernel
+#define __kernel
+#endif
 #ifndef __nocast
 #define __nocast
 #endif
 #ifndef __force
 #define __force
+#endif
+#ifndef __safe
+#define __safe
 #endif
 #endif /* < 2.6.9 */
 
@@ -183,7 +189,9 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #endif /* < 2.6.0 */
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 13)
-#define CONFIG_ISA_DMA_API 1
+#ifdef CONFIG_SND_ISA
+#define CONFIG_ISA_DMA_API
+#endif
 #endif
 
 #include <linux/types.h>
@@ -877,11 +885,6 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 #undef pci_register_driver
 #define pci_register_driver	pci_module_init
 #endif
-#endif
-
-/* __nocast prefix (defined in compiler.h in the recent 2.6.x) */
-#ifndef __nocast
-#define __nocast
 #endif
 
 /* pci_get_device() and pci_dev_put() wrappers */
