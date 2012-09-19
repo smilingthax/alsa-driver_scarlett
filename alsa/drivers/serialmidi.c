@@ -19,8 +19,8 @@
  *
  */
 /*
- *  The snd_adaptor module parameter allows you to select:
- *	0 - Roland SoundCanvas (use snd_outs paratemer to specify count of output ports)
+ *  The adaptor module parameter allows you to select:
+ *	0 - Roland SoundCanvas (use outs paratemer to specify count of output ports)
  */
 
 #include <sound/driver.h>
@@ -49,32 +49,32 @@ MODULE_DESCRIPTION("Serial MIDI");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
 
-static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;		/* Index 0-MAX */
-static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;		/* ID for this card */
-static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE;	/* Enable this card */
+static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;		/* Index 0-MAX */
+static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;		/* ID for this card */
+static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE;	/* Enable this card */
 static char *snd_sdev[SNDRV_CARDS] = {"/dev/ttyS0", [1 ... (SNDRV_CARDS - 1)] = ""}; /* serial device */
-static int snd_speed[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 38400}; /* 9600,19200,38400,57600,115200 */
-static int snd_adaptor[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = SERIAL_ADAPTOR_SOUNDCANVAS};
-static int snd_outs[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1};     /* 1 to 16 */
+static int speed[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 38400}; /* 9600,19200,38400,57600,115200 */
+static int adaptor[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = SERIAL_ADAPTOR_SOUNDCANVAS};
+static int outs[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1};     /* 1 to 16 */
 
-MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_index, "Index value for MPU-401 device.");
-MODULE_PARM_SYNTAX(snd_index, SNDRV_INDEX_DESC);
-MODULE_PARM(snd_id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
-MODULE_PARM_DESC(snd_id, "ID string for MPU-401 device.");
-MODULE_PARM_SYNTAX(snd_id, SNDRV_ID_DESC);
-MODULE_PARM(snd_enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_enable, "Enable MPU-401 device.");
-MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
-MODULE_PARM(snd_speed, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_speed, "Speed in bauds.");
-MODULE_PARM_SYNTAX(snd_speed, SNDRV_ENABLED ",allows:{9600,19200,38400,57600,115200},dialog:list");
-MODULE_PARM(snd_adaptor, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_adaptor, "Type of adaptor.");
-MODULE_PARM_SYNTAX(snd_adaptor, SNDRV_ENABLED ",allows:{{0=Soundcanvas,1=MS-124T,2=MS-124W S/A,3=MS-124W M/B}},dialog:list");
-MODULE_PARM(snd_outs, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_outs, "Number of MIDI outputs.");
-MODULE_PARM_SYNTAX(snd_outs, SNDRV_ENABLED ",allows:{{1,16}},dialog:list");
+MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(index, "Index value for MPU-401 device.");
+MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
+MODULE_PARM(id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
+MODULE_PARM_DESC(id, "ID string for MPU-401 device.");
+MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
+MODULE_PARM(enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(enable, "Enable MPU-401 device.");
+MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
+MODULE_PARM(speed, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(speed, "Speed in bauds.");
+MODULE_PARM_SYNTAX(speed, SNDRV_ENABLED ",allows:{9600,19200,38400,57600,115200},dialog:list");
+MODULE_PARM(adaptor, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(adaptor, "Type of adaptor.");
+MODULE_PARM_SYNTAX(adaptor, SNDRV_ENABLED ",allows:{{0=Soundcanvas,1=MS-124T,2=MS-124W S/A,3=MS-124W M/B}},dialog:list");
+MODULE_PARM(outs, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(outs, "Number of MIDI outputs.");
+MODULE_PARM_SYNTAX(outs, SNDRV_ENABLED ",allows:{{1,16}},dialog:list");
 
 #define SERIAL_MODE_NOT_OPENED		(0)
 #define SERIAL_MODE_BIT_INPUT		(0)
@@ -486,7 +486,7 @@ static int __init snd_card_serialmidi_probe(int dev)
 	serialmidi_t *serial;
 	int err;
 
-	card = snd_card_new(snd_index[dev], snd_id[dev], THIS_MODULE, 0);
+	card = snd_card_new(index[dev], id[dev], THIS_MODULE, 0);
 	if (card == NULL)
 		return -ENOMEM;
 	strcpy(card->driver, "Serial MIDI");
@@ -494,9 +494,9 @@ static int __init snd_card_serialmidi_probe(int dev)
 
 	if ((err = snd_serialmidi_create(card,
 					 snd_sdev[dev],
-					 snd_speed[dev],
-					 snd_adaptor[dev],
-					 snd_outs[dev],
+					 speed[dev],
+					 adaptor[dev],
+					 outs[dev],
 					 &serial)) < 0) {
 		snd_card_free(card);
 		return err;
@@ -516,7 +516,7 @@ static int __init alsa_card_serialmidi_init(void)
 	int dev, cards = 0;
 
 	for (dev = 0; dev < SNDRV_CARDS; dev++) {
-		if (!snd_enable[dev])
+		if (!enable[dev])
 			continue;
 		if (snd_card_serialmidi_probe(dev) >= 0)
 			cards++;
@@ -543,8 +543,8 @@ module_exit(alsa_card_serialmidi_exit)
 
 #ifndef MODULE
 
-/* format is: snd-serialmidi=snd_enable,snd_index,snd_id,
-			     snd_sdev,snd_speed,snd_adaptor,snd_outs */
+/* format is: snd-serialmidi=enable,index,id,
+			     snd_sdev,speed,adaptor,outs */
 
 static int __init alsa_card_serialmidi_setup(char *str)
 {
@@ -552,13 +552,13 @@ static int __init alsa_card_serialmidi_setup(char *str)
 
 	if (nr_dev >= SNDRV_CARDS)
 		return 0;
-	(void)(get_option(&str,&snd_enable[nr_dev]) == 2 &&
-	       get_option(&str,&snd_index[nr_dev]) == 2 &&
-	       get_id(&str,&snd_id[nr_dev]) == 2 &&
+	(void)(get_option(&str,&enable[nr_dev]) == 2 &&
+	       get_option(&str,&index[nr_dev]) == 2 &&
+	       get_id(&str,&id[nr_dev]) == 2 &&
 	       get_id(&str,&snd_sdev[nr_dev]) == 2 &&
-	       get_option(&str,&snd_speed[nr_dev]) == 2 &&
-	       get_option(&str,&snd_adaptor[nr_dev]) == 2 &&
-	       get_option(&str,&snd_outs[nr_dev]) == 2);
+	       get_option(&str,&speed[nr_dev]) == 2 &&
+	       get_option(&str,&adaptor[nr_dev]) == 2 &&
+	       get_option(&str,&outs[nr_dev]) == 2);
 	nr_dev++;
 	return 1;
 }

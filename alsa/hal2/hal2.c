@@ -23,20 +23,20 @@
 #include "hal2.h"
 #include "initval.h"
 
-int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
-char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
-int snd_dma1_size[SNDRV_CARDS] = SNDRV_DEFAULT_DMA_SIZE;	/* 8,16,32,64,128 */
-int snd_dma2_size[SNDRV_CARDS] = SNDRV_DEFAULT_DMA_SIZE;	/* 8,16,32,64,128 */
+int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
+char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
+int dma1_size[SNDRV_CARDS] = SNDRV_DEFAULT_DMA_SIZE;	/* 8,16,32,64,128 */
+int dma2_size[SNDRV_CARDS] = SNDRV_DEFAULT_DMA_SIZE;	/* 8,16,32,64,128 */
 
 EXPORT_NO_SYMBOLS;
-MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_index, "Index value for HAL2 soundcard.");
-MODULE_PARM(snd_id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
-MODULE_PARM_DESC(snd_id, "ID string for HAL2 soundcard.");
-MODULE_PARM(snd_dma1_size, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_dma1_size, "DMA1 size in kB for HAL2 driver.");
-MODULE_PARM(snd_dma2_size, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_dma2_size, "DMA2 size in kB for HAL2 driver.");
+MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(index, "Index value for HAL2 soundcard.");
+MODULE_PARM(id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
+MODULE_PARM_DESC(id, "ID string for HAL2 soundcard.");
+MODULE_PARM(dma1_size, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(dma1_size, "DMA1 size in kB for HAL2 driver.");
+MODULE_PARM(dma2_size, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(dma2_size, "DMA2 size in kB for HAL2 driver.");
 
 struct snd_card_hal2 {
 	snd_irq_t *irqptr;
@@ -135,14 +135,14 @@ static int snd_card_hal2_resources(int dev, struct snd_card_hal2 *hal2card,
 	 */
 	if ((err = snd_register_dma_channel(card, "HAL2 record", 0,
 					    SNDRV_DMA_TYPE_PCI,
-					    snd_dma1_size[dev], NULL,
+					    dma1_size[dev], NULL,
 					    &hal2card->dma1ptr)) < 0) {
 		snd_printk("Couldn't get dma1\n");
 		return err;
 	}
 	if ((err = snd_register_dma_channel(card, "HAL2 playback", 0,
 					    SNDRV_DMA_TYPE_PCI,
-					    snd_dma2_size[dev], NULL,
+					    dma2_size[dev], NULL,
 					    &hal2card->dma2ptr)) < 0) {
 		snd_printk("Couldn't get dma2\n");
 		return err;
@@ -156,7 +156,7 @@ static int snd_card_hal2_probe(int dev, struct snd_card_hal2 *hal2card)
 	snd_hal2_card_t *hal2 = NULL;
 	snd_pcm_t *pcm = NULL;
 
-	card = snd_card_new(snd_index[dev], snd_id[dev],
+	card = snd_card_new(index[dev], id[dev],
 			    snd_card_hal2_use_inc, snd_card_hal2_use_dec);
 	if (card == NULL)
 		return -ENOMEM;
