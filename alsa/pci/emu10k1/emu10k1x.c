@@ -182,7 +182,7 @@ static snd_pcm_hardware_t snd_emu10k1x_playback_hw = {
 	.rates =		SNDRV_PCM_RATE_48000,
 	.rate_min =		48000,
 	.rate_max =		48000,
-	.channels_min =		1,
+	.channels_min =		2,
 	.channels_max =		2,
 	.buffer_bytes_max =	(32*1024),
 	.period_bytes_min =	64,
@@ -728,9 +728,9 @@ static int __devinit snd_emu10k1x_create(snd_card_t *card,
 
 	outl(HCFG_LOCKSOUNDCACHE|HCFG_AUDIOENABLE, chip->port+HCFG);
 
-	snd_emu10k1x_intr_enable(chip, (INTE_CH_0_LOOP|INTE_CH_0_HALF_LOOP));
-	//  snd_emu10k1x_intr_enable(chip, (INTE_CH_0_LOOP<<1);
-	//  snd_emu10k1x_intr_enable(chip, INTE_CH_0_LOOP<<2);
+	snd_emu10k1x_intr_enable(chip, (INTE_CH_0_LOOP|INTE_CH_0_HALF_LOOP) |
+				 ((INTE_CH_0_LOOP|INTE_CH_0_HALF_LOOP) << 1) |
+				 ((INTE_CH_0_LOOP|INTE_CH_0_HALF_LOOP) << 2));
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL,
 				  chip, &ops)) < 0) {
