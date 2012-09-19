@@ -58,25 +58,24 @@ static int adaptor[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = SERIAL_ADAPTOR_SO
 static int outs[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1};     /* 1 to 16 */
 static int devices[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1};     /* 1 to 8 */
 static int handshake[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1};     /* bool */
-static int boot_devs;
 
-module_param_array(index, int, boot_devs, 0444);
+module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for serial device.");
-module_param_array(id, charp, boot_devs, 0444);
+module_param_array(id, charp, NULL, 0444);
 MODULE_PARM_DESC(id, "ID string for serial device.");
-module_param_array(enable, bool, boot_devs, 0444);
+module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "Enable serial device.");
-module_param_array(sdev, charp, boot_devs, 0444);
+module_param_array(sdev, charp, NULL, 0444);
 MODULE_PARM_DESC(sdev, "Device file string for serial device.");
-module_param_array(speed, int, boot_devs, 0444);
+module_param_array(speed, int, NULL, 0444);
 MODULE_PARM_DESC(speed, "Speed in bauds.");
-module_param_array(adaptor, int, boot_devs, 0444);
+module_param_array(adaptor, int, NULL, 0444);
 MODULE_PARM_DESC(adaptor, "Type of adaptor.");
-module_param_array(outs, int, boot_devs, 0444);
+module_param_array(outs, int, NULL, 0444);
 MODULE_PARM_DESC(outs, "Number of MIDI outputs.");
-module_param_array(devices, int, boot_devs, 0444);
+module_param_array(devices, int, NULL, 0444);
 MODULE_PARM_DESC(devices, "Number of devices to attach to the card.");
-module_param_array(handshake, int, boot_devs, 0444);
+module_param_array(handshake, int, NULL, 0444);
 MODULE_PARM_DESC(handshake, "Do handshaking.");
 
 #define SERIAL_MODE_NOT_OPENED		(0)
