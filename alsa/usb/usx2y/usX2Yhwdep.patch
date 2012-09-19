@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/usx2y/usX2Yhwdep.c	2004-08-02 21:52:34.447886088 +0200
-+++ usX2Yhwdep.c	2004-08-02 22:25:43.480507168 +0200
+--- ../../alsa-kernel/usb/usx2y/usX2Yhwdep.c	2005-01-28 13:12:01.000000000 +0100
++++ usX2Yhwdep.c	2005-01-30 17:41:51.000000000 +0100
 @@ -1,3 +1,14 @@
 +#include <linux/config.h>
 +#include <linux/version.h>
@@ -15,8 +15,8 @@
  /*
   * Driver for Tascam US-X2Y USB soundcards
   *
-@@ -32,7 +43,13 @@
- #include "usX2Yhwdep.h"
+@@ -34,7 +45,13 @@
+ int usX2Y_hwdep_pcm_new(snd_card_t* card);
  
  
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
@@ -29,7 +29,7 @@
  {
  	unsigned long offset;
  	struct page * page;
-@@ -44,7 +61,11 @@
+@@ -46,7 +63,11 @@
  		   (address - area->vm_start) >> PAGE_SHIFT,
  		   address);
  	
@@ -41,7 +41,7 @@
  	offset += address - area->vm_start;
  	snd_assert((offset % PAGE_SIZE) == 0, return NOPAGE_OOM);
  	vaddr = (char*)((usX2Ydev_t*)area->vm_private_data)->us428ctls_sharedmem + offset;
-@@ -52,10 +73,20 @@
+@@ -54,10 +75,20 @@
  	get_page(page);
  	snd_printdd( "vaddr=%p made us428ctls_vm_nopage() return %p; offset=%lX\n", vaddr, page, offset);
  
@@ -62,7 +62,7 @@
  }
  
  static struct vm_operations_struct us428ctls_vm_ops = {
-@@ -86,8 +117,14 @@
+@@ -88,8 +119,14 @@
  		us428->us428ctls_sharedmem->CtlSnapShotLast = -2;
  	}
  	area->vm_ops = &us428ctls_vm_ops;
@@ -77,3 +77,27 @@
  	return 0;
  }
  
+@@ -129,7 +166,11 @@
+ 	};
+ 	int id = -1;
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
+ 	switch (le16_to_cpu(((usX2Ydev_t*)hw->private_data)->chip.dev->descriptor.idProduct)) {
++#else
++	switch (((usX2Ydev_t*)hw->private_data)->chip.dev->descriptor.idProduct) {
++#endif
+ 	case USB_ID_US122:
+ 		id = USX2Y_TYPE_122;
+ 		break;
+@@ -181,7 +222,11 @@
+ 	};
+ 	struct usb_device *dev = usX2Y(card)->chip.dev;
+ 	struct usb_interface *iface = usb_ifnum_to_if(dev, 0);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
+ 	snd_usb_audio_quirk_t *quirk = le16_to_cpu(dev->descriptor.idProduct) == USB_ID_US428 ? &quirk_2 : &quirk_1;
++#else
++	snd_usb_audio_quirk_t *quirk = dev->descriptor.idProduct == USB_ID_US428 ? &quirk_2 : &quirk_1;
++#endif
+ 
+ 	snd_printdd("usX2Y_create_usbmidi \n");
+ 	return snd_usb_create_midi_interface(&usX2Y(card)->chip, iface, quirk);

@@ -16,4 +16,4 @@ include $(SND_TOPDIR)/Rules.make
 usbusx2y.c: usbusx2y.patch $(SND_TOPDIR)/alsa-kernel/usb/usx2y/usbusx2y.c
 usbusx2yaudio.c: usbusx2yaudio.patch $(SND_TOPDIR)/alsa-kernel/usb/usx2y/usbusx2yaudio.c
 usX2Yhwdep.c: usX2Yhwdep.patch $(SND_TOPDIR)/alsa-kernel/usb/usx2y/usX2Yhwdep.c
-usx2yhwdeppcm.c: usx2yhwdeppcm.patch $(SND_TOPDIR)/alsa-kernel/usb/usx2y/usx2yhwdeppcm.c
+usx2yhwdeppcm.c: usx2yhwdeppcm.patch $(SND_TOPDIR)/alsa-kernel/usb/usx2y/usx2yhwdeppcm.c usbusx2yaudio.c

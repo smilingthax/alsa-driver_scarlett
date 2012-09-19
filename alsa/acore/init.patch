@@ -82,7 +82,7 @@
 +{
 +	struct pm_dev *pm_dev;
 +
-+	pm_dev = pm_register(type, 0, snd_generic_pm_callback);
++	pm_dev = pm_register(PM_UNKNOWN_DEV, 0, snd_generic_pm_callback);
 +	if (! pm_dev)
 +		return -ENOMEM;
 +	pm_dev->data = card;

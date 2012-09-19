@@ -1,6 +1,6 @@
---- ../../alsa-kernel/usb/usx2y/usbusx2yaudio.c	Tue Oct 26 20:38:21 2004
-+++ usbusx2yaudio.c	Tue Oct 26 20:39:31 2004
-@@ -299,7 +310,11 @@
+--- ../../alsa-kernel/usb/usx2y/usbusx2yaudio.c	2005-01-30 18:12:38.000000000 +0100
++++ usbusx2yaudio.c	2005-01-30 18:16:48.000000000 +0100
+@@ -298,7 +298,11 @@
  	usX2Y_clients_stop(usX2Y);
  }
  
@@ -12,7 +12,7 @@
  {
  	snd_usX2Y_substream_t *subs = (snd_usX2Y_substream_t*)urb->context;
  	usX2Ydev_t *usX2Y = subs->usX2Y;
-@@ -337,7 +352,11 @@
+@@ -336,7 +340,11 @@
  	}
  }
  
@@ -24,7 +24,7 @@
  {
  	int s, u;
  	for (s = 0; s < 4; s++) {
-@@ -357,7 +376,11 @@
+@@ -356,7 +364,11 @@
  	usX2Y->prepare_subs = NULL;
  }
  
@@ -36,7 +36,7 @@
  {
  	snd_usX2Y_substream_t *subs = (snd_usX2Y_substream_t*)urb->context;
  	usX2Ydev_t *usX2Y = subs->usX2Y;
-@@ -369,7 +392,11 @@
+@@ -368,7 +380,11 @@
  			wake_up(&usX2Y->prepare_wait_queue);
  		}
  
@@ -48,7 +48,7 @@
  }
  
  static void usX2Y_subs_prepare(snd_usX2Y_substream_t *subs)
-@@ -654,7 +681,11 @@
+@@ -651,7 +667,11 @@
  };
  #define NOOF_SETRATE_URBS ARRAY_SIZE(SetRate48000)
  
@@ -60,3 +60,22 @@
  {
  	usX2Ydev_t*	usX2Y = urb->context;
  	
+@@ -1017,10 +1037,18 @@
+ 
+ 	if (0 > (err = usX2Y_audio_stream_new(card, 0xA, 0x8)))
+ 		return err;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
+ 	if (le16_to_cpu(usX2Y(card)->chip.dev->descriptor.idProduct) == USB_ID_US428)
++#else
++	if (usX2Y(card)->chip.dev->descriptor.idProduct == USB_ID_US428)
++#endif
+ 	     if (0 > (err = usX2Y_audio_stream_new(card, 0, 0xA)))
+ 		     return err;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
+ 	if (le16_to_cpu(usX2Y(card)->chip.dev->descriptor.idProduct) != USB_ID_US122)
++#else
++	if (usX2Y(card)->chip.dev->descriptor.idProduct != USB_ID_US122)
++#endif
+ 		err = usX2Y_rate_set(usX2Y(card), 44100);	// Lets us428 recognize output-volume settings, disturbs us122.
+ 	return err;
+ }
