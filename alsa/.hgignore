@@ -43,6 +43,8 @@ drivers/mpu401/mpu401.c
 drivers/mts64.c
 drivers/opl3/opl3_lib.c
 i2c/other/tea575x-tuner.c
+isa/sb/sb16_csp.c
+isa/wavefront/wavefront_fx.c
 include/autoconf-extra.h
 include/config.h
 include/config1.h
@@ -72,8 +74,10 @@ pci/echoaudio/mona.c
 pci/emu10k1/emu10k1_main.c
 pci/hda/hda_codec.c
 pci/intel8x0.c
+pci/korg1212/korg1212.c
 pci/maestro3.c
 pci/riptide/riptide.c
+pci/ymfpci/ymfpci_main.c
 ppc/awacs.c
 ppc/beep.c
 ppc/tumbler.c
