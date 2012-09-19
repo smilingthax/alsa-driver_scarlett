@@ -2009,7 +2009,7 @@ AC_SUBST(CONFIG_USB)
 
 dnl New unlocked/compat_ioctl
 if test "$kversion.$kpatchlevel" = "2.6"; then
-  AC_MSG_CHECKING(for new unlocked/comapt_ioctl)
+  AC_MSG_CHECKING(for new unlocked/compat_ioctl)
   new_ioctl="0"
   ac_save_CFLAGS="$CFLAGS"
   ac_save_CC="$CC"
