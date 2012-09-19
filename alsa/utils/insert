@@ -307,7 +307,9 @@ case "$1" in
     ;;
   es1938|solo1)
     basic
-    insert snd-es1938.o
+    insert snd-mpu401-uart.o
+    insert snd-opl3-lib.o
+    insert snd-es1938.o    
     restore solo1.conf
     ;;
   cs4232)

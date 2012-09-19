@@ -31,6 +31,16 @@ SRCDIR=`/bin/pwd`
 AC_SUBST(SRCDIR)
 AC_MSG_RESULT($SRCDIR)
 
+dnl Check for cross compile...
+AC_MSG_CHECKING(cross compile)
+AC_ARG_WITH(cross,
+  [  --with-cross=dir        give the cross-compile prefix]],
+  crossprefix="$withval",
+  crossprefix="")
+CROSS_COMPILE="$crossprefix"
+AC_SUBST(CROSS_COMPILE)
+AC_MSG_RESULT($CROSS_COMPILE)
+
 dnl Check for directory with kernel source...
 AC_MSG_CHECKING(for directory with kernel source)
 AC_ARG_WITH(kernel,
@@ -332,6 +342,8 @@ int main(void) {
 	fprintf(file, "sparc64");
 #elif defined(CONFIG_X86_64)
 	fprintf(file, "x86_64");
+#elif defined(CONFIG_ARCH_SA1100)
+	fprintf(file, "sa1100");
 #else
 	fclose(file);
 	exit(1);
@@ -472,6 +484,9 @@ case "$processor" in
    LD="ld -m elf_x86_64 -e stext"
    c_opts="-mcmodel=kernel -pipe -fno-reorder-blocks -fno-strength-reduce -finline-limit=3000"
    $CC -mno-red-zone -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && c_opts="$c_opts -mno-red-zone"
+   ;;
+  sa1100)
+   c_opts="-march=armv4 -mtune=strongarm1100 -msoft-float"
    ;;
   *)
     processor="unknown"

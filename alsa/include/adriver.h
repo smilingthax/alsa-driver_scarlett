@@ -102,6 +102,7 @@
 #define need_resched() (current->need_resched)
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 5)
+#include <linux/fs.h>
 static inline struct proc_dir_entry *PDE(const struct inode *inode)
 {
 	return (struct proc_dir_entry *) inode->u.generic_ip;
