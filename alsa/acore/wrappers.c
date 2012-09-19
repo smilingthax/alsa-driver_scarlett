@@ -3,6 +3,7 @@
 
 #include <linux/version.h>
 #include <linux/config.h>
+#include <linux/string.h>
 
 #ifdef CONFIG_SND_DEBUG_MEMORY
 #include <linux/slab.h>
@@ -130,6 +131,8 @@ void snd_compat_request_module(const char *fmt, ...)
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
+
+#include <linux/ioport.h>
 
 void snd_wrapper_request_region(unsigned long from, unsigned long extent, const char *name)
 {

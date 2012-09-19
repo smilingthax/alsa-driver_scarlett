@@ -45,7 +45,8 @@ struct resource *snd_compat_request_region(unsigned long start, unsigned long si
 
 int snd_compat_release_resource(struct resource *resource)
 {
-	snd_runtime_check(resource != NULL, return -EINVAL);
+	if (!resource)
+		return -EINVAL;
 	if (resource->flags & IORESOURCE_MEM)
 		return 0;
 	release_region(resource->start, (resource->end - resource->start) + 1);
@@ -494,3 +495,5 @@ struct workqueue_struct *snd_compat_create_workqueue2(const char *name)
 }
 
 #endif
+
+// vim: ft=c

@@ -201,7 +201,9 @@ static int snd_pmac_put_beep(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uco
 {
 	pmac_t *chip = snd_kcontrol_chip(kcontrol);
 	int oval;
-	snd_runtime_check(chip->beep, return -ENXIO);
+
+	if (!chip->beep)
+		return -ENXIO;
 	oval = chip->beep->volume;
 	chip->beep->volume = ucontrol->value.integer.value[0];
 	return oval != chip->beep->volume;
