@@ -1,0 +1,14 @@
+--- ../../alsa-kernel/i2c/other/ak4114.c	2006-12-14 11:51:23.000000000 +0100
++++ ak4114.c	2006-12-15 15:27:47.000000000 +0100
+@@ -563,7 +563,11 @@
+ 
+ static void ak4114_stats(struct work_struct *work)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
+ 	struct ak4114 *chip = container_of(work, struct ak4114, work.work);
++#else
++	struct ak4114 *chip = container_of(work, struct ak4114, work.data);
++#endif
+ 
+ 	if (chip->init)
+ 		return;

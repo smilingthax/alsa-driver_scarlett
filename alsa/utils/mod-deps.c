@@ -132,6 +132,8 @@ static char *kernel_deps[] = {
 	"FW_LOADER",
 	/* some flags */
 	"EXPERIMENTAL",
+	/* sound common */
+	"SND_AC97_BUS",
 	NULL
 };
 
@@ -645,12 +647,13 @@ static struct dep *find_dep(char *parent, char *depname)
 	int idx;
 
 	while (temp_dep) {
-		// fprintf(stderr, "depname = '%s', name = '%s'\n", depname, temp_dep->name);
+		//fprintf(stderr, "depname = '%s', name = '%s'\n", depname, temp_dep->name);
 		if (!strcmp(depname, temp_dep->name))
 			return temp_dep;
 		temp_dep = temp_dep->next;
 	}
 	for (idx = 0; kernel_deps[idx]; idx++) {
+		//fprintf(stderr, "kdepname = '%s', name = '%s'\n", depname, kernel_deps[idx]);
 		if (!strcmp(kernel_deps[idx], depname))
 			return NULL;
 	}

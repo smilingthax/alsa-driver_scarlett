@@ -1,6 +1,6 @@
---- ../../alsa-kernel/pci/ac97/ac97_codec.c	2005-07-29 15:59:19.000000000 +0200
-+++ ac97_codec.c	2005-07-29 16:06:49.000000000 +0200
-@@ -33,9 +33,9 @@
+--- ../../alsa-kernel/pci/ac97/ac97_codec.c	2006-12-14 14:08:48.000000000 +0100
++++ ac97_codec.c	2006-12-15 15:37:14.000000000 +0100
+@@ -35,9 +35,9 @@
  #include <sound/ac97_codec.h>
  #include <sound/asoundef.h>
  #include <sound/initval.h>
@@ -13,17 +13,17 @@
  
  MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
  MODULE_DESCRIPTION("Universal interface for Audio Codec '97");
-@@ -1813,6 +1813,7 @@
- 	return 0;
- }
+@@ -1895,6 +1895,7 @@
+ 
+ EXPORT_SYMBOL(snd_ac97_bus);
  
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
  /* stop no dev release warning */
  static void ac97_device_release(struct device * dev)
  {
-@@ -1845,6 +1846,10 @@
+@@ -1928,6 +1929,10 @@
  		device_unregister(&ac97->dev);
- 	return snd_ac97_free(ac97);
+ 	return 0;
  }
 +#else /* <= 2.6.0 */
 +#define snd_ac97_dev_register	NULL
@@ -32,3 +32,15 @@
  
  /* build_ops to do nothing */
  static struct snd_ac97_build_ops null_build_ops;
+@@ -1936,7 +1941,11 @@
+ static void do_update_power(struct work_struct *work)
+ {
+ 	update_power_regs(
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
+ 		container_of(work, struct snd_ac97, power_work.work));
++#else
++		container_of(work, struct snd_ac97, power_work.data));
++#endif
+ }
+ #endif
+ 
