@@ -696,7 +696,7 @@ struct class_device_attribute { }; /* dummy */
 #define __ATTR(cls,perm,read,write) { } /* dummy */
 static inline struct class_device* class_device_create(struct class *class, struct class_device *parent, int devnum, ...) { return NULL; }
 static inline void class_device_destroy(struct class *class, int devnum) { return; }
-static inline void class_get_devdata(struct class_device *dev) { return NULL; }
+static inline void *class_get_devdata(struct class_device *dev) { return NULL; }
 #else /* >= 2.6.2 */
 #ifndef CONFIG_SND_NESTED_CLASS_DEVICE
 #include <linux/device.h>
@@ -1259,7 +1259,7 @@ static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
 /* MSI */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
 static inline int pci_enable_msi(struct pci_dev *dev) { return -1; }
-static inline voidt pci_disable_msi(struct pci_dev *dev) {}
+static inline void pci_disable_msi(struct pci_dev *dev) {}
 #endif
 
 /* SEEK_XXX */
