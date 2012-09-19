@@ -12,8 +12,6 @@ TOPDIR = $(MAINSRCDIR)
 
 O_TARGET     := synth.o
 
-list-multi   := snd-isapnp.o
-
 export-objs  := isapnp.o
 
 snd-isapnp-objs := isapnp.o isapnp_proc.o isapnp_quirks.o
