@@ -12,7 +12,7 @@
  	dump_urb("sending", buf, len);
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 12)
  	err = usb_bulk_msg(ep->umidi->chip->dev, ep->urb->pipe, buf, len,
- 			   NULL, 1000);
+ 			   NULL, 250);
 +#else
 +	err = usb_bulk_msg(ep->umidi->chip->dev, ep->urb->pipe, buf, len,
 +			   NULL, HZ);
