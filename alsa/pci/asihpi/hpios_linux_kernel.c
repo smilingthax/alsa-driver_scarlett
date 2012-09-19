@@ -84,7 +84,7 @@ typedef struct {
 	size_t size;
 } HpiOs_LockedMem_Area;
 
-static kmem_cache_t *memAreaCache = NULL;
+static struct kmem_cache *memAreaCache = NULL;
 
 void HpiOs_LockedMem_Init(void)
 {

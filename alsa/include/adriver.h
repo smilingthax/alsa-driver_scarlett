@@ -1397,4 +1397,12 @@ extern struct pt_regs *snd_irq_regs;
 #define CONFIG_SYSFS_DEPRECATED	1
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 21)
+static inline __attribute__((const))
+int is_power_of_2(unsigned long n)
+{
+	return n != 0 && ((n & (n - 1)) == 0);
+}
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
