@@ -7,6 +7,8 @@ include $(SND_TOPDIR)/Makefile.conf
 
 clean-files := ymfpci_main.c
 
+EXTRA_CFLAGS += -I$(SND_TOPDIR)/alsa-kernel/pci/ymfpci
+
 include $(SND_TOPDIR)/alsa-kernel/pci/ymfpci/Makefile
 
 include $(SND_TOPDIR)/Rules.make
