@@ -990,8 +990,8 @@ EOF
     CONFIG_SPARC32=y
     IS_EGCS=n
     NEW_GAS=n
-    test $KCC -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && IS_EGCS=y
-    test $CROSS_COMPILE$KLD --version 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
+    $KCC -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 || IS_EGCS=y
+    $CROSS_COMPILE$KLD -V 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
     if test $NEW_GAS = y; then
       KLD="$KLD -m elf32_sparc"
     fi
