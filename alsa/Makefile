@@ -79,17 +79,17 @@ include/sound/version.h: include/version.h
 	fi
 	cp -auvf include/version.h include/sound/version.h
 
-utils/mod-deps: alsa-kernel/scripts/mod-deps.c alsa-kernel/scripts/mod-deps.h
-	gcc -Ialsa-kernel/scripts alsa-kernel/scripts/mod-deps.c -o utils/mod-deps
+utils/mod-deps: utils/mod-deps.c
+	gcc utils/mod-deps.c -o utils/mod-deps
 
-toplevel.config.in: alsa-kernel/sound_core.c utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
-	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --makeconf > toplevel.config.in
+toplevel.config.in: alsa-kernel/sound_core.c utils/mod-deps
+	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --makeconf > toplevel.config.in
 
-acinclude.m4: alsa-kernel/sound_core.c utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
-	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --acinclude > acinclude.m4
+acinclude.m4: alsa-kernel/sound_core.c utils/mod-deps
+	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --acinclude > acinclude.m4
 
-include/config1.h.in: alsa-kernel/sound_core.c utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
-	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --include > include/config1.h.in
+include/config1.h.in: alsa-kernel/sound_core.c utils/mod-deps
+	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --include > include/config1.h.in
 
 all-deps: toplevel.config.in acinclude.m4 include/config1.h.in
 
