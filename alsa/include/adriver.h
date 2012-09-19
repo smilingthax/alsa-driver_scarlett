@@ -59,6 +59,12 @@ void snd_compat_request_module(const char *name, ...);
 #ifndef __user
 #define __user
 #endif
+#ifndef __nocast
+#define __nocast
+#endif
+#ifndef __force
+#define __force
+#endif
 #endif /* < 2.6.9 */
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
@@ -762,7 +768,7 @@ void snd_card_pci_resume(struct pci_dev *dev);
 /* kcalloc */
 #ifndef CONFIG_HAVE_KCALLOC
 #ifndef CONFIG_SND_DEBUG_MEMORY
-void *snd_compat_kcalloc(size_t n, size_t size, int gfp_flags);
+void *snd_compat_kcalloc(size_t n, size_t size, unsigned int __nocast gfp_flags);
 #define kcalloc(n,s,f) snd_compat_kcalloc(n,s,f)
 #endif
 #endif
@@ -770,7 +776,7 @@ void *snd_compat_kcalloc(size_t n, size_t size, int gfp_flags);
 /* kstrdup */
 #ifndef CONFIG_HAVE_KSTRDUP
 #ifndef CONFIG_SND_DEBUG_MEMORY
-char *snd_compat_kstrdup(const char *s, int gfp_flags);
+char *snd_compat_kstrdup(const char *s, unsigned int __nocast gfp_flags);
 #define kstrdup(s,f) snd_compat_kstrdup(s,f)
 #endif
 #endif

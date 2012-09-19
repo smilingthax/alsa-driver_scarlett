@@ -1279,7 +1279,7 @@ static int __init snd_msnd_attach(void)
 	}
 	request_region(dev.io, dev.numio, dev.name);
 
-	dev.mappedbase = (void*)( __ISA_IO_base + dev.base);
+	dev.mappedbase = (void __force *)( __ISA_IO_base + dev.base);
 
 	/* geht nich!!!!!
 		useless, don't do this at home.
