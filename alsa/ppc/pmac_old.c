@@ -997,12 +997,14 @@ static int __init snd_pmac_detect(struct snd_pmac *chip)
 			chip->can_byte_swap = 0; /* FIXME: check this */
 			chip->control_mask = MASK_IEPC | 0x11;/* disable IEE */
 			break;
+#ifdef SND_POWERMAC_SUPPORT_TOONIE
 		case 0x3a:
 			chip->num_freqs = ARRAY_SIZE(tumbler_freqs);
 			chip->model = PMAC_TOONIE;
 			chip->can_byte_swap = 0; /* FIXME: check this */
 			chip->control_mask = MASK_IEPC | 0x11;/* disable IEE */
 			break;
+#endif
 		}
 	}
 	prop = (unsigned int *)get_property(sound, "device-id", NULL);
@@ -1019,6 +1021,10 @@ static int __init snd_pmac_detect(struct snd_pmac *chip)
 	else {
 		struct pci_dev *pdev = NULL;
 
+#ifndef for_each_pci_dev
+#define for_each_pci_dev(d) \
+		while ((d = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, d)) != NULL)
+#endif
 		for_each_pci_dev(pdev) {
 			struct device_node *np = pci_device_to_OF_node(pdev);
 			if (np && np == macio->of_node) {
@@ -1258,9 +1264,9 @@ int __init snd_pmac_new(struct snd_card *card, struct snd_pmac **chip_return)
 
 	snd_pmac_sound_feature(chip, 1);
 
-	/* reset */
-	if (chip->model == PMAC_AWACS)
-		out_le32(&chip->awacs->control, 0x11);
+	/* reset & enable interrupts */
+	if (chip->model <= PMAC_BURGUNDY)
+		out_le32(&chip->awacs->control, chip->control_mask);
 
 	/* Powerbooks have odd ways of enabling inputs such as
 	   an expansion-bay CD or sound from an internal modem
