@@ -1,1 +1,2 @@
-#include "../alsa-kernel/pci/ens1371.c"
+#define CHIP1371
+#include "ens1370.c"

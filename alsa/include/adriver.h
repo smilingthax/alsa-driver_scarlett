@@ -1412,4 +1412,18 @@ int is_power_of_2(unsigned long n)
 }
 #endif
 
+#ifdef CONFIG_PCI
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 23)
+#define snd_pci_revision(pci)	((pci)->revision)
+#else
+#include <linux/pci.h>
+static inline unsigned char snd_pci_revision(struct pci_dev *pci)
+{
+	unsigned char rev;
+	pci_read_config_byte(pci, PCI_REVISION_ID, &rev);
+	return rev;
+}
+#endif
+#endif /* PCI */
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
