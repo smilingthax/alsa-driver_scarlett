@@ -109,6 +109,12 @@ void snd_compat_request_module(const char *name, ...);
 #ifndef minor
 #define minor(x) MINOR(x)
 #endif
+#ifndef imajor
+#define imajor(x) major((x)->i_rdev)
+#endif
+#ifndef iminor
+#define iminor(x) minor((x)->i_rdev)
+#endif
 #ifndef mk_kdev
 #define mk_kdev(maj, min) MKDEV(maj, min)
 #endif
