@@ -124,12 +124,19 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
 #include <linux/isapnp.h>
+#ifndef CONFIG_PNP
+#define CONFIG_PNP
+#endif
 #if (defined(CONFIG_ISAPNP_KERNEL) && defined(ALSA_BUILD)) || (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 30) && !defined(ALSA_BUILD))
 #define isapnp_dev pci_dev
 #define isapnp_card pci_bus
 #endif
 #undef __ISAPNP__
 #define __ISAPNP__
+#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+#undef CONFIG_PNP
+#endif
 #endif
 
 #if !defined(CONFIG_ISA) && defined(CONFIG_SND_ISA)
