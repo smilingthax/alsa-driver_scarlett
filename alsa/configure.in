@@ -233,6 +233,12 @@ gcc-*)
     ;;
   esac
 esac
+if test "$my_compiler_type" = "${CROSS_COMPILE}gcc"; then
+  my_compiler_type="gcc"
+fi
+if test "$my_compiler_type" = "${CROSS_COMPILE}cc"; then
+  my_compiler_type="cc"
+fi
 if test "$my_compiler_type" = "$my_compiler_version"; then
   my_compiler_type="gcc"
 fi
