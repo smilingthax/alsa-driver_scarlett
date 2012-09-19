@@ -52,14 +52,16 @@ done
 cd $alsa
 if [ -n "$copy_tree" ]; then
     cp -al $kern/include/sound alsa-kernel/include
-    cp -al $kern/include/trace/events alsa-kernel/trace_events
+    mkdir -p alsa-kernel/trace_events
+    cp -al $kern/include/trace/events/asoc.h alsa-kernel/trace_events/
     cp -al $kern/Documentation/sound/alsa alsa-kernel/Documentation
     cp -al $kern/Documentation/DocBook/alsa-driver-api.tmpl alsa-kernel/Documentation/DocBook
     cp -al $kern/Documentation/DocBook/writing-an-alsa-driver.tmpl alsa-kernel/Documentation/DocBook
     cp -al $kern/Documentation/DocBook/stylesheet.xsl alsa-kernel/Documentation/DocBook
 else
     ln -s ../linux/include/sound alsa-kernel/include
-    ln -s ../linux/include/trace/events alsa-kernel/trace_events
+    mkdir -p alsa-kernel/trace_events
+    ln -s ../../linux/include/trace/events/asoc.h alsa-kernel/trace_events/
     mkdir alsa-kernel/Documentation
     (cd alsa-kernel/Documentation;
 	for i in ../../linux/Documentation/sound/alsa/*; do
