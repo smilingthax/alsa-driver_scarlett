@@ -38,6 +38,7 @@ import os
 import sys
 import string
 import time
+import datetime
 import dircache
 import getopt
 import re
@@ -51,6 +52,7 @@ GITROOT = '~/git/repos/linux-2.6'
 PATCH_UPDATE = '~/alsa/alsa-kernel/scripts/kchanges/update'
 GIT_COMMITTER_NAME = 'Jaroslav Kysela'
 GIT_COMMITTER_EMAIL = 'perex@suse.cz'
+BRANCH = 'HEAD'
 
 # exclude some files or directories
 ALSA_EXCLUDE = ['/include/version.h']
@@ -76,17 +78,20 @@ KERNEL_FORCE_DIR = ['/Documentation/sound/alsa', '/include/sound']
 # Directory mapping
 ALSA_MAP = {'/':'/sound',
 	    '/Documentation':'/Documentation/sound/alsa',
-	    '/include':'/include/sound'}
+	    '/include':'/include/sound',
+	    '/kernel':'/'}
 KERNEL_MAP = {}		# Initialized from ALSA_MAP
 
 # Comment mapping
 COMMENT_MAP_DRIVER = [
+		('/include/cs8403.h'	,'CS8403'),
 		('/include/mpu401.h'	,'MPU401 UART'),
 		('/drivers/mpu401'	,'MPU401 UART'),
 	 	('/include/asound_fm.h' ,'Raw OPL FM'),
 		('/include/opl3.h'	,'OPL3'),
 		('/drivers/opl3'	,'OPL3'),
 		('/drivers/opl4'	,'OPL4'),
+		('/include/opl4.h'	,'OPL4'),
 		('/include/vx_core.h'	,'Digigram VX core'),
 		('/drivers/vx'		,'Digigram VX core'),
 		('/drivers'		,'Generic drivers'),
@@ -124,6 +129,7 @@ COMMENT_MAP_DRIVER = [
 		('/include/emu8000.h'	,'EMU8000 driver'),
 		('/isa/sb/emu8000.*'	,'EMU8000 driver'),
 		('/isa/sb/sb16.*'	,'SB16/AWE driver'),
+		('/include/sb16_csp.h'	,'SB16/AWE driver'),
 		('/isa/sb/sb8.*'	,'SB8 driver'),
 		('/isa/sb'		,'SB drivers'),
 		('/isa/msnd'		,'MSND driver'),
@@ -146,7 +152,7 @@ COMMENT_MAP_DRIVER = [
 		('/include/ac97_codec.h','AC97 Codec'),
 		('/pci/ac97'		,'AC97 Codec'),
 		('/pci/ali5451'		,'ALI5451 driver'),
-		('/include/emu10k1.h'	,'EMU10K1/EMU10K2 driver'),
+		('/include/emu10k1.*.h'	,'EMU10K1/EMU10K2 driver'),
 		('/pci/emu10k1'		,'EMU10K1/EMU10K2 driver'),
 		('/pci/au88x0'		,'au88x0 driver'),
 		('/pci/ice1712/envy24ht.h','ICE1724 driver'),
@@ -165,7 +171,7 @@ COMMENT_MAP_DRIVER = [
 		('/include/trident.h'	,'Trident driver'),
 		('/pci/trident'		,'Trident driver'),
 		('/pci/vx222'		,'Digigram VX222 driver'),
-		('/include/cs46xx.h'	,'CS46xx driver'),
+		('/include/cs46xx.*.h'	,'CS46xx driver'),
 		('/pci/cs46xx'		,'CS46xx driver'),
 		('/pci/als4000.c'	,'ALS4000 driver'),
 		('/pci/azt3328.[ch]'	,'AZT3328 driver'),
@@ -196,6 +202,8 @@ COMMENT_MAP_DRIVER = [
 		('/pci/hda/hda_intel.c'	,'HDA Intel driver'),
 		('/pci/hda/.*'		,'HDA generic driver'),
 		('/pci/ad1889.*'	,'AD1889 driver'),
+		('/pci/cs5535audio/.*'	,'CS5535 driver'),
+		('/pci/pcxhr/.*'	,'Digigram PCXHR driver'),
 		('/include/hdspm.h'	,'HDSPM driver'),
 		('/pci'			,'ERROR'),
 		('/ppc/Makefile'	,'PPC'),
@@ -225,6 +233,10 @@ COMMENT_MAP_DRIVER = [
 		('/include/cs8427.h'	,'I2C cs8427'),
 		('/i2c/cs8427.c'	,'I2C cs8427'),
 		('/i2c/tea6330t.c'	,'I2C tea6330t'),
+		('/include/tea6330t.h'	,'I2C tea6330t'),
+		('/include/uda1380.h'	,'I2C UDA1380'),
+		('/i2c/uda1380.c'	,'I2C UDA1380'),
+		('/i2c/Kconfig'		,'I2C Kconfig'),
 		('/i2c'			,'ERROR'),
 		('/parisc/harmony.[ch]'	,'PARISC Harmony driver'),
 		('/parisc/Kconfig'	,'PARISC'),
@@ -242,6 +254,7 @@ COMMENT_MAP_DRIVER = [
 		('/include/soundmem.h'  ,'Synth'),
 		('/synth/Makefile'	,'Synth'),
 		('/synth/util_mem.c'	,'Synth'),
+		('/include/util_mem.h'	,'Synth'),
 		('/pcmcia/vx'		,'Digigram VX Pocket driver'),
 		('/pcmcia/pdaudiocf'	,'PDAudioCF driver'),
 		('/pcmcia/Kconfig'	,'PCMCIA Kconfig'),
@@ -256,6 +269,8 @@ COMMENT_MAP_DRIVER = [
 		('/usb/usbquirks.(c|h)' ,'USB generic driver'),
 		('/usb/usbmixer_maps.c' ,'USB generic driver'),
 		('/usb'			,'ERROR'),
+		('/include/hal2.h'	,'HAL2 driver'),
+		('/hal2/.*'		,'HAL2 driver'),
 		('/core/ioctl32'	,'IOCTL32 emulation'),
 		('/include/pcm_oss.h'	,'ALSA<-OSS emulation'),
 		('/include/mixer_oss.h'	,'ALSA<-OSS emulation'),
@@ -263,11 +278,8 @@ COMMENT_MAP_DRIVER = [
 		('/core/seq/oss'	,'ALSA<-OSS sequencer'),
 		('/include/ainstr.*'	,'Instrument layer'),
 		('/core/seq/instr'	,'Instrument layer'),
-		('/include/seq_kernel.h','ALSA sequencer'),
-		('/include/seq_midi_emul.h','ALSA sequencer'),
-		('/include/seq_midi_event.h','ALSA sequencer'),
+		('/include/seq_.*.h'	,'ALSA sequencer'),
 		('/include/asequencer.h','ALSA sequencer'),
-		('/include/seq_virmidi.h','Virtual Midi'),
 		('/core/seq'		,'ALSA sequencer'),
 		('/core/Kconfig'	,'ALSA Core'),
 		('/core/memalloc.*'	,'Memalloc module'),
@@ -297,9 +309,16 @@ COMMENT_MAP_DRIVER = [
 		('/include/memalloc.h'  ,'ALSA Core'),
 		('/include/config.h.in' ,'ALSA Core'),
 		('/include/firmware_compat.h','ALSA Core'),
+		('/include/err_compat.h','ALSA Core'),
 		('/include/compat_22.h'	,'ALSA Core'),
 		('/include/linux/pci_ids.h'	,'ALSA Core'),
 		('/include/autoconf.*'	,'ALSA Core'),
+		('/include/platform_device_compat.h', 'ALSA Core'),
+		('/include/pci_ids_compat.h', 'ALSA Core'),
+		('/include/typedefs.h', 'ALSA Core'),
+		('/include/old/gf1.h',  'OLD GF1 header'),
+		('/include/device_compat.h','ALSA Core'),
+		('/include/bitmap_compat.h','ALSA Core'),
 		('/core/info.*'		,'ALSA Core'),
 		('/core/control.*'	,'ALSA Core'),
 		('/core/init.*'		,'ALSA Core'),
@@ -314,11 +333,16 @@ COMMENT_MAP_DRIVER = [
 		('/Documentation/.*'	,'Documentation'),
 		('/doc/.*'		,'Documentation'),
 		('/include'		,'ERROR'),
+		('/kernel/MAINTAINERS'	,'MAINTAINERS file'),
+		('/kernel/CREDITS'	,'CREDITS file'),
+		('/kernel/include/linux/pci_ids.h', 'pci_ids.h update'),
+		('/kernel'		,'ERROR'),
 		('/sound_core.c'	,'OSS device core'),
 		('/scripts'		,'IGNORE'),
 		('/Kconfig'		,'Sound Core'),
 		('/Makefile'		,'Sound Core'),
 		('/INSTALL'		,'Sound Core'),
+		('/MAINTAINERS'		,'MAINTAINERS file'),
 		('/Rules.make'		,'Sound Core'),
 		('/configure.in'	,'Sound Core'),
 		('/cvscompile'		,'cvscompile script'),
@@ -416,6 +440,7 @@ COMMENT_MAP_TOOLS = [
 		('/echomixer/.*'	,'Digigram Echo Mixer'),
 		('/as10k1/.*'		,'as10k1 (EMU10K1+ DSP Assembler)'),
 		('/ld10k1/.*'		,'ld10k1 (EMU10K1+ DSP Code Loader)'),
+		('/ac3dec/.*'		,'ac3dec (Dolby Digital Decoder)'),
 		('/qlo10k1/.*'		,'qlo10k1'),
 		('/hdspconf/.*'		,'hdspconf'),
 		('/hdspmixer/.*'	,'hdspmixer'),
@@ -673,13 +698,9 @@ def remap_engine(dir, dict):
 	return dir
 
 def remap_alsa(dir):
-        if dir == '/MAINTAINERS':
-                return '/MAINTAINERS'
 	return remap_engine(dir, ALSA_MAP);
 
 def remap_kernel(dir):
-        if dir == '/MAINTAINERS':
-                return '/MAINTAINERS'
 	return remap_engine(dir, KERNEL_MAP);
 
 def remap_alsa_file(file):
@@ -1123,7 +1144,7 @@ def cvsps_merge_members(members, module='alsa-driver', nice=False):
 		result.append(xresult)
         if len(result) > 1 and nice:
                 return []
-        elif len(result) > 0:
+        elif len(result) > 0 and nice:
               result[0] = "Modules: " + result[0]
               result.append('')
 	return result
@@ -1165,9 +1186,10 @@ def cvsps_merge1(f,t=0):
 	author = ''
 	date = ''
 	level = 'Devel'
+	branch = 'HEAD'
 	xfrom = ''
 	for line in diffs:
-		if line[:-1] == 'Log:':
+		if line[:-1] == 'Log:' and ok == 0:
 			ok = 1
 		elif line[:-1] == 'Members: ':
 			ok = 2
@@ -1175,12 +1197,16 @@ def cvsps_merge1(f,t=0):
 			ok = 0
 		elif line[:3] == '---':
 			ok = 0
-		elif line[:5] == 'Date:':
+		elif line[:5] == 'Date:' and ok == 0:
 			date = line[6:-1]
 		elif line[:7] == 'Author:' and ok == 0:
 			author = CVS_USER[line[8:-1]]
 		elif line[:8] == 'Members:':
 			ok = 2
+		elif line[:8] == 'Branch: ' and ok == 0:
+		        branch = line[8:-1]
+		        if branch == '':
+		                branch = 'HEAD'
 		elif ok == 1:
 			if line[:14] == "Signed-off-by:":
 				signed.append(line)
@@ -1254,9 +1280,15 @@ def cvsps_merge1(f,t=0):
 	nlines = nlines + 'Signed-off-by: %s\n' % author
 	if t:
 		print lines
-		if level == 'Merged':
+		if branch != BRANCH:
+		        print '^^^^^^ Branch does not match (%s != %s)' % (branch, BRANCH)
+		elif level == 'Merged':
 			print '^^^^^^ Already merged to mainstream...'
 			print
+		return
+
+	if branch != BRANCH:
+		print 'Branch does not match (%s != %s)...' % (branch, BRANCH)
 		return
 
 	if level == 'Merged':
@@ -1322,7 +1354,7 @@ def cvsps_merge1(f,t=0):
 				sys.exit(1)
 	#sys.exit(1)
 	
-def cvsps_merge(start):
+def cvsps_merge(start, end):
 	os.chdir(get_git_root())
 	l = dircache.listdir(get_cvs_root() + '/scripts/changesets')
 	for f in l:
@@ -1333,6 +1365,8 @@ def cvsps_merge(start):
 			y = int(file)
 			if y < start:
 				continue
+                        if y > end:
+                                continue
 			cvsps_merge1(f, t=1)
 	print 'Is this ok? Press Ctrl-C to abort...'
 	sys.stdin.readline()
@@ -1344,12 +1378,14 @@ def cvsps_merge(start):
 			y = int(file)
 			if y < start:
 				continue
+                        if y > end:
+                                continue
 			cvsps_merge1(f, t=0)
 		print 'Is this ok? Press Ctrl-C to abort...'
 		sys.stdin.readline()
 	del l
 
-def cvsps_merges(start):
+def cvsps_merges(start, end):
 	fp = open(get_cvs_root() + '/scripts/changesets/asap.txt')
 	csl = fp.readlines()
 	fp.close()
@@ -1359,6 +1395,8 @@ def cvsps_merges(start):
 		if l[:1] == "#":
 			continue
 		if int(l) < start:
+			continue
+		if int(l) > end:
 			continue
 		cs.append(int(l))
 	cs.sort()
@@ -1412,6 +1450,7 @@ def cvsps_changes1(changes, lines, module):
 		logflag = False
 		memflag = False
 		members = []
+		branch = 'HEAD'
 		while idx < len(lines) and lines[idx] != delim:
 			line = lines[idx]
 			# print line
@@ -1433,6 +1472,10 @@ def cvsps_changes1(changes, lines, module):
 			elif line[:8] == 'Author: ':
 				author = line[8:-1]
 				#print 'author: %s' % author
+                        elif line[:8] == 'Branch: ':
+                                branch = line[8:-1]
+                                if branch == '':
+                                        branch = 'HEAD'
 			elif line[:4] == 'Log:':
 				logflag = True
 			idx += 1
@@ -1443,6 +1486,7 @@ def cvsps_changes1(changes, lines, module):
 		a['log'] = log
 		a['members'] = members
 		a['module'] = module
+		a['branch'] = branch
 		already = False
 		idx1 = 0
 		for change in changes:
@@ -1616,11 +1660,50 @@ def cvsps_changes(rev1, rev2, update=False):
 						print '    %s %s' % (first, l)
 						first = " "
 
+def tocvsps_patch1():
+        print
+        print 'Members:'
+        print '	xxx/xxx.c:1.1->1.2 '
+        print
+        print 'Index: something'
+
+def tocvsps_patch(filename, author):
+	fp = open(filename)
+	lines = fp.readlines()
+	fp.close()
+	state = 'none'
+	members = False
+	print '---------------------'
+	print 'PatchSet UNKNOWN'
+	print 'Date: %s' % datetime.datetime.today().strftime('%Y/%m/%d %H:%M:%S')
+	print 'Author: %s' % author
+	print 'Branch: HEAD'
+	print 'Tag: (none)'
+	print 'Log:'
+        for line in lines:
+                if state == 'none' and line[:8] == 'Summary:':
+                        print line[:-1]
+                        state = 'info'
+                elif state == 'info' and line[:3] == '---':
+                        state = 'patch0'
+                elif (state == 'info' or state == 'patch0') and line[:4] == 'diff':
+                        tocvsps_patch1()
+                        members = True
+                        print line[:-1]
+                        state = 'patch'
+                elif state == 'info':
+                        print line[:-1]
+                elif state == 'patch':
+                        if not members:
+                                tocvsps_patch1()
+                                members = True
+                        print line[:-1]
+
 def main():
 	global CVSROOT, GITROOT, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 'hB:C:',
-					   ['cvsroot=', 'bkroot=', 'help']);
+		opts, args = getopt.getopt(sys.argv[1:], 'hB:C:b:',
+					   ['cvsroot=', 'bkroot=', 'branch=', 'help']);
 	except getopt.error, msg:
 		usage(1, msg)
 
@@ -1634,6 +1717,8 @@ def main():
 			CVSROOT = arg
 		elif opt == '--gitroot':
 			GITROOT = arg
+		elif opt == '--branch':
+			BRANCH = arg
 
 	for k in ALSA_MAP.keys():
 		KERNEL_MAP[ALSA_MAP[k]] = k
@@ -1663,14 +1748,22 @@ def main():
 			x = 0
 		else:
 			x = int(args[1])
-		cvsps_merge(x)
+                if len(args) < 3:
+                        y = 999999999
+                else:
+                        y = int(args[2])
+		cvsps_merge(x, y)
 	elif args[0] == 'cvsps-merges':
 		GITROOT = '~/git/repos/stable'
 		if len(args) < 2:
 			x = 0
 		else:
 			x = int(args[1])
-		cvsps_merges(x)
+                if len(args) < 3:
+                        y = 999999999
+                else:
+                        y = int(args[2])
+		cvsps_merges(x, y)
 	elif args[0] == 'cvsps-changes':
 		if len(args) < 3:
 			print 'Please, give a start and end revision'
@@ -1748,6 +1841,13 @@ def main():
 		if len(args) > 1:
 			ver = args[1]
 		filename(ver)
+        elif args[0] == 'tocvsps':
+                if len(args) < 1:
+                        print 'Specify patch file, please'
+                author = 'perex'
+                if len(args) > 2:
+                        author = args[2]
+                tocvsps_patch(args[1], author)
 	else:
 		print 'Unknown command %s' % args[0]
 		sys.exit(1)
