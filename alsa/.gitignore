@@ -26,6 +26,7 @@ Module*.symvers
 alsa-kernel
 scripts
 linux
+*.isapnp
 
 acore/control.c
 acore/hrtimer.c
