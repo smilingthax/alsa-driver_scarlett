@@ -51,11 +51,12 @@ usage() {
     echo "  -L|--log       logging on $LOGFILE"
     echo "  -p|--probe card-name"
     echo "                 probe a legacy non-isapnp card and print module options"
+    echo "  -P|--listprobe list the supported legacy card modules"
     echo "  -h|--help      what you're reading"
     exit 1
 }
 
-OPTS=`getopt -o lmLhp:u:g:d:rs: --long legacy,modinfo,log,help,probe,uid,gid,devmode,strict,sound -n alsaconf -- "$@"` || exit 1
+OPTS=`getopt -o lmLhp:u:g:d:rs: --long legacy,modinfo,log,help,probe,listprobe,uid,gid,devmode,strict,sound -n alsaconf -- "$@"` || exit 1
 eval set -- "$OPTS"
 
 do_legacy_only=0
@@ -68,6 +69,9 @@ legacy_probe_card=""
 LOGFILE="/tmp/alsaconf.log"
 TESTSOUND="/usr/share/sounds/alsa/test.wav"
 try_all_combination=0
+
+# legacy support
+LEGACY_CARDS="opl3sa2 cs4236 cs4232 cs4231 es18xx es1688 sb16 sb8"
 
 while true ; do
     case "$1" in
@@ -83,6 +87,8 @@ while true ; do
 	do_logging=1; rm -f $LOGFILE; shift;;
     -p|--probe)
 	legacy_probe_card=$2; shift 2;;
+    -P|--listprobe)
+	echo "$LEGACY_CARDS"; exit 0;;
     -u|--uid)
 	alsa_uid=$2; shift 2;;
     -g|--gid)
@@ -455,7 +461,7 @@ find_device_name () {
 	/sbin/lspci -d $1 | sed -e 's/^..:..\.. Multimedia audio controller: //g'
 	return
     elif expr "$1" : '[A-Z@][A-Z@][A-Z@][0-9a-f][0-9a-f][0-9a-f][0-9a-f]' >/dev/null; then
-	cardname=`grep '^Card [0-9]\+ '\'$1':' $DUMP | head -1 | sed -e 's/^Card [0-9]\+ '\''.*:\(.*\)'\'' .*$/\1/'`
+	cardname=`grep '^Card [0-9]\+ '\'$1':' $DUMP | head -n 1 | sed -e 's/^Card [0-9]\+ '\''.*:\(.*\)'\'' .*$/\1/'`
 	echo $cardname
     else
 	echo $1
@@ -636,6 +642,7 @@ options snd-$1 ${*:2}
     # kill the child process if still exists.
     kill -9 $pp > /dev/null 2>&1
     st=$?
+    ac_cardname=`head -n 1 /proc/asound/cards | sed -e 's/^[0-9].* - \(.*\)$/\1/'`
     /sbin/modprobe -C $TMP -r snd-ioctl32 >/dev/null 2>&1
     /sbin/modprobe -C $TMP -r snd-$1 >/dev/null 2>&1
     if [ $st = 0 ]; then
@@ -916,7 +923,7 @@ ac_config_legacy () {
 " 10 50 || acex 0
 
     if [ x"$1" = x ]; then
-	probe_list="opl3sa2 cs4236 cs4232 cs4231 es18xx es1688 sb16 sb8"
+	probe_list="$LEGACY_CARDS"
     else
 	probe_list=$*
     fi
@@ -974,6 +981,7 @@ if [ x"$legacy_probe_card" != x ]; then
     ac_opts=""
     if eval ac_try_card_$legacy_probe_card >/dev/null 2>&1; then
 	echo "$ac_opts"
+	echo "$ac_cardname"
 	exit 0
     else
 	echo "FAILED"
@@ -1029,7 +1037,7 @@ if [ x$devs_found != x ]; then
          Following card(s) are found on your system.
          Choose a soundcard to configure:
 " 17 76 8 "${devs_found[@]}" 2> $FOUND || acex 0
-    card=`head -1 $FOUND`
+    card=`head -n 1 $FOUND`
     if [ "$card" = "legacy" ]; then
 	ac_config_legacy
     else
