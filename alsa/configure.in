@@ -320,7 +320,7 @@ if test "$my_compiler_type" != "$kernel_compiler_type"; then
 fi
 if test "$my_compiler_type" = "gcc" ; then
   kernel_major=`echo $kernel_compiler_version | cut -d '.' -f 1`
-  my_major=`echo $kernel_compiler_version | cut -d '.' -f 1`
+  my_major=`echo $my_compiler_version | cut -d '.' -f 1`
   if test $kernel_major -eq 2 -a $my_major -eq 3 ; then
     echo "Fatal error: Kernel is compiled with GCC 2.x and you are trying to use GCC 3.x."
     echo "             These two version of GCC are incompatible for binary code."

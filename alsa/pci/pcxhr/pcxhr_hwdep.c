@@ -1,3 +1,4 @@
+#define __NO_VERSION__
 /*
  * Driver for Digigram pcxhr compatible soundcards
  *
