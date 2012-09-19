@@ -1520,6 +1520,7 @@ CHECK_KERNEL_HEADER(linux/export.h)
 CHECK_KERNEL_HEADER(media/v4l2-dev.h)
 CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
 CHECK_KERNEL_HEADER(linux/highmem.h)
+CHECK_KERNEL_HEADER(linux/ratelimit.h)
 CHECK_KERNEL_HEADER(linux/workqueue.h)
 if test ! -f include/linux/workqueue.h; then
   if test "x$kversion.$kpatchlevel" = "x2.4" -a \
