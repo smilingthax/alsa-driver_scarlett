@@ -746,7 +746,7 @@ int snd_es1688_pcm(es1688_t * chip, int device, snd_pcm_t ** rpcm)
 	snd_pcm_lib_preallocate_isa_pages_for_all(pcm, 64*1024, 64*1024, GFP_KERNEL|GFP_DMA);
 
 	if (rpcm)
-		*rpcm = NULL;
+		*rpcm = pcm;
 	return 0;
 }
 
