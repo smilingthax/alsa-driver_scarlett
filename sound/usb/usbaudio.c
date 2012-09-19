@@ -284,6 +284,16 @@ static int prepare_capture_urb(snd_usb_substream_t *subs,
 	urb->transfer_buffer = ctx->buf;
 	urb->transfer_buffer_length = offs;
 	urb->interval = 1;
+#if 0 // for check
+	if (! urb->bandwidth) {
+		int bustime;
+		bustime = usb_check_bandwidth(urb->dev, urb);
+		if (bustime < 0) 
+			return bustime;
+		printk("urb %d: bandwidth = %d (packets = %d)\n", ctx->index, bustime, urb->number_of_packets);
+		usb_claim_bandwidth(urb->dev, urb, bustime, 1);
+	}
+#endif // for check
 	return 0;
 }
 
@@ -305,8 +315,10 @@ static int retire_capture_urb(snd_usb_substream_t *subs,
 
 	for (i = 0; i < urb->number_of_packets; i++) {
 		cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
-		if (urb->iso_frame_desc[i].status) /* active? hmm, skip this */
-			continue;
+		if (urb->iso_frame_desc[i].status) {
+			snd_printd(KERN_ERR "frame %d active: %d\n", i, urb->iso_frame_desc[i].status);
+			// continue;
+		}
 		len = urb->iso_frame_desc[i].actual_length / stride;
 		if (! len)
 			continue;
@@ -1009,6 +1021,7 @@ static int set_format(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 	}
 	/* if endpoint has sampling rate control, set it */
 	if (fmt->attributes & EP_CS_ATTR_SAMPLE_RATE) {
+		int crate;
 		data[0] = runtime->rate;
 		data[1] = runtime->rate >> 8;
 		data[2] = runtime->rate >> 16;
@@ -1026,8 +1039,11 @@ static int set_format(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 				   dev->devnum, subs->interface, fmt->altsetting, ep);
 			return err;
 		}
-		runtime->rate = data[0] | (data[1] << 8) | (data[2] << 16);
-		// printk("ok, getting back rate to %d\n", runtime->rate);
+		crate = data[0] | (data[1] << 8) | (data[2] << 16);
+		if (crate != runtime->rate) {
+			snd_printd(KERN_WARNING "current rate %d is different from the runtime rate %d\n", crate, runtime->rate);
+			// runtime->rate = crate;
+		}
 	}
 	/* always fill max packet size */
 	if (fmt->attributes & EP_CS_ATTR_FILL_MAX)
