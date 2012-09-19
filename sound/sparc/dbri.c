@@ -669,7 +669,7 @@ static s32 *dbri_cmdlock(struct snd_dbri * dbri, int len)
 	else
 		printk(KERN_ERR "DBRI: no space for commands.");
 
-	return 0;
+	return NULL;
 }
 
 /*
@@ -2037,10 +2037,10 @@ static int snd_dbri_open(struct snd_pcm_substream *substream)
 	spin_unlock_irqrestore(&dbri->lock, flags);
 
 	snd_pcm_hw_rule_add(runtime,0,SNDRV_PCM_HW_PARAM_CHANNELS,
-			    snd_hw_rule_format, 0, SNDRV_PCM_HW_PARAM_FORMAT,
+			    snd_hw_rule_format, NULL, SNDRV_PCM_HW_PARAM_FORMAT,
 			    -1);
 	snd_pcm_hw_rule_add(runtime,0,SNDRV_PCM_HW_PARAM_FORMAT,
-			    snd_hw_rule_channels, 0, 
+			    snd_hw_rule_channels, NULL, 
 			    SNDRV_PCM_HW_PARAM_CHANNELS,
 			    -1);
 				
@@ -2412,8 +2412,6 @@ static struct snd_kcontrol_new dbri_controls[] __devinitdata = {
 	CS4215_SINGLE("Mic boost", 4, 4, 1, 1)
 };
 
-#define NUM_CS4215_CONTROLS (sizeof(dbri_controls)/sizeof(struct snd_kcontrol_new))
-
 static int __init snd_dbri_mixer(struct snd_dbri * dbri)
 {
 	struct snd_card *card;
@@ -2424,7 +2422,7 @@ static int __init snd_dbri_mixer(struct snd_dbri * dbri)
 	card = dbri->card;
 	strcpy(card->mixername, card->shortname);
 
-	for (idx = 0; idx < NUM_CS4215_CONTROLS; idx++) {
+	for (idx = 0; idx < ARRAY_SIZE(dbri_controls); idx++) {
 		if ((err = snd_ctl_add(card,
 				snd_ctl_new1(&dbri_controls[idx], dbri))) < 0)
 			return err;

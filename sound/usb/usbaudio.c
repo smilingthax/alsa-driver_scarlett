@@ -391,6 +391,16 @@ static int retire_capture_urb(struct snd_usb_substream *subs,
 	return 0;
 }
 
+/*
+ * Process after capture complete when paused.  Nothing to do.
+ */
+static int retire_paused_capture_urb(struct snd_usb_substream *subs,
+				     struct snd_pcm_runtime *runtime,
+				     struct urb *urb)
+{
+	return 0;
+}
+
 
 /*
  * prepare urb for full speed playback sync pipe
@@ -493,13 +503,13 @@ static int snd_usb_audio_next_packet_size(struct snd_usb_substream *subs)
 }
 
 /*
- * Prepare urb for streaming before playback starts.
+ * Prepare urb for streaming before playback starts or when paused.
  *
- * We don't yet have data, so we send a frame of silence.
+ * We don't have any data, so we send a frame of silence.
  */
-static int prepare_startup_playback_urb(struct snd_usb_substream *subs,
-					struct snd_pcm_runtime *runtime,
-					struct urb *urb)
+static int prepare_nodata_playback_urb(struct snd_usb_substream *subs,
+				       struct snd_pcm_runtime *runtime,
+				       struct urb *urb)
 {
 	unsigned int i, offs, counts;
 	struct snd_urb_ctx *ctx = urb->context;
@@ -622,7 +632,7 @@ static int retire_playback_urb(struct snd_usb_substream *subs,
  */
 static struct snd_urb_ops audio_urb_ops[2] = {
 	{
-		.prepare =	prepare_startup_playback_urb,
+		.prepare =	prepare_nodata_playback_urb,
 		.retire =	retire_playback_urb,
 		.prepare_sync =	prepare_playback_sync_urb,
 		.retire_sync =	retire_playback_sync_urb,
@@ -637,7 +647,7 @@ static struct snd_urb_ops audio_urb_ops[2] = {
 
 static struct snd_urb_ops audio_urb_ops_high_speed[2] = {
 	{
-		.prepare =	prepare_startup_playback_urb,
+		.prepare =	prepare_nodata_playback_urb,
 		.retire =	retire_playback_urb,
 		.prepare_sync =	prepare_playback_sync_urb_hs,
 		.retire_sync =	retire_playback_sync_urb_hs,
@@ -925,10 +935,14 @@ static int snd_usb_pcm_playback_trigger(struct snd_pcm_substream *substream,
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		subs->ops.prepare = prepare_playback_urb;
 		return 0;
 	case SNDRV_PCM_TRIGGER_STOP:
 		return deactivate_urbs(subs, 0, 0);
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+		subs->ops.prepare = prepare_nodata_playback_urb;
+		return 0;
 	default:
 		return -EINVAL;
 	}
@@ -944,9 +958,16 @@ static int snd_usb_pcm_capture_trigger(struct snd_pcm_substream *substream,
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
+		subs->ops.retire = retire_capture_urb;
 		return start_urbs(subs, substream->runtime);
 	case SNDRV_PCM_TRIGGER_STOP:
 		return deactivate_urbs(subs, 0, 0);
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+		subs->ops.retire = retire_paused_capture_urb;
+		return 0;
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		subs->ops.retire = retire_capture_urb;
+		return 0;
 	default:
 		return -EINVAL;
 	}
@@ -1504,33 +1525,20 @@ static int snd_usb_pcm_prepare(struct snd_pcm_substream *substream)
 	/* for playback, submit the URBs now; otherwise, the first hwptr_done
 	 * updates for all URBs would happen at the same time when starting */
 	if (subs->direction == SNDRV_PCM_STREAM_PLAYBACK) {
-		subs->ops.prepare = prepare_startup_playback_urb;
+		subs->ops.prepare = prepare_nodata_playback_urb;
 		return start_urbs(subs, runtime);
 	} else
 		return 0;
 }
 
-static struct snd_pcm_hardware snd_usb_playback =
+static struct snd_pcm_hardware snd_usb_hardware =
 {
 	.info =			SNDRV_PCM_INFO_MMAP |
 				SNDRV_PCM_INFO_MMAP_VALID |
 				SNDRV_PCM_INFO_BATCH |
 				SNDRV_PCM_INFO_INTERLEAVED |
-				SNDRV_PCM_INFO_BLOCK_TRANSFER,
-	.buffer_bytes_max =	1024 * 1024,
-	.period_bytes_min =	64,
-	.period_bytes_max =	512 * 1024,
-	.periods_min =		2,
-	.periods_max =		1024,
-};
-
-static struct snd_pcm_hardware snd_usb_capture =
-{
-	.info =			SNDRV_PCM_INFO_MMAP |
-				SNDRV_PCM_INFO_MMAP_VALID |
-				SNDRV_PCM_INFO_BATCH |
-				SNDRV_PCM_INFO_INTERLEAVED |
-				SNDRV_PCM_INFO_BLOCK_TRANSFER,
+				SNDRV_PCM_INFO_BLOCK_TRANSFER |
+				SNDRV_PCM_INFO_PAUSE,
 	.buffer_bytes_max =	1024 * 1024,
 	.period_bytes_min =	64,
 	.period_bytes_max =	512 * 1024,
@@ -1903,8 +1911,7 @@ static int setup_hw_info(struct snd_pcm_runtime *runtime, struct snd_usb_substre
 	return 0;
 }
 
-static int snd_usb_pcm_open(struct snd_pcm_substream *substream, int direction,
-			    struct snd_pcm_hardware *hw)
+static int snd_usb_pcm_open(struct snd_pcm_substream *substream, int direction)
 {
 	struct snd_usb_stream *as = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -1912,7 +1919,7 @@ static int snd_usb_pcm_open(struct snd_pcm_substream *substream, int direction,
 
 	subs->interface = -1;
 	subs->format = 0;
-	runtime->hw = *hw;
+	runtime->hw = snd_usb_hardware;
 	runtime->private_data = subs;
 	subs->pcm_substream = substream;
 	return setup_hw_info(runtime, subs);
@@ -1933,7 +1940,7 @@ static int snd_usb_pcm_close(struct snd_pcm_substream *substream, int direction)
 
 static int snd_usb_playback_open(struct snd_pcm_substream *substream)
 {
-	return snd_usb_pcm_open(substream, SNDRV_PCM_STREAM_PLAYBACK, &snd_usb_playback);
+	return snd_usb_pcm_open(substream, SNDRV_PCM_STREAM_PLAYBACK);
 }
 
 static int snd_usb_playback_close(struct snd_pcm_substream *substream)
@@ -1943,7 +1950,7 @@ static int snd_usb_playback_close(struct snd_pcm_substream *substream)
 
 static int snd_usb_capture_open(struct snd_pcm_substream *substream)
 {
-	return snd_usb_pcm_open(substream, SNDRV_PCM_STREAM_CAPTURE, &snd_usb_capture);
+	return snd_usb_pcm_open(substream, SNDRV_PCM_STREAM_CAPTURE);
 }
 
 static int snd_usb_capture_close(struct snd_pcm_substream *substream)
@@ -2046,10 +2053,9 @@ int snd_usb_ctl_msg(struct usb_device *dev, unsigned int pipe, __u8 request,
 	void *buf = NULL;
 
 	if (size > 0) {
-		buf = kmalloc(size, GFP_KERNEL);
+		buf = kmemdup(data, size, GFP_KERNEL);
 		if (!buf)
 			return -ENOMEM;
-		memcpy(buf, data, size);
 	}
 	err = usb_control_msg(dev, pipe, request, requesttype,
 			      value, index, buf, size, timeout);
@@ -2846,12 +2852,11 @@ static int create_fixed_stream_quirk(struct snd_usb_audio *chip,
 	int stream, err;
 	int *rate_table = NULL;
 
-	fp = kmalloc(sizeof(*fp), GFP_KERNEL);
+	fp = kmemdup(quirk->data, sizeof(*fp), GFP_KERNEL);
 	if (! fp) {
-		snd_printk(KERN_ERR "cannot malloc\n");
+		snd_printk(KERN_ERR "cannot memdup\n");
 		return -ENOMEM;
 	}
-	memcpy(fp, quirk->data, sizeof(*fp));
 	if (fp->nr_rates > 0) {
 		rate_table = kmalloc(sizeof(int) * fp->nr_rates, GFP_KERNEL);
 		if (!rate_table) {
@@ -3029,10 +3034,9 @@ static int create_ua1000_quirk(struct snd_usb_audio *chip,
 	    altsd->bNumEndpoints != 1)
 		return -ENXIO;
 
-	fp = kmalloc(sizeof(*fp), GFP_KERNEL);
+	fp = kmemdup(&ua1000_format, sizeof(*fp), GFP_KERNEL);
 	if (!fp)
 		return -ENOMEM;
-	memcpy(fp, &ua1000_format, sizeof(*fp));
 
 	fp->channels = alts->extra[4];
 	fp->iface = altsd->bInterfaceNumber;
