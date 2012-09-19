@@ -8,5 +8,8 @@
 %dir linux/sound/pci/pdplus
 |snd-pdplus snd-pcm
 
+%dir linux/sound/i2c/l3
+snd-uda1341 snd-pcm
+
 %dir linux/sound/arm
 |snd-h3600-uda1341 snd-uda1341 snd-pcm

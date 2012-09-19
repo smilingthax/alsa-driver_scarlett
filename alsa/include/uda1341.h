@@ -11,50 +11,140 @@
  * History:
  *
  * 2002-03-13 Tomas Kasparek Initial release - based on uda1341.h from OSS
- *
+ * 2002-03-30 Tomas Kasparek Proc filesystem support, complete mixer and DSP
+ *                           features support
  */
 
-/* $Id: uda1341.h,v 1.3 2002/03/28 19:04:56 perex Exp $ */
+/* $Id: uda1341.h,v 1.4 2002/04/04 07:27:09 perex Exp $ */
 
 #define UDA1341_ALSA_NAME "snd-uda1341"
 
-struct uda1341_cfg {
-	unsigned int fs:16;
-	unsigned int format:3;
+enum uda1341_onoff {
+        OFF=0,
+        ON,
 };
 
-#define FMT_I2S		0
-#define FMT_LSB16	1
-#define FMT_LSB18	2
-#define FMT_LSB20	3
-#define FMT_MSB		4
-#define FMT_LSB16MSB	5
-#define FMT_LSB18MSB	6
-#define FMT_LSB20MSB	7
-
-#define L3_UDA1341_CONFIGURE	0x13410001
-
-struct l3_gain {
-	unsigned int	left:8;
-	unsigned int	right:8;
-	unsigned int	unused:8;
-	unsigned int	channel:8;
+const char *uda1341_onoff_names[] = {
+        "Off",
+        "On",
 };
 
-#define L3_SET_VOLUME		0x13410002
-#define L3_SET_TREBLE		0x13410003
-#define L3_SET_BASS		0x13410004
-#define L3_SET_GAIN		0x13410005
-
-struct l3_agc {
-	unsigned int	level:8;
-	unsigned int	enable:1;
-	unsigned int	attack:7;
-	unsigned int	decay:8;
-	unsigned int	channel:8;
+enum uda1341_format {
+        I2S=0,
+        LSB16,
+        LSB18,
+        LSB20,
+        MSB,
+        LSB16MSB,
+        LSB18MSB,
+        LSB20MSB,        
 };
 
-#define L3_INPUT_AGC		0x13410006
+const char *uda1341_format_names[] = {
+        "I2S-bus",
+        "LSB 16bits",
+        "LSB 18bits",
+        "LSB 20bits",
+        "MSB",
+        "in LSB 16bits/out MSB",
+        "in LSB 18bits/out MSB",
+        "in LSB 20bits/out MSB",        
+};
+
+enum uda1341_fs {
+        F512=0,
+        F384,
+        F256,
+        Funused,
+};
+
+const char *uda1341_fs_names[] = {
+        "512*fs",
+        "384*fs",
+        "256*fs",
+        "Unused - bad value!",
+};
+
+enum uda1341_peak {
+        BEFORE=0,
+        AFTER,
+};
+
+const char *uda1341_peak_names[] = {
+        "before",
+        "after",
+};
+
+enum uda1341_filter {
+        FLAT=0,
+        MIN,
+        MIN2,
+        MAX,
+};
+
+const char *uda1341_filter_names[] = {
+        "flat",
+        "min",
+        "min",
+        "max",
+};
+
+enum uda1341_mixer {
+        DOUBLE,
+        LINE,
+        MIC,
+        MIXER,
+};
+
+const char *uda1341_mixer_names[] = {
+        "double differential",
+        "input channel 1 (line in)",
+        "input channel 2 (microphone)",
+        "digital mixer",
+};
+
+enum uda1341_deemp {
+        NONE,
+        D32,
+        D44,
+        D48,
+};
+
+const char *uda1341_deemp_names[] = {
+        "none",
+        "32 kHz",
+        "44.1 kHz",
+        "48 kHz",        
+};
+
+const unsigned short uda1341_AGC_atime[] = {11, 16, 11, 16, 21, 11, 16, 21};
+const unsigned short uda1341_AGC_dtime[] = {100, 100, 200, 200, 200, 400, 400, 400};
+
+enum uda1341_config {
+        CMD_RESET = 0,
+	CMD_FS,
+	CMD_FORMAT,
+        CMD_OGAIN,
+        CMD_IGAIN,
+        CMD_DAC,
+        CMD_ADC,
+        CMD_VOLUME,
+        CMD_BASS,
+        CMD_TREBBLE,
+        CMD_PEAK,
+        CMD_DEEMP,
+        CMD_MUTE,        
+        CMD_FILTER,
+        CMD_CH1,
+        CMD_CH2,
+        CMD_MIC,       
+        CMD_MIXER,
+        CMD_AGC,
+        CMD_IG,
+        CMD_AGC_TIME,
+        CMD_AGC_LEVEL,
+        CMD_LAST,
+};
 
 #include <sound/core.h>
 int __init snd_chip_uda1341_mixer_new(snd_card_t *card, struct l3_client **clnt);
@@ -62,7 +152,8 @@ void __init snd_chip_uda1341_mixer_del(snd_card_t *card);
 
 #ifdef CONFIG_SND_DEBUG_MEMORY
 #define h3600_t_magic				0xa15a3a00
-#define l3_client_t_magic			0xa15a3b00
+#define uda1341_t_magic				0xa15a3b00
+#define l3_client_t_magic			0xa15a3c00
 #endif
 
 #ifdef DEBUG_MODE

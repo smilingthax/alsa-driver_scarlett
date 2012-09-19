@@ -162,7 +162,7 @@ mrproper: clean
 .PHONY: cvsclean
 cvsclean: mrproper
 	rm -f configure snddevices aclocal.m4 acinclude.m4 include/config.h include/config1.h \
-	include/isapnp.h toplevel.conf toplevel.conf.in alsa-kernel include/sound
+	include/config1.h.in include/isapnp.h toplevel.config toplevel.config.in alsa-kernel include/sound
 
 .PHONY: pack
 pack: mrproper
