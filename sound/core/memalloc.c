@@ -79,11 +79,60 @@ struct snd_mem_list {
 #define snd_assert(expr, args...) /**/
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+#ifdef CONFIG_PCI
+#if defined(__i386__) || defined(__ppc__) || defined(__x86_64__)
+#define HACK_PCI_ALLOC_CONSISTENT
+
+/*
+ * A hack to allocate large buffers via pci_alloc_consistent()
+ *
+ * since pci_alloc_consistent always tries GFP_DMA when the requested
+ * pci memory region is below 32bit, it happens quite often that even
+ * 2 order of pages cannot be allocated.
+ *
+ * so in the following, we allocate at first without dma_mask, so that
+ * allocation will be done without GFP_DMA.  if the area doesn't match
+ * with the requested region, then realloate with the original dma_mask
+ * again.
+ */
+
+void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
+				    dma_addr_t *dma_handle)
+{
+	void *ret;
+	u64 dma_mask;
+	unsigned long rmask;
+
+	if (hwdev == NULL)
+		return pci_alloc_consistent(hwdev, size, dma_handle);
+	dma_mask = hwdev->dma_mask;
+	rmask = ~((unsigned long)dma_mask);
+	hwdev->dma_mask = 0xffffffff; /* do without masking */
+	ret = pci_alloc_consistent(hwdev, size, dma_handle);
+	hwdev->dma_mask = dma_mask; /* restore */
+	if (ret) {
+		/* obtained address is out of range? */
+		if (((unsigned long)*dma_handle + size - 1) & rmask) {
+			/* reallocate with the proper mask */
+			pci_free_consistent(hwdev, size, ret, *dma_handle);
+			ret = pci_alloc_consistent(hwdev, size, dma_handle);
+		}
+	} else {
+		/* wish to success now with the proper mask... */
+		if (dma_mask != 0xffffffff)
+			ret = pci_alloc_consistent(hwdev, size, dma_handle);
+	}
+	return ret;
+}
+
 /* redefine pci_alloc_consistent for some architectures */
-#ifdef HACK_PCI_ALLOC_CONSISTENT
 #undef pci_alloc_consistent
 #define pci_alloc_consistent snd_pci_hack_alloc_consistent
-#endif
+
+#endif /* arch */
+#endif /* CONFIG_PCI */
+#endif /* LINUX >= 2.4.0 */
 
 
 /*
@@ -879,9 +928,6 @@ EXPORT_SYMBOL(snd_malloc_pci_page);
 EXPORT_SYMBOL(snd_free_pci_pages);
 EXPORT_SYMBOL(snd_malloc_sgbuf_pages);
 EXPORT_SYMBOL(snd_free_sgbuf_pages);
-#ifdef HACK_PCI_ALLOC_CONSISTENT
-EXPORT_SYMBOL(snd_pci_hack_alloc_consistent);
-#endif 
 #endif
 #ifdef CONFIG_SBUS
 EXPORT_SYMBOL(snd_malloc_sbus_pages);
