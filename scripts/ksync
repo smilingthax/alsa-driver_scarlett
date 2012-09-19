@@ -52,6 +52,7 @@ LAST_CVS_TIME = 0
 FATAL_LSYNC_ERROR = 0
 GERRORS = 0
 IGNORE_ASAP = False
+ONLY_ASAP = False
 
 def usage(code, msg=''):
 	print __doc__ % globals()
@@ -940,7 +941,7 @@ def get_asap(start = 0, end = 9999999999):
 	return cs
 
 def cvsps_merge(start, end):
-        if IGNORE_ASAP:
+        if IGNORE_ASAP or ONLY_ASAP:
                 cs = get_asap()
 	os.chdir(get_git_root())
 	l = dircache.listdir(get_cvs_root() + '/scripts/changesets')
@@ -956,6 +957,8 @@ def cvsps_merge(start, end):
                                 continue
                         if IGNORE_ASAP and int(y) in cs:
                                 continue
+                        if ONLY_ASAP and not int(y) in cs:
+                                continue
 			cvsps_merge1(f, t=1)
 	print 'Is this ok? Press Ctrl-C to abort...'
 	sys.stdin.readline()
@@ -970,6 +973,8 @@ def cvsps_merge(start, end):
                         if y > end:
                                 continue
                         if IGNORE_ASAP and int(y) in cs:
+                                continue
+                        if ONLY_ASAP and not int(y) in cs:
                                 continue
 			cvsps_merge1(f, t=0)
 		print 'Is this ok? Press Ctrl-C to abort...'
@@ -1162,7 +1167,7 @@ def cvsps_changes(rev1, rev2, update=False):
 	os.chdir(get_cvs_root_top())
 	fullset = ['alsa-driver', 'alsa-kernel', 'alsa-lib',
 		   'alsa-utils', 'alsa-tools', 'alsa-firmware',
-		   'alsa-oss']
+		   'alsa-oss', 'alsa-plugins']
 	for module in fullset:
 	#for module in ['alsa-oss']:
 		os.chdir(get_cvs_root_top() + '/' + module)
@@ -1398,10 +1403,13 @@ def configuration(profile=None):
                 readprofile(profile)
 
 def main():
-	global CVSROOT, GITROOT, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP, IGNORE_ASAP
+	global CVSROOT, GITROOT, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP
+        global IGNORE_ASAP, ONLY_ASAP
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 'hB:C:b:ip:',
-					   ['help', 'bkroot=', 'cvsroot=', 'bkroot=', 'branch=', 'ignore', 'profile=']);
+		opts, args = getopt.getopt(sys.argv[1:], 'hB:C:b:ilp:',
+					   ['help', 'bkroot=', 'cvsroot=',
+					    'bkroot=', 'branch=', 'ignore',
+					    'only', 'profile=']);
 	except getopt.error, msg:
 		usage(1, msg)
 
@@ -1426,6 +1434,8 @@ def main():
 			BRANCH = arg
                 elif opt in ('-g', '--ignore'):
                         IGNORE_ASAP = True
+                elif opt in ('-l', '--only'):
+                        ONLY_ASAP = True
 
 	for k in ALSA_MAP.keys():
 		KERNEL_MAP[ALSA_MAP[k]] = k
