@@ -39,7 +39,7 @@ need to be linked in
 #include "hpios.h"
 #include "hpipci.h"
 #include "hpi56301.h"
-#include <dpi56301.h>
+#include "dpi56301.h"
 
 #ifdef ASI_DRV_DEBUG
 #include "asidrv.h"
@@ -52,7 +52,7 @@ need to be linked in
 #ifndef __linux__
 #pragma hdrstop			// allow headers above here to be precompiled
 #endif
-#include <boot4ka.h>
+#include "boot4ka.h"
 
 // DSP56301 PCI HOST registers (these are the offset from the base address)
 #define REG56301_HCTR       0x0010	// HI32 control reg
