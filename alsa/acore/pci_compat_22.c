@@ -367,7 +367,7 @@ err_out:
 		flags & IORESOURCE_IO ? "I/O" : "mem",
 		bar + 1, /* PCI BAR # */
 		pci_resource_len(pdev, bar), pci_resource_start(pdev, bar),
-		pci_name(pdev));
+		res_name);
 	return -EBUSY;
 }
 
