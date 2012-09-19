@@ -153,6 +153,9 @@ do
 			url="$2"
 			shift ;;
 		esac
+		if test -d "$url"; then
+			url="file:///$url"
+		fi
 		;;
 	--git*)
 		case "$#,$1" in
@@ -476,7 +479,7 @@ check_compilation_environment() {
 		local a=$(make --version | head -1 | cut -d ' ' -f 1)
 		local b=$(make --version | head -1 | cut -d ' ' -f 2)
 		if test "$a" != "make" -a "$b" != "make" -a \
-		   test "$a" != "Make" -a test "$b" != "Make"; then
+		   "$a" != "Make" -a "$b" != "Make"; then
 			install_package make
 		else
 			echo "Program make found."
