@@ -1,6 +1,7 @@
 config SND_PDPLUS
 	tristate "Sek'D/Marian Prodif Plus"
 	depends on SND
+	select SND_PCM
 	help
 	  Say 'Y' or 'M' to include support for Sek'D/Marian Prodif Plus
           soundcard.
@@ -8,24 +9,31 @@ config SND_PDPLUS
 config SND_AU8810
         tristate "Aureal Advantage"
         depends on SND
+	select SND_MPU401_UART
+	select SND_AC97_CODEC
         help
           Say 'Y' or 'M' to include support for Aureal Advantage soundcards.
  
 config SND_AU8820
         tristate "Aureal Vortex"
         depends on SND
+	select SND_MPU401_UART
+	select SND_AC97_CODEC
         help
           Say 'Y' or 'M' to include support for Aureal Vortex soundcards.
  
 config SND_AU8830
         tristate "Aureal Vortex 2"
         depends on SND
+	select SND_MPU401_UART
+	select SND_AC97_CODEC
         help
           Say 'Y' or 'M' to include support for Aureal Vortex 2 soundcards.
  
 config SND_INTEL8X0M
 	tristate "Intel i8x0/MX440; AMD768/8111 modems (EXPERIMENTAL)"
 	depends on SND && EXPERIMENTAL
+	select SND_AC97_CODEC
 	help
 	  Say 'Y' or 'M' to include support for Intel8x0 and AMD768/8111 based
 	  modems.
@@ -33,13 +41,16 @@ config SND_INTEL8X0M
 config SND_HDSPM
 	tristate "RME Hammerfall DSP MADI"
 	depends on SND
+	select SND_HWDEP
+	select SND_PCM
 	help
 	  Say 'Y' or 'M' to include support for RME Hammerfall DSP MADI
 	  soundcards.
 
 config SND_ATIIXP
 	tristate "ATI IXP 150/200/250"
-	depends on SND && EXPERIMENTAL
+	depends on SND
+	select SND_AC97_CODEC
 	help
 	  Say 'Y' or 'M' to include support for ATI IXP 150/200/250 AC97 controller.
 
