@@ -258,13 +258,6 @@ Information about Additional Modules
 
     See docs/hdspm.txt for details.
 
-  Module snd-azx
-  --------------
-
-    Module for Intel HD Audio (ICH6, ICH6M)
-
-    Module supports up to 8 cards.
-
   Module snd-asihpi
   -----------------
 

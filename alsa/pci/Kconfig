@@ -24,17 +24,6 @@ config SND_HDSPM
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-hdspm.
 
-config SND_AZX
-	tristate "Intel HD Audio"
-	depends on SND
-	select SND_PCM
-	help
-	  Say Y here to include support for Intel "High Definition
-	  Audio" (Azalia) motherboard devices.
-
-	  To compile this driver as a module, choose M here: the module
-	  will be called snd-azx.
-
 config SND_ASIHPI
 	tristate "AudioScience ASIxxxx"
 	depends on SND && ASIHPK
