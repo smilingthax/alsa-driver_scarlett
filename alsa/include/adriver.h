@@ -1469,4 +1469,12 @@ static inline unsigned long __ffs(unsigned long word)
 #endif
 #endif /* <2.6.0 */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24)
+typedef unsigned long uintptr_t;
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#define do_posix_clock_monotonic_gettime getnstimeofday
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
