@@ -5,6 +5,6 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-include $(SND_TOPDIR)/alsa-kernel/soc/s3c24xx/Makefile
+include $(SND_TOPDIR)/alsa-kernel/soc/samsung/Makefile
 
 include $(SND_TOPDIR)/Rules.make
