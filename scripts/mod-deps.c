@@ -943,7 +943,7 @@ static void output_acinclude(void)
 		if (tempdep->type != TYPE_TOPLEVEL)
 			continue;
 		if (strstr(tempdep->name, "pc98")) /* exception... */
-			printf("\tif test \"$CONFIG_PC9800\" = \"y\"; then\n");
+			printf("\tif test \"$CONFIG_X86_PC9800\" = \"y\"; then\n");
 		else if (strstr(tempdep->dir, "/isa"))
 			printf("\tif test \"$CONFIG_ISA\" = \"y\"; then\n");
 		else if (strstr(tempdep->dir, "/pci"))

@@ -1954,22 +1954,28 @@ static int snd_usb_create_quirk(snd_usb_audio_t *chip,
 				const snd_usb_audio_quirk_t *quirk);
 
 /*
- * handle the quirk(s) for the current interface
+ * handle the quirks for the contained interfaces
  */
 static int create_composite_quirk(snd_usb_audio_t *chip,
 				  struct usb_interface *iface,
 				  const snd_usb_audio_quirk_t *quirk)
 {
-	struct usb_host_interface *alts = &iface->altsetting[0];
-	int ifnum = get_iface_desc(alts)->bInterfaceNumber;
+	struct usb_config_descriptor *config = chip->dev->actconfig;
+	int probed_ifnum = get_iface_desc(iface->altsetting)->bInterfaceNumber;
 	int err;
 
 	for (quirk = quirk->data; quirk->ifnum >= 0; ++quirk) {
-		if (quirk->ifnum == ifnum) {
-			err = snd_usb_create_quirk(chip, iface, quirk);
-			if (err < 0)
-				return err;
-		}
+		if (quirk->ifnum >= config->bNumInterfaces)
+			continue;
+		iface = &config->interface[quirk->ifnum];
+		if (quirk->ifnum != probed_ifnum &&
+		    usb_interface_claimed(iface))
+			continue;
+		err = snd_usb_create_quirk(chip, iface, quirk);
+		if (err < 0)
+			return err;
+		if (quirk->ifnum != probed_ifnum)
+			usb_driver_claim_interface(&usb_audio_driver, iface, (void *)-1);
 	}
 	return 0;
 }
