@@ -53,6 +53,8 @@ MODULE_DEVICES("{{Generic,USB Audio}}");
 static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
+static int snd_vid[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = -1 }; /* Vendor ID for this card */
+static int snd_pid[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = -1 }; /* Product ID for this card */
 
 MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_index, "Index value for the USB audio adapter.");
@@ -63,6 +65,12 @@ MODULE_PARM_SYNTAX(snd_id, SNDRV_ID_DESC);
 MODULE_PARM(snd_enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_enable, "Enable USB audio adapter.");
 MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
+MODULE_PARM(snd_vid, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(snd_vid, "Vendor ID for the USB audio device.");
+MODULE_PARM_SYNTAX(snd_vid, SNDRV_ENABLED ",allows:{{-1,0xffff}},base:16");
+MODULE_PARM(snd_pid, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(snd_pid, "Product ID for the USB audio device.");
+MODULE_PARM_SYNTAX(snd_pid, SNDRV_ENABLED ",allows:{{-1,0xffff}},base:16");
 
 
 /*
@@ -2043,7 +2051,9 @@ static void *usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
 		 * now look for an empty slot and create a new card instance
 		 */
 		for (i = 0; i < SNDRV_CARDS; i++)
-			if (snd_enable[i] && ! usb_chip[i]) {
+			if (snd_enable[i] && ! usb_chip[i] &&
+			    (snd_vid[i] == -1 || snd_vid[i] == dev->descriptor.idVendor) &&
+			    (snd_pid[i] == -1 || snd_pid[i] == dev->descriptor.idProduct)) {
 				card = snd_card_new(snd_index[i], snd_id[i], THIS_MODULE, 0);
 				if (card == NULL) {
 					snd_printk(KERN_ERR "cannot create a card instance %d\n", i);
