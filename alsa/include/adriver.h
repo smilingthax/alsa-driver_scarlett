@@ -174,18 +174,20 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #define unregister_chrdev devfs_unregister_chrdev
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
-static inline extern void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
-						     unsigned int major, unsigned int minor,
-                                                     char type, int traverse_symlinks);
+#include <linux/devfs_fs_kernel.h>
+static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
+					      unsigned int major, unsigned int minor,
+                                              char type, int traverse_symlinks)
 {
 	devfs_handle_t master;
 	master = devfs_find_handle(dir, name, strlen(name), major, minor, type, traverse_symlinks);
 	devfs_unregister(master);
 }
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-static inline extern void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
-						     unsigned int major, unsigned int minor,
-                                                     char type, int traverse_symlinks);
+#include <linux/devfs_fs_kernel.h>
+static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
+					      unsigned int major, unsigned int minor,
+                                              char type, int traverse_symlinks)
 {
 	devfs_handle_t master;
 	master = devfs_find_handle(dir, name, major, minor, type, traverse_symlinks);
