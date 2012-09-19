@@ -1516,6 +1516,7 @@ CHECK_KERNEL_HEADER(linux/irq.h)
 CHECK_KERNEL_HEADER(linux/threads.h)
 CHECK_KERNEL_HEADER(linux/rwsem.h)
 CHECK_KERNEL_HEADER(linux/gameport.h)
+CHECK_KERNEL_HEADER(linux/export.h)
 CHECK_KERNEL_HEADER(media/v4l2-dev.h)
 CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
 CHECK_KERNEL_HEADER(linux/highmem.h)
@@ -3420,7 +3421,7 @@ if test $kvernum -ge 206000; then
 #else
 #include <linux/config.h>
 #endif
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 ],[
   int (*foo)(int) = pm_qos_request;
 ],
@@ -3465,6 +3466,37 @@ if test $kvernum -ge 206000; then
   CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC=$pm_qos_request_static
   if test "$CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC" = "1"; then
     AC_DEFINE(CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC)
+  fi
+fi
+
+if test "$CONFIG_SND_HAVE_PM_QOS_REQUEST" = "1"; then
+  AC_MSG_CHECKING(for new pm_qos_request)
+  pm_qos_request_list="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/pm_qos_params.h>
+],[
+  struct pm_qos_request_list list;
+  list.pm_qos_class = 0;
+],
+    AC_MSG_RESULT(yes);pm_qos_request_list="1",
+    AC_MSG_RESULT(no);pm_qos_request_list="0",
+    AC_MSG_RESULT(unknown);pm_qos_request_list="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_HAVE_PM_QOS_REQUEST_LIST=$pm_qos_request_list
+  if test "$CONFIG_SND_HAVE_PM_QOS_REQUEST_LIST" = "1"; then
+    AC_DEFINE(CONFIG_SND_HAVE_PM_QOS_REQUEST_LIST)
   fi
 fi
 

@@ -2048,5 +2048,11 @@ request_irq_with_irqf_check(unsigned int irq, irq_handler_t handler,
 	request_irq_with_irqf_check(irq, fn, flags, name, dev_id)
 #endif
 
+/* if no __printf() macro is defined, just ignore it
+ * (to be safer than defining gcc-specific)
+ */
+#ifndef __printf
+#define __printf(a,b)	/*nop*/
+#endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
