@@ -120,10 +120,11 @@ typedef struct _snd_pcm_ops {
 #define SNDRV_PCM_TRIGGER_SUSPEND	5
 #define SNDRV_PCM_TRIGGER_RESUME	6
 
-#define SNDRV_PCM_DMA_TYPE_CONTINUOUS	0	/* continuous no-DMA memory */
-#define SNDRV_PCM_DMA_TYPE_ISA		1	/* ISA continuous */
-#define SNDRV_PCM_DMA_TYPE_PCI		2	/* PCI continuous */
-#define SNDRV_PCM_DMA_TYPE_SBUS		3	/* SBUS continuous */
+#define SNDRV_PCM_DMA_TYPE_UNKNOWN	0	/* not defined */
+#define SNDRV_PCM_DMA_TYPE_CONTINUOUS	1	/* continuous no-DMA memory */
+#define SNDRV_PCM_DMA_TYPE_ISA		2	/* ISA continuous */
+#define SNDRV_PCM_DMA_TYPE_PCI		3	/* PCI continuous */
+#define SNDRV_PCM_DMA_TYPE_SBUS		4	/* SBUS continuous */
 
 /* If you change this don't forget to change rates[] table in pcm_native.c */
 #define SNDRV_PCM_RATE_5512		(1<<0)		/* 5512Hz */

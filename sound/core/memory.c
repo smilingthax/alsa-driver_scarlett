@@ -264,7 +264,15 @@ int __exit snd_memory_info_done(void)
 #endif /* CONFIG_SND_DEBUG_MEMORY */
 
 
-
+/**
+ * snd_malloc_pages - allocate pages with the given size
+ * @size: the size to allocate in bytes
+ * @dma_flags: the allocation conditions, GFP_XXX
+ *
+ * Allocates the physically contiguous pages with the given size.
+ *
+ * Returns the pointer of the buffer, or NULL if no enoguh memory.
+ */
 void *snd_malloc_pages(unsigned long size, unsigned int dma_flags)
 {
 	int pg;
@@ -285,6 +293,19 @@ void *snd_malloc_pages(unsigned long size, unsigned int dma_flags)
 	return res;
 }
 
+/**
+ * snd_malloc_pages_fallback - allocate pages with the given size with fallback
+ * @size: the requested size to allocate in bytes
+ * @dma_flags: the allocation conditions, GFP_XXX
+ * @res_size: the pointer to store the size of buffer actually allocated
+ *
+ * Allocates the physically contiguous pages with the given request
+ * size.  When no space is left, this function reduces the size and
+ * tries to allocate again.  The size actually allocated is stored in
+ * res_size argument.
+ *
+ * Returns the pointer of the buffer, or NULL if no enoguh memory.
+ */
 void *snd_malloc_pages_fallback(unsigned long size, unsigned int dma_flags, unsigned long *res_size)
 {
 	void *res;
@@ -301,6 +322,13 @@ void *snd_malloc_pages_fallback(unsigned long size, unsigned int dma_flags, unsi
 	return NULL;
 }
 
+/**
+ * snd_free_pages - release the pages
+ * @ptr: the buffer pointer to release
+ * @size: the allocated buffer size
+ *
+ * Releases the buffer allocated via snd_malloc_pages().
+ */
 void snd_free_pages(void *ptr, unsigned long size)
 {
 	int pg;
@@ -321,6 +349,16 @@ void snd_free_pages(void *ptr, unsigned long size)
 
 #if defined(CONFIG_ISA) && ! defined(CONFIG_PCI)
 
+/**
+ * snd_malloc_isa_pages - allocate pages for ISA bus with the given size
+ * @size: the size to allocate in bytes
+ * @dma_addr: the pointer to store the physical address of the buffer
+ *
+ * Allocates the physically contiguous pages with the given size for
+ * ISA bus.
+ *
+ * Returns the pointer of the buffer, or NULL if no enoguh memory.
+ */
 void *snd_malloc_isa_pages(unsigned long size, dma_addr_t *dma_addr)
 {
 	void *dma_area;
@@ -329,6 +367,19 @@ void *snd_malloc_isa_pages(unsigned long size, dma_addr_t *dma_addr)
 	return dma_area;
 }
 
+/**
+ * snd_malloc_isa_pages_fallback - allocate pages with the given size with fallback for ISA bus
+ * @size: the requested size to allocate in bytes
+ * @dma_addr: the pointer to store the physical address of the buffer
+ * @res_size: the pointer to store the size of buffer actually allocated
+ *
+ * Allocates the physically contiguous pages with the given request
+ * size for PCI bus.  When no space is left, this function reduces the size and
+ * tries to allocate again.  The size actually allocated is stored in
+ * res_size argument.
+ *
+ * Returns the pointer of the buffer, or NULL if no enoguh memory.
+ */
 void *snd_malloc_isa_pages_fallback(unsigned long size,
 				    dma_addr_t *dma_addr,
 				    unsigned long *res_size)
@@ -343,6 +394,17 @@ void *snd_malloc_isa_pages_fallback(unsigned long size,
 
 #ifdef CONFIG_PCI
 
+/**
+ * snd_malloc_pci_pages - allocate pages for PCI bus with the given size
+ * @pci: the pci device pointer
+ * @size: the size to allocate in bytes
+ * @dma_addr: the pointer to store the physical address of the buffer
+ *
+ * Allocates the physically contiguous pages with the given size for
+ * PCI bus.
+ *
+ * Returns the pointer of the buffer, or NULL if no enoguh memory.
+ */
 void *snd_malloc_pci_pages(struct pci_dev *pci,
 			   unsigned long size,
 			   dma_addr_t *dma_addr)
@@ -366,6 +428,20 @@ void *snd_malloc_pci_pages(struct pci_dev *pci,
 	return res;
 }
 
+/**
+ * snd_malloc_pci_pages_fallback - allocate pages with the given size with fallback for PCI bus
+ * @pci: pci device pointer
+ * @size: the requested size to allocate in bytes
+ * @dma_addr: the pointer to store the physical address of the buffer
+ * @res_size: the pointer to store the size of buffer actually allocated
+ *
+ * Allocates the physically contiguous pages with the given request
+ * size for PCI bus.  When no space is left, this function reduces the size and
+ * tries to allocate again.  The size actually allocated is stored in
+ * res_size argument.
+ *
+ * Returns the pointer of the buffer, or NULL if no enoguh memory.
+ */
 void *snd_malloc_pci_pages_fallback(struct pci_dev *pci,
 				    unsigned long size,
 				    dma_addr_t *dma_addr,
@@ -384,6 +460,15 @@ void *snd_malloc_pci_pages_fallback(struct pci_dev *pci,
 	return NULL;
 }
 
+/**
+ * snd_free_pci_pages - release the pages
+ * @pci: pci device pointer
+ * @size: the allocated buffer size
+ * @ptr: the buffer pointer to release
+ * @dma_addr: the physical address of the buffer
+ *
+ * Releases the buffer allocated via snd_malloc_pci_pages().
+ */
 void snd_free_pci_pages(struct pci_dev *pci,
 			unsigned long size,
 			void *ptr,
@@ -409,6 +494,17 @@ void snd_free_pci_pages(struct pci_dev *pci,
 
 #ifdef CONFIG_SBUS
 
+/**
+ * snd_malloc_sbus_pages - allocate pages for SBUS with the given size
+ * @sdev: sbus device pointer
+ * @size: the size to allocate in bytes
+ * @dma_addr: the pointer to store the physical address of the buffer
+ *
+ * Allocates the physically contiguous pages with the given size for
+ * SBUS.
+ *
+ * Returns the pointer of the buffer, or NULL if no enoguh memory.
+ */
 void *snd_malloc_sbus_pages(struct sbus_dev *sdev,
 			    unsigned long size,
 			    dma_addr_t *dma_addr)
@@ -432,6 +528,20 @@ void *snd_malloc_sbus_pages(struct sbus_dev *sdev,
 	return res;
 }
 
+/**
+ * snd_malloc_pci_pages_fallback - allocate pages with the given size with fallback for SBUS
+ * @sdev: sbus device pointer
+ * @size: the requested size to allocate in bytes
+ * @dma_addr: the pointer to store the physical address of the buffer
+ * @res_size: the pointer to store the size of buffer actually allocated
+ *
+ * Allocates the physically contiguous pages with the given request
+ * size for SBUS.  When no space is left, this function reduces the size and
+ * tries to allocate again.  The size actually allocated is stored in
+ * res_size argument.
+ *
+ * Returns the pointer of the buffer, or NULL if no enoguh memory.
+ */
 void *snd_malloc_sbus_pages_fallback(struct sbus_dev *sdev,
 				     unsigned long size,
 				     dma_addr_t *dma_addr,
@@ -450,6 +560,15 @@ void *snd_malloc_sbus_pages_fallback(struct sbus_dev *sdev,
 	return NULL;
 }
 
+/**
+ * snd_free_sbus_pages - release the pages
+ * @sdev: sbus device pointer
+ * @size: the allocated buffer size
+ * @ptr: the buffer pointer to release
+ * @dma_addr: the physical address of the buffer
+ *
+ * Releases the buffer allocated via snd_malloc_pci_pages().
+ */
 void snd_free_sbus_pages(struct sbus_dev *sdev,
 			 unsigned long size,
 			 void *ptr,
@@ -473,6 +592,15 @@ void snd_free_sbus_pages(struct sbus_dev *sdev,
 
 #endif /* CONFIG_SBUS */
 
+/**
+ * snd_kcalloc - memory allocation and zero-clear
+ * @size: the size to allocate in bytes
+ * @flags: allocation conditions, GFP_XXX
+ *
+ * Allocates a memory chunk via kmalloc() and initializes it to zero.
+ *
+ * Returns the pointer, or NULL if no enoguh memory.
+ */
 void *snd_kcalloc(size_t size, int flags)
 {
 	void *ptr;
@@ -483,6 +611,15 @@ void *snd_kcalloc(size_t size, int flags)
 	return ptr;
 }
 
+/**
+ * snd_kmalloc_strdup - copy the string
+ * @string: the original string
+ * @flags: allocation conditions, GFP_XXX
+ *
+ * Allocates a memory chunk via kmalloc() and copies the string to it.
+ *
+ * Returns the pointer, or NULL if no enoguh memory.
+ */
 char *snd_kmalloc_strdup(const char *string, int flags)
 {
 	size_t len;
@@ -497,6 +634,16 @@ char *snd_kmalloc_strdup(const char *string, int flags)
 	return ptr;
 }
 
+/**
+ * copy_to_user_fromio - copy data from mmio-space to user-space
+ * @dst: the destination pointer on user-space
+ * @src: the source pointer on mmio
+ * @count: the data size to copy in bytes
+ *
+ * Copies the data from mmio-space to user-space.
+ *
+ * Returns zero if successful, or non-zero on failure.
+ */
 int copy_to_user_fromio(void *dst, unsigned long src, size_t count)
 {
 #if defined(__i386__) || defined(CONFIG_SPARC32)
@@ -518,6 +665,16 @@ int copy_to_user_fromio(void *dst, unsigned long src, size_t count)
 #endif
 }
 
+/**
+ * copy_from_user_toio - copy data from user-space to mmio-space
+ * @dst: the destination pointer on mmio-space
+ * @src: the source pointer on user-space
+ * @count: the data size to copy in bytes
+ *
+ * Copies the data from user-space to mmio-space.
+ *
+ * Returns zero if successful, or non-zero on failure.
+ */
 int copy_from_user_toio(unsigned long dst, const void *src, size_t count)
 {
 #if defined(__i386__) || defined(CONFIG_SPARC32)
