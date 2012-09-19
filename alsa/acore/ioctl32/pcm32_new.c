@@ -165,6 +165,8 @@ static void recalculate_boundary(snd_pcm_runtime_t *runtime)
 		runtime->boundary *= 2;
 }
 
+int snd_pcm_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *params);
+
 /* both for HW_PARAMS and HW_REFINE */
 static int _snd_ioctl32_pcm_hw_params(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file, unsigned int native_ctl)
 {

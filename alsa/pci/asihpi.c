@@ -1171,7 +1171,7 @@ static int snd_asihpi_aesebu_format_get(snd_kcontrol_t * kcontrol,
 	HPI_HCONTROL hControl = kcontrol->private_value;
 	HW16 source;
 
-	snd_runtime_check( func(phSubSys, hControl, &source) != 0 , return -EINVAL );
+	func(phSubSys, hControl, &source);
 
 	/* default to S/PDIF */
 	ucontrol->value.enumerated.item[0] = 0;
@@ -1196,7 +1196,7 @@ static int snd_asihpi_aesebu_format_put(snd_kcontrol_t * kcontrol,
 	if ( ucontrol->value.enumerated.item[0] == 2 )
 		source = HPI_AESEBU_SOURCE_AESEBU;
 
-	snd_runtime_check( func(phSubSys, hControl, source) != 0, return -EINVAL );
+	snd_runtime_check( func(phSubSys, hControl, source) == 0, return -EINVAL );
 
 	return 1;
 }
@@ -1253,7 +1253,7 @@ static int snd_asihpi_aesebu_tx_clocksource_get(snd_kcontrol_t * kcontrol,
 	HPI_HCONTROL hControl = kcontrol->private_value;
 	HW16 sync;
 
-	snd_runtime_check( HPI_AESEBU_Transmitter_GetClockSource(phSubSys, hControl, &sync) );
+	HPI_AESEBU_Transmitter_GetClockSource(phSubSys, hControl, &sync);
 
 	/* default to HPI_AESEBU_CLOCKSOURCE_ADAPTER */
 	ucontrol->value.enumerated.item[0] = 0;
@@ -1277,7 +1277,7 @@ static int snd_asihpi_aesebu_tx_clocksource_put(snd_kcontrol_t * kcontrol,
 	if ( ucontrol->value.enumerated.item[0] == 1 )
 		sync = HPI_AESEBU_CLOCKSOURCE_AESEBU_SYNC;
 
-	snd_runtime_check( HPI_AESEBU_Transmitter_SetClockSource(phSubSys, hControl, sync) != 0, return -EINVAL );
+	snd_runtime_check( HPI_AESEBU_Transmitter_SetClockSource(phSubSys, hControl, sync) == 0, return -EINVAL );
 
 	return 1;
 }
@@ -1575,7 +1575,7 @@ static int __init snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi, hpi_control_t
 	asihpi_ctl_name_prefix( snd_control, asihpi_control );
 	strcat(snd_control->name, " Gain");
 
-	snd_runtime_check( ctl_add( card, snd_control, asihpi ) != 0, return -EINVAL );
+	snd_runtime_check( ctl_add( card, snd_control, asihpi ) == 0, return -EINVAL );
 
 /* Band ctl */
 
@@ -1587,7 +1587,7 @@ static int __init snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi, hpi_control_t
 	asihpi_ctl_name_prefix( snd_control, asihpi_control );
 	strcat(snd_control->name, " Band");
 
-	snd_runtime_check( ctl_add( card, snd_control, asihpi ) != 0, return -EINVAL );
+	snd_runtime_check( ctl_add( card, snd_control, asihpi ) == 0, return -EINVAL );
 
 /* Freq ctl */
 
@@ -1599,7 +1599,7 @@ static int __init snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi, hpi_control_t
 	asihpi_ctl_name_prefix( snd_control, asihpi_control );
 	strcat(snd_control->name, " Freq");
 
-	snd_runtime_check( ctl_add( card, snd_control, asihpi ) != 0, return -EINVAL );
+	snd_runtime_check( ctl_add( card, snd_control, asihpi ) == 0, return -EINVAL );
 
 /* Level meter */
 
