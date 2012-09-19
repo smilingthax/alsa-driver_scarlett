@@ -60,7 +60,8 @@ enum {
 	STAC_D945GTP5,
 	STAC_MACMINI,
 	STAC_MACBOOK,
-	STAC_MACBOOK_PRO,
+	STAC_MACBOOK_PRO_V1,
+	STAC_MACBOOK_PRO_V2,
 	STAC_922X_MODELS
 };
 
@@ -174,8 +175,8 @@ static hda_nid_t stac9205_mux_nids[2] = {
         0x19, 0x1a
 };
 
-static hda_nid_t stac9205_dmic_nids[3] = {
-        0x17, 0x18, 0
+static hda_nid_t stac9205_dmic_nids[2] = {
+        0x17, 0x18,
 };
 
 static hda_nid_t stac9200_pin_nids[8] = {
@@ -523,13 +524,13 @@ static unsigned int d945gtp5_pin_configs[10] = {
 	0x02a19320, 0x40000100,
 };
 
-static unsigned int macbook_pin_configs[10] = {
-	0x0321e230, 0x03a1e020, 0x400000fd, 0x9017e110,
-	0x400000fe, 0x0381e021, 0x1345e240, 0x13c5e22e,
-	0x400000fc, 0x400000fb,
+static unsigned int macbook_pro_v1_pin_configs[10] = {
+	0x0321e230, 0x03a1e020, 0x9017e110, 0x01014010,
+	0x01a19021, 0x0381e021, 0x1345e240, 0x13c5e22e,
+	0x02a19320, 0x400000fb
 };
 
-static unsigned int macbook_pro_pin_configs[10] = {
+static unsigned int macbook_pro_v2_pin_configs[10] = {
 	0x0221401f, 0x90a70120, 0x01813024, 0x01014010,
 	0x400000fd, 0x01016011, 0x1345e240, 0x13c5e22e,
 	0x400000fc, 0x400000fb,
@@ -539,9 +540,10 @@ static unsigned int *stac922x_brd_tbl[STAC_922X_MODELS] = {
 	[STAC_D945_REF] = ref922x_pin_configs,
 	[STAC_D945GTP3] = d945gtp3_pin_configs,
 	[STAC_D945GTP5] = d945gtp5_pin_configs,
-	[STAC_MACMINI] = d945gtp5_pin_configs,
-	[STAC_MACBOOK] = macbook_pin_configs,
-	[STAC_MACBOOK_PRO] = macbook_pro_pin_configs,
+	[STAC_MACMINI] = macbook_pro_v1_pin_configs,
+	[STAC_MACBOOK] = macbook_pro_v1_pin_configs,
+	[STAC_MACBOOK_PRO_V1] = macbook_pro_v1_pin_configs,
+	[STAC_MACBOOK_PRO_V2] = macbook_pro_v2_pin_configs,
 };
 
 static const char *stac922x_models[STAC_922X_MODELS] = {
@@ -550,7 +552,8 @@ static const char *stac922x_models[STAC_922X_MODELS] = {
 	[STAC_D945GTP3]	= "3stack",
 	[STAC_MACMINI]	= "macmini",
 	[STAC_MACBOOK]	= "macbook",
-	[STAC_MACBOOK_PRO]	= "macbook-pro",
+	[STAC_MACBOOK_PRO_V1]	= "macbook-pro-v1",
+	[STAC_MACBOOK_PRO_V2]	= "macbook-pro",
 };
 
 static struct snd_pci_quirk stac922x_cfg_tbl[] = {
@@ -1600,6 +1603,11 @@ static int stac92xx_init(struct hda_codec *codec)
 		for (i = 0; i < cfg->hp_outs; i++)
 			enable_pin_detect(codec, cfg->hp_pins[i],
 					  STAC_HP_EVENT);
+		/* force to enable the first line-out; the others are set up
+		 * in unsol_event
+		 */
+		stac92xx_auto_set_pinctl(codec, spec->autocfg.line_out_pins[0],
+					 AC_PINCTL_OUT_EN);
 		stac92xx_auto_init_hp_out(codec);
 		/* fake event to set up pins */
 		codec->patch_ops.unsol_event(codec, STAC_HP_EVENT << 26);
@@ -1889,9 +1897,13 @@ static int patch_stac922x(struct hda_codec *codec)
 		/* Intel Macs have all same PCI SSID, so we need to check
 		 * codec SSID to distinguish the exact models
 		 */
+		printk(KERN_INFO "hda_codec: STAC922x, Apple subsys_id=%x\n", codec->subsystem_id);
 		switch (codec->subsystem_id) {
-		case 0x106b1e00:
-			spec->board_config = STAC_MACBOOK_PRO;
+		case 0x106b0200: /* MacBook Pro first generation */
+			spec->board_config = STAC_MACBOOK_PRO_V1;
+			break;
+		case 0x106b1e00: /* MacBook Pro second generation */
+			spec->board_config = STAC_MACBOOK_PRO_V2;
 			break;
 		}
 	}
@@ -1913,7 +1925,7 @@ static int patch_stac922x(struct hda_codec *codec)
 
 	spec->adc_nids = stac922x_adc_nids;
 	spec->mux_nids = stac922x_mux_nids;
-	spec->num_muxes = 2;
+	spec->num_muxes = ARRAY_SIZE(stac922x_mux_nids);
 	spec->num_dmics = 0;
 
 	spec->init = stac922x_core_init;
@@ -1974,7 +1986,7 @@ static int patch_stac927x(struct hda_codec *codec)
 	case STAC_D965_3ST:
 		spec->adc_nids = stac927x_adc_nids;
 		spec->mux_nids = stac927x_mux_nids;
-		spec->num_muxes = 3;
+		spec->num_muxes = ARRAY_SIZE(stac927x_mux_nids);
 		spec->num_dmics = 0;
 		spec->init = d965_core_init;
 		spec->mixer = stac9227_mixer;
@@ -1982,7 +1994,7 @@ static int patch_stac927x(struct hda_codec *codec)
 	case STAC_D965_5ST:
 		spec->adc_nids = stac927x_adc_nids;
 		spec->mux_nids = stac927x_mux_nids;
-		spec->num_muxes = 3;
+		spec->num_muxes = ARRAY_SIZE(stac927x_mux_nids);
 		spec->num_dmics = 0;
 		spec->init = d965_core_init;
 		spec->mixer = stac9227_mixer;
@@ -1990,7 +2002,7 @@ static int patch_stac927x(struct hda_codec *codec)
 	default:
 		spec->adc_nids = stac927x_adc_nids;
 		spec->mux_nids = stac927x_mux_nids;
-		spec->num_muxes = 3;
+		spec->num_muxes = ARRAY_SIZE(stac927x_mux_nids);
 		spec->num_dmics = 0;
 		spec->init = stac927x_core_init;
 		spec->mixer = stac927x_mixer;
@@ -2049,9 +2061,9 @@ static int patch_stac9205(struct hda_codec *codec)
 
 	spec->adc_nids = stac9205_adc_nids;
 	spec->mux_nids = stac9205_mux_nids;
-	spec->num_muxes = 2;
+	spec->num_muxes = ARRAY_SIZE(stac9205_mux_nids);
 	spec->dmic_nids = stac9205_dmic_nids;
-	spec->num_dmics = 2;
+	spec->num_dmics = ARRAY_SIZE(stac9205_dmic_nids);
 	spec->dmux_nid = 0x1d;
 
 	spec->init = stac9205_core_init;
@@ -2276,6 +2288,7 @@ static struct snd_pci_quirk stac9872_cfg_tbl[] = {
 	SND_PCI_QUIRK(0x104d, 0x81e6, "Sony VAIO F/S", CXD9872RD_VAIO),
 	SND_PCI_QUIRK(0x104d, 0x81ef, "Sony VAIO F/S", CXD9872RD_VAIO),
 	SND_PCI_QUIRK(0x104d, 0x81fd, "Sony VAIO AR", CXD9872AKD_VAIO),
+	SND_PCI_QUIRK(0x104d, 0x8205, "Sony VAIO AR", CXD9872AKD_VAIO),
 	{}
 };
 
