@@ -526,14 +526,14 @@ static int load_dsp(echoaudio_t *chip, u16 *code)
 static int load_firmware(echoaudio_t *chip)
 {
 	const struct firmware *fw;
-	int err;
+	int box_type, err;
 
 	snd_assert(chip->dsp_code_to_load && chip->comm_page, return -EPERM);
 
 	/* See if the ASIC is present and working - only if the DSP is already loaded */
 	if (chip->dsp_code) {
-		if (check_asic_status(chip) == 0)
-			return 0;
+		if ((box_type = check_asic_status(chip)) >= 0)
+			return box_type;
 		/* ASIC check failed; force the DSP to reload */
 		chip->dsp_code = NULL;
 	}
@@ -545,12 +545,13 @@ static int load_firmware(echoaudio_t *chip)
 	if (err < 0)
 		return err;
 
-	/* Load the ASIC if the DSP load succeeded. >0 means it did not fail
-	but we cannot continue (eg. we loaded the wrong firmware) */
-	if ((err = load_asic(chip)) != 0)
+	if ((box_type = load_asic(chip)) < 0)
+		return box_type;	/* error */
+
+	if ((err = restore_dsp_rettings(chip)) < 0)
 		return err;
 
-	return restore_dsp_rettings(chip);
+	return box_type;
 }
 
 
@@ -686,6 +687,10 @@ static void get_audio_meters(echoaudio_t *chip, long *meters)
 	}
 	for (; n < 32; n++)
 		meters[n] = 0;
+
+#ifdef ECHOCARD_ECHO3G
+	m = E3G_MAX_OUTPUTS;	/* Skip unused meters */
+#endif
 
 	for (i = 0; i < num_busses_in(chip); i++, m++) {
 		meters[n++] = chip->comm_page->vu_meter[m];
