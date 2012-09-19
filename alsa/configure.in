@@ -1933,6 +1933,41 @@ if test "$CONFIG_HAVE_VMALLOC_TO_PAGE" = "1"; then
   AC_DEFINE(CONFIG_HAVE_VMALLOC_TO_PAGE)
 fi
 
+dnl Check for vzalloc...
+AC_MSG_CHECKING(for vzalloc)
+vzalloc="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/time.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+#include <linux/mm.h>
+#include <linux/vmalloc.h>
+],[
+  void * (*func)(unsigned long);
+  func = vzalloc;
+],
+    AC_MSG_RESULT(yes);vzalloc="1",
+    AC_MSG_RESULT(no);vzalloc="0",
+    AC_MSG_RESULT(unknown);vzalloc="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_VZALLOC=$vzalloc
+dnl AC_SUBST(CONFIG_HAVE_VZALLOC)
+if test "$CONFIG_HAVE_VZALLOC" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_VZALLOC)
+fi
+
 dnl Check for old kmod...
 AC_MSG_CHECKING(for old kmod)
 old_kmod="0"
