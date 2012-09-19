@@ -145,7 +145,19 @@
  			continue;
  		/* must be isochronous */
  		if ((get_endpoint(alts, 0)->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) !=
-@@ -2745,7 +2786,11 @@
+@@ -2730,7 +2771,11 @@
+ 		if (fmt[4] == 1 && fmt[5] == 2 && altno == 2 && num == 3 &&
+ 		    fp && fp->altsetting == 1 && fp->channels == 1 &&
+ 		    fp->format == SNDRV_PCM_FORMAT_S16_LE &&
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
+ 		    le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize) ==
++#else
++		    get_endpoint(alts, 0)->wMaxPacketSize) ==
++#endif
+ 							fp->maxpacksize * 2)
+ 			continue;
+ 
+@@ -2757,7 +2802,11 @@
  		fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  		fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
  		fp->datainterval = parse_datainterval(chip, alts);
@@ -157,7 +169,7 @@
  		if (snd_usb_get_speed(dev) == USB_SPEED_HIGH)
  			fp->maxpacksize = (((fp->maxpacksize >> 11) & 3) + 1)
  					* (fp->maxpacksize & 0x7ff);
-@@ -2937,7 +2982,11 @@
+@@ -2949,7 +2998,11 @@
  	}
  	alts = &iface->altsetting[fp->altset_idx];
  	fp->datainterval = parse_datainterval(chip, alts);
@@ -169,7 +181,7 @@
  	usb_set_interface(chip->dev, fp->iface, 0);
  	init_usb_pitch(chip->dev, fp->iface, alts, fp);
  	init_usb_sample_rate(chip->dev, fp->iface, alts, fp, fp->rate_max);
-@@ -3032,7 +3081,11 @@
+@@ -3044,7 +3097,11 @@
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
  	fp->datainterval = 0;
@@ -181,7 +193,7 @@
  
  	switch (fp->maxpacksize) {
  	case 0x120:
-@@ -3100,7 +3153,11 @@
+@@ -3112,7 +3169,11 @@
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
  	fp->datainterval = parse_datainterval(chip, alts);
@@ -193,7 +205,7 @@
  	fp->rate_max = fp->rate_min = combine_triple(&alts->extra[8]);
  
  	stream = (fp->endpoint & USB_DIR_IN)
-@@ -3153,7 +3210,11 @@
+@@ -3165,7 +3226,11 @@
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
  	fp->datainterval = parse_datainterval(chip, alts);
@@ -205,7 +217,7 @@
  	fp->rate_max = fp->rate_min = combine_triple(&alts->extra[15]);
  
  	stream = (fp->endpoint & USB_DIR_IN)
-@@ -3218,8 +3279,13 @@
+@@ -3230,8 +3295,13 @@
  	struct usb_host_config *config = dev->actconfig;
  	int err;
  
@@ -219,7 +231,7 @@
  		snd_printdd("sending Extigy boot sequence...\n");
  		/* Send message to force it to reconnect with full interface. */
  		err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev,0),
-@@ -3231,8 +3297,13 @@
+@@ -3243,8 +3313,13 @@
  		if (err < 0) snd_printdd("error usb_get_descriptor: %d\n", err);
  		err = usb_reset_configuration(dev);
  		if (err < 0) snd_printdd("error usb_reset_configuration: %d\n", err);
@@ -233,7 +245,7 @@
  		return -ENODEV; /* quit this anyway */
  	}
  	return 0;
-@@ -3240,6 +3311,8 @@
+@@ -3252,6 +3327,8 @@
  
  static int snd_usb_audigy2nx_boot_quirk(struct usb_device *dev)
  {
@@ -242,7 +254,7 @@
  	u8 buf = 1;
  
  	snd_usb_ctl_msg(dev, usb_rcvctrlpipe(dev, 0), 0x2a,
-@@ -3251,6 +3324,7 @@
+@@ -3263,6 +3340,7 @@
  				1, 2000, NULL, 0, 1000);
  		return -ENODEV;
  	}
@@ -250,7 +262,7 @@
  	return 0;
  }
  
-@@ -3453,8 +3527,13 @@
+@@ -3465,8 +3543,13 @@
  	chip->index = idx;
  	chip->dev = dev;
  	chip->card = card;
@@ -264,7 +276,7 @@
  	INIT_LIST_HEAD(&chip->pcm_list);
  	INIT_LIST_HEAD(&chip->midi_list);
  	INIT_LIST_HEAD(&chip->mixer_list);
-@@ -3541,8 +3620,12 @@
+@@ -3553,8 +3636,12 @@
  
  	alts = &intf->altsetting[0];
  	ifnum = get_iface_desc(alts)->bInterfaceNumber;
@@ -277,7 +289,7 @@
  
  	if (quirk && quirk->ifnum >= 0 && ifnum != quirk->ifnum)
  		goto __err_val;
-@@ -3675,6 +3758,7 @@
+@@ -3687,6 +3774,7 @@
  	}
  }
  
@@ -285,7 +297,7 @@
  /*
   * new 2.5 USB kernel API
   */
-@@ -3735,6 +3819,7 @@
+@@ -3747,6 +3835,7 @@
  	return 0;
  }
  #endif		/* CONFIG_PM */
@@ -293,7 +305,7 @@
  
  static int __init snd_usb_audio_init(void)
  {
-@@ -3753,3 +3838,5 @@
+@@ -3765,3 +3854,5 @@
  
  module_init(snd_usb_audio_init);
  module_exit(snd_usb_audio_cleanup);
