@@ -259,7 +259,8 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #endif
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14) && \
+	!defined(CONFIG_HAVE_GFP_T)
 typedef unsigned __nocast gfp_t;
 #endif
 
