@@ -223,11 +223,6 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
 			       int addr_bits, int data_bits,
 			       enum snd_soc_control_type control);
 
-#ifdef CONFIG_PM
-int snd_soc_suspend_device(struct device *dev);
-int snd_soc_resume_device(struct device *dev);
-#endif
-
 /* pcm <-> DAI connect */
 void snd_soc_free_pcms(struct snd_soc_device *socdev);
 int snd_soc_new_pcms(struct snd_soc_device *socdev, int idx, const char *xid);
@@ -413,6 +408,7 @@ struct snd_soc_codec {
 	unsigned int num_dai;
 
 #ifdef CONFIG_DEBUG_FS
+	struct dentry *debugfs_codec_root;
 	struct dentry *debugfs_reg;
 	struct dentry *debugfs_pop_time;
 	struct dentry *debugfs_dapm;

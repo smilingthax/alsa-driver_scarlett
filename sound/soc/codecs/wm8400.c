@@ -1011,7 +1011,8 @@ static int fll_factors(struct wm8400_priv *wm8400, struct fll_factors *factors,
 }
 
 static int wm8400_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
-			      unsigned int freq_in, unsigned int freq_out)
+			      int source, unsigned int freq_in,
+			      unsigned int freq_out)
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
 	struct wm8400_priv *wm8400 = codec->private_data;
@@ -1558,21 +1559,6 @@ static int __exit wm8400_codec_remove(struct platform_device *dev)
 	return 0;
 }
 
-#ifdef CONFIG_PM
-static int wm8400_pdev_suspend(struct platform_device *pdev, pm_message_t msg)
-{
-	return snd_soc_suspend_device(&pdev->dev);
-}
-
-static int wm8400_pdev_resume(struct platform_device *pdev)
-{
-	return snd_soc_resume_device(&pdev->dev);
-}
-#else
-#define wm8400_pdev_suspend NULL
-#define wm8400_pdev_resume NULL
-#endif
-
 static struct platform_driver wm8400_codec_driver = {
 	.driver = {
 		.name = "wm8400-codec",
@@ -1580,8 +1566,6 @@ static struct platform_driver wm8400_codec_driver = {
 	},
 	.probe = wm8400_codec_probe,
 	.remove	= __exit_p(wm8400_codec_remove),
-	.suspend = wm8400_pdev_suspend,
-	.resume = wm8400_pdev_resume,
 };
 
 static int __init wm8400_codec_init(void)

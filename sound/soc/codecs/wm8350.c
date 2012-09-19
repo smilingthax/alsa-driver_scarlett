@@ -1101,7 +1101,7 @@ static inline int fll_factors(struct _fll_div *fll_div, unsigned int input,
 }
 
 static int wm8350_set_fll(struct snd_soc_dai *codec_dai,
-			  int pll_id, unsigned int freq_in,
+			  int pll_id, int source, unsigned int freq_in,
 			  unsigned int freq_out)
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
@@ -1680,21 +1680,6 @@ static int __devexit wm8350_codec_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM
-static int wm8350_codec_suspend(struct platform_device *pdev, pm_message_t m)
-{
-	return snd_soc_suspend_device(&pdev->dev);
-}
-
-static int wm8350_codec_resume(struct platform_device *pdev)
-{
-	return snd_soc_resume_device(&pdev->dev);
-}
-#else
-#define wm8350_codec_suspend NULL
-#define wm8350_codec_resume NULL
-#endif
-
 static struct platform_driver wm8350_codec_driver = {
 	.driver = {
 		   .name = "wm8350-codec",
@@ -1702,8 +1687,6 @@ static struct platform_driver wm8350_codec_driver = {
 		   },
 	.probe = wm8350_codec_probe,
 	.remove = __devexit_p(wm8350_codec_remove),
-	.suspend = wm8350_codec_suspend,
-	.resume = wm8350_codec_resume,
 };
 
 static __init int wm8350_init(void)
