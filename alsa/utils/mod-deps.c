@@ -97,6 +97,7 @@ static char *hiddendir = "..";
 static char *kernel_deps[] = {
 	/* buses */
 	"ISA",
+	"ISA_DMA_API",
 	"ISAPNP",
 	"EISA",
 	"PCI",
