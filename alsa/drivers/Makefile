@@ -5,7 +5,7 @@ include $(TOPDIR)/Makefile.conf
 
 # ALSA extra definitions
 
-extra-subdir-y	:= vx
+extra-subdir-y	:= vx opl4
 extra-subdir-m	:= $(extra-subdir-y)
 
 snd-serialmidi-objs := serialmidi.o

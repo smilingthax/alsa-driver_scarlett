@@ -23,6 +23,10 @@ snd-vx-lib snd-pcm
 %dir linux/sound/isa/msnd
 |snd-msnd-pinnacle snd-pcm snd-seq-midi
 
+%dir linux/sound/isa/opl4
+snd-opl4-lib snd-seq-device
+snd-opl4-synth @if_sequencer snd-opl4-lib snd-seq-midi-emul
+
 %dir linux/sound/pcmcia/vx
 |snd-vxpocket snd-vx-lib
 |snd-vxp440 snd-vx-lib
