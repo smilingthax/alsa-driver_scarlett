@@ -62,7 +62,7 @@
  	link->conf.ConfigIndex = 1;
 @@ -262,6 +286,9 @@
  {
- 	pdacf_t *chip = snd_magic_cast(pdacf_t, link->priv, return);
+ 	pdacf_t *chip = link->priv;
  
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
 +	del_timer(&link->release);
