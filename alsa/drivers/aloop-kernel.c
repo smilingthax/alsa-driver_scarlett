@@ -29,9 +29,6 @@
 #include <sound/pcm.h>
 #include <sound/initval.h>
 
-/* comment in to trash your kernel logfiles */
-/* #define SND_CARD_LOOPBACK_VERBOSE */
-
 MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
 MODULE_DESCRIPTION("A loopback soundcard");
 MODULE_LICENSE("GPL");
@@ -81,12 +78,12 @@ typedef struct snd_card_loopback_pcm {
 	snd_card_loopback_t *loopback;
 	spinlock_t lock;
 	struct timer_list timer;
-	unsigned int pcm_size;
-	unsigned int pcm_count;
+	unsigned int pcm_buffer_size;
+	unsigned int pcm_period_size;
 	unsigned int pcm_bps;		/* bytes per second */
 	unsigned int pcm_hz;		/* HZ */
 	unsigned int pcm_irq_pos;	/* IRQ position */
-	unsigned int pcm_period_pos;	/* period aligned pos in buffer */
+	unsigned int pcm_buf_pos;	/* position in buffer */
 	struct snd_pcm_substream *substream;
 	struct snd_card_loopback_cable *cable;
 } snd_card_loopback_pcm_t;
@@ -161,10 +158,10 @@ static int snd_card_loopback_prepare(struct snd_pcm_substream *substream)
 		return -EINVAL;
 	dpcm->pcm_bps = bps;
 	dpcm->pcm_hz = HZ;
-	dpcm->pcm_size = frames_to_bytes(runtime, runtime->buffer_size);
-	dpcm->pcm_count = frames_to_bytes(runtime, runtime->period_size);
+	dpcm->pcm_buffer_size = frames_to_bytes(runtime, runtime->buffer_size);
+	dpcm->pcm_period_size = frames_to_bytes(runtime, runtime->period_size);
 	dpcm->pcm_irq_pos = 0;
-	dpcm->pcm_period_pos = 0;
+	dpcm->pcm_buf_pos = 0;
 
 	cable->hw.formats = (1ULL << runtime->format);
 	cable->hw.rate_min = runtime->rate;
@@ -189,19 +186,6 @@ static int snd_card_loopback_prepare(struct snd_pcm_substream *substream)
 		cable->capture_valid = 1;
 	}
 
-#ifdef SND_CARD_LOOPBACK_VERBOSE
-	printk(KERN_INFO "snd-aloop(c%dd%ds%d%c): frq=%d chs=%d fmt=%d buf=%d per=%d pers=%d\n",
-			substream->pcm->card->number,
-			substream->pcm->device,
-			substream->stream,
-			(SNDRV_PCM_STREAM_PLAYBACK == substream->stream ? 'p' : 'c'),
-			runtime->rate,
-			runtime->channels,
-			snd_pcm_format_width(runtime->format),
-			frames_to_bytes(runtime, runtime->buffer_size),
-			frames_to_bytes(runtime, runtime->period_size),
-			runtime->periods);
-#endif
 	return 0;
 }
 
@@ -214,10 +198,10 @@ static void snd_card_loopback_timer_function(unsigned long data)
 	spin_lock_irq(&dpcm->lock);
 
 	dpcm->pcm_irq_pos += dpcm->pcm_bps;
-	if (dpcm->pcm_irq_pos >= dpcm->pcm_count * dpcm->pcm_hz) {
-		dpcm->pcm_irq_pos %= dpcm->pcm_count * dpcm->pcm_hz;
-		dpcm->pcm_period_pos += dpcm->pcm_count;
-		dpcm->pcm_period_pos %= dpcm->pcm_size;
+	if (dpcm->pcm_irq_pos >= dpcm->pcm_period_size * dpcm->pcm_hz) {
+		dpcm->pcm_irq_pos %= dpcm->pcm_period_size * dpcm->pcm_hz;
+		dpcm->pcm_buf_pos += dpcm->pcm_period_size;
+		dpcm->pcm_buf_pos %= dpcm->pcm_buffer_size;
 		spin_unlock_irq(&dpcm->lock);	
 		snd_pcm_period_elapsed(dpcm->substream);
 	} else {
@@ -229,7 +213,7 @@ static snd_pcm_uframes_t snd_card_loopback_pointer(struct snd_pcm_substream *sub
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_loopback_pcm_t *dpcm = runtime->private_data;
-	return bytes_to_frames(runtime, dpcm->pcm_period_pos);
+	return bytes_to_frames(runtime, dpcm->pcm_buf_pos);
 }
 
 static struct snd_pcm_hardware snd_card_loopback_info =
@@ -263,9 +247,6 @@ static int snd_card_loopback_hw_params(struct snd_pcm_substream *substream,
 	snd_card_loopback_pcm_t *dpcm = runtime->private_data;
 	struct snd_dma_buffer *dmab = NULL;
 	if (NULL == dpcm->cable->dma_buffer) {
-#ifdef SND_CARD_LOOPBACK_VERBOSE
-		printk(KERN_INFO "snd-aloop: allocating dma buffer\n");
-#endif
 		dmab = kzalloc(sizeof(*dmab), GFP_KERNEL);
 		if (NULL == dmab)
 			return -ENOMEM;
@@ -302,9 +283,6 @@ static int snd_card_loopback_hw_free(struct snd_pcm_substream *substream)
 	if (NULL == cable->dma_buffer)
 		return 0;
 
-#ifdef SND_CARD_LOOPBACK_VERBOSE
-	printk(KERN_INFO "snd-aloop: freeing dma buffer\n");
-#endif
 	snd_dma_free_pages(cable->dma_buffer);
 	kfree(cable->dma_buffer);
 	cable->dma_buffer = NULL;
