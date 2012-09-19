@@ -41,6 +41,18 @@ CROSS_COMPILE="$crossprefix"
 AC_SUBST(CROSS_COMPILE)
 AC_MSG_RESULT($CROSS_COMPILE)
 
+if test "$crossprefix"; then
+# modify CC, CPP and maybe some other variables. CC is set to
+# e.g. /usr/local/bin/gcc by autoconf - this is then modified 
+# to arm-linux-/usr/local/bin/gcc in Makefile.conf - that is bad - so
+# cut the path out (but save optional params - e.g. gcc -E for CPP) 
+echo $CC | grep ' ' >/dev/null && CC_save=`echo "$CC" | cut -d' ' -f2-` 
+CC="`basename $CC` $CC_save"
+
+echo $CPP | grep ' ' >/dev/null && CPP_save=`echo "$CPP" | cut -d' ' -f2-`
+CPP="`basename $CPP` $CPP_save"
+fi
+
 dnl Check for directory with kernel source...
 AC_MSG_CHECKING(for directory with kernel source)
 AC_ARG_WITH(kernel,
@@ -276,6 +288,7 @@ AC_SUBST(moddir)
 
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
+CONFIG_SND_ARM=n
 CONFIG_SND_PPC=n
 CONFIG_SND_ISA=y
 processor=""
@@ -487,6 +500,7 @@ case "$processor" in
    ;;
   sa1100)
    c_opts="-march=armv4 -mtune=strongarm1100 -msoft-float"
+   CONFIG_SND_ARM=y
    ;;
   *)
     processor="unknown"
@@ -506,6 +520,7 @@ esac
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
 AC_SUBST(LD)
+AC_SUBST(CONFIG_SND_ARM)
 AC_SUBST(CONFIG_SND_PPC)
 AC_SUBST(CONFIG_SND_ISA)
 test "$CONFIG_SND_ISA" = "y" && AC_DEFINE(CONFIG_SND_ISA)

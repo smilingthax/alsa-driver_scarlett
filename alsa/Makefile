@@ -41,6 +41,9 @@ SUBDIRS  += acore i2c drivers isa synth
 ifeq (y,$(CONFIG_SND_PCI))
 SUBDIRS  += pci
 endif
+ifeq (y,$(CONFIG_SND_ARM))
+SUBDIRS  += arm
+endif
 ifeq (y,$(CONFIG_SND_PPC))
 SUBDIRS  += ppc
 endif

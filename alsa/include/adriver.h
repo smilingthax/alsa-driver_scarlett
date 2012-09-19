@@ -101,7 +101,7 @@
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 3)
 #define need_resched() (current->need_resched)
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 5)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 4)
 #include <linux/fs.h>
 static inline struct proc_dir_entry *PDE(const struct inode *inode)
 {
