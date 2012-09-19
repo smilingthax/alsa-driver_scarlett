@@ -243,7 +243,8 @@ unsigned int snd_hda_codec_read(struct hda_codec *codec, hda_nid_t nid,
 {
 	unsigned cmd = make_codec_cmd(codec, nid, direct, verb, parm);
 	unsigned int res;
-	codec_exec_verb(codec, cmd, &res);
+	if (codec_exec_verb(codec, cmd, &res))
+		return -1;
 	return res;
 }
 EXPORT_SYMBOL_HDA(snd_hda_codec_read);
@@ -307,14 +308,65 @@ int snd_hda_get_sub_nodes(struct hda_codec *codec, hda_nid_t nid,
 }
 EXPORT_SYMBOL_HDA(snd_hda_get_sub_nodes);
 
-static int _hda_get_connections(struct hda_codec *codec, hda_nid_t nid,
-				hda_nid_t *conn_list, int max_conns);
-static bool add_conn_list(struct snd_array *array, hda_nid_t nid);
-static int copy_conn_list(hda_nid_t nid, hda_nid_t *dst, int max_dst,
-			  hda_nid_t *src, int len);
+/* look up the cached results */
+static hda_nid_t *lookup_conn_list(struct snd_array *array, hda_nid_t nid)
+{
+	int i, len;
+	for (i = 0; i < array->used; ) {
+		hda_nid_t *p = snd_array_elem(array, i);
+		if (nid == *p)
+			return p;
+		len = p[1];
+		i += len + 2;
+	}
+	return NULL;
+}
 
 /**
- * snd_hda_get_connections - get connection list
+ * snd_hda_get_conn_list - get connection list
+ * @codec: the HDA codec
+ * @nid: NID to parse
+ * @listp: the pointer to store NID list
+ *
+ * Parses the connection list of the given widget and stores the list
+ * of NIDs.
+ *
+ * Returns the number of connections, or a negative error code.
+ */
+int snd_hda_get_conn_list(struct hda_codec *codec, hda_nid_t nid,
+			  const hda_nid_t **listp)
+{
+	struct snd_array *array = &codec->conn_lists;
+	int len, err;
+	hda_nid_t list[HDA_MAX_CONNECTIONS];
+	hda_nid_t *p;
+	bool added = false;
+
+ again:
+	/* if the connection-list is already cached, read it */
+	p = lookup_conn_list(array, nid);
+	if (p) {
+		if (listp)
+			*listp = p + 2;
+		return p[1];
+	}
+	if (snd_BUG_ON(added))
+		return -EINVAL;
+
+	/* read the connection and add to the cache */
+	len = snd_hda_get_raw_connections(codec, nid, list, HDA_MAX_CONNECTIONS);
+	if (len < 0)
+		return len;
+	err = snd_hda_override_conn_list(codec, nid, len, list);
+	if (err < 0)
+		return err;
+	added = true;
+	goto again;
+}
+EXPORT_SYMBOL_HDA(snd_hda_get_conn_list);
+
+/**
+ * snd_hda_get_connections - copy connection list
  * @codec: the HDA codec
  * @nid: NID to parse
  * @conn_list: connection list array
@@ -328,42 +380,35 @@ static int copy_conn_list(hda_nid_t nid, hda_nid_t *dst, int max_dst,
 int snd_hda_get_connections(struct hda_codec *codec, hda_nid_t nid,
 			     hda_nid_t *conn_list, int max_conns)
 {
-	struct snd_array *array = &codec->conn_lists;
-	int i, len, old_used;
-	hda_nid_t list[HDA_MAX_CONNECTIONS];
+	const hda_nid_t *list;
+	int len = snd_hda_get_conn_list(codec, nid, &list);
 
-	/* look up the cached results */
-	for (i = 0; i < array->used; ) {
-		hda_nid_t *p = snd_array_elem(array, i);
-		len = p[1];
-		if (nid == *p)
-			return copy_conn_list(nid, conn_list, max_conns,
-					      p + 2, len);
-		i += len + 2;
-	}
-
-	len = _hda_get_connections(codec, nid, list, HDA_MAX_CONNECTIONS);
-	if (len < 0)
+	if (len <= 0)
 		return len;
-
-	/* add to the cache */
-	old_used = array->used;
-	if (!add_conn_list(array, nid) || !add_conn_list(array, len))
-		goto error_add;
-	for (i = 0; i < len; i++)
-		if (!add_conn_list(array, list[i]))
-			goto error_add;
-
-	return copy_conn_list(nid, conn_list, max_conns, list, len);
-		
- error_add:
-	array->used = old_used;
-	return -ENOMEM;
+	if (len > max_conns) {
+		snd_printk(KERN_ERR "hda_codec: "
+			   "Too many connections %d for NID 0x%x\n",
+			   len, nid);
+		return -EINVAL;
+	}
+	memcpy(conn_list, list, len * sizeof(hda_nid_t));
+	return len;
 }
 EXPORT_SYMBOL_HDA(snd_hda_get_connections);
 
-static int _hda_get_connections(struct hda_codec *codec, hda_nid_t nid,
-			     hda_nid_t *conn_list, int max_conns)
+/**
+ * snd_hda_get_raw_connections - copy connection list without cache
+ * @codec: the HDA codec
+ * @nid: NID to parse
+ * @conn_list: connection list array
+ * @max_conns: max. number of connections to store
+ *
+ * Like snd_hda_get_connections(), copy the connection list but without
+ * checking through the connection-list cache.
+ * Currently called only from hda_proc.c, so not exported.
+ */
+int snd_hda_get_raw_connections(struct hda_codec *codec, hda_nid_t nid,
+				hda_nid_t *conn_list, int max_conns)
 {
 	unsigned int parm;
 	int i, conn_len, conns;
@@ -376,11 +421,8 @@ static int _hda_get_connections(struct hda_codec *codec, hda_nid_t nid,
 
 	wcaps = get_wcaps(codec, nid);
 	if (!(wcaps & AC_WCAP_CONN_LIST) &&
-	    get_wcaps_type(wcaps) != AC_WID_VOL_KNB) {
-		snd_printk(KERN_WARNING "hda_codec: "
-			   "connection list not available for 0x%x\n", nid);
-		return -EINVAL;
-	}
+	    get_wcaps_type(wcaps) != AC_WID_VOL_KNB)
+		return 0;
 
 	parm = snd_hda_param_read(codec, nid, AC_PAR_CONNLIST_LEN);
 	if (parm & AC_CLIST_LONG) {
@@ -470,18 +512,77 @@ static bool add_conn_list(struct snd_array *array, hda_nid_t nid)
 	return true;
 }
 
-static int copy_conn_list(hda_nid_t nid, hda_nid_t *dst, int max_dst,
-			  hda_nid_t *src, int len)
+/**
+ * snd_hda_override_conn_list - add/modify the connection-list to cache
+ * @codec: the HDA codec
+ * @nid: NID to parse
+ * @len: number of connection list entries
+ * @list: the list of connection entries
+ *
+ * Add or modify the given connection-list to the cache.  If the corresponding
+ * cache already exists, invalidate it and append a new one.
+ *
+ * Returns zero or a negative error code.
+ */
+int snd_hda_override_conn_list(struct hda_codec *codec, hda_nid_t nid, int len,
+			       const hda_nid_t *list)
 {
-	if (len > max_dst) {
-		snd_printk(KERN_ERR "hda_codec: "
-			   "Too many connections %d for NID 0x%x\n",
-			   len, nid);
-		return -EINVAL;
-	}
-	memcpy(dst, src, len * sizeof(hda_nid_t));
-	return len;
+	struct snd_array *array = &codec->conn_lists;
+	hda_nid_t *p;
+	int i, old_used;
+
+	p = lookup_conn_list(array, nid);
+	if (p)
+		*p = -1; /* invalidate the old entry */
+
+	old_used = array->used;
+	if (!add_conn_list(array, nid) || !add_conn_list(array, len))
+		goto error_add;
+	for (i = 0; i < len; i++)
+		if (!add_conn_list(array, list[i]))
+			goto error_add;
+	return 0;
+
+ error_add:
+	array->used = old_used;
+	return -ENOMEM;
 }
+EXPORT_SYMBOL_HDA(snd_hda_override_conn_list);
+
+/**
+ * snd_hda_get_conn_index - get the connection index of the given NID
+ * @codec: the HDA codec
+ * @mux: NID containing the list
+ * @nid: NID to select
+ * @recursive: 1 when searching NID recursively, otherwise 0
+ *
+ * Parses the connection list of the widget @mux and checks whether the
+ * widget @nid is present.  If it is, return the connection index.
+ * Otherwise it returns -1.
+ */
+int snd_hda_get_conn_index(struct hda_codec *codec, hda_nid_t mux,
+			   hda_nid_t nid, int recursive)
+{
+	hda_nid_t conn[HDA_MAX_NUM_INPUTS];
+	int i, nums;
+
+	nums = snd_hda_get_connections(codec, mux, conn, ARRAY_SIZE(conn));
+	for (i = 0; i < nums; i++)
+		if (conn[i] == nid)
+			return i;
+	if (!recursive)
+		return -1;
+	if (recursive > 5) {
+		snd_printd("hda_codec: too deep connection for 0x%x\n", nid);
+		return -1;
+	}
+	recursive++;
+	for (i = 0; i < nums; i++)
+		if (snd_hda_get_conn_index(codec, conn[i], nid, recursive) >= 0)
+			return i;
+	return -1;
+}
+EXPORT_SYMBOL_HDA(snd_hda_get_conn_index);
 
 /**
  * snd_hda_queue_unsol_event - add an unsolicited event to queue
@@ -4589,7 +4690,7 @@ int snd_hda_parse_pin_def_config(struct hda_codec *codec,
 		unsigned int wid_caps = get_wcaps(codec, nid);
 		unsigned int wid_type = get_wcaps_type(wid_caps);
 		unsigned int def_conf;
-		short assoc, loc;
+		short assoc, loc, conn, dev;
 
 		/* read all default configuration for pin complex */
 		if (wid_type != AC_WID_PIN)
@@ -4599,10 +4700,19 @@ int snd_hda_parse_pin_def_config(struct hda_codec *codec,
 			continue;
 
 		def_conf = snd_hda_codec_get_pincfg(codec, nid);
-		if (get_defcfg_connect(def_conf) == AC_JACK_PORT_NONE)
+		conn = get_defcfg_connect(def_conf);
+		if (conn == AC_JACK_PORT_NONE)
 			continue;
 		loc = get_defcfg_location(def_conf);
-		switch (get_defcfg_device(def_conf)) {
+		dev = get_defcfg_device(def_conf);
+
+		/* workaround for buggy BIOS setups */
+		if (dev == AC_JACK_LINE_OUT) {
+			if (conn == AC_JACK_PORT_FIXED)
+				dev = AC_JACK_SPEAKER;
+		}
+
+		switch (dev) {
 		case AC_JACK_LINE_OUT:
 			seq = get_defcfg_sequence(def_conf);
 			assoc = get_defcfg_association(def_conf);
@@ -5018,17 +5128,15 @@ void *snd_array_new(struct snd_array *array)
 {
 	if (array->used >= array->alloced) {
 		int num = array->alloced + array->alloc_align;
+		int size = (num + 1) * array->elem_size;
+		int oldsize = array->alloced * array->elem_size;
 		void *nlist;
 		if (snd_BUG_ON(num >= 4096))
 			return NULL;
-		nlist = kcalloc(num + 1, array->elem_size, GFP_KERNEL);
+		nlist = krealloc(array->list, size, GFP_KERNEL);
 		if (!nlist)
 			return NULL;
-		if (array->list) {
-			memcpy(nlist, array->list,
-			       array->elem_size * array->alloced);
-			kfree(array->list);
-		}
+		memset(nlist + oldsize, 0, size - oldsize);
 		array->list = nlist;
 		array->alloced = num;
 	}
