@@ -29,6 +29,7 @@ PROFILE_DSP2 get profile data from DSP2 if present (instead of DSP 1)
 
 (C) Copyright AudioScience Inc. 1998-2003
 *******************************************************************************/
+#define SOURCEFILE_NAME "hpi6000.c"
 
 #include "hpi.h"
 #include "hpidebug.h"
@@ -140,10 +141,8 @@ static void HpiReadBlock(DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
 
 ////////////////////////////////////////////////////////////////////////////
 // local prototypes
-static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
-				HPI_MESSAGE * phm, HPI_RESPONSE * phr);
-static void SubSysDeleteAdapter(HPI_ADAPTERS_LIST * adaptersList,
-				HPI_MESSAGE * phm, HPI_RESPONSE * phr);
+static void SubSysCreateAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
+static void SubSysDeleteAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
 
 static void AdapterGetAsserts(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 			      HPI_RESPONSE * phr);
@@ -158,35 +157,30 @@ static short CreateAdapterObj(HPI_ADAPTER_OBJ * pao, u32 * pdwOsErrorCode);
 // local globals
 static u32 gadwHpiSpecificError[4];
 
-static HPI_ADAPTERS_LIST adapters;
 static u16 gwPciReadAsserts = 0;	// used to count PCI2040 errors
 static u16 gwPciWriteAsserts = 0;	// used to count PCI2040 errors
 
-static void SubSysMessage(HPI_ADAPTERS_LIST * adaptersList, HPI_MESSAGE * phm,
-			  HPI_RESPONSE * phr)
+static void SubSysMessage(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
 
 	switch (phm->wFunction) {
 	case HPI_SUBSYS_OPEN:
 	case HPI_SUBSYS_CLOSE:
 	case HPI_SUBSYS_DRIVER_UNLOAD:
-		phr->wError = 0;
-		break;
 	case HPI_SUBSYS_DRIVER_LOAD:
-		WipeAdapterList(adaptersList);
 		phr->wError = 0;
 		break;
 	case HPI_SUBSYS_GET_INFO:
-		SubSysGetAdapters(adaptersList, phr);
+		HPI_COMMON(phm, phr);
 		break;
 	case HPI_SUBSYS_FIND_ADAPTERS:
 		phr->wError = HPI_ERROR_INVALID_FUNC;
 		break;
 	case HPI_SUBSYS_CREATE_ADAPTER:
-		SubSysCreateAdapter(adaptersList, phm, phr);
+		SubSysCreateAdapter(phm, phr);
 		break;
 	case HPI_SUBSYS_DELETE_ADAPTER:
-		SubSysDeleteAdapter(adaptersList, phm, phr);
+		SubSysDeleteAdapter(phm, phr);
 		break;
 	default:
 		phr->wError = HPI_ERROR_INVALID_FUNC;
@@ -314,7 +308,7 @@ void HPI_6000(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 
 // if Dsp has crashed then do not try and communicated with it any more
 	if (phm->wObject != HPI_OBJ_SUBSYSTEM) {
-		pao = FindAdapter(&adapters, phm->wAdapterIndex);
+		pao = FindAdapter(phm->wAdapterIndex);
 		if (!pao) {
 			HPI_DEBUG_LOG2(DEBUG,
 				       " %d,%d refused, for another HPI?\n",
@@ -339,7 +333,7 @@ void HPI_6000(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 	case HPI_TYPE_MESSAGE:
 		switch (phm->wObject) {
 		case HPI_OBJ_SUBSYSTEM:
-			SubSysMessage(&adapters, phm, phr);
+			SubSysMessage(phm, phr);
 			break;
 
 		case HPI_OBJ_ADAPTER:
@@ -380,10 +374,10 @@ void HPI_6000(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 // **** NOTE - you cannot use this function AND the FindAdapters function at the
 // same time, the application must use only one of them to get the adapters ******
 
-static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
-				HPI_MESSAGE * phm, HPI_RESPONSE * phr)
+static void SubSysCreateAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
 	HPI_ADAPTER_OBJ ao;	// create temp adapter obj, because we don't know what index yet
+	HPI_ADAPTER_OBJ *pao;
 	u32 dwOsErrorCode;
 	short nError = 0;
 	u32 dwDspIndex = 0;
@@ -407,30 +401,21 @@ static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
 	ao.Pci = *phm->u.s.Resource.r.Pci;
 
 	nError = CreateAdapterObj(&ao, &dwOsErrorCode);
+	if (!nError)
+		nError = AddAdapter(&ao);
 	if (nError) {
 		phr->u.s.dwData = dwOsErrorCode;	// OS error, if any, is in dwOsErrorCode
 		HpiOs_MemFree(ao.priv);
 		phr->wError = nError;
 		return;
 	}
-// add to adapter list - but don't allow two adapters of same number!
-	if (phr->u.s.awAdapterList[ao.wIndex] != 0) {
-		HpiOs_MemFree(ao.priv);
-		phr->wError = HPI_DUPLICATE_ADAPTER_NUMBER;
-		return;
-	}
-//? memcpy( &adaptersList->adapter[ ao.wIndex ], &ao, sizeof(HPI_ADAPTER_OBJ));
-	adaptersList->adapter[ao.wIndex] = ao;
-
 // need to update paParentAdapter
+	pao = FindAdapter(ao.wIndex);
 	for (dwDspIndex = 0; dwDspIndex < 4; dwDspIndex++) {
-		(*(HPI_HW_OBJ *) adaptersList->adapter[ao.wIndex].priv).
-		    ado[dwDspIndex].paParentAdapter =
-		    &adaptersList->adapter[ao.wIndex];
+		((HPI_HW_OBJ *) pao->priv)->ado[dwDspIndex].paParentAdapter =
+		    pao;
 	}
-	HpiOs_Dsplock_Init(&adaptersList->adapter[ao.wIndex]);
 
-	adaptersList->gwNumAdapters++;	// inc the number of adapters known by this HPI
 	phr->u.s.awAdapterList[ao.wIndex] = ao.wAdapterType;
 	phr->u.s.wAdapterIndex = ao.wIndex;
 	phr->u.s.wNumAdapters++;	// add the number of adapters recognised by this HPI to the system total
@@ -439,18 +424,18 @@ static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
 
 // delete an adapter - required by WDM driver
 
-static void SubSysDeleteAdapter(HPI_ADAPTERS_LIST * adaptersList,
-				HPI_MESSAGE * phm, HPI_RESPONSE * phr)
+static void SubSysDeleteAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
 	HPI_ADAPTER_OBJ *pao = NULL;
+	void *priv;
 
-	pao = FindAdapter(adaptersList, phm->wAdapterIndex);
+	pao = FindAdapter(phm->wAdapterIndex);
 	if (!pao)
 		return;		// message probably meant for another HPI module
 
-	adaptersList->gwNumAdapters--;
-	HpiOs_MemFree(pao->priv);
-	memset(pao, 0, sizeof(HPI_ADAPTER_OBJ));
+	priv = pao->priv;
+	DeleteAdapter(pao);
+	HpiOs_MemFree(priv);
 
 	phr->wError = 0;
 }
@@ -465,10 +450,6 @@ static short CreateAdapterObj(HPI_ADAPTER_OBJ * pao, u32 * pdwOsErrorCode)
 // init error reporting
 	phw->wNumErrors = 0;
 	pao->wDspCrashed = 0;
-
-// under WIN16, get the subsys device ID, if present
-// find out if we have a 8801 present
-// because it uses different DSP code than the 6200 series
 
 // The PCI2040 has the following address map
 // BAR0 - 4K = HPI control and status registers on PCI2040  (HPI CSR)
@@ -948,9 +929,7 @@ if(dwData & 0x0100)
 ///////////////////////////////////////////////////////////
 // write the DSP code down into the DSPs memory
 //HpiDspCode_Open(nBootLoadFamily,&DspCode,pdwOsErrorCode);
-#if defined DSPCODE_FIRMWARE
 			DspCode.psDev = pao->Pci.pOsData;
-#endif
 
 			if ((nError =
 			     HpiDspCode_Open(nBootLoadFamily, &DspCode,
@@ -969,19 +948,6 @@ if(dwData & 0x0100)
 					break;
 				if (dwLength == 0xFFFFFFFF)
 					break;	// end of code
-
-#ifdef DSPCODE_ARRAY
-// check for end of array with continuation to another one
-				if (dwLength == 0xFFFFFFFEL) {
-					DspCode.nArrayNum++;
-					DspCode.dwOffset = 0;
-					if ((nError =
-					     HpiDspCode_ReadWord(&DspCode,
-								 &dwLength)) !=
-					    0)
-						break;
-				}
-#endif
 
 				if ((nError =
 				     HpiDspCode_ReadWord(&DspCode,
@@ -1022,16 +988,6 @@ if(dwData & 0x0100)
 				HpiDspCode_ReadWord(&DspCode, &dwLength);
 				if (dwLength == 0xFFFFFFFF)
 					break;	// end of code
-
-#ifdef DSPCODE_ARRAY
-// check for end of array with continuation to another one
-				if (dwLength == 0xFFFFFFFEL) {
-					DspCode.nArrayNum++;
-					DspCode.dwOffset = 0;
-					HpiDspCode_ReadWord(&DspCode,
-							    &dwLength);
-				}
-#endif
 
 				HpiDspCode_ReadWord(&DspCode, &dwAddress);
 				HpiDspCode_ReadWord(&DspCode, &dwType);
@@ -1369,6 +1325,7 @@ static short Hpi6000_MessageResponseSequence(HPI_ADAPTER_OBJ * pao,
 	u32 dwAddress;
 	u32 dwLength;
 	u32 *pData;
+	u16 wError = 0;
 
 // does the DSP we are referencing exist?
 	if (wDspIndex >= phw->wNumDsp)
@@ -1457,7 +1414,8 @@ static short Hpi6000_MessageResponseSequence(HPI_ADAPTER_OBJ * pao,
 		return HPI6000_ERROR_MSG_RESP_IDLECMD;
 	Hpi6000_SendDspInterrupt(pdo);
 
-	return 0;		// no error
+	wError = HpiValidateResponse(phm, phr);	// SGT - validate the response message
+	return wError;		// no error
 }
 
 // have to set up the below defines to match stuff in the MAP file

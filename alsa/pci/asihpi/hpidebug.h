@@ -34,14 +34,6 @@ extern "C" {
 #define TEXT(s) s
 #endif
 
-//#define HPI_DEBUG_VERBOSE
-
-#ifdef HPI_DEBUG_VERBOSE
-#  ifndef HPI_DEBUG		/* DEBUG_VERBOSE implies DEBUG */
-#   define HPI_DEBUG
-#  endif
-#endif
-
 /* Define debugging levels.  */
 	enum { HPI_DEBUG_LEVEL_ERROR,	/* Always log errors */
 		HPI_DEBUG_LEVEL_WARNING,
@@ -51,20 +43,10 @@ extern "C" {
 		HPI_DEBUG_LEVEL_VERBOSE	/* Same printk level as DEBUG */
 	};
 
-#ifndef HPI_DEBUG_LEVEL_DEFAULT
 #define HPI_DEBUG_LEVEL_DEFAULT HPI_DEBUG_LEVEL_NOTICE
-#endif
 
 /* an OS can define an extra flag string that is appended to
 the start of each message, eg see hpios_linux.h */
-#ifndef HPI_DEBUG_FLAG_ERROR
-#define HPI_DEBUG_FLAG_ERROR
-#define HPI_DEBUG_FLAG_WARNING
-#define HPI_DEBUG_FLAG_NOTICE
-#define HPI_DEBUG_FLAG_INFO
-#define HPI_DEBUG_FLAG_DEBUG
-#define HPI_DEBUG_FLAG_VERBOSE
-#endif
 
 /* OSes without printf-like function must provide plain string output
 and define HPIOS_DEBUG_PRINT to the name of this function.
@@ -77,87 +59,31 @@ The printf functionality then provided by hpidebug.c::hpi_debug_printf
 
 #if ! defined ( HPIOS_DEBUG_PRINT ) && ! defined ( HPIOS_DEBUG_PRINTF ) && defined ( HPI_DEBUG )
 #undef HPI_DEBUG
-#undef HPI_DEBUG_VERBOSE
 #ifdef _MSC_VER
 #pragma message ("Warning: Can't debug with this build because no debug print functions defined")
 #endif
 #endif
 
-/* HPI_DEBUG_VERBOSE causes file and line to be printed with each message */
-#ifdef HPI_DEBUG_VERBOSE
-# define FILE_LINE __FILE__ ":" __stringify(__LINE__) " "
+#ifdef SOURCEFILE_NAME
+#define FILE_LINE  SOURCEFILE_NAME ":" __stringify(__LINE__) " "
 #else
-# define FILE_LINE "HPI: "
+#define FILE_LINE  __FILE__ ":" __stringify(__LINE__) " "
 #endif
 
-#ifdef HPI_DEBUG
-
-/* Note VERBOSE and DEBUG messages don't get all the baggage of file and line etc
-We don't expect users to use or understand verbose, it will generate huge outputs
-*/
-#define HPI_DEBUG_LOG0(level,fmt)                                                                               \
-do {                                                                                                                            \
-if ( hpiDebugLevel >= HPI_DEBUG_LEVEL_##level ) {                                       \
-if ( HPI_DEBUG_LEVEL_##level >=  HPI_DEBUG_LEVEL_DEBUG )                \
-HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level fmt);                 \
-else                                                                                                            \
-HPIOS_DEBUG_PRINTF( HPI_DEBUG_FLAG_##level  FILE_LINE  __stringify(level)  " " fmt); \
-}                                                                                                                               \
+#define HPI_DEBUG_LOG(level, ...) \
+do { \
+if ( hpiDebugLevel >= HPI_DEBUG_LEVEL_##level ) { \
+HPIOS_DEBUG_PRINTF( HPI_DEBUG_FLAG_##level  FILE_LINE  __VA_ARGS__); \
+} \
 } while (0)
 
-#define HPI_DEBUG_LOG1(level,fmt,p1)                                                                    \
-do {                                                                                                                            \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_##level) {                                 \
-if ( HPI_DEBUG_LEVEL_##level >=  HPI_DEBUG_LEVEL_DEBUG )                \
-HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level fmt,p1);              \
-else                                                                                                            \
-HPIOS_DEBUG_PRINTF( HPI_DEBUG_FLAG_##level  FILE_LINE  __stringify(level)  " " fmt,p1); \
-}                                                                                                                               \
-} while (0)
-
-#define HPI_DEBUG_LOG2(level,fmt,p1,p2)                                                                 \
-do {                                                                                                                            \
-if (hpiDebugLevel>=HPI_DEBUG_LEVEL_##level) {                                   \
-if (HPI_DEBUG_LEVEL_##level >=  HPI_DEBUG_LEVEL_DEBUG)          \
-HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level fmt,p1,p2);   \
-else                                                                                                            \
-HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level FILE_LINE __stringify(level) " " fmt,p1,p2); \
-}                                                                                                                               \
-} while (0)
-
-#define HPI_DEBUG_LOG3(level,fmt,p1,p2,p3)                                                      \
-do {                                                                                                                            \
-if (hpiDebugLevel>=HPI_DEBUG_LEVEL_##level) {                                   \
-if (HPI_DEBUG_LEVEL_##level >=  HPI_DEBUG_LEVEL_DEBUG)          \
-HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level fmt,p1,p2,p3); \
-else                                                                                                            \
-HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level FILE_LINE __stringify(level) " " fmt,p1,p2,p3); \
-}                                                                                                                               \
-} while (0)
-
-#define HPI_DEBUG_LOG4(level,fmt,p1,p2,p3,p4)                                                   \
-do {                                                                                                                            \
-if (hpiDebugLevel>=HPI_DEBUG_LEVEL_##level) {                                   \
-if (HPI_DEBUG_LEVEL_##level >=  HPI_DEBUG_LEVEL_INFO)           \
-HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level fmt,p1,p2,p3,p4); \
-else                                                                                                            \
-HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level FILE_LINE __stringify(level) " " fmt,p1,p2,p3,p4); \
-}                                                                                                                               \
-} while (0)
+#define HPI_DEBUG_LOG0 HPI_DEBUG_LOG
+#define HPI_DEBUG_LOG1 HPI_DEBUG_LOG
+#define HPI_DEBUG_LOG2 HPI_DEBUG_LOG
+#define HPI_DEBUG_LOG3 HPI_DEBUG_LOG
+#define HPI_DEBUG_LOG4 HPI_DEBUG_LOG
 
 #define HPIOS_DEBUG_STRING(s) HPI_DEBUG_LOG0(VERBOSE,s "\n")
-
-#else
-#define HPI_DEBUG_LOG0(level,fmt)
-#define HPI_DEBUG_LOG1(level,fmt,p1)
-#define HPI_DEBUG_LOG2(level,fmt,p1,p2)
-#define HPI_DEBUG_LOG3(level,fmt,p1,p2,p3)
-#define HPI_DEBUG_LOG4(level,fmt,p1,p2,p3,p4)
-#ifdef HPIOS_DEBUG_STRING
-#undef HPIOS_DEBUG_STRING
-#endif
-#define HPIOS_DEBUG_STRING(s)
-#endif
 
 	void HPI_DebugInit(void);
 	int HPI_DebugLevelSet(int level);
@@ -170,14 +96,11 @@ HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level FILE_LINE __stringify(level) " " fmt,p
 	extern void
 	 hpi_debug_data(u16 * pdata, u32 len);
 
-#ifndef HPI_DEBUG_DATA
 #define HPI_DEBUG_DATA(pdata,len)                                                                               \
 do {                                                                                                                            \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) hpi_debug_data(pdata,len); \
 } while (0)
-#endif
 
-#ifndef HPI_DEBUG_MESSAGE
 #define HPI_DEBUG_MESSAGE(phm)                                                                  \
 do {                                                                                                            \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) {                   \
@@ -185,62 +108,17 @@ HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_DEBUG FILE_LINE);     \
 hpi_debug_message(phm);                                                         \
 }                                                                                                               \
 } while (0)
-#endif
 
-#ifndef HPI_DEBUG_RESPONSE
 #define HPI_DEBUG_RESPONSE(phr)                                                                 \
 do {                                                                                                            \
 if ((hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) && (phr->wError))  \
-HPI_DEBUG_LOG1(ERROR,"HPI %d\n", phr->wError); \
+HPI_DEBUG_LOG1(ERROR,"HPI Response - error# %d\n", phr->wError); \
 else if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) \
-HPI_DEBUG_LOG0(VERBOSE,"OK\n"); \
+HPI_DEBUG_LOG0(VERBOSE,"HPI Response OK\n"); \
 } while (0)
-#endif
 
 /* Be careful with these macros.  Ensure that they are used within a block.
 Otherwise the second if might have an else after it... */
-#define HPI_PRINT_ERROR \
-HPIOS_DEBUG_PRINTF("%s,%d ",__FILE__,__LINE__); \
-HPIOS_DEBUG_PRINTF
-
-#define HPI_PRINT_INFO \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_INFO) \
-HPIOS_DEBUG_PRINTF("%s,%d: ",__FILE__,__LINE__); \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_INFO) \
-HPIOS_DEBUG_PRINTF
-
-#define HPI_PRINT_DEBUG \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-HPIOS_DEBUG_PRINTF( "%s,%d: ",__FILE__,__LINE__); \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-HPIOS_DEBUG_PRINTF
-
-#define HPI_PRINT_VERBOSE \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) \
-HPIOS_DEBUG_PRINTF("%s,%d: ",__FILE__,__LINE__); \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) \
-HPIOS_DEBUG_PRINTF
-
-#if ! defined ( HPI_DEBUG )
-#undef HPI_DEBUG_DATA
-#undef HPI_DEBUG_MESSAGE
-#undef HPI_DEBUG_RESPONSE
-#undef HPIOS_DEBUG_PRINTF
-#undef HPI_PRINT_ERROR
-#undef HPI_PRINT_INFO
-#undef HPI_PRINT_DEBUG
-#undef HPI_PRINT_VERBOSE
-
-#define HPI_DEBUG_DATA
-#define HPI_DEBUG_MESSAGE
-#define HPI_DEBUG_RESPONSE
-#define HPIOS_DEBUG_PRINTF
-#define HPI_PRINT_ERROR
-#define HPI_PRINT_INFO
-#define HPI_PRINT_DEBUG
-#define HPI_PRINT_VERBOSE
-
-#endif
 
 /* These strings should be generated using a macro which defines
 the corresponding symbol values.  */
@@ -429,7 +307,7 @@ TEXT("HPI_CONTROL_MICROPHONE"), \
 TEXT("HPI_CONTROL_PARAMETRIC_EQ"), \
 TEXT("HPI_CONTROL_COMPANDER"), \
 TEXT("HPI_CONTROL_COBRANET"), \
-TEXT("HPI_CONTROL_TONE_DETECT") \
+TEXT("HPI_CONTROL_TONE_DETECT"), \
 TEXT("HPI_CONTROL_SILENCE_DETECT") \
 }
 #define NUM_CONTROL_STRINGS 24

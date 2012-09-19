@@ -72,6 +72,7 @@ See Dpi_SafeReadHCVR().
 
 (C) Copyright AudioScience Inc. 1997-2006
 ************************************************************************/
+#define SOURCEFILE_NAME "hpi56301.c"
 // #define DEBUG
 //#define USE_ASM_DATA
 //#define USE_ASM_MSG
@@ -530,17 +531,6 @@ short Hpi56301_BootLoadDsp(HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio,
 		if ((nError =
 		     HpiDspCode_ReadWord(&DspCode, &dwDspCodeLength)) != 0)
 			goto exit;
-#ifdef DSPCODE_ARRAY
-// check for end of array with continuation to another one
-		if (dwDspCodeLength == 0xFFFFFFFEL) {
-			DspCode.nArrayNum++;
-			DspCode.dwOffset = 0;
-			if ((nError =
-			     HpiDspCode_ReadWord(&DspCode,
-						 &dwDspCodeLength)) != 0)
-				goto exit;
-		}
-#endif
 		if (DpiData_Write24(pio, &dwDspCodeLength)) {
 			nError = (DPI_ERROR_DOWNLOAD + 6);
 			goto exit;

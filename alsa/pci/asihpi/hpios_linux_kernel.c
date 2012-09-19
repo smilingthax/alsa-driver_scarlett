@@ -20,7 +20,7 @@ HPI Operating System function implementation for Linux
 
 (C) Copyright AudioScience Inc. 1997-2003
 ******************************************************************************/
-
+#define SOURCEFILE_NAME "hpios_linux_kernel.c"
 #include "hpidebug.h"
 #include <linux/delay.h>
 #include <linux/pci.h>
@@ -51,29 +51,6 @@ Setting the state to UNINTERRUPTIBLE stops it from returning early.
 typedef unsigned char BOOLEAN;
 #endif
 
-short HpiPci_FindDeviceEx(HPI_PCI * pHpiPci,
-			  u16 wDevIndex,
-			  u16 wPciVendorId, u16 wPciDevId, u16 wPciSubVendorId)
-{
-	return 1;		// always return an error for linux
-}
-
-short HpiPci_WriteConfig(HPI_PCI * pHpiPci, u16 wPciConfigReg, u32 dwData)
-{
-// Use pci_config_write_dword ?
-	HPI_DEBUG_LOG2(VERBOSE, "Reg = 0x%x, Data = 0x%x\n",
-		       wPciConfigReg, dwData);
-	return 0;
-}
-
-short HpiPci_ReadConfig(HPI_PCI * pHpiPci, u16 wPciConfigReg, u32 * pdwData)
-{
-// Use pci_config_read_dword ?
-// need the Linux pdev pointer (store in HPI_PCI struct?)
-//    pci_read_config_dword(pdev, wPciConfigReg, pdwData);
-	return 0;
-}
-
 /** Details of a memory area allocated with  pci_alloc_consistent
 Need all info for parameters to pci_free_consistent
 */
@@ -100,9 +77,8 @@ void HpiOs_LockedMem_Init(void)
 On error, return -ENOMEM, and *pLockedMemHandle=NULL
 */
 u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
-			  void *pOsReference)
+			  struct pci_dev *pdev)
 {
-	struct pci_dev *pdev = *(struct pci_dev **)pOsReference;
 	HpiOs_LockedMem_Area *pMemArea;
 
 	*pLockedMemHandle = NULL;

@@ -33,12 +33,9 @@ If USE_ZLIB is defined, hpizlib.c must also be linked
 
 */
 /***********************************************************************/
+#define SOURCEFILE_NAME "hpidspcd.c"
 #include "hpidspcd.h"
 #include "hpidebug.h"
-
-#ifndef HPI_KERNEL_MODE
-#include <string.h>
-#endif
 
 /**
 Header structure for binary dsp code file (see asidsp.doc)

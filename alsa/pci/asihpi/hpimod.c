@@ -19,6 +19,9 @@
 
 Linux HPI driver module
 *******************************************************************************/
+#define SOURCEFILE_NAME "hpimod.c"
+#define HPIMOD_PCI_ENABLE_DEV 0
+
 #include "hpi.h"
 #include "hpidebug.h"
 #include "hpimsgx.h"
@@ -44,14 +47,14 @@ void snd_asihpi_unbind(adapter_t * hpi_card);
     in which case, data must be copied to a local buffer outside the spinlock
 */
 #ifdef HPI_LOCKING
-#define COPY_TO_LOCAL 1
+#define HPIMOD_COPY_TO_LOCAL 1
 #endif
 
 #if (USE_SPINLOCK) && ! defined (HPI_LOCKING)
 /* HPI_LOCKING causes spinlocks in this file to be defined to noops,
  because locking is down inside hpi
 */
-#   define COPY_TO_LOCAL 1
+#   define HPIMOD_COPY_TO_LOCAL 1
 #    define SPIN_LOCK_INIT spin_lock_init
 #    define SPIN_LOCK_IRQSAVE spin_lock_irqsave
 #   define SPIN_UNLOCK_IRQRESTORE spin_unlock_irqrestore
@@ -59,14 +62,9 @@ void snd_asihpi_unbind(adapter_t * hpi_card);
 #    define SPIN_LOCK_INIT(a)
 #   define SPIN_LOCK_IRQSAVE(a,b)
 #   define SPIN_UNLOCK_IRQRESTORE(a,b)
-#   ifndef COPY_TO_LOCAL
-#      define COPY_TO_LOCAL 0
+#   ifndef HPIMOD_COPY_TO_LOCAL
+#      define HPIMOD_COPY_TO_LOCAL 0
 #   endif
-#endif
-
-/* Report elapsed time of messages to kernel log */
-#ifndef TIME_HPI_MESSAGES
-#   define TIME_HPI_MESSAGES 0
 #endif
 
 #ifndef HPIMOD_DEFAULT_BUF_SIZE
@@ -101,10 +99,11 @@ MODULE_FIRMWARE("asihpi/dsp6205.bin");
 MODULE_FIRMWARE("asihpi/dsp6413.bin");
 MODULE_FIRMWARE("asihpi/dsp6600.bin");
 MODULE_FIRMWARE("asihpi/dsp8713.bin");
+MODULE_FIRMWARE("asihpi/dsp8900.bin");
 #endif
 
 static int major = 0;
-#if COPY_TO_LOCAL
+#if HPIMOD_COPY_TO_LOCAL
 static int bufsize = HPIMOD_DEFAULT_BUF_SIZE;
 #endif
 
@@ -113,13 +112,13 @@ static int bufsize = HPIMOD_DEFAULT_BUF_SIZE;
 MODULE_PARM(major, "i");
 MODULE_PARM(hpiDebugLevel, "0-6i");
 
-#if COPY_TO_LOCAL
+#if HPIMOD_COPY_TO_LOCAL
 MODULE_PARM(bufsize, "i");
 #endif
 
 #else				/* new style params */
 module_param(major, int, S_IRUGO);
-#if COPY_TO_LOCAL
+#if HPIMOD_COPY_TO_LOCAL
 module_param(bufsize, int, S_IRUGO);
 #endif
 /* Allow the debug level to be changed after module load.
@@ -226,7 +225,7 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 	u32 uncopied_bytes;
 	adapter_t *pa;
 
-#if  (COPY_TO_LOCAL!=1)
+#if  (HPIMOD_COPY_TO_LOCAL!=1)
 	mm_segment_t fs;
 #endif
 	if (cmd != HPI_IOCTL_LINUX)
@@ -272,7 +271,7 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 			size = hm.u.d.u.Data.dwDataSize;
 			//printk("HPI data size %ld\n",size);
 
-#if (COPY_TO_LOCAL)
+#if (HPIMOD_COPY_TO_LOCAL)
 			hm.u.d.u.Data.pbData = pa->pBuffer;
 			/*
 			   if (size > bufsize) {
@@ -299,7 +298,7 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 			if (down_interruptible(&adapters[nAdapter].sem))
 				return (-EINTR);
 
-#if  (COPY_TO_LOCAL!=1)
+#if  (HPIMOD_COPY_TO_LOCAL!=1)
 			fs = get_fs();
 			set_fs(get_ds());
 			if (!access_ok
@@ -312,7 +311,7 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 			HPI_MessageF(&hm, &hr, file);
 
 			set_fs(fs);
-#else				//  COPY_TO_LOCAL==1
+#else				//  HPIMOD_COPY_TO_LOCAL==1
 			if (wrflag == 0) {
 
 				if (size > bufsize) {
@@ -353,7 +352,7 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 						       uncopied_bytes, size);
 				}
 			}
-#endif				// else COPY_TO_LOCAL==1
+#endif				// else HPIMOD_COPY_TO_LOCAL==1
 
 			up(&adapters[nAdapter].sem);
 		}
@@ -433,13 +432,21 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 
 	memset(&adapter, 0, sizeof(adapter));
 
+#if HPIMOD_PCI_ENABLE_DEV
+	if ((err = pci_enable_device(pci_dev)) < 0)
+		return err;
+	pci_set_master(pci_dev);
+	if ((err = pci_request_regions(pci_dev, "asihpi")) < 0)
+		return err;
+#endif
+
 	printk(KERN_DEBUG "Probe PCI device (%04x:%04x,%04x:%04x,%04x)\n",
 	       pci_dev->vendor, pci_dev->device, pci_dev->subsystem_vendor,
 	       pci_dev->subsystem_device, pci_dev->devfn);
 
 	if (HPI_SubSysCreate() == NULL) {
 		printk(KERN_ERR "SubSysCreate failed.\n");
-		return -ENODEV;
+		goto err;
 	}
 
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CREATE_ADAPTER);
@@ -450,10 +457,10 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 
 	// fill in HPI_PCI information from kernel provided information
 	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; idx++) {
-		HPI_DEBUG_LOG4(DEBUG, "Resource %d %s %lx-%lx\n", idx,
+		HPI_DEBUG_LOG4(DEBUG, "Resource %d %s %x-%x\n", idx,
 			       pci_dev->resource[idx].name,
-			       (unsigned long)pci_dev->resource[idx].start,
-			       (unsigned long)pci_dev->resource[idx].end);
+			       pci_resource_start(pci_dev, idx),
+			       pci_resource_end(pci_dev, idx));
 
 		memlen = pci_resource_len(pci_dev, idx);
 		if (memlen) {
@@ -478,7 +485,7 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 	Pci.wSubSysDeviceId = (u16) (pci_dev->subsystem_device & 0xffff);
 	Pci.wDeviceNumber = pci_dev->devfn;
 	Pci.wInterrupt = pci_dev->irq;
-	Pci.pOsData = (void *)pci_dev;
+	Pci.pOsData = pci_dev;
 
 	hm.u.s.Resource.wBusType = HPI_BUS_PCI;
 	hm.u.s.Resource.r.Pci = &Pci;
@@ -486,7 +493,7 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 	//call CreateAdapterObject on the relevant hpi module
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 
-#if (COPY_TO_LOCAL)
+#if (HPIMOD_COPY_TO_LOCAL)
 	if ((adapter.pBuffer = vmalloc(bufsize)) == NULL) {
 		HPI_DEBUG_LOG1(ERROR,
 			       "HPI could not allocate kernel buffer size %d\n",
@@ -519,6 +526,7 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 
 		pci_set_drvdata(pci_dev, &adapters[hr.u.s.wAdapterIndex]);
 		adapter_count++;
+
 		return 0;
 	}
 
@@ -531,12 +539,15 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 		}
 	}
 
-#if (COPY_TO_LOCAL)
+#if (HPIMOD_COPY_TO_LOCAL)
 	if (adapter.pBuffer)
 		vfree(adapter.pBuffer);
 #endif
 
 	HPI_DEBUG_LOG0(ERROR, "adapter_probe failed\n");
+#if HPIMOD_PCI_ENABLE_DEV
+	pci_disable_device(pci_dev);
+#endif
 	return -ENODEV;
 }
 
@@ -565,7 +576,7 @@ static void __devexit adapter_remove(struct pci_dev *pci_dev)
 		}
 	}
 
-#if (COPY_TO_LOCAL)
+#if (HPIMOD_COPY_TO_LOCAL)
 	if (pa->pBuffer)
 		vfree(pa->pBuffer);
 #endif
@@ -575,7 +586,10 @@ static void __devexit adapter_remove(struct pci_dev *pci_dev)
 	       "PCI device (%04x:%04x,%04x:%04x,%04x), HPI index # %d, removed.\n",
 	       pci_dev->vendor, pci_dev->device, pci_dev->subsystem_vendor,
 	       pci_dev->subsystem_device, pci_dev->devfn, pa->wAdapterIndex);
-
+#if HPIMOD_PCI_ENABLE_DEV
+	pci_release_regions(pci_dev);
+	pci_disable_device(pci_dev);
+#endif
 }
 
 // Module device table expects ints not pointers
@@ -583,6 +597,7 @@ static void __devexit adapter_remove(struct pci_dev *pci_dev)
 #define HPI_4000 0x4000
 #define HPI_6000 0x6000
 #define HPI_6205 0x6205
+#define HPI_COMMON 0
 static struct pci_device_id asihpi_pci_tbl[] = {
 #include "hpipcida.h"
 };
@@ -633,7 +648,8 @@ static int __init hpimod_init(void)
 	/* HPI_DebugLevelSet(debug); now set directly as module param */
 	printk(KERN_INFO "ASIHPI driver %s debug=%d ",
 	       __stringify(DRIVER_VERSION), hpiDebugLevel);
-	printk("Spinlock on=%d Local copy=%d\n", USE_SPINLOCK, COPY_TO_LOCAL);
+	printk("Spinlock on=%d Local copy=%d\n", USE_SPINLOCK,
+	       HPIMOD_COPY_TO_LOCAL);
 	HPI_SubSysGetVersionEx(NULL, &dwVersion);
 	printk(KERN_INFO "SubSys Version=%d.%02d.%02d\n",
 	       HPI_VER_MAJOR(dwVersion),

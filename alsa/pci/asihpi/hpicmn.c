@@ -20,11 +20,13 @@ Common functions used by hpixxxx.c modules
 
 (C) Copyright AudioScience Inc. 1998-2003
 *******************************************************************************/
-
+#define SOURCEFILE_NAME "hpicmn.c"
 #include "hpi.h"
 #include "hpidebug.h"
 #include "hpicmn.h"
 #include "hpicheck.h"
+
+static HPI_ADAPTERS_LIST adapters;
 
 /**
 * Given an HPI Message that was sent out and a response that was received, validate
@@ -42,13 +44,40 @@ u16 HpiValidateResponse(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 	return wError;
 }
 
+u16 AddAdapter(HPI_ADAPTER_OBJ * pao)
+{
+	u16 retval = 0;
+//HPI_ASSERT(pao->wAdapterType);
+
+	HpiOs_Alistlock_Lock(&adapters, 0);
+
+	if (adapters.adapter[pao->wIndex].wAdapterType != 0) {
+		retval = HPI_DUPLICATE_ADAPTER_NUMBER;
+	} else {
+		adapters.adapter[pao->wIndex] = *pao;
+		HpiOs_Dsplock_Init(&adapters.adapter[pao->wIndex]);
+		adapters.gwNumAdapters++;	// inc the number of adapters
+	}
+
+	HpiOs_Alistlock_UnLock(&adapters, 0);
+	return retval;
+}
+
+void DeleteAdapter(HPI_ADAPTER_OBJ * pao)
+{
+	memset(pao, 0, sizeof(HPI_ADAPTER_OBJ));
+
+	HpiOs_Alistlock_Lock(&adapters, 0);
+	adapters.gwNumAdapters--;	// dec the number of adapters
+	HpiOs_Alistlock_UnLock(&adapters, 0);
+}
+
 /**
 * FindAdapter returns a pointer to the HPI_ADAPTER_OBJ with index wAdapterIndex
 * in an HPI_ADAPTERS_LIST structure.
 *
 **/
-HPI_ADAPTER_OBJ *FindAdapter(HPI_ADAPTERS_LIST * adaptersList,
-			     u16 wAdapterIndex)
+HPI_ADAPTER_OBJ *FindAdapter(u16 wAdapterIndex)
 {
 	HPI_ADAPTER_OBJ *pao = NULL;
 
@@ -58,7 +87,7 @@ HPI_ADAPTER_OBJ *FindAdapter(HPI_ADAPTERS_LIST * adaptersList,
 		return NULL;
 	}
 
-	pao = &adaptersList->adapter[wAdapterIndex];
+	pao = &adapters.adapter[wAdapterIndex];
 	if (pao->wAdapterType != 0) {
 		HPI_DEBUG_LOG1(VERBOSE, "Found adapter index %d\n",
 			       wAdapterIndex);
@@ -74,9 +103,9 @@ HPI_ADAPTER_OBJ *FindAdapter(HPI_ADAPTERS_LIST * adaptersList,
 * wipe an HPI_ADAPTERS_LIST structure.
 *
 **/
-void WipeAdapterList(HPI_ADAPTERS_LIST * adaptersList)
+void WipeAdapterList(void)
 {
-	memset(adaptersList, 0, sizeof(HPI_ADAPTERS_LIST));
+	memset(&adapters, 0, sizeof(HPI_ADAPTERS_LIST));
 }
 
 /**
@@ -85,7 +114,7 @@ void WipeAdapterList(HPI_ADAPTERS_LIST * adaptersList)
 * adapters in the given HPI_ADAPTERS_LIST.
 *
 **/
-void SubSysGetAdapters(HPI_ADAPTERS_LIST * adaptersList, HPI_RESPONSE * phr)
+void SubSysGetAdapters(HPI_RESPONSE * phr)
 {
 // fill in the response adapter array with the position
 // identified by the adapter number/index of the adapters in
@@ -107,8 +136,8 @@ void SubSysGetAdapters(HPI_ADAPTERS_LIST * adaptersList, HPI_RESPONSE * phr)
 
 // for each adapter, place it's type in the position of the array
 // corresponding to it's adapter number
-	for (i = 0; i < adaptersList->gwNumAdapters; i++) {
-		pao = &adaptersList->adapter[i];
+	for (i = 0; i < adapters.gwNumAdapters; i++) {
+		pao = &adapters.adapter[i];
 		if (phr->u.s.awAdapterList[pao->wIndex] != 0) {
 			phr->wError = HPI_DUPLICATE_ADAPTER_NUMBER;
 			return;
@@ -117,7 +146,7 @@ void SubSysGetAdapters(HPI_ADAPTERS_LIST * adaptersList, HPI_RESPONSE * phr)
 	}
 
 // add the number of adapters recognised by this HPI to the system total
-	phr->u.s.wNumAdapters += adaptersList->gwNumAdapters;
+	phr->u.s.wNumAdapters = adapters.gwNumAdapters;
 	phr->wError = 0;	// the function completed OK;
 }
 
@@ -186,13 +215,13 @@ short CheckControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 	case HPI_CONTROL_AESEBU_RECEIVER:
 		if (phm->u.c.wAttribute == HPI_AESEBU_ERRORSTATUS)
 			phr->u.c.dwParam1 = pC->u.aes3rx.dwErrorStatus;
-		else if (phm->u.c.wAttribute == HPI_AESEBU_SOURCE)
+		else if (phm->u.c.wAttribute == HPI_AESEBU_FORMAT)
 			phr->u.c.dwParam1 = pC->u.aes3rx.dwSource;
 		else
 			found = 0;	// signal that message was not cached
 		break;
 	case HPI_CONTROL_AESEBU_TRANSMITTER:
-		if (phm->u.c.wAttribute == HPI_AESEBU_SOURCE)
+		if (phm->u.c.wAttribute == HPI_AESEBU_FORMAT)
 			phr->u.c.dwParam1 = pC->u.aes3tx.dwFormat;
 		else
 			found = 0;	// signal that message was not cached
@@ -229,9 +258,10 @@ short CheckControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 		found = 0;	// signal that message was not cached
 		break;
 	}
-	HPI_PRINT_DEBUG("Adap %d, Control %d, Control type %d, Cached %d",
-			phm->wAdapterIndex,
-			pC->ControlIndex, pC->ControlIndex, found);
+	HPI_DEBUG_LOG4(VERBOSE,
+		       "Adap %d, Control %d, Control type %d, Cached %d",
+		       phm->wAdapterIndex, pC->ControlIndex, pC->ControlIndex,
+		       found);
 	return found;
 }
 
@@ -272,11 +302,11 @@ void SyncControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 		}
 		break;
 	case HPI_CONTROL_AESEBU_TRANSMITTER:
-		if (phm->u.c.wAttribute == HPI_AESEBU_SOURCE)
+		if (phm->u.c.wAttribute == HPI_AESEBU_FORMAT)
 			pC->u.aes3tx.dwFormat = phm->u.c.dwParam1;
 		break;
 	case HPI_CONTROL_AESEBU_RECEIVER:
-		if (phm->u.c.wAttribute == HPI_AESEBU_SOURCE)
+		if (phm->u.c.wAttribute == HPI_AESEBU_FORMAT)
 			pC->u.aes3rx.dwSource = phm->u.c.dwParam1;
 	case HPI_CONTROL_SAMPLECLOCK:
 		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
@@ -293,6 +323,50 @@ void SyncControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 			pC->u.clk.dwSampleRate = phm->u.c.dwParam1;
 		break;
 	default:
+		break;
+	}
+}
+
+static void SubSysMessage(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
+{
+
+	switch (phm->wFunction) {
+	case HPI_SUBSYS_OPEN:
+	case HPI_SUBSYS_CLOSE:
+	case HPI_SUBSYS_DRIVER_UNLOAD:
+		phr->wError = 0;
+		break;
+	case HPI_SUBSYS_DRIVER_LOAD:
+		WipeAdapterList();
+		HpiOs_Alistlock_Init(&adapters);
+		phr->wError = 0;
+		break;
+	case HPI_SUBSYS_GET_INFO:
+		SubSysGetAdapters(phr);
+		break;
+	case HPI_SUBSYS_CREATE_ADAPTER:
+	case HPI_SUBSYS_DELETE_ADAPTER:
+		phr->wError = 0;
+		break;
+	default:
+		phr->wError = HPI_ERROR_INVALID_FUNC;
+		break;
+	}
+}
+
+void HPI_COMMON(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
+{
+	switch (phm->wType) {
+	case HPI_TYPE_MESSAGE:
+		switch (phm->wObject) {
+		case HPI_OBJ_SUBSYSTEM:
+			SubSysMessage(phm, phr);
+			break;
+		}
+		break;
+
+	default:
+		phr->wError = HPI_ERROR_INVALID_TYPE;
 		break;
 	}
 }

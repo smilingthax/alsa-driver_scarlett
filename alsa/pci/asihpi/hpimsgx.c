@@ -20,6 +20,7 @@ Extended Message Function With Response Cacheing
 
 (C) Copyright AudioScience Inc. 2002
 *****************************************************************************/
+#define SOURCEFILE_NAME "hpimsgx.c"
 #include "hpi.h"
 #include "hpimsgx.h"
 #include "hpidebug.h"
@@ -30,16 +31,10 @@ static HPI_PCI_DEVICE_ID pci_dev_tbl[] = {
 #include "hpipcida.h"
 };
 
-#ifdef HPI_SUPPORT_SSX2
-#include "hpissx2.h"
-#else
 #define HPI_PreMessageSsx2(phm,phr,hOwner) (0)
 #define HPI_PostMessageSsx2(phm,phr,hOwner)
-#endif
 
-#ifdef HPI_LOCKING
 static HPIOS_SPINLOCK msgxLock;
-#endif
 
 typedef HPI_HandlerFunc *HPI_ENTRY_POINT;
 
@@ -116,9 +111,6 @@ static void HPIMSGX_Reset(u16 wAdapterIndex);
 static u16 HPIMSGX_Init(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
 static void HPIMSGX_Cleanup(u16 wAdapterIndex, void *hOwner);
 
-static u16 AdapterPrepare(u16 wFoundAdapter, u16 isPnP);
-static void SubSysFindAdapters(HPI_RESPONSE * phr);
-
 #ifndef DISABLE_PRAGMA_PACK1
 #pragma pack(push,1)
 #endif
@@ -190,16 +182,16 @@ static void SubSysMessage(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 				 0);
 		phr->u.s.dwVersion = HPI_VER >> 8;	// return major.minor
 		phr->u.s.dwData = HPI_VER;	// return major.minor.release
-		return;
+		break;
 	case HPI_SUBSYS_OPEN:
 //do not propagate the message down the chain
 		HPI_InitResponse(phr, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_OPEN, 0);
-		return;
+		break;
 	case HPI_SUBSYS_CLOSE:
 //do not propagate the message down the chain
 		HPI_InitResponse(phr, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CLOSE, 0);
 		HPIMSGX_Cleanup(HPIMSGX_ALLADAPTERS, hOwner);
-		return;
+		break;
 	case HPI_SUBSYS_DRIVER_LOAD:
 // Initialize this module's internal state
 		HpiOs_Msgxlock_Init(&msgxLock);
@@ -226,7 +218,7 @@ static void SubSysMessage(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 		}
 		HPI_InitResponse(phr, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DRIVER_LOAD,
 				 0);
-		return;
+		break;
 	case HPI_SUBSYS_DRIVER_UNLOAD:
 // loop over all available HPIs passing the relevant message
 // NOTE: we do it blindly because we don't know which cards are available at this stage
@@ -251,15 +243,12 @@ static void SubSysMessage(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 				 HPI_SUBSYS_DRIVER_UNLOAD, 0);
 		return;
 	case HPI_SUBSYS_FIND_ADAPTERS:
-		if (!gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters)
-			HPIMSGX_Init(NULL, phr);
-		else
-			memcpy(phr, &gRESP_HPI_SUBSYS_FIND_ADAPTERS,
-			       sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS));
-		return;
+		memcpy(phr, &gRESP_HPI_SUBSYS_FIND_ADAPTERS,
+		       sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS));
+		break;
 	case HPI_SUBSYS_CREATE_ADAPTER:
 		HPIMSGX_Init(phm, phr);
-		return;
+		break;
 	case HPI_SUBSYS_DELETE_ADAPTER:
 		HPIMSGX_Cleanup(phm->wAdapterIndex, hOwner);
 		{
@@ -471,7 +460,6 @@ static void InStreamOpen(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 	if (aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 	    nOpenFlag) {
 		phr->wError = HPI_ERROR_OBJ_ALREADY_OPEN;
-		goto exit;
 	} else
 	    if (aRESP_HPI_ISTREAM_OPEN[phm->wAdapterIndex]
 		[phm->u.d.wStreamIndex].h.wError) {
@@ -479,7 +467,6 @@ static void InStreamOpen(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 		       &aRESP_HPI_ISTREAM_OPEN[phm->wAdapterIndex][phm->u.d.
 								   wStreamIndex],
 		       sizeof(aRESP_HPI_ISTREAM_OPEN[0][0]));
-		goto exit;
 	} else {
 		aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 		    nOpenFlag = 1;
@@ -510,8 +497,6 @@ static void InStreamOpen(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 			       sizeof(aRESP_HPI_ISTREAM_OPEN[0][0]));
 		}
 	}
-
-      exit:
 	HpiOs_Msgxlock_UnLock(&msgxLock, &flags);
 }
 
@@ -529,6 +514,8 @@ static void InStreamClose(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 	if (hOwner ==
 	    aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 	    hOwner) {
+/* HPI_DEBUG_LOG3(INFO,"closing adapter %d instream %d owned by %p\n", 
+phm->wAdapterIndex, phm->u.d.wStreamIndex, hOwner); */
 		aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 		    hOwner = NULL;
 		HpiOs_Msgxlock_UnLock(&msgxLock, &flags);
@@ -551,9 +538,10 @@ static void InStreamClose(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 			    hOwner = NULL;
 		}
 	} else {
-		HPI_DEBUG_LOG2(WARNING,
-			       "%p trying to close instream owned by %p\n",
-			       hOwner,
+		HPI_DEBUG_LOG4(WARNING,
+			       "%p trying to close %d instream %d owned by %p\n",
+			       hOwner, phm->wAdapterIndex,
+			       phm->u.d.wStreamIndex,
 			       aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.
 								    wStreamIndex].
 			       hOwner);
@@ -576,7 +564,6 @@ static void OutStreamOpen(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 	if (aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 	    nOpenFlag) {
 		phr->wError = HPI_ERROR_OBJ_ALREADY_OPEN;
-		goto exit;
 	} else
 	    if (aRESP_HPI_OSTREAM_OPEN[phm->wAdapterIndex]
 		[phm->u.d.wStreamIndex].h.wError) {
@@ -584,7 +571,6 @@ static void OutStreamOpen(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 		       &aRESP_HPI_OSTREAM_OPEN[phm->wAdapterIndex][phm->u.d.
 								   wStreamIndex],
 		       sizeof(aRESP_HPI_OSTREAM_OPEN[0][0]));
-		goto exit;
 	} else {
 		aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 		    nOpenFlag = 1;
@@ -615,8 +601,6 @@ static void OutStreamOpen(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 			       sizeof(aRESP_HPI_OSTREAM_OPEN[0][0]));
 		}
 	}
-
-      exit:
 	HpiOs_Msgxlock_UnLock(&msgxLock, &flags);
 }
 
@@ -634,6 +618,8 @@ static void OutStreamClose(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 	if (hOwner ==
 	    aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 	    hOwner) {
+/* HPI_DEBUG_LOG3(INFO,"closing adapter %d outstream %d owned by %p\n", 
+phm->wAdapterIndex, phm->u.d.wStreamIndex, hOwner); */
 		aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 		    hOwner = NULL;
 		HpiOs_Msgxlock_UnLock(&msgxLock, &flags);
@@ -656,9 +642,10 @@ static void OutStreamClose(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 			    hOwner = NULL;
 		}
 	} else {
-		HPI_DEBUG_LOG2(WARNING,
-			       "%p trying to close outstream owned by %p\n",
-			       hOwner,
+		HPI_DEBUG_LOG4(WARNING,
+			       "%p trying to close %d outstream %d owned by %p\n",
+			       hOwner, phm->wAdapterIndex,
+			       phm->u.d.wStreamIndex,
 			       aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.
 								    wStreamIndex].
 			       hOwner);
@@ -667,178 +654,77 @@ static void OutStreamClose(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 	HpiOs_Msgxlock_UnLock(&msgxLock, &flags);
 }
 
-static u16 AdapterPrepare(u16 wFoundAdapter, u16 isPnP)
+static u16 AdapterPrepare(u16 wAdapter)
 {
-	u16 wAdapter;
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
 
 // Open the adapter and streams
-	for (wAdapter = (isPnP ? wFoundAdapter : 0);
-	     wAdapter < HPI_MAX_ADAPTERS; wAdapter++) {
-		u16 i;
-
-		if (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.awAdapterList[wAdapter] ==
-		    0 && !isPnP)
-			continue;
+	u16 i;
 
 // call to HPI_ADAPTER_OPEN
-		HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN);
-		hm.wAdapterIndex = wAdapter;
-		HW_EntryPoint(&hm, &hr);
-		memcpy(&aRESP_HPI_ADAPTER_OPEN[wAdapter], &hr,
-		       sizeof(aRESP_HPI_ADAPTER_OPEN[0]));
-		if (hr.wError) {
-			if (!isPnP)
-				continue;
-			else
-				return hr.wError;
-		}
+	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN);
+	hm.wAdapterIndex = wAdapter;
+	HW_EntryPoint(&hm, &hr);
+	memcpy(&aRESP_HPI_ADAPTER_OPEN[wAdapter], &hr,
+	       sizeof(aRESP_HPI_ADAPTER_OPEN[0]));
+	if (hr.wError) {
+		return hr.wError;
+	}
 // call to HPI_ADAPTER_GET_INFO
-		HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_INFO);
-		hm.wAdapterIndex = wAdapter;
-		HW_EntryPoint(&hm, &hr);
-		if (hr.wError) {
-			if (!isPnP)
-				continue;
-			else
-				return hr.wError;
-		}
+	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_INFO);
+	hm.wAdapterIndex = wAdapter;
+	HW_EntryPoint(&hm, &hr);
+	if (hr.wError) {
+		return hr.wError;
+	}
 
-		aADAPTER_INFO[wAdapter].wNumOutStreams = hr.u.a.wNumOStreams;
-		aADAPTER_INFO[wAdapter].wNumInStreams = hr.u.a.wNumIStreams;
-		aADAPTER_INFO[wAdapter].wType = hr.u.a.wAdapterType;
-		if (isPnP) {
-			gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.
-			    awAdapterList[wAdapter] = hr.u.a.wAdapterType;
-			gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters++;
-			if (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters >
-			    HPI_MAX_ADAPTERS)
-				gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters =
-				    HPI_MAX_ADAPTERS;
-		}
+	aADAPTER_INFO[wAdapter].wNumOutStreams = hr.u.a.wNumOStreams;
+	aADAPTER_INFO[wAdapter].wNumInStreams = hr.u.a.wNumIStreams;
+	aADAPTER_INFO[wAdapter].wType = hr.u.a.wAdapterType;
+
+	gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.awAdapterList[wAdapter] =
+	    hr.u.a.wAdapterType;
+	gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters++;
+	if (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters > HPI_MAX_ADAPTERS)
+		gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters =
+		    HPI_MAX_ADAPTERS;
+
 // call to HPI_OSTREAM_OPEN
-		for (i = 0; i < aADAPTER_INFO[wAdapter].wNumOutStreams; i++) {
-			HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_OPEN);
-			hm.wAdapterIndex = wAdapter;
-			hm.u.d.wStreamIndex = i;
-			HW_EntryPoint(&hm, &hr);
-			memcpy(&aRESP_HPI_OSTREAM_OPEN[wAdapter][i], &hr,
-			       sizeof(aRESP_HPI_OSTREAM_OPEN[0][0]));
-			aOStreamUserOpen[wAdapter][i].nOpenFlag = 0;
-			aOStreamUserOpen[wAdapter][i].hOwner = NULL;
-		}
+	for (i = 0; i < aADAPTER_INFO[wAdapter].wNumOutStreams; i++) {
+		HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_OPEN);
+		hm.wAdapterIndex = wAdapter;
+		hm.u.d.wStreamIndex = i;
+		HW_EntryPoint(&hm, &hr);
+		memcpy(&aRESP_HPI_OSTREAM_OPEN[wAdapter][i], &hr,
+		       sizeof(aRESP_HPI_OSTREAM_OPEN[0][0]));
+		aOStreamUserOpen[wAdapter][i].nOpenFlag = 0;
+		aOStreamUserOpen[wAdapter][i].hOwner = NULL;
+	}
 
 // call to HPI_ISTREAM_OPEN
-		for (i = 0; i < aADAPTER_INFO[wAdapter].wNumInStreams; i++) {
-			HPI_AdapterFindObject(NULL, wAdapter, HPI_OBJ_ISTREAM,
-					      i,
-					      &aIStreamUserOpen[wAdapter][i].
-					      wDspIndex);
-			HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_OPEN);
-			hm.wAdapterIndex = wAdapter;
-			hm.u.d.wStreamIndex = i;
-			hm.wDspIndex = aIStreamUserOpen[wAdapter][i].wDspIndex;
-			HW_EntryPoint(&hm, &hr);
-			memcpy(&aRESP_HPI_ISTREAM_OPEN[wAdapter][i], &hr,
-			       sizeof(aRESP_HPI_ISTREAM_OPEN[0][0]));
-			aIStreamUserOpen[wAdapter][i].nOpenFlag = 0;
-			aIStreamUserOpen[wAdapter][i].hOwner = NULL;
-		}
+	for (i = 0; i < aADAPTER_INFO[wAdapter].wNumInStreams; i++) {
+		HPI_AdapterFindObject(NULL, wAdapter, HPI_OBJ_ISTREAM, i,
+				      &aIStreamUserOpen[wAdapter][i].wDspIndex);
+		HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_OPEN);
+		hm.wAdapterIndex = wAdapter;
+		hm.u.d.wStreamIndex = i;
+		hm.wDspIndex = aIStreamUserOpen[wAdapter][i].wDspIndex;
+		HW_EntryPoint(&hm, &hr);
+		memcpy(&aRESP_HPI_ISTREAM_OPEN[wAdapter][i], &hr,
+		       sizeof(aRESP_HPI_ISTREAM_OPEN[0][0]));
+		aIStreamUserOpen[wAdapter][i].nOpenFlag = 0;
+		aIStreamUserOpen[wAdapter][i].hOwner = NULL;
+	}
 
 // call to HPI_MIXER_OPEN
-		HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_OPEN);
-		hm.wAdapterIndex = wAdapter;
-		HW_EntryPoint(&hm, &hr);
-		memcpy(&aRESP_HPI_MIXER_OPEN[wAdapter], &hr,
-		       sizeof(aRESP_HPI_MIXER_OPEN[0]));
+	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_OPEN);
+	hm.wAdapterIndex = wAdapter;
+	HW_EntryPoint(&hm, &hr);
+	memcpy(&aRESP_HPI_MIXER_OPEN[wAdapter], &hr,
+	       sizeof(aRESP_HPI_MIXER_OPEN[0]));
 
-		if (isPnP)
-			break;
-	}
 	return gRESP_HPI_SUBSYS_FIND_ADAPTERS.h.wError;
-}
-
-static void SubSysFindAdapters(HPI_RESPONSE * phr)
-{
-// Go out and try to find all adapters that belong to this
-// HPI, and initialise them
-//
-// For PCI bus adapters, use the PCI BIOS (or other OS functionality)
-// to find all the adapters that this HPI knows about.
-//
-// When an adapter is found, put it in the response adapter array
-// with the position identified by the adapter number/index of the
-// adapters in this HPI
-// i.e. if we have an ASI50xx with it's jumper set to
-// Adapter Number 2 then put an Adapter type ASI50xx in the
-// array in position 1
-// NOTE: AdapterNumber is 1..N, Index is 0..N-1
-//
-//
-
-	short i, nIndex = 0;
-	short nError = 0;
-	HPI_MESSAGE hm;
-	HPI_RESPONSE hr;
-	HPI_ENTRY_POINT entry_point_func;
-	HPI_PCI pciInfo;
-
-// Cycle through all the PCI bus slots looking for this adapters
-// vendor and device ID
-//
-
-	memset(&hr, 0, sizeof(hr));
-
-// Check each supported PCI device ID in turn.
-	for (i = 0; i < (sizeof(pci_dev_tbl) / sizeof(pci_dev_tbl[0])); i++) {
-		nIndex = 0;
-		while (!HpiPci_FindDeviceEx(&pciInfo,
-					    nIndex++,
-					    pci_dev_tbl[i].wVendorId,
-					    pci_dev_tbl[i].wDeviceId,
-					    pci_dev_tbl[i].wSubSysVendorId)
-		    ) {
-			HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM,
-					HPI_SUBSYS_CREATE_ADAPTER);
-			hm.u.s.Resource.wBusType = HPI_BUS_PCI;
-			hm.u.s.Resource.r.Pci = &pciInfo;
-			entry_point_func =
-			    (HPI_ENTRY_POINT) pci_dev_tbl[i].drvData;
-
-			entry_point_func(&hm, &hr);
-
-// create the adapter object based on the resource information inside Adap.PCI
-			if (hr.wError) {
-				phr->wError = nError;
-				HPI_DEBUG_LOG1(ERROR,
-					       "%d from CreateAdapterObj\n",
-					       nError);
-				continue;
-			}
-// add to adapter list - but don't allow two adapters of same number!
-			if (phr->u.s.awAdapterList[hr.u.s.wAdapterIndex] != 0) {
-				phr->wError = HPI_DUPLICATE_ADAPTER_NUMBER;
-				HPI_DEBUG_LOG3(ERROR,
-					       "Existing ASI%4x index %d, can't add this ASI%4x\n",
-					       phr->u.s.awAdapterList[hr.u.s.
-								      wAdapterIndex],
-					       hr.u.s.wAdapterIndex,
-					       hr.u.s.awAdapterList[hr.u.s.
-								    wAdapterIndex]);
-				continue;
-			}
-
-			hpi_entry_points[hr.u.s.wAdapterIndex] =
-			    entry_point_func;
-
-			phr->u.s.awAdapterList[hr.u.s.wAdapterIndex] =
-			    hr.u.s.awAdapterList[hr.u.s.wAdapterIndex];
-			phr->u.s.wNumAdapters++;
-		}
-	}
-
-	phr->wError = 0;
 }
 
 static void HPIMSGX_Reset(u16 wAdapterIndex)
@@ -910,64 +796,37 @@ static u16 HPIMSGX_Init(HPI_MESSAGE * phm,	// HPI_SUBSYS_CREATE_ADAPTER structur
 {
 	HPI_ENTRY_POINT entry_point_func;
 	HPI_RESPONSE hr;
-	u16 isPnP;
 
-	if (phm)		// If PnP OS finds an adapter and add it
-	{
-		isPnP = TRUE;
-
-		if (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters >=
-		    HPI_MAX_ADAPTERS)
-			return HPI_ERROR_BAD_ADAPTER_NUMBER;
+	if (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters >= HPI_MAX_ADAPTERS)
+		return HPI_ERROR_BAD_ADAPTER_NUMBER;
 
 // Init response here so we can pass in previous adapter list
-		HPI_InitResponse(&hr, phm->wObject, phm->wFunction,
-				 HPI_ERROR_INVALID_OBJ);
-		memcpy(hr.u.s.awAdapterList,
-		       gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.awAdapterList,
-		       sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.awAdapterList));
+	HPI_InitResponse(&hr, phm->wObject, phm->wFunction,
+			 HPI_ERROR_INVALID_OBJ);
+	memcpy(hr.u.s.awAdapterList,
+	       gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.awAdapterList,
+	       sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.awAdapterList));
 
-		entry_point_func =
-		    HPI_LookupEntryPointFunction(phm->u.s.Resource.r.Pci);
+	entry_point_func =
+	    HPI_LookupEntryPointFunction(phm->u.s.Resource.r.Pci);
 
-		if (entry_point_func) {
-			HPI_DEBUG_MESSAGE(phm);
-			entry_point_func(phm, &hr);
-		} else {
-			phr->wError = HPI_ERROR_PROCESSING_MESSAGE;
-			return phr->wError;
-		}
-// if the adapter was created succesfully save the mapping for future use
-		if (hr.wError == 0) {
-			hpi_entry_points[hr.u.s.wAdapterIndex] =
-			    entry_point_func;
-// prepare adapter (pre-open streams etc.)
-			HPI_DEBUG_LOG0(DEBUG,
-				       "HPI_SUBSYS_CREATE_ADAPTER successful, preparing adapter\n");
-			AdapterPrepare(hr.u.s.wAdapterIndex, TRUE);
-		}
-		memcpy(phr, &hr, hr.wSize);
+	if (entry_point_func) {
+		HPI_DEBUG_MESSAGE(phm);
+		entry_point_func(phm, &hr);
+	} else {
+		phr->wError = HPI_ERROR_PROCESSING_MESSAGE;
 		return phr->wError;
-	} else			// Else we need to find all adapters
-	{
-		isPnP = FALSE;
-
-// call to HPI_SUBSYS_FIND_ADAPTERS
-		SubSysFindAdapters(&hr);
-		memcpy(&gRESP_HPI_SUBSYS_FIND_ADAPTERS, &hr,
-		       sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS));
-
-		if ((hr.wError) && (hr.u.s.wNumAdapters == 0))
-			return hr.wError;
-
-		if (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters >
-		    HPI_MAX_ADAPTERS)
-			gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters =
-			    HPI_MAX_ADAPTERS;
-
-// DXB: if the OS is not pnp, phr doesn't get updated, the original function did the same.
-		return AdapterPrepare(0, isPnP);
 	}
+// if the adapter was created succesfully save the mapping for future use
+	if (hr.wError == 0) {
+		hpi_entry_points[hr.u.s.wAdapterIndex] = entry_point_func;
+// prepare adapter (pre-open streams etc.)
+		HPI_DEBUG_LOG0(DEBUG,
+			       "HPI_SUBSYS_CREATE_ADAPTER successful, preparing adapter\n");
+		AdapterPrepare(hr.u.s.wAdapterIndex);
+	}
+	memcpy(phr, &hr, hr.wSize);
+	return phr->wError;
 }
 
 static void HPIMSGX_Cleanup(u16 wAdapterIndex, void *hOwner)

@@ -24,20 +24,13 @@ Array initializer for PCI card IDs
 //NOTE: when adding new lines to this header file they MUST be grouped by HPI entry point.
 //      (see how we propagate DRIVER_(UN)LOAD messages in hpimsgx.c)
 
-#if ( defined ( HPI_INCLUDE_5000 ) + defined ( HPI_INCLUDE_6400 ) + defined ( HPI_INCLUDE_6600 ) + defined ( HPI_INCLUDE_8700 ) )
 {
 HPI_PCI_VENDOR_ID_TI, HPI_ADAPTER_DSP6205,
 	    HPI_PCI_VENDOR_ID_AUDIOSCIENCE, PCI_ANY_ID, 0, 0, HPI_6205}
-,
-#endif
-#if ( defined ( HPI_INCLUDE_6000 ) + defined ( HPI_INCLUDE_8800 ) + defined ( HPI_INCLUDE_8600 ) )
-{
+, {
 HPI_PCI_VENDOR_ID_TI, HPI_ADAPTER_PCI2040,
 	    HPI_PCI_VENDOR_ID_AUDIOSCIENCE, PCI_ANY_ID, 0, 0, HPI_6000}
-,
-#endif
-#if ( defined ( HPI_INCLUDE_4100 ) + defined ( HPI_INCLUDE_4300 ) + defined ( HPI_INCLUDE_4400 ) + defined ( HPI_INCLUDE_4500 ) + defined ( HPI_INCLUDE_4600 ) )
-{
+, {
 HPI_PCI_VENDOR_ID_MOTOROLA, HPI_ADAPTER_DSP56301,
 	    HPI_PCI_VENDOR_ID_AUDIOSCIENCE, PCI_ANY_ID, 0, 0, HPI_4000}
 ,
@@ -50,9 +43,10 @@ HPI_PCI_VENDOR_ID_MOTOROLA, HPI_ADAPTER_DSP56301, 0x12CF, PCI_ANY_ID, 0,
 {
 HPI_PCI_VENDOR_ID_MOTOROLA, HPI_ADAPTER_DSP56301, 0, PCI_ANY_ID, 0, 0,
 	    HPI_4000}
-,
-#endif
-{
+, {
+1, 0, 0, 0, 0, 0, HPI_COMMON}
+
+, {
 0,}
 
 ///////////////////////////////////////////////////////////////////////////

@@ -23,6 +23,7 @@ DSP with on-chip PCI I/F.
 Exported functions:
 void HPI_4000( HPI_MESSAGE *phm, HPI_RESPONSE *phr )
 ******************************************************************************/
+#define SOURCEFILE_NAME "hpi4000.c"
 #include "hpi.h"
 #include "hpidebug.h"		// for debug
 #include "hpicmn.h"
@@ -38,19 +39,14 @@ typedef struct {
 
 ////////////////////////////////////////////////////////////////////////////
 // local prototypes
-static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
-				HPI_MESSAGE * phm, HPI_RESPONSE * phr);
-static void SubSysDeleteAdapter(HPI_ADAPTERS_LIST * adaptersList,
-				HPI_MESSAGE * phm, HPI_RESPONSE * phr);
+static void SubSysCreateAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
+static void SubSysDeleteAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
 static inline void HW_Message(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 			      HPI_RESPONSE * phr);
 static short CreateAdapterObj(HPI_ADAPTER_OBJ * pao, u32 * pdwOsErrorCode);
 
 ////////////////////////////////////////////////////////////////////////////
 // local globals
-
-static HPI_ADAPTERS_LIST adapters;
-
 static inline void HW_Message(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 			      HPI_RESPONSE * phr)
 {
@@ -61,31 +57,27 @@ static inline void HW_Message(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 	HpiOs_Dsplock_UnLock(pao, &flags);
 }
 
-static void SubSysMessage(HPI_ADAPTERS_LIST * adaptersList, HPI_MESSAGE * phm,
-			  HPI_RESPONSE * phr)
+static void SubSysMessage(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
 
 	switch (phm->wFunction) {
 	case HPI_SUBSYS_OPEN:
 	case HPI_SUBSYS_CLOSE:
 	case HPI_SUBSYS_DRIVER_UNLOAD:
-		phr->wError = 0;
-		break;
 	case HPI_SUBSYS_DRIVER_LOAD:
-		WipeAdapterList(adaptersList);
 		phr->wError = 0;
 		break;
 	case HPI_SUBSYS_GET_INFO:
-		SubSysGetAdapters(adaptersList, phr);
+		HPI_COMMON(phm, phr);
 		break;
 	case HPI_SUBSYS_FIND_ADAPTERS:
 		phr->wError = HPI_ERROR_INVALID_FUNC;
 		break;
 	case HPI_SUBSYS_CREATE_ADAPTER:
-		SubSysCreateAdapter(adaptersList, phm, phr);
+		SubSysCreateAdapter(phm, phr);
 		break;
 	case HPI_SUBSYS_DELETE_ADAPTER:
-		SubSysDeleteAdapter(adaptersList, phm, phr);
+		SubSysDeleteAdapter(phm, phr);
 		break;
 	default:
 		phr->wError = HPI_ERROR_INVALID_FUNC;
@@ -195,7 +187,7 @@ void HPI_4000(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 
 // if Dsp has crashed then do not try and communicated with it any more
 	if (phm->wObject != HPI_OBJ_SUBSYSTEM) {
-		pao = FindAdapter(&adapters, phm->wAdapterIndex);
+		pao = FindAdapter(phm->wAdapterIndex);
 		if (!pao) {
 			HPI_DEBUG_LOG2(DEBUG,
 				       " %d,%d refused, for another HPI?\n",
@@ -221,7 +213,7 @@ void HPI_4000(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 	case HPI_TYPE_MESSAGE:
 		switch (phm->wObject) {
 		case HPI_OBJ_SUBSYSTEM:
-			SubSysMessage(&adapters, phm, phr);
+			SubSysMessage(phm, phr);
 			break;
 
 		case HPI_OBJ_ADAPTER:
@@ -262,8 +254,7 @@ void HPI_4000(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 // **** NOTE - you cannot use this function AND the FindAdapters function at the
 // same time, the application must use only one of them to get the adapters ******
 
-static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
-				HPI_MESSAGE * phm, HPI_RESPONSE * phr)
+static void SubSysCreateAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
 	HPI_ADAPTER_OBJ ao;	// create temp adapter obj, because we don't know what index yet
 	u32 dwOsErrorCode;
@@ -287,43 +278,33 @@ static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
 	((HPI_HW_OBJ *) ao.priv)->hpi56301info.pMemBase = ao.Pci.apMemBase[0];
 
 	nError = CreateAdapterObj(&ao, &dwOsErrorCode);
+	if (!nError)
+		nError = AddAdapter(&ao);
 	if (nError) {
 		phr->u.s.dwData = dwOsErrorCode;	// OS error, if any, is in dwOsErrorCode
 		HpiOs_MemFree(ao.priv);
 		phr->wError = nError;
 		return;
 	}
-// add to adapter list - but don't allow two adapters of same number!
-	if (phr->u.s.awAdapterList[ao.wIndex] != 0) {
-		HpiOs_MemFree(ao.priv);
-		phr->wError = HPI_DUPLICATE_ADAPTER_NUMBER;
-		return;
-	}
-//? memcpy( &adaptersList->adapter[ ao.wIndex ], &ao, sizeof(HPI_ADAPTER_OBJ));
-	adaptersList->adapter[ao.wIndex] = ao;
 
-	HpiOs_Dsplock_Init(&adaptersList->adapter[ao.wIndex]);
-
-	adaptersList->gwNumAdapters++;	// inc the number of adapters known by this HPI
 	phr->u.s.awAdapterList[ao.wIndex] = ao.wAdapterType;
 	phr->u.s.wAdapterIndex = ao.wIndex;
 	phr->u.s.wNumAdapters++;	// add the number of adapters recognised by this HPI to the system total
 	phr->wError = 0;	// the function completed OK;
 }
 
-static void SubSysDeleteAdapter(HPI_ADAPTERS_LIST * adaptersList,
-				HPI_MESSAGE * phm, HPI_RESPONSE * phr)
+static void SubSysDeleteAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
 	HPI_ADAPTER_OBJ *pao = NULL;
+	void *priv;
 
-	pao = FindAdapter(adaptersList, phm->wAdapterIndex);
+	pao = FindAdapter(phm->wAdapterIndex);
 	if (!pao)
 		return;		// message probably meant for another HPI module
 
-	adaptersList->gwNumAdapters--;
-	HpiOs_MemFree(pao->priv);
-	memset(pao, 0, sizeof(HPI_ADAPTER_OBJ));
-
+	priv = pao->priv;
+	DeleteAdapter(pao);
+	HpiOs_MemFree(priv);
 	phr->wError = 0;
 }
 
@@ -334,11 +315,6 @@ static short CreateAdapterObj(HPI_ADAPTER_OBJ * pao, u32 * pdwOsErrorCode)
 	short nBootError = 0;
 
 	pao->wOpen = 0;
-
-// turn on the adapters memory address decoding (in PCI config space)
-// also enable parity error responses and bus mastering
-	HpiPci_WriteConfig(&pao->Pci, HPIPCI_CCMR,
-			   HPIPCI_CCMR_MSE | HPIPCI_CCMR_PERR | HPIPCI_CCMR_BM);
 
 // Is it really a 301 chip?
 	if (Hpi56301_CheckAdapterPresent
