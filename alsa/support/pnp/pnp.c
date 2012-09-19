@@ -155,7 +155,7 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 	struct pnp_dev *dev;
 	struct pnp_card_driver_instance *ninst = NULL;
 	
-	for (cid = drv->id_table; cid->id; cid++) {
+	for (cid = drv->id_table; cid->id[0] != '\0'; cid++) {
 	      __next_card:
 		card = NULL;
 		do {
