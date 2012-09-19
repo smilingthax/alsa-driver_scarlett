@@ -121,7 +121,7 @@ static int sdp4430_twl6040_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_codec *codec = rtd->codec;
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
-	int ret;
+	int ret, hs_trim;
 
 	/* Add SDP4430 specific widgets */
 	ret = snd_soc_dapm_new_controls(dapm, sdp4430_twl6040_dapm_widgets,
@@ -143,6 +143,14 @@ static int sdp4430_twl6040_init(struct snd_soc_pcm_runtime *rtd)
 	ret = snd_soc_dapm_sync(dapm);
 	if (ret)
 		return ret;
+
+	/*
+	 * Configure McPDM offset cancellation based on the HSOTRIM value from
+	 * twl6040.
+	 */
+	hs_trim = twl6040_get_trim_value(codec, TWL6040_TRIM_HSOTRIM);
+	omap_mcpdm_configure_dn_offsets(rtd, TWL6040_HSF_TRIM_LEFT(hs_trim),
+					TWL6040_HSF_TRIM_RIGHT(hs_trim));
 
 	/* Headset jack detection */
 	ret = snd_soc_jack_new(codec, "Headset Jack",
@@ -166,7 +174,7 @@ static struct snd_soc_dai_link sdp4430_dai = {
 	.name = "TWL6040",
 	.stream_name = "TWL6040",
 	.cpu_dai_name = "omap-mcpdm",
-	.codec_dai_name = "twl6040-hifi",
+	.codec_dai_name = "twl6040-legacy",
 	.platform_name = "omap-pcm-audio",
 	.codec_name = "twl6040-codec",
 	.init = sdp4430_twl6040_init,

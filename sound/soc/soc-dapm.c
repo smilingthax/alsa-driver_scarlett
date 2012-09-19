@@ -677,6 +677,8 @@ static int is_connected_output_ep(struct snd_soc_dapm_widget *widget)
 	}
 
 	list_for_each_entry(path, &widget->sinks, list_source) {
+		DAPM_UPDATE_STAT(widget, neighbour_checks);
+
 		if (path->weak)
 			continue;
 
@@ -732,6 +734,8 @@ static int is_connected_input_ep(struct snd_soc_dapm_widget *widget)
 	}
 
 	list_for_each_entry(path, &widget->sources, list_sink) {
+		DAPM_UPDATE_STAT(widget, neighbour_checks);
+
 		if (path->weak)
 			continue;
 
@@ -1315,13 +1319,16 @@ static int dapm_power_widgets(struct snd_soc_dapm_context *dapm, int event)
 		}
 	}
 
-	/* Force all contexts in the card to the same bias state */
+	/* Force all contexts in the card to the same bias state if
+	 * they're not ground referenced.
+	 */
 	bias = SND_SOC_BIAS_OFF;
 	list_for_each_entry(d, &card->dapm_list, list)
 		if (d->target_bias_level > bias)
 			bias = d->target_bias_level;
 	list_for_each_entry(d, &card->dapm_list, list)
-		d->target_bias_level = bias;
+		if (!d->idle_bias_off)
+			d->target_bias_level = bias;
 
 	trace_snd_soc_dapm_walk_done(card);
 
