@@ -743,6 +743,12 @@ AC97_SINGLE("Sigmatel Surround Playback Switch", AC97_HEADPHONE, 15, 1, 1),
 AC97_DOUBLE("Sigmatel Surround Playback Volume", AC97_HEADPHONE, 8, 0, 31, 1)
 };
 
+static const snd_kcontrol_new_t snd_ac97_sigmatel_4speaker =
+AC97_SINGLE("Sigmatel 4-Speaker Stereo Playback Switch", AC97_SIGMATEL_DAC2INVERT, 2, 1, 0);
+
+static const snd_kcontrol_new_t snd_ac97_sigmatel_phaseinvert =
+AC97_SINGLE("Sigmatel Surround Phase Inversion Playback Switch", AC97_SIGMATEL_DAC2INVERT, 3, 1, 0);
+
 static const snd_kcontrol_new_t snd_ac97_sigmatel_controls[] = {
 AC97_SINGLE("Sigmatel DAC 6dB Attenuate", AC97_SIGMATEL_ANALOG, 1, 1, 0),
 AC97_SINGLE("Sigmatel ADC 6dB Attenuate", AC97_SIGMATEL_ANALOG, 0, 1, 0)
@@ -1871,6 +1877,12 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 				return err;
 		if (snd_ac97_try_bit(ac97, AC97_SIGMATEL_ANALOG, 0))
 			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_sigmatel_controls[1], ac97))) < 0)
+				return err;
+		if (snd_ac97_try_bit(ac97, AC97_SIGMATEL_DAC2INVERT, 2))
+			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_sigmatel_4speaker, ac97))) < 0)
+				return err;
+		if (snd_ac97_try_bit(ac97, AC97_SIGMATEL_DAC2INVERT, 3))
+			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_sigmatel_phaseinvert, ac97))) < 0)
 				return err;
 		break;
 	case AC97_ID_ALC650:
