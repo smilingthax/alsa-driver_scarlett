@@ -6442,6 +6442,39 @@ static void alc882_auto_init_analog_input(struct hda_codec *codec)
 	}
 }
 
+static void alc882_auto_init_input_src(struct hda_codec *codec)
+{
+	struct alc_spec *spec = codec->spec;
+	const struct hda_input_mux *imux = spec->input_mux;
+	int c;
+
+	for (c = 0; c < spec->num_adc_nids; c++) {
+		hda_nid_t conn_list[HDA_MAX_NUM_INPUTS];
+		hda_nid_t nid = spec->capsrc_nids[c];
+		int conns, mute, idx, item;
+
+		conns = snd_hda_get_connections(codec, nid, conn_list,
+						ARRAY_SIZE(conn_list));
+		if (conns < 0)
+			continue;
+		for (idx = 0; idx < conns; idx++) {
+			/* if the current connection is the selected one,
+			 * unmute it as default - otherwise mute it
+			 */
+			mute = AMP_IN_MUTE(idx);
+			for (item = 0; item < imux->num_items; item++) {
+				if (imux->items[item].index == idx) {
+					if (spec->cur_mux[c] == item)
+						mute = AMP_IN_UNMUTE(idx);
+					break;
+				}
+			}
+			snd_hda_codec_write(codec, nid, 0,
+					    AC_VERB_SET_AMP_GAIN_MUTE, mute);
+		}
+	}
+}
+
 /* add mic boosts if needed */
 static int alc_auto_add_mic_boost(struct hda_codec *codec)
 {
@@ -6496,6 +6529,7 @@ static void alc882_auto_init(struct hda_codec *codec)
 	alc882_auto_init_multi_out(codec);
 	alc882_auto_init_hp_out(codec);
 	alc882_auto_init_analog_input(codec);
+	alc882_auto_init_input_src(codec);
 	if (spec->unsol_event)
 		alc_sku_automute(codec);
 }
@@ -8290,6 +8324,8 @@ static void alc883_auto_init_analog_input(struct hda_codec *codec)
 	}
 }
 
+#define alc883_auto_init_input_src	alc882_auto_init_input_src
+
 /* almost identical with ALC880 parser... */
 static int alc883_parse_auto_config(struct hda_codec *codec)
 {
@@ -8320,6 +8356,7 @@ static void alc883_auto_init(struct hda_codec *codec)
 	alc883_auto_init_multi_out(codec);
 	alc883_auto_init_hp_out(codec);
 	alc883_auto_init_analog_input(codec);
+	alc883_auto_init_input_src(codec);
 	if (spec->unsol_event)
 		alc_sku_automute(codec);
 }
@@ -9703,6 +9740,7 @@ static int alc262_parse_auto_config(struct hda_codec *codec)
 #define alc262_auto_init_multi_out	alc882_auto_init_multi_out
 #define alc262_auto_init_hp_out		alc882_auto_init_hp_out
 #define alc262_auto_init_analog_input	alc882_auto_init_analog_input
+#define alc262_auto_init_input_src	alc882_auto_init_input_src
 
 
 /* init callback for auto-configuration model -- overriding the default init */
@@ -9712,6 +9750,7 @@ static void alc262_auto_init(struct hda_codec *codec)
 	alc262_auto_init_multi_out(codec);
 	alc262_auto_init_hp_out(codec);
 	alc262_auto_init_analog_input(codec);
+	alc262_auto_init_input_src(codec);
 	if (spec->unsol_event)
 		alc_sku_automute(codec);
 }
@@ -13382,6 +13421,8 @@ static void alc861vd_auto_init_analog_input(struct hda_codec *codec)
 	}
 }
 
+#define alc861vd_auto_init_input_src	alc882_auto_init_input_src
+
 #define alc861vd_idx_to_mixer_vol(nid)		((nid) + 0x02)
 #define alc861vd_idx_to_mixer_switch(nid)	((nid) + 0x0c)
 
@@ -13564,6 +13605,7 @@ static void alc861vd_auto_init(struct hda_codec *codec)
 	alc861vd_auto_init_multi_out(codec);
 	alc861vd_auto_init_hp_out(codec);
 	alc861vd_auto_init_analog_input(codec);
+	alc861vd_auto_init_input_src(codec);
 	if (spec->unsol_event)
 		alc_sku_automute(codec);
 }
@@ -14729,6 +14771,8 @@ static void alc662_auto_init_analog_input(struct hda_codec *codec)
 	}
 }
 
+#define alc662_auto_init_input_src	alc882_auto_init_input_src
+
 static int alc662_parse_auto_config(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
@@ -14785,6 +14829,7 @@ static void alc662_auto_init(struct hda_codec *codec)
 	alc662_auto_init_multi_out(codec);
 	alc662_auto_init_hp_out(codec);
 	alc662_auto_init_analog_input(codec);
+	alc662_auto_init_input_src(codec);
 	if (spec->unsol_event)
 		alc_sku_automute(codec);
 }
