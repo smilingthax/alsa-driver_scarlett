@@ -182,7 +182,7 @@ static const u8 da7210_reg[] = {
 static inline u32 da7210_read_reg_cache(struct snd_soc_codec *codec, u32 reg)
 {
 	u8 *cache = codec->reg_cache;
-	BUG_ON(reg > ARRAY_SIZE(da7210_reg));
+	BUG_ON(reg >= ARRAY_SIZE(da7210_reg));
 	return cache[reg];
 }
 
@@ -461,7 +461,7 @@ static int da7210_init(struct da7210_priv *da7210)
 	INIT_LIST_HEAD(&codec->dapm_widgets);
 	INIT_LIST_HEAD(&codec->dapm_paths);
 
-	codec->private_data	= da7210;
+	snd_soc_codec_set_drvdata(codec, da7210);
 	codec->name		= "DA7210";
 	codec->owner		= THIS_MODULE;
 	codec->read		= da7210_read;
