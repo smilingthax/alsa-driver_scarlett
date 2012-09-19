@@ -660,10 +660,12 @@ def main():
 	if not args:
 		print 'Command not specified'
 		sys.exit(1)
-	if args[0] == 'diffall' or args[0] == 'linux-sound':
+	if args[0] == 'diffall' or args[0] == 'linux-sound' or args[0] == 'work':
 		reverse=0
 		if args[0] == 'linux-sound':
-			BKROOT = '~/bk/linux-sound/main'
+			BKROOT = '~/bk/linux-sound/linux-sound'
+		elif args[0] == 'work':
+			BKROOT = '~/bk/linux-sound/work'
 		if len(args) > 1:
 			if args[1] == '-r':
 				reverse=1
