@@ -61,7 +61,7 @@ case "$1" in
           #
           if [ -x $alsactl ]; then
             if [ -r $asoundcfg ]; then
-              $alsactl -f $asoundcfg restore
+              $alsactl -F -f $asoundcfg restore
             else
               echo "ERROR: alsactl can't start, $asoundcfg is not readable"
             fi
