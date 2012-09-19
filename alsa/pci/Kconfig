@@ -26,6 +26,14 @@ config SND_EMU10K1X
 	  Say 'Y' or 'M' to include support for Sound Blaster Live Dell
 	  OEM version.
 
+config SND_AUDIGYLS
+	tristate "SB Audigy LS"
+	depends on SND
+	select SND_AC97_CODEC
+	help
+	  Say 'Y' or 'M' to include support for Sound Blaster Audigy LS
+	  OEM version.
+
 config SND_ATIIXP_MODEM
 	tristate "ATI IXP 150/200/250 Modem"
 	depends on SND
