@@ -12,8 +12,6 @@ include $(SND_TOPDIR)/Makefile.conf
 clean-files := ad1889.c atiixp.c atiixp_modem.c bt87x.c cmipci.c ens1370.c \
 	fm801.c intel8x0.c maestro3.c via82xx.c via82xx_modem.c
 
-export-objs := ak4531_codec.o
-
 obj-$(CONFIG_SND) += pdplus/ asihpi/
 
 #

@@ -1696,7 +1696,6 @@ u16 HPI_ControlParamGet(
 		HPI_ControlExParamGet(s, h, a, 0, 0, p1, NULL)
 #define HPI_ControlExParam2Get(s, h, a, p1, p2) \
 		HPI_ControlExParamGet(s, h, a, 0, 0, p1, p2)
-
 u16 HPI_ControlQuery(
 	const struct hpi_hsubsys *phSubSys,
 	const u32 hControl,
@@ -3179,18 +3178,6 @@ u16 HPI_Tuner_GetRDS(
 	}
 	return (hr.wError);
 }
-
-#ifdef _DOX_ONLY_
-u16 HPI_Tuner_GetHdRadioSignalQuality(
-	struct hpi_hsubsys *phSubSys,
-	u32 hControl,
-	u32 *pdwSignalQuality
-)
-{
-	return HPI_ControlParamGet(phSubSys, hControl,
-		HPI_TUNER_HDRADIO_SIGNAL_QUALITY, 0, 0, pdwSignalQuality, 0);
-}
-#endif
 
 u16 HPI_PAD_GetChannelName(
 	struct hpi_hsubsys *phSubSys,
