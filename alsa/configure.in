@@ -5,7 +5,7 @@ dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>
 AC_INIT(acore/sound.c)
 AM_CONDITIONAL(INSTALL_M4, test "x${ACLOCAL}" = "xaclocal")
 AC_PREFIX_DEFAULT(/usr)
-CONFIG_SND_VERSION="0.9.0rc1"
+CONFIG_SND_VERSION="0.9.0rc2"
 
 dnl Checks for programs.
 AC_PROG_CC
