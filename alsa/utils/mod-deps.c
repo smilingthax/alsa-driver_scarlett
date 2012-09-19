@@ -299,7 +299,11 @@ static int read_file_1(const char *filename, struct cond **template)
 		if (buffer[0] == '#')
 			continue;
 		if (buffer[0] != '\t') {
-			for (c = 0; c < 8; c++) {
+			for (c = 0; c <= 8; c++) {
+				if (c == 8) {
+					c--;
+					buffer[7] = '\t';
+				}
 				if (buffer[c] == '\t') {
 					buffer[0] = '\t';
 					memmove(buffer + 1, buffer + c + 1,
@@ -593,6 +597,7 @@ static struct dep * find_or_create_dep(char *line)
 	new_dep->name = strdup(word);	// Fill in name of dependency
 	if (new_dep->name == NULL)
 		nomem();
+	//fprintf(stderr, "xxx created new dep %s\n", word);
 	free(word);
 	return new_dep;
 }
@@ -718,6 +723,7 @@ static void add_select(struct dep * dep, char *line)
 			sel = sel->next;
 		sel->next = nsel;
 	}
+	//fprintf(stderr, "*** add %s -> %s\n", word, dep->name);
 	free(word);
 }
 

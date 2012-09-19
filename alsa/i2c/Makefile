@@ -15,4 +15,6 @@ obj-$(CONFIG_SND_UDA1380) += snd-uda1380.o
 
 include $(SND_TOPDIR)/alsa-kernel/i2c/Makefile
 
+obj-$(CONFIG_L3) += l3/
+
 include $(SND_TOPDIR)/Rules.make

@@ -214,6 +214,33 @@ then
 fi
 }
 
+withsysfs() {
+    local i f
+    local printed=""
+    for i in /sys/class/sound/*; do
+	case "$i" in
+	    */hwC?D?)
+		if [ -f $i/init_pin_configs ]; then
+		    if [ -z "$printed" ]; then
+			echo "!!Sysfs Files" >> $FILE
+			echo "!!-----------" >> $FILE
+			echo "" >> $FILE
+		    fi
+		    for f in init_pin_configs driver_pin_configs user_pin_configs init_verbs; do
+			echo "$i/$f:" >> $FILE
+			cat $i/$f >> $FILE
+			echo >> $FILE
+		    done
+		    printed=yes
+		fi
+		;;
+	    esac
+    done
+    if [ -n "$printed" ]; then
+	echo "" >> $FILE
+    fi
+}
+
 
 #Run checks to make sure the programs we need are installed.
 LSPCI=$(which lspci 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null);
@@ -522,6 +549,7 @@ then
         		withamixer
         		withalsactl
         		withlsmod
+			withsysfs
         		pbcheck
 			;;
 		--update)
@@ -536,6 +564,7 @@ then
 			withamixer
 			withalsactl
 			withlsmod
+			withsysfs
 			;;
 		--debug)
 			echo "Debugging enabled. $FILE and $TEMPDIR will not be deleted"
@@ -547,6 +576,7 @@ then
 			withamixer
 			withalsactl
 			withlsmod
+			withsysfs
 			;;
 		--with-all)
 			withdevices
@@ -555,6 +585,7 @@ then
 			withamixer
 			withalsactl
 			withlsmod
+			withsysfs
 			;;
 		--with-aplay)
 			withaplay
