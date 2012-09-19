@@ -33,6 +33,7 @@
 #define CS4271_PCM_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | \
 			    SNDRV_PCM_FMTBIT_S24_LE | \
 			    SNDRV_PCM_FMTBIT_S32_LE)
+#define CS4271_PCM_RATES SNDRV_PCM_RATE_8000_192000
 
 /*
  * CS4271 registers
@@ -167,27 +168,6 @@ struct cs4271_private {
 	int				gpio_disable;
 };
 
-struct cs4271_clk_cfg {
-	unsigned int	ratio;		/* MCLK / sample rate */
-	u8		speed_mode;	/* codec speed mode: 1x, 2x, 4x */
-	u8		mclk_master;	/* ratio bit mask for Master mode */
-	u8		mclk_slave;	/* ratio bit mask for Slave mode */
-};
-
-static struct cs4271_clk_cfg cs4271_clk_tab[] = {
-	{64,   CS4271_MODE1_MODE_4X, CS4271_MODE1_DIV_1,  CS4271_MODE1_DIV_1},
-	{96,   CS4271_MODE1_MODE_4X, CS4271_MODE1_DIV_15, CS4271_MODE1_DIV_1},
-	{128,  CS4271_MODE1_MODE_2X, CS4271_MODE1_DIV_1,  CS4271_MODE1_DIV_1},
-	{192,  CS4271_MODE1_MODE_2X, CS4271_MODE1_DIV_15, CS4271_MODE1_DIV_1},
-	{256,  CS4271_MODE1_MODE_1X, CS4271_MODE1_DIV_1,  CS4271_MODE1_DIV_1},
-	{384,  CS4271_MODE1_MODE_1X, CS4271_MODE1_DIV_15, CS4271_MODE1_DIV_1},
-	{512,  CS4271_MODE1_MODE_1X, CS4271_MODE1_DIV_2,  CS4271_MODE1_DIV_1},
-	{768,  CS4271_MODE1_MODE_1X, CS4271_MODE1_DIV_3,  CS4271_MODE1_DIV_3},
-	{1024, CS4271_MODE1_MODE_1X, CS4271_MODE1_DIV_3,  CS4271_MODE1_DIV_3}
-};
-
-#define CS4171_NR_RATIOS ARRAY_SIZE(cs4271_clk_tab)
-
 /*
  * @freq is the desired MCLK rate
  * MCLK rate should (c) be the sample rate, multiplied by one of the
@@ -296,6 +276,45 @@ static int cs4271_put_deemph(struct snd_kcontrol *kcontrol,
 	return cs4271_set_deemph(codec);
 }
 
+struct cs4271_clk_cfg {
+	bool		master;		/* codec mode */
+	u8		speed_mode;	/* codec speed mode: 1x, 2x, 4x */
+	unsigned short	ratio;		/* MCLK / sample rate */
+	u8		ratio_mask;	/* ratio bit mask for Master mode */
+};
+
+static struct cs4271_clk_cfg cs4271_clk_tab[] = {
+	{1, CS4271_MODE1_MODE_1X, 256,  CS4271_MODE1_DIV_1},
+	{1, CS4271_MODE1_MODE_1X, 384,  CS4271_MODE1_DIV_15},
+	{1, CS4271_MODE1_MODE_1X, 512,  CS4271_MODE1_DIV_2},
+	{1, CS4271_MODE1_MODE_1X, 768,  CS4271_MODE1_DIV_3},
+	{1, CS4271_MODE1_MODE_2X, 128,  CS4271_MODE1_DIV_1},
+	{1, CS4271_MODE1_MODE_2X, 192,  CS4271_MODE1_DIV_15},
+	{1, CS4271_MODE1_MODE_2X, 256,  CS4271_MODE1_DIV_2},
+	{1, CS4271_MODE1_MODE_2X, 384,  CS4271_MODE1_DIV_3},
+	{1, CS4271_MODE1_MODE_4X, 64,   CS4271_MODE1_DIV_1},
+	{1, CS4271_MODE1_MODE_4X, 96,   CS4271_MODE1_DIV_15},
+	{1, CS4271_MODE1_MODE_4X, 128,  CS4271_MODE1_DIV_2},
+	{1, CS4271_MODE1_MODE_4X, 192,  CS4271_MODE1_DIV_3},
+	{0, CS4271_MODE1_MODE_1X, 256,  CS4271_MODE1_DIV_1},
+	{0, CS4271_MODE1_MODE_1X, 384,  CS4271_MODE1_DIV_1},
+	{0, CS4271_MODE1_MODE_1X, 512,  CS4271_MODE1_DIV_1},
+	{0, CS4271_MODE1_MODE_1X, 768,  CS4271_MODE1_DIV_2},
+	{0, CS4271_MODE1_MODE_1X, 1024, CS4271_MODE1_DIV_2},
+	{0, CS4271_MODE1_MODE_2X, 128,  CS4271_MODE1_DIV_1},
+	{0, CS4271_MODE1_MODE_2X, 192,  CS4271_MODE1_DIV_1},
+	{0, CS4271_MODE1_MODE_2X, 256,  CS4271_MODE1_DIV_1},
+	{0, CS4271_MODE1_MODE_2X, 384,  CS4271_MODE1_DIV_2},
+	{0, CS4271_MODE1_MODE_2X, 512,  CS4271_MODE1_DIV_2},
+	{0, CS4271_MODE1_MODE_4X, 64,   CS4271_MODE1_DIV_1},
+	{0, CS4271_MODE1_MODE_4X, 96,   CS4271_MODE1_DIV_1},
+	{0, CS4271_MODE1_MODE_4X, 128,  CS4271_MODE1_DIV_1},
+	{0, CS4271_MODE1_MODE_4X, 192,  CS4271_MODE1_DIV_2},
+	{0, CS4271_MODE1_MODE_4X, 256,  CS4271_MODE1_DIV_2},
+};
+
+#define CS4171_NR_RATIOS ARRAY_SIZE(cs4271_clk_tab)
+
 static int cs4271_hw_params(struct snd_pcm_substream *substream,
 			    struct snd_pcm_hw_params *params,
 			    struct snd_soc_dai *dai)
@@ -307,23 +326,28 @@ static int cs4271_hw_params(struct snd_pcm_substream *substream,
 	unsigned int ratio, val;
 
 	cs4271->rate = params_rate(params);
+
+	/* Configure DAC */
+	if (cs4271->rate < 50000)
+		val = CS4271_MODE1_MODE_1X;
+	else if (cs4271->rate < 100000)
+		val = CS4271_MODE1_MODE_2X;
+	else
+		val = CS4271_MODE1_MODE_4X;
+
 	ratio = cs4271->mclk / cs4271->rate;
 	for (i = 0; i < CS4171_NR_RATIOS; i++)
-		if (cs4271_clk_tab[i].ratio == ratio)
+		if ((cs4271_clk_tab[i].master == cs4271->master) &&
+		    (cs4271_clk_tab[i].speed_mode == val) &&
+		    (cs4271_clk_tab[i].ratio == ratio))
 			break;
 
-	if ((i == CS4171_NR_RATIOS) || ((ratio == 1024) && cs4271->master)) {
+	if (i == CS4171_NR_RATIOS) {
 		dev_err(codec->dev, "Invalid sample rate\n");
 		return -EINVAL;
 	}
 
-	/* Configure DAC */
-	val = cs4271_clk_tab[i].speed_mode;
-
-	if (cs4271->master)
-		val |= cs4271_clk_tab[i].mclk_master;
-	else
-		val |= cs4271_clk_tab[i].mclk_slave;
+	val |= cs4271_clk_tab[i].ratio_mask;
 
 	ret = snd_soc_update_bits(codec, CS4271_MODE1,
 		CS4271_MODE1_MODE_MASK | CS4271_MODE1_DIV_MASK, val);
@@ -392,14 +416,14 @@ static struct snd_soc_dai_driver cs4271_dai = {
 		.stream_name	= "Playback",
 		.channels_min	= 2,
 		.channels_max	= 2,
-		.rates		= SNDRV_PCM_RATE_8000_96000,
+		.rates		= CS4271_PCM_RATES,
 		.formats	= CS4271_PCM_FORMATS,
 	},
 	.capture = {
 		.stream_name	= "Capture",
 		.channels_min	= 2,
 		.channels_max	= 2,
-		.rates		= SNDRV_PCM_RATE_8000_96000,
+		.rates		= CS4271_PCM_RATES,
 		.formats	= CS4271_PCM_FORMATS,
 	},
 	.ops = &cs4271_dai_ops,
@@ -555,7 +579,7 @@ static struct spi_driver cs4271_spi_driver = {
 #endif /* defined(CONFIG_SPI_MASTER) */
 
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
-static struct i2c_device_id cs4271_i2c_id[] = {
+static const struct i2c_device_id cs4271_i2c_id[] = {
 	{"cs4271", 0},
 	{}
 };
