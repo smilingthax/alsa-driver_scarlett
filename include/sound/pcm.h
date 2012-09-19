@@ -527,7 +527,7 @@ static inline void divl(u_int32_t high, u_int32_t low,
 	int c = 32;
 	while (n > 0xffffffffU) {
 		q1 <<= 1;
-		if (n > d) {
+		if (n >= d) {
 			n -= d;
 			q1 |= 1;
 		}
