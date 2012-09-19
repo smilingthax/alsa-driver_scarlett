@@ -12,6 +12,8 @@ export-objs  := mixer_oss.o
 include $(SND_TOPDIR)/alsa-kernel/core/oss/Makefile
 
 EXTRA_CFLAGS += -I$(SND_TOPDIR)/alsa-kernel/core/oss
+# avoid oops due to the compiler bug (?) of old gcc
+EXTRA_CFLAGS += -fno-omit-frame-pointer
 
 include $(SND_TOPDIR)/Rules.make
 
