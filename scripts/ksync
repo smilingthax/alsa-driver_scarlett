@@ -101,6 +101,8 @@ COMMENT_MAP = [
 		('/isa/gus'		,'GUS drivers'),
 		('/include/sb.h'	,'SB drivers'),
 		('/isa/sb/es968.c'	,'ES968 driver'),
+		('/include/soundfont.h' ,'SoundFont'),
+		('/include/emu8000.h'	,'EMU8000 driver'),
 		('/isa/sb/emu8000.*'	,'EMU8000 driver'),
 		('/isa/sb/sb16.*'	,'SB16/AWE driver'),
 		('/isa/sb/sb8.*'	,'SB8 driver'),
@@ -172,6 +174,8 @@ COMMENT_MAP = [
 		('/i2c'			,'ERROR'),
 		('/parisc'		,'ERROR'),
 		('/sparc'		,'ERROR'),
+		('/include/emux_synth.h','Common EMU synth'),
+		('/synth/emux'		,'Common EMU synth'),
 		('/pcmcia/vx'		,'Digigram VX Pocket driver'),
 		('/pcmcia/Kconfig'	,'PCMCIA Kconfig'),
 		('/pcmcia'		,'ERROR'),
@@ -184,6 +188,8 @@ COMMENT_MAP = [
 		('/core/oss'		,'ALSA<-OSS emulation'),
 		('/core/seq/oss'	,'ALSA<-OSS sequencer'),
 		('/core/seq/instr'	,'Instrument layer'),
+		('/include/seq_kernel.h','ALSA sequencer'),
+		('/include/asequencer.h','ALSA sequencer'),
 		('/core/seq'		,'ALSA sequencer'),
 		('/core/memalloc.*'	,'Memalloc module'),
 		('/core/sgbuf.*'	,'Memalloc module'),
@@ -203,6 +209,7 @@ COMMENT_MAP = [
 		('/include/minors.h'	,'ALSA Minor Numbers'),
 		('/include/sndmagic.h'	,'ALSA Core'),
 		('/include/info.h'	,'ALSA Core'),
+		('/include/core.h'	,'ALSA Core'),
 		('/core/info.*'		,'ALSA Core'),
 		('/core/control.*'	,'ALSA Core'),
 		('/core/init.*'		,'ALSA Core'),
@@ -1032,7 +1039,7 @@ def cvsps_merge1(f,t=0):
 		print lines
 		return
 	while os.system('bk import -tpatch -C -y"' + nlines + '" ' + ff + ' .'):
-		print 'BK patch import error, xterm? (any key to continue or Control-C to abort)'
+		print 'BK patch import of %s error, xterm? (any key to continue or Control-C to abort)' % ff
 		sys.stdin.readline()
 		os.system("xterm")
 	if os.system('bk commit -y"' + nlines + '"'):
