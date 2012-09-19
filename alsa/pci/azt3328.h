@@ -134,8 +134,16 @@
 #define IDX_MIXER_AUX           0x14
 #define IDX_MIXER_WAVEOUT       0x16
 #define IDX_MIXER_FMSYNTH       0x18
-#define IDX_MIXER_WAVEIN        0x1a
-#define IDX_MIXER_REC_MASTER    0x1c
+#define IDX_MIXER_REC_SELECT    0x1a
+  #define MIXER_REC_SELECT_MIC		0x00
+  #define MIXER_REC_SELECT_CD		0x01
+  #define MIXER_REC_SELECT_VIDEO	0x02
+  #define MIXER_REC_SELECT_AUX		0x03
+  #define MIXER_REC_SELECT_LINEIN	0x04
+  #define MIXER_REC_SELECT_MIXSTEREO	0x05
+  #define MIXER_REC_SELECT_MIXMONO	0x06
+  #define MIXER_REC_SELECT_MONOIN	0x07
+#define IDX_MIXER_REC_VOLUME    0x1c
 #define IDX_MIXER_ADVCTL1       0x1e
   /* unlisted bits are unmodifiable */
   #define MIXER_ADVCTL1_3DWIDTH_MASK	0x000e
