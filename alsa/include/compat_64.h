@@ -17,4 +17,15 @@ struct compat_timeval {
 	s32             tv_usec;
 };
 
+/* compat_to() macro */
+#ifndef A
+#ifdef CONFIG_PPC64
+#include <asm/ppc32.h>
+#else
+/* x86-64, sparc64 */
+#define A(__x) ((void *)(unsigned long)(__x))
+#endif
+#endif
+#define compat_ptr(x)	A(x)
+
 #endif /* __ALSA_COMPAT_64_H */
