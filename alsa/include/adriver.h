@@ -227,6 +227,15 @@ static inline void devfs_remove(const char *fmt, ...) { }
 
 #include <linux/usb.h>
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 20)
+inline static int usb_make_path(struct usb_device *dev, char *buf, size_t size)
+{
+	int actual;
+	actual = snprintf(buf, size, "%03d/%03d", dev->bus->busnum, dev->devnum);
+	return (actual >= size) ? -1 : actual;
+}
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 inline static struct urb *usb_alloc_urb_wrapper(int iso_packets, int flags)
 {
