@@ -16,4 +16,13 @@ config SND_PXA2XX_PCM
 	help
 	  Generic PCM module for PXA2xx
 
+config SND_S3C2410
+	tristate "S3C24XX Sound core"
+	depends on ARCH_S3C2410 && SND
+	select I2C_SENSOR
+	select SND_PCM
+	help
+	  Say Y here if you want to use the inbuilt audio controller
+	  on the S3C2410 or S3C2440
+
 endmenu
