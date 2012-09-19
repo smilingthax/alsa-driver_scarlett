@@ -64,7 +64,7 @@ endif
 export KBUILD_VERBOSE KBUILD_CHECKSRC
 endif
 
-SUBDIRS  = acore i2c drivers isa synth pci aoa soc
+SUBDIRS  = include acore i2c drivers isa synth pci aoa soc
 CSUBDIRS =
 
 ifndef NEW_KBUILD
@@ -105,7 +105,7 @@ endif
 ifeq (m,$(CONFIG_AC97_BUS))
 SUBDIRS  += misc
 endif
-CSUBDIRS += include test utils
+CSUBDIRS += test utils
 
 KCONFIG_FILES = $(shell find $(SND_TOPDIR) -name Kconfig) $(shell find $(SND_TOPDIR)/alsa-kernel/ -name Kconfig)
 
@@ -115,12 +115,6 @@ all: compile
 alsa-kernel/sound_core.c:
 	ln -sf $(ALSAKERNELDIR) alsa-kernel
 	ln -sf alsa-kernel sound
-
-include/sound/version.h: include/version.h
-	if [ ! -d include/sound -a ! -L include/sound ]; then \
-	  ln -sf ../alsa-kernel/include include/sound ; \
-	fi
-	cp -puvf include/version.h include/sound/version.h
 
 utils/mod-deps: utils/mod-deps.c
 	gcc utils/mod-deps.c -o utils/mod-deps
@@ -140,7 +134,7 @@ include/sndversions.h:
 	$(MAKE) dep
 
 .PHONY: compile
-compile: include/sound/version.h include/sndversions.h
+compile: include/sndversions.h
 ifdef NEW_KBUILD
 	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR) $(MAKE_ADDS) CPP="$(CPP)" CC="$(CC)" modules
 	utils/link-modules $(SND_TOPDIR)
@@ -152,7 +146,7 @@ endif
 	@echo
 
 .PHONY: dep
-dep: include/sound/version.h
+dep:
 ifdef NEW_KBUILD
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d prepare; then exit 1; fi; done
 else
@@ -275,7 +269,7 @@ mrproper: clean1
 cvsclean: mrproper
 	rm -f configure snddevices aclocal.m4 acinclude.m4 include/config.h include/config1.h \
 	  include/config1.h.in toplevel.config toplevel.config.in \
-	  alsa-kernel sound include/sound
+	  alsa-kernel sound
 	rm -rf include/linux
 hgclean: cvsclean
 
