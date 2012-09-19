@@ -4,11 +4,6 @@ static void __old_snd_usbmidi_in_urb_complete(struct urb* urb)
 	snd_usbmidi_in_urb_complete(urb, NULL);
 }
 
-static void __old_snd_usbmidi_in_midiman_complete(struct urb* urb)
-{
-	snd_usbmidi_in_midiman_complete(urb, NULL);
-}
-
 static void __old_snd_usbmidi_out_urb_complete(struct urb* urb)
 {
 	snd_usbmidi_out_urb_complete(urb, NULL);
