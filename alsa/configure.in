@@ -193,7 +193,7 @@ kernel_compiler="")])
 CFLAGS="$ac_save_CFLAGS"
 kernel_compiler_type=`echo $kernel_compiler | cut -d ' ' -f 1`
 kernel_compiler_version=`echo $kernel_compiler | cut -d ' ' -f 2`
-my_compiler=`$CC --version | head -1`
+my_compiler=`$CC --version | head -n 1`
 my_compiler_type=`echo $my_compiler | cut -d ' ' -f 1`
 my_compiler_version=`echo $my_compiler | cut -d ' ' -f 3`
 if test -z "$my_compiler_version" -o "$my_compiler_type" = "$my_compiler_version" ; then
@@ -202,6 +202,14 @@ if test -z "$my_compiler_version" -o "$my_compiler_type" = "$my_compiler_version
   my_compiler="gcc $my_compiler"
 fi
 AC_MSG_RESULT(Kernel compiler: $kernel_compiler Used compiler: $my_compiler);
+if test -z "$kernel_compier"; then
+  echo
+  echo "*** NO PREDEFINED KERNEL COMPILER IS DETECTED"
+  echo "*** Assuming the same compiler is used with the current system compiler."
+  echo
+  echo "*** Please make sure that the same compiler version was used for building kernel."
+  echo
+else
 if test "$my_compiler_type" != "$kernel_compiler_type"; then
   echo "Fatal error: Compiler type does not match"
   exit 1
@@ -218,6 +226,8 @@ if test "$my_compiler_type" = "gcc" ; then
     echo "             These two version of GCC are incompatible for binary code."
   fi
 fi
+fi
+dnl compiler version check
 
 AC_DEFUN(CHECK_KERNEL_HEADER, [
   AC_MSG_CHECKING(for kernel $1)
