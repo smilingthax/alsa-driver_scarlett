@@ -35,13 +35,11 @@
  *      - source code cleanup
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
 #include <linux/init.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/rawmidi.h>
-#define SNDRV_GET_ID
 #include <sound/initval.h>
 #include <linux/parport.h>
 #include <linux/delay.h>
@@ -57,6 +55,7 @@ MODULE_SUPPORTED_DEVICE("{{Midiman,Portman2x4}}");
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE;	/* Enable switches */
+static int boot_devs;
 
 module_param_array(index, int, boot_devs, 0444);
 MODULE_PARM_DESC(index, "Index value for Portman2x4 midi interface.");
