@@ -274,6 +274,10 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 typedef unsigned __nocast gfp_t;
 #endif
 
+#ifndef CONFIG_HAVE_GFP_DMA32
+#define GFP_DMA32 0		/* driver must check for 32-bit address */
+#endif
+
 #include <linux/wait.h>
 #ifndef wait_event_timeout
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
@@ -1539,5 +1543,9 @@ static inline void put_unaligned_be64(u64 val, void *p)
 	list_entry((ptr)->next, type, member)
 #endif
 #endif /* < 2.6.22 */
+
+#ifndef upper_32_bits
+#define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
+#endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
