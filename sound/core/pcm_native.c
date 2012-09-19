@@ -1567,7 +1567,8 @@ static int snd_pcm_hw_rule_format(snd_pcm_hw_params_t *params,
 		if (! snd_mask_test(mask, k))
 			continue;
 		bits = snd_pcm_format_physical_width(k);
-		snd_assert(bits > 0, continue);
+		if (bits <= 0)
+			continue; /* ignore invalid formats */
 		if ((unsigned)bits < i->min || (unsigned)bits > i->max)
 			snd_mask_reset(&m, k);
 	}
@@ -1588,7 +1589,8 @@ static int snd_pcm_hw_rule_sample_bits(snd_pcm_hw_params_t *params,
 		if (! snd_mask_test(hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT), k))
 			continue;
 		bits = snd_pcm_format_physical_width(k);
-		snd_assert(bits > 0, continue);
+		if (bits <= 0)
+			continue; /* ignore invalid formats */
 		if (t.min > (unsigned)bits)
 			t.min = bits;
 		if (t.max < (unsigned)bits)
