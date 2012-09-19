@@ -286,6 +286,15 @@ DEFINE_VIA_REGSET(CAPTURE_8233, 0x60);
 /*
  */
 
+#define VIA_DXS_AUTO	0
+#define VIA_DXS_ENABLE	1
+#define VIA_DXS_DISABLE	2
+#define VIA_DXS_48K	3
+
+
+/*
+ */
+
 typedef struct _snd_via82xx via82xx_t;
 typedef struct via_dev viadev_t;
 #define chip_t via82xx_t
@@ -1944,6 +1953,41 @@ static struct via823x_info via823x_cards[] __devinitdata = {
 	{ VIA_REV_8235, "VIA 8235", TYPE_VIA8233 },
 };
 
+/*
+ * auto detection of DXS channel supports.
+ */
+struct dxs_whitelist {
+	unsigned short vendor;
+	unsigned short device; 
+	int action;	/* new dxs_support value */
+};
+
+static int __devinit check_dxs_list(struct pci_dev *pci)
+{
+	static struct dxs_whitelist whitelist[] = {
+		// { .vendor = xxxx, .device = yyyy, .action = x },
+		{ } /* terminator */
+	};
+	struct dxs_whitelist *w;
+	unsigned short subsystem_vendor;
+	unsigned short subsystem_device;
+
+	pci_read_config_word(pci, PCI_SUBSYSTEM_VENDOR_ID, &subsystem_vendor);
+	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &subsystem_device);
+
+	for (w = whitelist; w->vendor; w++)
+		if (w->vendor == subsystem_vendor &&
+		    w->device == subsystem_device)
+			return w->action;
+
+	/*
+	 * not detected, try 48k rate only to be sure.
+	 */
+	printk(KERN_INFO "via82xx: Assuming DXS channels with 48k fixed sample rate.\n");
+	printk(KERN_INFO "         Please try dxs_support=1 option and report if it works on your machine.\n");
+	return VIA_DXS_48K;
+};
+
 static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 				       const struct pci_device_id *pci_id)
 {
@@ -1984,13 +2028,16 @@ static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 				break;
 			}
 		}
+		if (dxs_support[dev] == VIA_DXS_AUTO)
+			dxs_support[dev] = check_dxs_list(pci);
 		/* force to use VIA8233 or 8233A model according to
 		 * dxs_support module option
 		 */
-		if (dxs_support[dev] == 1)
-			chip_type = TYPE_VIA8233;
-		else if (dxs_support[dev] == 2)
+		if (dxs_support[dev] == VIA_DXS_DISABLE)
 			chip_type = TYPE_VIA8233A;
+		else
+			chip_type = TYPE_VIA8233;
+
 		if (chip_type == TYPE_VIA8233A)
 			strcpy(card->driver, "VIA8233A");
 		else
@@ -2083,7 +2130,7 @@ module_exit(alsa_card_via82xx_exit)
 #ifndef MODULE
 
 /* format is: snd-via82xx=enable,index,id,
-			  mpu_port,ac97_clock */
+			  mpu_port,ac97_clock,dxs_support */
 
 static int __init alsa_card_via82xx_setup(char *str)
 {
@@ -2095,7 +2142,8 @@ static int __init alsa_card_via82xx_setup(char *str)
 	       get_option(&str,&index[nr_dev]) == 2 &&
 	       get_id(&str,&id[nr_dev]) == 2 &&
 	       get_option(&str,(int *)&mpu_port[nr_dev]) == 2 &&
-	       get_option(&str,&ac97_clock[nr_dev]) == 2);
+	       get_option(&str,&ac97_clock[nr_dev]) == 2 &&
+	       get_option(&str,&dxs_support[nr_dev]) == 2);
 	nr_dev++;
 	return 1;
 }
