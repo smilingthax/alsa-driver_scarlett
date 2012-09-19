@@ -11447,6 +11447,7 @@ static struct snd_pci_quirk alc268_cfg_tbl[] = {
 	SND_PCI_QUIRK(0x1043, 0x1205, "ASUS W7J", ALC268_3ST),
 	SND_PCI_QUIRK(0x1179, 0xff10, "TOSHIBA A205", ALC268_TOSHIBA),
 	SND_PCI_QUIRK(0x1179, 0xff50, "TOSHIBA A305", ALC268_TOSHIBA),
+	SND_PCI_QUIRK(0x1179, 0xff64, "TOSHIBA L305", ALC268_TOSHIBA),
 	SND_PCI_QUIRK(0x14c0, 0x0025, "COMPAL IFL90/JFL-92", ALC268_TOSHIBA),
 	SND_PCI_QUIRK(0x152d, 0x0763, "Diverse (CPR2000)", ALC268_ACER),
 	SND_PCI_QUIRK(0x152d, 0x0771, "Quanta IL1", ALC267_QUANTA_IL1),
@@ -15008,6 +15009,13 @@ static struct hda_verb alc662_auto_init_verbs[] = {
 	{ }
 };
 
+/* additional verbs for ALC663 */
+static struct hda_verb alc663_auto_init_verbs[] = {
+	{0x0f, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_UNMUTE(0)},
+	{0x0f, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_UNMUTE(1)},
+	{ }
+};
+
 static struct hda_verb alc663_m51va_init_verbs[] = {
 	{0x15, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_IN},
 	{0x16, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_IN},
@@ -16005,6 +16013,14 @@ static int alc662_auto_create_extra_out(struct alc_spec *spec, hda_nid_t pin,
 	if (!pin)
 		return 0;
 
+	if (pin == 0x17) {
+		/* ALC663 has a mono output pin on 0x17 */
+		sprintf(name, "%s Playback Switch", pfx);
+		err = add_control(spec, ALC_CTL_WIDGET_MUTE, name,
+				  HDA_COMPOSE_AMP_VAL(pin, 2, 0, HDA_OUTPUT));
+		return err;
+	}
+
 	if (alc880_is_fixed_pin(pin)) {
 		nid = alc880_idx_to_dac(alc880_fixed_pin_idx(pin));
                 /* printk("DAC nid=%x\n",nid); */
@@ -16175,6 +16191,14 @@ static int alc662_parse_auto_config(struct hda_codec *codec)
 	spec->input_mux = &spec->private_imux;
 
 	spec->init_verbs[spec->num_init_verbs++] = alc662_auto_init_verbs;
+	if (codec->vendor_id == 0x10ec0663)
+		spec->init_verbs[spec->num_init_verbs++] =
+			alc663_auto_init_verbs;
+
+	err = alc_auto_add_mic_boost(codec);
+	if (err < 0)
+		return err;
+
 	spec->mixers[spec->num_mixers] = alc662_capture_mixer;
 	spec->num_mixers++;
 	return 1;
