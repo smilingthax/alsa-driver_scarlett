@@ -248,6 +248,14 @@ Additional Modules
 
     Module for Aureal Vortex, Vortex2 and Advantage device.
 
+    pcifix	- Control PCI workarounds
+		  0 = Disable all workarounds
+		  1 = Force the PCI latency of the Aureal card to 0xff
+		  2 = Force the Extend PCI#2 Internal Master for Efficient
+		      Handling of Dummy Requests on the VIA KT133 AGP Bridge
+		  3 = Force both settings
+		  255 = Autodetect what is required (default)
+
     This module supports all ADB PCM channels, ac97 mixer, SPDIF, hardware
     EQ, mpu401, gameport. A3D and wavetable support are still in development.
     Development and reverse engineering work is being coordinated at

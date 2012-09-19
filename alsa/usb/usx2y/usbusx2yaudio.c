@@ -992,7 +992,7 @@ static int snd_usX2Y_hw_params(	snd_pcm_substream_t*	substream,
 		err = usX2Y_rate_set(usX2Y_stream, rate);
 	if (0 == err) {
 		if (0 > (err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params))))
-			snd_printd("snd_pcm_lib_malloc_pages(%x, %i) returned %i\n", substream, params_buffer_bytes(hw_params), err);
+			snd_printd("snd_pcm_lib_malloc_pages(%p, %i) returned %i\n", substream, params_buffer_bytes(hw_params), err);
 	}
 	return err;
 }
