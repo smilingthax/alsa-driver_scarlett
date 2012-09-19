@@ -199,6 +199,7 @@ DEFINE_REGSET(SP, 0x60);	/* SPDIF out */
 #define   ICH_SIS_PCM_6		0x00000080	/* 6 channels (SIS7012) */
 #define   ICH_SIS_PCM_4		0x00000040	/* 4 channels (SIS7012) */
 #define   ICH_SIS_PCM_2		0x00000000	/* 2 channels (SIS7012) */
+#define   ICH_TRIE		0x00000040	/* tertiary resume interrupt enable */
 #define   ICH_SRIE		0x00000020	/* secondary resume interrupt enable */
 #define   ICH_PRIE		0x00000010	/* primary resume interrupt enable */
 #define   ICH_ACLINK		0x00000008	/* AClink shut off */
@@ -1779,7 +1780,7 @@ static void do_delay(intel8x0_t *chip)
 
 static int snd_intel8x0_ich_chip_init(intel8x0_t *chip)
 {
-	signed long end_time;
+	unsigned long end_time;
 	unsigned int cnt, status, nstatus;
 	
 	/* put logic to right state */
