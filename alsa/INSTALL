@@ -363,13 +363,6 @@ Information about Additional Modules
     For X86 only.  The kernel patch is required in advance, found in
     utils/patches/pcsp-kernel-2.6.10-03.diff
 
-  Module snd-als300
-  -----------------
-
-    Module for  Avance Logic ALS300 and ALS300+
-
-    This module supports multiple cards.
-
 
 Trouble Shooting
 ================

@@ -157,17 +157,5 @@ config SND_INDIGODJ
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-indigodj
 
-config SND_ALS300
-        tristate "Avance Logic ALS300/ALS300+"
-        depends on SND
-        select SND_PCM
-        select SND_AC97_CODEC
-        select SND_OPL3_LIB
-        help
-          Say 'Y' or 'M' to include support for Avance Logic ALS300/ALS300+
-
-          To compile this driver as a module, choose M here: the module
-          will be called snd-als300
-
 endmenu
 
