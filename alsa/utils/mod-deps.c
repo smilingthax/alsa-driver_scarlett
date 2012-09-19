@@ -940,7 +940,8 @@ static int is_menu_default_yes(struct dep *dep)
 }
 
 // Print out ALL deps for firstdep (Cards, Deps)
-static void output_card_list(struct dep *firstdep, int space, int size)
+static void output_card_list(struct dep *firstdep, int space, int size,
+			     int elem_type)
 {
 	struct dep *temp_dep=firstdep;
 	char *card_name;
@@ -949,12 +950,14 @@ static void output_card_list(struct dep *firstdep, int space, int size)
 	printf("  [");
 	for (idx = 0; idx < space; idx++)
 		printf(" ");
-	while(temp_dep) {
+	for (; temp_dep; temp_dep = temp_dep->next) {
 		if (!temp_dep->selectable || !is_toplevel(temp_dep))
-			goto __skip;
+			continue;
 		if (is_menu_default_yes(temp_dep))
-			goto __skip;
-		card_name=get_card_name(temp_dep->name);
+			continue;
+		if (temp_dep->type != elem_type)
+			continue;
+		card_name = get_card_name(temp_dep->name);
 		if (card_name) {
 			if (!first) {
 				printf(", ");
@@ -972,8 +975,6 @@ static void output_card_list(struct dep *firstdep, int space, int size)
 			tmp_size += strlen(card_name);
 			free(card_name);
 		}
-	      __skip:
-		temp_dep=temp_dep->next;
 	}
 }
 
@@ -1155,7 +1156,10 @@ static void process_dep_acinclude(struct dep *tempdep, int slave)
 		if (!text)
 			return;
 		if (!is_menu_default_yes(tempdep)) {
-			printf("  if alsa_check_kconfig \"%s\"; then\n", text);
+			if (tempdep->type == TYPE_BOOL)
+				printf("  if alsa_check_kconfig_option \"%s\"; then\n", text);
+			else
+				printf("  if alsa_check_kconfig_card \"%s\"; then\n", text);
 			put_topif = 1;
 		}
 		put_define = 1;
@@ -1261,43 +1265,61 @@ static void output_acinclude(void)
 
 	printf("AC_DEFUN([ALSA_TOPLEVEL_SELECT], [\n");
 	printf("dnl Check for which cards to compile driver for...\n");
-	printf("AC_MSG_CHECKING(for kconfigs to compile driver for)\n");
-	printf("AC_ARG_WITH(kconfig,\n"
-	       "  [  --with-kconfig=<list> compile driver for cards and options in <list>; ]\n"
+	printf("AC_MSG_CHECKING(for cards to compile driver for)\n");
+	printf("AC_ARG_WITH(cards,\n"
+	       "  [  --with-cards=<list> compile driver for cards and options in <list>; ]\n"
 	       "  [                        cards may be separated with commas; ]\n"
 	       "  [                        'all' compiles all drivers; ]\n"
 	       "  [                        Possible cards are: ]\n");
-	output_card_list(all_deps, 26, 50);
+	output_card_list(all_deps, 26, 50, TYPE_TRISTATE);
 	printf(" ],\n");
 	printf("  cards=\"$withval\", cards=\"all\")\n");
-	printf("SELECTED_KCONFIGS=`echo $cards | sed 's/,/ /g'`\n");
-	printf("AC_MSG_RESULT($SELECTED_KCONFIGS)\n");
-	printf("AC_MSG_CHECKING(for kconfigs to exclude)\n");
-	printf("AC_ARG_WITH(exclude,\n"
-	       "  [  --with-exclude=<list> exclude the given kconfigs ],\n"
-	       "  excludes=\"$withval\", excludes=\"\")\n");
-	printf("EXCLUDED_KCONFIGS=`echo $excludes | sed 's/,/ /g'`\n");
-	printf("AC_MSG_RESULT($EXCLUDED_KCONFIGS)\n");
-	printf("])\n\n");
+	printf("SELECTED_CARDS=`echo $cards | sed 's/,/ /g'`\n");
+	printf("AC_MSG_RESULT($SELECTED_CARDS)\n");
+	printf("AC_MSG_CHECKING(for additonal options to compile driver for)\n");
+	printf("AC_ARG_WITH(card_options,\n"
+	       "  [  --with-card-options=<list> enable driver options in <list>; ]\n"
+	       "  [                        options may be separated with commas; ]\n"
+	       "  [                        'all' enables all options; ]\n"
+	       "  [                        Possible options are: ]\n");
+	output_card_list(all_deps, 26, 50, TYPE_BOOL);
+	printf(" ],\n");
+	printf("  cards=\"$withval\", cards=\"all\")\n");
+	printf("SELECTED_OPTIONS=`echo $cards | sed 's/,/ /g'`\n");
+	printf("AC_MSG_RESULT($SELECTED_OPTIONS)\n");
+	printf("])\n");
 
 	/* parse down the tree */
-	printf("AC_DEFUN([ALSA_PARSE_KCONFIG], [\n"
-	       "alsa_check_kconfig () {\n"
-	       "  for i in $EXCLUDED_KCONFIGS; do\n"
-	       "    if test x\"$i\" = x\"${1}\"; then\n"
-	       "      echo Excluding $i\n"
-	       "      return 1\n"
-	       "    fi\n"
-	       "  done\n"
-	       "  for i in $SELECTED_KCONFIGS; do\n"
-	       "    if test x\"$i\" = x\"${1}\" -o x\"$i\" = xall; then\n"
-	       "      return 0\n"
-	       "    fi\n"
+	printf("AC_DEFUN([ALSA_PARSE_KCONFIG], [\n");
+
+	/* two helper functions */
+	printf("alsa_check_kconfig_card () {\n"
+	       "  local pat=${1}\n"
+	       "  for i in $SELECTED_CARDS; do\n"
+	       "    case \"$i\" in\n"
+	       "    $pat=n)\n"
+	       "      return 1;;\n"
+	       "    all|$pat|$pat=*)\n"
+	       "      return 0;;\n"
+	       "    esac\n"
 	       "  done\n"
 	       "  return 1\n"
 	       "}\n"
-	       "  CONFIG_SND=\"m\"\n"
-	       );
+	       "alsa_check_kconfig_option () {\n"
+	       "  local pat=${1}\n"
+	       "  for i in $SELECTED_OPTIONS; do\n"
+	       "    case \"$i\" in\n"
+	       "    $pat=n)\n"
+	       "      return 1;;\n"
+	       "    all|$pat|$pat=*)\n"
+	       "      return 0;;\n"
+	       "    esac\n"
+	       "  done\n"
+	       "  return 1\n"
+	       "}\n");
+
+	/* default SND=m */
+	printf("  CONFIG_SND=\"m\"\n");
 
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		process_dep_acinclude(tempdep, 0);
