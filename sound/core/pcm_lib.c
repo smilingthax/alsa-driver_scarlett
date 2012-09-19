@@ -1956,7 +1956,8 @@ snd_pcm_sframes_t snd_pcm_lib_write(snd_pcm_substream_t *substream, const void *
 	}
 #endif
 
-	if (runtime->access != SNDRV_PCM_ACCESS_RW_INTERLEAVED)
+	if (runtime->access != SNDRV_PCM_ACCESS_RW_INTERLEAVED &&
+	    runtime->channels > 1)
 		return -EINVAL;
 	return snd_pcm_lib_write1(substream, buf, size, nonblock,
 				  snd_pcm_lib_write_transfer);

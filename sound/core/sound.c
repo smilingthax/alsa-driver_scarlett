@@ -426,7 +426,7 @@ EXPORT_SYMBOL(snd_kmalloc_strdup);
 EXPORT_SYMBOL(snd_malloc_pages);
 EXPORT_SYMBOL(snd_malloc_pages_fallback);
 EXPORT_SYMBOL(snd_free_pages);
-#ifdef CONFIG_ISA
+#if defined(CONFIG_ISA) && ! defined(CONFIG_PCI)
 EXPORT_SYMBOL(snd_malloc_isa_pages);
 EXPORT_SYMBOL(snd_malloc_isa_pages_fallback);
 #endif
