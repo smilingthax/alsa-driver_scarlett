@@ -298,7 +298,7 @@ void snd_free_irq(unsigned int irq, void *data)
 		if (list->data == data) {
 			free_irq(irq, list);
 			list_del(p);
-			kfree(p);
+			kfree(list);
 			break;
 		}
 	}
