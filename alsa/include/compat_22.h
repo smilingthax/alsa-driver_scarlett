@@ -271,6 +271,7 @@ struct pci_driver {
 const struct pci_device_id * snd_pci_compat_match_device(const struct pci_device_id *ids, struct pci_dev *dev);
 int snd_pci_compat_register_driver(struct pci_driver *drv);
 void snd_pci_compat_unregister_driver(struct pci_driver *drv);
+struct pci_driver *snd_pci_compat_get_pci_driver(struct pci_dev *dev);
 unsigned long snd_pci_compat_get_size (struct pci_dev *dev, int n_base);
 int snd_pci_compat_get_flags (struct pci_dev *dev, int n_base);
 int snd_pci_compat_set_power_state(struct pci_dev *dev, int new_state);

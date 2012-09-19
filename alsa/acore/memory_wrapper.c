@@ -14,6 +14,7 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 #include "../alsa-kernel/core/memory_wrapper.c"
 #else
+#include <sound/memalloc.h>
 #include "pci_compat_22.c"
 #endif
 
