@@ -5588,7 +5588,7 @@ static void pdplus_proc_read (
 {
         u_long flags;
         u_long ticker;
-        unsigned long long ticker_100sec;
+        u_long ticker_100sec;
         int dco_rate;
         int rate;
         int i;
@@ -5615,7 +5615,10 @@ static void pdplus_proc_read (
 #endif
 
         ticker = lcard.ticker;
-        ticker_100sec = (100 * ticker) / PDPLUS_INTERRUPTS_PER_SEC;
+	i = (int)(ticker % PDPLUS_INTERRUPTS_PER_SEC);
+	i = (i * 100) / PDPLUS_INTERRUPTS_PER_SEC;
+        ticker_100sec = (ticker / PDPLUS_INTERRUPTS_PER_SEC) * 100;
+	ticker_100sec += i;
         snd_iprintf (buffer,
                 "\nTicker: %lu (%lu:%02d:%02d.%02d)\n",
                 ticker,
