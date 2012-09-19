@@ -1,7 +1,7 @@
 /************************************************************************
 
     AudioScience HPI driver
-    Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
+    Copyright (C) 1997-2010  AudioScience Inc. <support@audioscience.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of version 2 of the GNU General Public License as
@@ -42,7 +42,7 @@ int hpi_debug_level_set(int level)
 
 int hpi_debug_level_get(void)
 {
-	return (hpi_debug_level);
+	return hpi_debug_level;
 }
 
 #ifdef HPIOS_DEBUG_PRINT
@@ -176,17 +176,30 @@ void hpi_debug_message(struct hpi_message *phm, char *sz_fileline)
 				int attr_index = HPI_CTL_ATTR_INDEX(attrib);
 				/* note the KERN facility level
 				   is in szFileline already */
-				printk("%s adapter %d %s ctrl_index x%04x %s %d\n", sz_fileline, phm->adapter_index, hpi_function_string(phm->function), index, get_treenode_elem(&hpi_control_type_strings, control_type, char *), attr_index);
+				printk("%s adapter %d %s "
+					"ctrl_index x%04x %s %d\n",
+					sz_fileline, phm->adapter_index,
+					hpi_function_string(phm->function),
+					index,
+					get_treenode_elem
+					(&hpi_control_type_strings,
+						control_type, char *),
+					attr_index);
 
 			} else
-				printk("%s adapter %d %s idx x%04x attr x%04x \n", sz_fileline, phm->adapter_index, hpi_function_string(phm->function), index, attrib);
+				printk("%s adapter %d %s "
+					"idx x%04x attr x%04x \n",
+					sz_fileline, phm->adapter_index,
+					hpi_function_string(phm->function),
+					index, attrib);
 		} else {
 			printk("adap=%d, invalid obj=%d, func=0x%x\n",
 				phm->adapter_index, phm->object,
 				phm->function);
 		}
 	} else
-		printk("NULL message pointer to hpi_debug_message!\n");
+		printk(KERN_ERR
+			"NULL message pointer to hpi_debug_message!\n");
 }
 
 void hpi_debug_data(u16 *pdata, u32 len)

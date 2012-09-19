@@ -2,7 +2,7 @@
 /*!
 
     AudioScience HPI driver
-    Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
+    Copyright (C) 1997-2010  AudioScience Inc. <support@audioscience.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of version 2 of the GNU General Public License as
@@ -103,8 +103,9 @@ short hpi_dsp_code_open(u32 adapter, struct dsp_code *ps_dsp_code,
 
 	if (header.version / 10000 != HPI_VER_DECIMAL / 10000) {
 		HPI_DEBUG_LOG(ERROR,
-			"firmware major version mismatch  DSP image %d != driver %d\n",
-			header.version, HPI_VER_DECIMAL);
+			"firmware major version mismatch "
+			"DSP image %d != driver %d\n", header.version,
+			HPI_VER_DECIMAL);
 		goto error2;
 	}
 
@@ -128,7 +129,7 @@ error2:
 error1:
 	ps_dsp_code->ps_firmware = NULL;
 	ps_dsp_code->block_length = 0;
-	return (HPI_ERROR_DSP_FILE_NOT_FOUND);
+	return HPI_ERROR_DSP_FILE_NOT_FOUND;
 }
 
 /*-------------------------------------------------------------------*/
@@ -166,11 +167,11 @@ short hpi_dsp_code_read_block(size_t words_requested,
 {
 	if (ps_dsp_code->word_count + words_requested >
 		ps_dsp_code->block_length)
-		return (HPI_ERROR_DSP_FILE_FORMAT);
+		return HPI_ERROR_DSP_FILE_FORMAT;
 
 	*ppblock =
 		((u32 *)(ps_dsp_code->ps_firmware->data)) +
 		ps_dsp_code->word_count;
 	ps_dsp_code->word_count += words_requested;
-	return (0);
+	return 0;
 }

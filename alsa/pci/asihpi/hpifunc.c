@@ -110,10 +110,10 @@ struct hpi_hsubsys *hpi_subsys_create(void
 		hpi_send_recv(&hm, &hr);
 
 		if (hr.error == 0)
-			return (&gh_subsys);
+			return &gh_subsys;
 
 	}
-	return (NULL);
+	return NULL;
 }
 
 void hpi_subsys_free(const struct hpi_hsubsys *ph_subsys)
@@ -288,13 +288,6 @@ u16 hpi_adapter_close(const struct hpi_hsubsys *ph_subsys, u16 adapter_index)
 	hpi_send_recv(&hm, &hr);
 
 	return hr.error;
-}
-
-u16 hpi_adapter_find_object(const struct hpi_hsubsys *ph_subsys,
-	u16 adapter_index, u16 object_type, u16 object_index,
-	u16 *p_dsp_index)
-{
-	return HPI_ERROR_UNIMPLEMENTED;
 }
 
 u16 hpi_adapter_set_mode(const struct hpi_hsubsys *ph_subsys,
@@ -2346,7 +2339,7 @@ u16 hpi_microphone_get_phantom_power(const struct hpi_hsubsys *ph_subsys,
 		HPI_MICROPHONE_PHANTOM_POWER, &on_off);
 	if (pw_on_off)
 		*pw_on_off = (u16)on_off;
-	return (error);
+	return error;
 }
 
 u16 hpi_multiplexer_set_source(const struct hpi_hsubsys *ph_subsys,
@@ -3277,7 +3270,8 @@ void hpi_entity_free(struct hpi_entity *entity)
 		kfree(entity);
 }
 
-u16 hpi_entity_alloc_and_copy(struct hpi_entity *src, struct hpi_entity **dst)
+static u16 hpi_entity_alloc_and_copy(struct hpi_entity *src,
+	struct hpi_entity **dst)
 {
 	size_t buf_size;
 	HPI_DEBUG_ASSERT(dst != NULL);
@@ -3407,7 +3401,7 @@ u16 hpi_entity_alloc_and_pack(const enum e_entity_type type,
 {
 	size_t bytes_to_copy, total_size;
 	u16 hE = 0;
-	*entity = 0;
+	*entity = NULL;
 
 	hE = hpi_entity_check_type(type);
 	if (hE)
@@ -3617,7 +3611,7 @@ u16 hpi_async_event_wait(const struct hpi_hsubsys *ph_subsys, u32 h_async,
 	u16 maximum_events, struct hpi_async_event *p_events,
 	u16 *pw_number_returned)
 {
-	return (0);
+	return 0;
 }
 
 u16 hpi_async_event_get_count(const struct hpi_hsubsys *ph_subsys,

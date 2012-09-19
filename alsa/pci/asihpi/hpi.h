@@ -1,7 +1,7 @@
 /******************************************************************************
 
     AudioScience HPI driver
-    Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
+    Copyright (C) 1997-2010  AudioScience Inc. <support@audioscience.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of version 2 of the GNU General Public License as
@@ -745,8 +745,8 @@ Used by HPI_Tuner_SetMode(), HPI_Tuner_GetMode()
 
 */
 enum HPI_TUNER_MODES {
-	HPI_TUNER_MODE_RSS = 1,	/**< tuner mode attribute RSS */
-	HPI_TUNER_MODE_RDS = 2	/**< tuner mode attribute RBDS/RDS */
+	HPI_TUNER_MODE_RSS = 1,	/**< control  RSS */
+	HPI_TUNER_MODE_RDS = 2	/**< control  RBDS/RDS */
 };
 
 /** Tuner mode attribute values
@@ -756,13 +756,13 @@ Used by HPI_Tuner_SetMode(), HPI_Tuner_GetMode()
 */
 enum HPI_TUNER_MODE_VALUES {
 /* RSS attribute values */
-	HPI_TUNER_MODE_RSS_DISABLE = 0,	/**< tuner mode attribute RSS disable */
-	HPI_TUNER_MODE_RSS_ENABLE = 1,	/**< tuner mode attribute RSS enable */
+	HPI_TUNER_MODE_RSS_DISABLE = 0,	/**< RSS disable */
+	HPI_TUNER_MODE_RSS_ENABLE = 1,	/**< RSS enable */
 
 /* RDS mode attributes */
-	HPI_TUNER_MODE_RDS_DISABLE = 0,	/**< tuner mode attribute RDS - disabled */
-	HPI_TUNER_MODE_RDS_RDS = 1,  /**< tuner mode attribute RDS - RDS mode */
-	HPI_TUNER_MODE_RDS_RBDS = 2 /**< tuner mode attribute RDS - RBDS mode */
+	HPI_TUNER_MODE_RDS_DISABLE = 0,	/**< RDS - disabled */
+	HPI_TUNER_MODE_RDS_RDS = 1,  /**< RDS - RDS mode */
+	HPI_TUNER_MODE_RDS_RBDS = 2 /**<  RDS - RBDS mode */
 };
 
 /** Tuner Level settings

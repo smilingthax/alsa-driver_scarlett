@@ -1,7 +1,7 @@
 /******************************************************************************
 
     AudioScience HPI driver
-    Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
+    Copyright (C) 1997-2010  AudioScience Inc. <support@audioscience.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of version 2 of the GNU General Public License as
@@ -566,7 +566,7 @@ static short create_adapter_obj(struct hpi_adapter_obj *pao,
 
 	boot_error = hpi6000_adapter_boot_load_dsp(pao, pos_error_code);
 	if (boot_error)
-		return (boot_error);
+		return boot_error;
 
 	HPI_DEBUG_LOG(INFO, "bootload DSP OK\n");
 
@@ -596,7 +596,7 @@ static short create_adapter_obj(struct hpi_adapter_obj *pao,
 		error = hpi6000_message_response_sequence(pao, 0, &hM, &hR0);
 		if (hR0.error) {
 			HPI_DEBUG_LOG(DEBUG, "message error %d\n", hR0.error);
-			return (hR0.error);	/*error */
+			return hR0.error;
 		}
 		if (phw->num_dsp == 2) {
 			error = hpi6000_message_response_sequence(pao, 1, &hM,
@@ -696,7 +696,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 		boot_load_family = HPI_ADAPTER_FAMILY_ASI(0x8800);
 		break;
 	default:
-		return (HPI6000_ERROR_UNHANDLED_SUBSYS_ID);
+		return HPI6000_ERROR_UNHANDLED_SUBSYS_ID;
 	}
 
 	/* reset all DSPs, indicate two DSPs are present
@@ -715,7 +715,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 	if (delay != dw2040_reset) {
 		HPI_DEBUG_LOG(ERROR, "INIT_PCI2040 %x %x\n", dw2040_reset,
 			delay);
-		return (HPI6000_ERROR_INIT_PCI2040);
+		return HPI6000_ERROR_INIT_PCI2040;
 	}
 
 	/* Indicate that DSP#0,1 is a C6X */
@@ -763,7 +763,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 			if (data != test_data) {
 				HPI_DEBUG_LOG(ERROR, "INIT_DSPHPI %x %x %x\n",
 					test_data, data, dsp_index);
-				return (HPI6000_ERROR_INIT_DSPHPI);
+				return HPI6000_ERROR_INIT_DSPHPI;
 			}
 			test_data = test_data << 1;
 		}
@@ -782,7 +782,8 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 			 * HPI, the PLL does not seem to lock,
 			 * so we enable the PLL and use the default of x 7
 			 */
-			hpi_write_word(pdo, 0x01B7C100, 0x0000);	/* bypass PLL */
+			/* bypass PLL */
+			hpi_write_word(pdo, 0x01B7C100, 0x0000);
 			for (i = 0; i < 100; i++)
 				delay = ioread32(phw->dw2040_HPICSR +
 					HPI_RESET);
@@ -825,7 +826,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 						test_addr + i, test_data,
 						data, dsp_index);
 
-					return (HPI6000_ERROR_INIT_DSPINTMEM);
+					return HPI6000_ERROR_INIT_DSPINTMEM;
 				}
 				test_data = test_data << 1;
 			}
@@ -945,7 +946,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 						test_addr, test_data, data,
 						dsp_index);
 
-					return (HPI6000_ERROR_INIT_SDRAM1);
+					return HPI6000_ERROR_INIT_SDRAM1;
 				}
 				test_data = test_data << 1;
 			}
@@ -967,7 +968,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 						"DSP dram %x %x %x %x\n",
 						test_addr + i, test_data,
 						data, dsp_index);
-					return (HPI6000_ERROR_INIT_SDRAM2);
+					return HPI6000_ERROR_INIT_SDRAM2;
 				}
 				test_data++;
 			}
@@ -982,7 +983,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 			pos_error_code);
 
 		if (error)
-			return (error);
+			return error;
 
 		while (1) {
 			u32 length;
@@ -1014,7 +1015,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 
 		if (error) {
 			hpi_dsp_code_close(&dsp_code);
-			return (error);
+			return error;
 		}
 		/* verify that code was written correctly */
 		/* this time through, assume no errors in DSP code file/array */
@@ -1051,7 +1052,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 		}
 		hpi_dsp_code_close(&dsp_code);
 		if (error)
-			return (error);
+			return error;
 
 		/* zero out the hostmailbox */
 		{
@@ -1104,7 +1105,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 				hpios_delay_micro_seconds(1000);
 		}
 		if (timeout == 0)
-			return (HPI6000_ERROR_INIT_NOACK);
+			return HPI6000_ERROR_INIT_NOACK;
 
 		/* read the DSP adapter Info from the */
 		/* hostmailbox structure after starting the DSP */
@@ -1150,7 +1151,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 			if (read != test_data) {
 				HPI_DEBUG_LOG(ERROR, "PLD %x %x\n", test_data,
 					read);
-				return (HPI6000_ERROR_INIT_PLDTEST1);
+				return HPI6000_ERROR_INIT_PLDTEST1;
 			}
 			test_data = 0x55555500L & mask;
 			hpi_write_word(pdo, PLD_BASE_ADDRESS + 4L, test_data);
@@ -1159,7 +1160,7 @@ static short hpi6000_adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 			if (read != test_data) {
 				HPI_DEBUG_LOG(ERROR, "PLD %x %x\n", test_data,
 					read);
-				return (HPI6000_ERROR_INIT_PLDTEST2);
+				return HPI6000_ERROR_INIT_PLDTEST2;
 			}
 		}
 	}	/* for numDSP */
@@ -1174,8 +1175,7 @@ static int hpi_set_address(struct dsp_obj *pdo, u32 address)
 
 	do {
 		iowrite32(address, pdo->prHPI_address);
-	}
-	while (hpi6000_check_PCI2040_error_flag(pdo->pa_parent_adapter,
+	} while (hpi6000_check_PCI2040_error_flag(pdo->pa_parent_adapter,
 			H6WRITE)
 		&& --timeout);
 
@@ -1203,7 +1203,7 @@ static u32 hpi_read_word(struct dsp_obj *pdo, u32 address)
 
 	/* take care of errata in revB DSP (2.0.1) */
 	data = ioread32(pdo->prHPI_data);
-	return (data);
+	return data;
 }
 
 /* write a block of 32bit words to the DSP HPI port using auto-inc mode */
@@ -1306,8 +1306,7 @@ static u16 hpi6000_dsp_block_read32(struct hpi_adapter_obj *pao,
 		do {
 			hpi_read_block(pdo, local_hpi_address, pdata,
 				xfer_size);
-		}
-		while (hpi6000_check_PCI2040_error_flag(pao, H6READ)
+		} while (hpi6000_check_PCI2040_error_flag(pao, H6READ)
 			&& --time_out);
 		if (!time_out)
 			break;
@@ -1357,8 +1356,7 @@ static short hpi6000_message_response_sequence(struct hpi_adapter_obj *pao,
 				hpi_read_word(pdo,
 				HPI_HIF_ADDR(message_buffer_address));
 			phw->message_buffer_address_on_dsp = address;
-		}
-		while (hpi6000_check_PCI2040_error_flag(pao, H6READ)
+		} while (hpi6000_check_PCI2040_error_flag(pao, H6READ)
 			&& --timeout);
 		if (!timeout)
 			return HPI6000_ERROR_MSG_GET_ADR;
@@ -1402,8 +1400,7 @@ static short hpi6000_message_response_sequence(struct hpi_adapter_obj *pao,
 	timeout = TIMEOUT;
 	do {
 		length = hpi_read_word(pdo, HPI_HIF_ADDR(length));
-	}
-	while (hpi6000_check_PCI2040_error_flag(pao, H6READ) && --timeout);
+	} while (hpi6000_check_PCI2040_error_flag(pao, H6READ) && --timeout);
 	if (!timeout)
 		length = sizeof(struct hpi_response);
 
@@ -1485,8 +1482,7 @@ static short hpi6000_send_data(struct hpi_adapter_obj *pao, u16 dsp_index,
 			address = hpi_read_word(pdo, HPI_HIF_ADDR(address));
 			/* DSP returns number of DWORDS */
 			length = hpi_read_word(pdo, HPI_HIF_ADDR(length));
-		}
-		while (hpi6000_check_PCI2040_error_flag(pao, H6READ));
+		} while (hpi6000_check_PCI2040_error_flag(pao, H6READ));
 
 		if (!hpi6000_send_data_check_adr(address, length))
 			return HPI6000_ERROR_SEND_DATA_ADR;
@@ -1555,8 +1551,7 @@ static short hpi6000_get_data(struct hpi_adapter_obj *pao, u16 dsp_index,
 		do {
 			address = hpi_read_word(pdo, HPI_HIF_ADDR(address));
 			length = hpi_read_word(pdo, HPI_HIF_ADDR(length));
-		}
-		while (hpi6000_check_PCI2040_error_flag(pao, H6READ));
+		} while (hpi6000_check_PCI2040_error_flag(pao, H6READ));
 
 		/* read the data */
 		{
@@ -1600,8 +1595,7 @@ static short hpi6000_send_host_command(struct hpi_adapter_obj *pao,
 		hpi_write_word(pdo, HPI_HIF_ADDR(host_cmd), host_cmd);
 		/* flush the FIFO */
 		hpi_set_address(pdo, HPI_HIF_ADDR(host_cmd));
-	}
-	while (hpi6000_check_PCI2040_error_flag(pao, H6WRITE) && --timeout);
+	} while (hpi6000_check_PCI2040_error_flag(pao, H6WRITE) && --timeout);
 
 	/* reset the interrupt bit */
 	iowrite32(0x00040004, pdo->prHPI_control);
@@ -1661,8 +1655,8 @@ static short hpi6000_wait_dsp_ack(struct hpi_adapter_obj *pao, u16 dsp_index,
 		ack = hpi_read_word(pdo, HPI_HIF_ADDR(dsp_ack));
 		if (ack == ack_value)
 			break;
-		if ((ack & HPI_HIF_ERROR_MASK) &
-			!hpi6000_check_PCI2040_error_flag(pao, H6READ))
+		if ((ack & HPI_HIF_ERROR_MASK)
+			&& !hpi6000_check_PCI2040_error_flag(pao, H6READ))
 			break;
 		/*for (i=0;i<1000;i++) */
 		/*      dwPause=i+1; */
@@ -1694,8 +1688,7 @@ static short hpi6000_update_control_cache(struct hpi_adapter_obj *pao,
 		cache_dirty_flag =
 			hpi_read_word((struct dsp_obj *)pdo,
 			HPI_HIF_ADDR(control_cache_is_dirty));
-	}
-	while (hpi6000_check_PCI2040_error_flag(pao, H6READ) && --timeout);
+	} while (hpi6000_check_PCI2040_error_flag(pao, H6READ) && --timeout);
 	if (!timeout) {
 		err = HPI6000_ERROR_CONTROL_CACHE_PARAMS;
 		goto unlock;
@@ -1716,8 +1709,7 @@ static short hpi6000_update_control_cache(struct hpi_adapter_obj *pao,
 				length = hpi_read_word((struct dsp_obj *)pdo,
 					HPI_HIF_ADDR
 					(control_cache_size_in_bytes));
-			}
-			while (hpi6000_check_PCI2040_error_flag(pao, H6READ)
+			} while (hpi6000_check_PCI2040_error_flag(pao, H6READ)
 				&& --timeout);
 			if (!timeout) {
 				err = HPI6000_ERROR_CONTROL_CACHE_ADDRLEN;
@@ -1741,8 +1733,7 @@ static short hpi6000_update_control_cache(struct hpi_adapter_obj *pao,
 				HPI_HIF_ADDR(control_cache_is_dirty), 0);
 			/* flush the FIFO */
 			hpi_set_address(pdo, HPI_HIF_ADDR(host_cmd));
-		}
-		while (hpi6000_check_PCI2040_error_flag(pao, H6WRITE)
+		} while (hpi6000_check_PCI2040_error_flag(pao, H6WRITE)
 			&& --timeout);
 		if (!timeout) {
 			err = HPI6000_ERROR_CONTROL_CACHE_FLUSH;
