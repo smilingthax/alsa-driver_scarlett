@@ -132,8 +132,10 @@ struct snd_card {
 	int shutdown;			/* this card is going down */
 	int free_on_last_close;		/* free in context of file_release */
 	wait_queue_head_t shutdown_sleep;
-	struct device *parent;
-	struct device *dev;
+	struct device *dev;		/* device assigned to this card */
+#ifndef CONFIG_SYSFS_DEPRECATED
+	struct device *card_dev;	/* cardX object for sysfs */
+#endif
 
 #ifdef CONFIG_PM
 	unsigned int power_state;	/* power state */
@@ -191,6 +193,16 @@ struct snd_minor {
 	struct device *dev;		/* device for sysfs */
 };
 
+/* return a device pointer linked to each sound device as a parent */
+static inline struct device *snd_card_get_device_link(struct snd_card *card)
+{
+#ifdef CONFIG_SYSFS_DEPRECATED
+	return card ? card->dev : NULL;
+#else
+	return card ? card->card_dev : NULL;
+#endif
+}
+
 /* sound.c */
 
 extern int snd_major;
@@ -230,7 +242,7 @@ static inline int snd_register_device(int type, struct snd_card *card, int dev,
 {
 	return snd_register_device_for_dev(type, card, dev, f_ops,
 					   private_data, name,
-					   card ? card->dev : NULL);
+					   snd_card_get_device_link(card));
 }
 
 int snd_unregister_device(int type, struct snd_card *card, int dev);
@@ -288,7 +300,7 @@ int snd_card_file_add(struct snd_card *card, struct file *file);
 int snd_card_file_remove(struct snd_card *card, struct file *file);
 
 #ifndef snd_card_set_dev
-#define snd_card_set_dev(card,devptr) ((card)->parent = (devptr))
+#define snd_card_set_dev(card,devptr) ((card)->dev = (devptr))
 #endif
 
 /* device.c */
