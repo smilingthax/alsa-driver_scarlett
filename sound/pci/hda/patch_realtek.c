@@ -1569,18 +1569,22 @@ static struct hda_input_mux alc888_2_capture_sources[2] = {
 static struct hda_input_mux alc888_acer_aspire_6530_sources[2] = {
 	/* Interal mic only available on one ADC */
 	{
-		.num_items = 3,
+		.num_items = 5,
 		.items = {
 			{ "Ext Mic", 0x0 },
+			{ "Line In", 0x2 },
 			{ "CD", 0x4 },
+			{ "Input Mix", 0xa },
 			{ "Int Mic", 0xb },
 		},
 	},
 	{
-		.num_items = 2,
+		.num_items = 4,
 		.items = {
 			{ "Ext Mic", 0x0 },
+			{ "Line In", 0x2 },
 			{ "CD", 0x4 },
+			{ "Input Mix", 0xa },
 		},
 	}
 };
@@ -8209,6 +8213,8 @@ static struct snd_kcontrol_new alc888_acer_aspire_6530_mixer[] = {
 	HDA_BIND_MUTE("Front Playback Switch", 0x0c, 2, HDA_INPUT),
 	HDA_CODEC_VOLUME("LFE Playback Volume", 0x0f, 0x0, HDA_OUTPUT),
 	HDA_BIND_MUTE("LFE Playback Switch", 0x0f, 2, HDA_INPUT),
+	HDA_CODEC_VOLUME("Line Playback Volume", 0x0b, 0x02, HDA_INPUT),
+	HDA_CODEC_MUTE("Line Playback Switch", 0x0b, 0x02, HDA_INPUT),
 	HDA_CODEC_VOLUME("CD Playback Volume", 0x0b, 0x04, HDA_INPUT),
 	HDA_CODEC_MUTE("CD Playback Switch", 0x0b, 0x04, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
@@ -12457,6 +12463,8 @@ static int alc268_parse_auto_config(struct hda_codec *codec)
 	if (err < 0)
 		return err;
 
+	alc_ssid_check(codec, 0x15, 0x1b, 0x14);
+
 	return 1;
 }
 
@@ -13364,6 +13372,8 @@ static int alc269_parse_auto_config(struct hda_codec *codec)
 
 	if (!spec->cap_mixer && !spec->no_analog)
 		set_capture_mixer(spec);
+
+	alc_ssid_check(codec, 0x15, 0x1b, 0x14);
 
 	return 1;
 }
