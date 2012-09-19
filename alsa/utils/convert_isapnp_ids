@@ -53,7 +53,7 @@ function dataline(line,   a, b, idx, num)
 	num = split($line, a, ",")
 	split(a[1], b, "\"")
 	printdata(b[2], "\t{ ISAPNP_CARD_ID")
-	print "\t  .devs : {"
+	print "\t  devs : {"
 	for (idx = 2; idx < num - 1; idx = idx + 1) {
 		split(a[idx], b, "\"")
 		printdata(b[2], "\t\tISAPNP_DEVICE_ID")
@@ -69,6 +69,8 @@ function dataline(line,   a, b, idx, num)
 	print " * Source file: " ARGV[1]
 	print " */"
 	print ""
+	print "#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)"
+	print ""
 	structname = getstructname($0)
 	print "static struct isapnp_card_id " structname "_old[] __devinitdata = {"
 	getline
@@ -76,10 +78,12 @@ function dataline(line,   a, b, idx, num)
 		if (match($0, ".id[ \t]*=[ \t]\"\"")) {
 			print "\t{ ISAPNP_CARD_END, }"
 		} else {
-			if (match($0, "{.*}")) {
-				dataline($0)
-			} else {
-				print $0
+			if (match($0, "^# [0-9]+") == 0) {
+				if (match($0, "{.*}")) {
+					dataline($0)
+				} else {
+					print $0
+				}
 			}
 		}
 		getline
@@ -87,4 +91,6 @@ function dataline(line,   a, b, idx, num)
 	print "};"
 	print ""
 	print "ISAPNP_CARD_TABLE(" structname "_old);"
+	print ""
+	print "#endif /* 2.5.0 */"
 }
