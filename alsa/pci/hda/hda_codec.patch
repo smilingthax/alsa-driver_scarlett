@@ -17,7 +17,7 @@
 +/* 2.4 kernels seem to have a problem with workq wrapper... */
 +int snd_hda_queue_unsol_event(struct hda_bus *bus, u32 res, u32 res_ex)
 +{
-+	reutrn 0;
++	return 0;
 +}
 +
 +static int init_unsol_queue(struct hda_bus *bus)

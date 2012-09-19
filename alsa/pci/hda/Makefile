@@ -5,6 +5,8 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
+clean-files := hda_codec.c
+
 export-objs  := hda_codec.o
 
 EXTRA_CFLAGS += -I$(SND_TOPDIR)/alsa-kernel/pci/hda
