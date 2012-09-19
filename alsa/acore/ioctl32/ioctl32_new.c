@@ -250,8 +250,6 @@ static int get_ctl_type(struct snd_card *card, struct snd_ctl_elem_id *id)
 	return err;
 }
 
-extern int snd_major;
-
 static inline int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file, unsigned int native_ctl)
 {
 	struct snd_ctl_elem_value *data;
@@ -262,7 +260,8 @@ static inline int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd,
 
 	/* sanity check */
 	if (imajor(file->f_dentry->d_inode) != snd_major ||
-	    SNDRV_MINOR_DEVICE(iminor(file->f_dentry->d_inode)) != SNDRV_MINOR_CONTROL)
+	    !snd_lookup_minor_data(iminor(file->f_dentry->d_inode),
+				   SNDRV_DEVICE_TYPE_CONTROL))
 		return -ENOTTY;
 
 	if ((ctl = file->private_data) == NULL)

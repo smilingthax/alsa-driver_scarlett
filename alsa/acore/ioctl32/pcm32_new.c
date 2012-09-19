@@ -142,15 +142,15 @@ DEFINE_ALSA_IOCTL(pcm_channel_info);
 DEFINE_ALSA_IOCTL(pcm_status);
 
 /* sanity device check */
-extern int snd_major;
 static int sanity_check_pcm(struct file *file)
 {
-	unsigned short minor;
+	unsigned int minor;
+
 	if (imajor(file->f_dentry->d_inode) != snd_major)
 		return -ENOTTY;
 	minor = iminor(file->f_dentry->d_inode);
-	if (minor >= 256 || 
-	    minor % SNDRV_MINOR_DEVICES < SNDRV_MINOR_PCM_PLAYBACK)
+	if (!snd_lookup_minor_data(minor, SNDRV_DEVICE_TYPE_PCM_PLAYBACK) &&
+	    !snd_lookup_minor_data(minor, SNDRV_DEVICE_TYPE_PCM_CAPTURE))
 		return -ENOTTY;
 	return 0;
 }
