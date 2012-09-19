@@ -180,6 +180,8 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #define MODULE_LICENSE(license)
 #endif
 
+#endif /* < 2.6.0 */
+
 #include <linux/types.h>
 #ifndef __bitwise
 typedef __u16 __le16;
@@ -187,8 +189,6 @@ typedef __u16 __be16;
 typedef __u32 __le32;
 typedef __u32 __be32;
 #endif
-
-#endif /* < 2.6.0 */
 
 #include <linux/wait.h>
 #ifndef wait_event_timeout
