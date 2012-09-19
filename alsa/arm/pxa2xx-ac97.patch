@@ -1,0 +1,41 @@
+--- ../alsa-kernel/arm/pxa2xx-ac97.c	2005-10-31 13:57:30.000000000 +0100
++++ pxa2xx-ac97.c	2005-10-31 14:21:57.000000000 +0100
+@@ -275,22 +275,38 @@
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++static int pxa2xx_ac97_suspend(struct device *_dev, pm_message_t state, u32 level)
++#else
+ static int pxa2xx_ac97_suspend(struct device *_dev, pm_message_t state)
++#endif
+ {
+ 	snd_card_t *card = dev_get_drvdata(_dev);
+ 	int ret = 0;
+ 
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++	if (level != SUSPEND_DISABLE)
++		return 0;
++#endif
+ 	if (card)
+ 		ret = pxa2xx_ac97_do_suspend(card, PMSG_SUSPEND);
+ 
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++static int pxa2xx_ac97_resume(struct device *_dev, u32 level)
++#else
+ static int pxa2xx_ac97_resume(struct device *_dev)
++#endif
+ {
+ 	snd_card_t *card = dev_get_drvdata(_dev);
+ 	int ret = 0;
+ 
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++	if (level != RESUME_ENABLE)
++		return 0;
++#endif
+ 	if (card)
+ 		ret = pxa2xx_ac97_do_resume(card);
+ 
