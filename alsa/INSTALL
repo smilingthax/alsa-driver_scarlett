@@ -80,7 +80,6 @@ to compile CVS sources of alsa-driver package.
 
 For compilation you can use these commands:
 
-	make -C utils update-deps
 	aclocal
 	autoconf
 	./configure
@@ -285,7 +284,7 @@ Module parameters
     snd_port	- port # for SB DSP 4.x chip (0x220,0x240,0x260)
     snd_mpu_port - port # for MPU-401 UART (0x300,0x330), -1 = disable
     snd_awe_port - base port # for EMU8000 synthesizer (0x620,0x640,0x660)
-                   (snd-card-sbawe module only)
+                   (snd-sbawe module only)
     snd_irq	- IRQ # for SB DSP 4.x chip (5,7,9,10)
     snd_dma8	- 8-bit DMA # for SB DSP 4.x chip (0,1,3)
     snd_dma16	- 16-bit DMA # for SB DSP 4.x chip (5,6,7)
@@ -828,8 +827,8 @@ number).
 ----- /etc/modules.conf
 
 # ALSA portion
-alias snd-card-0 snd-card-interwave
-alias snd-card-1 snd-card-ens1371
+alias snd-card-0 snd-interwave
+alias snd-card-1 snd-ens1371
 # OSS/Free portion
 alias sound-slot-0 snd-card-0
 alias sound-slot-1 snd-card-1
@@ -868,8 +867,8 @@ options isapnp isapnp_reserve_irq=9,10,11,12,13
 # ALSA native device support
 alias char-major-116 snd
 options snd snd_major=116 snd_cards_limit=1
-alias snd-card-0 snd-card-interwave
-options snd-card-interwave snd_index=0 snd_id="GusPnP"
+alias snd-card-0 snd-interwave
+options snd-interwave snd_index=0 snd_id="GusPnP"
 
 # OSS/Free setup
 alias char-major-14 soundcore
