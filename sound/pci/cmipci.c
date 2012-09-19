@@ -201,6 +201,7 @@ MODULE_PARM_SYNTAX(snd_fm_port, SNDRV_ENABLED ",allows:{{-1},{0x388},{0x3c8},{0x
 #define CM_VIDWPPRT		0x00002000
 #define CM_SFILENB		0x00001000
 #define CM_MMODE_MASK		0x00000E00
+#define CM_SPDIF_SELECT		0x00000100	/* for model > 039 ? */
 #define CM_ENCENTER		0x00000080	/* shared with FLINKON? */
 #define CM_FLINKON		0x00000080
 #define CM_FLINKOFF		0x00000040
@@ -2137,6 +2138,7 @@ DEFINE_BIT_SWITCH_ARG(spdif_in, CM_REG_FUNCTRL1, CM_SPDF_1, 0);
 DEFINE_BIT_SWITCH_ARG(spdif_0, CM_REG_FUNCTRL1, CM_SPDF_0, 0);
 DEFINE_BIT_SWITCH_ARG(spdo_48k, CM_REG_MISC_CTRL, CM_SPDF_AC97|CM_SPDIF48K, 0);
 #endif
+DEFINE_BIT_SWITCH_ARG(spdif_in_1_2, CM_REG_MISC_CTRL, CM_SPDIF_SELECT, 0, 0);
 DEFINE_BIT_SWITCH_ARG(spdif_enable, CM_REG_LEGACY_CTRL, CM_ENSPDOUT, 0, 0);
 DEFINE_BIT_SWITCH_ARG(spdo2dac, CM_REG_FUNCTRL1, CM_SPDO2DAC, 0, 1);
 DEFINE_BIT_SWITCH_ARG(spdi_valid, CM_REG_MISC, CM_SPDVALID, 1, 0);
@@ -2237,9 +2239,10 @@ static snd_kcontrol_new_t snd_cmipci_old_mixer_switches[] __devinitdata = {
 	DEFINE_MIXER_SWITCH("IEC958 Mix Analog", spdif_dac_out),
 };
 
-/* only for model 039 */
+/* only for model 039 or later */
 static snd_kcontrol_new_t snd_cmipci_extra_mixer_switches[] __devinitdata = {
 	DEFINE_MIXER_SWITCH("Line-In As Bass", line_bass),
+	DEFINE_MIXER_SWITCH("IEC958 In Select", spdif_in_1_2),
 };
 
 /* card control switches */
@@ -2299,7 +2302,7 @@ static int __devinit snd_cmipci_mixer_new(cmipci_t *cm, int pcm_spdif_device)
 		cm->spdif_pcm_ctl = kctl;
 		if (cm->chip_version <= 37) {
 			sw = snd_cmipci_old_mixer_switches;
-			for (idx = 0; idx < num_controls(snd_cmipci_extra_mixer_switches); idx++, sw++) {
+			for (idx = 0; idx < num_controls(snd_cmipci_old_mixer_switches); idx++, sw++) {
 				err = snd_ctl_add(cm->card, snd_ctl_new1(sw, cm));
 				if (err < 0)
 					return err;
@@ -2589,10 +2592,10 @@ static int __devinit snd_cmipci_create(snd_card_t *card,
 
 		if (snd_opl3_create(card, iosynth, iosynth + 2,
 				    OPL3_HW_OPL3, 0, &cm->opl3) < 0) {
-			snd_printk("no OPL device at 0x%lx\n", iosynth);
+			printk(KERN_ERR "cmipci: no OPL device at 0x%lx\n", iosynth);
 		} else {
 			if ((err = snd_opl3_hwdep_new(cm->opl3, 0, 1, &cm->opl3hwdep)) < 0)
-				snd_printk("cannot create OPL3 hwdep\n");
+				printk(KERN_ERR "cmipci: cannot create OPL3 hwdep\n");
 		}
 	}
 
@@ -2625,7 +2628,7 @@ static int __devinit snd_cmipci_create(snd_card_t *card,
 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_CMIPCI,
 					       iomidi, 0,
 					       cm->irq, 0, &cm->rmidi)) < 0) {
-			snd_printk("cmipci: no UART401 device at 0x%lx\n", iomidi);
+			printk(KERN_ERR "cmipci: no UART401 device at 0x%lx\n", iomidi);
 		}
 	}
 
@@ -2727,7 +2730,7 @@ static int __init alsa_card_cmipci_init(void)
 
 	if ((err = pci_module_init(&driver)) < 0) {
 #ifdef MODULE
-		snd_printk("C-Media PCI soundcard not found or device busy\n");
+		printk(KERN_ERR "C-Media PCI soundcard not found or device busy\n");
 #endif
 		return err;
 	}

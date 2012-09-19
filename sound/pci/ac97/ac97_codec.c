@@ -115,7 +115,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x43525960, 0xfffffff8, "CS4291",		NULL },
 { 0x48525300, 0xffffff00, "HMP9701",		NULL },
 { 0x49434501, 0xffffffff, "ICE1230",		NULL },
-{ 0x49434511, 0xffffffff, "ICE1232",		NULL }, // only guess --jk
+{ 0x49434511, 0xffffffff, "ICE1232",		NULL }, // alias VIA VT1611A?
 { 0x4e534300, 0xffffffff, "LM4540/43/45/46/48",	NULL }, // only guess --jk
 { 0x4e534331, 0xffffffff, "LM4549",		NULL },
 { 0x53494c22, 0xffffffff, "Si3036",		NULL },
