@@ -28,7 +28,6 @@
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/soc.h>
-#include <sound/soc-dapm.h>
 
 #include <asm/mach-types.h>
 #include <plat/mcbsp.h>
@@ -308,6 +307,7 @@ static int __init omap3pandora_soc_init(void)
 		pr_err(PREFIX "Failed to get DAC regulator from %s: %ld\n",
 			dev_name(&omap3pandora_snd_device->dev),
 			PTR_ERR(omap3pandora_dac_reg));
+		ret = PTR_ERR(omap3pandora_dac_reg);
 		goto fail3;
 	}
 

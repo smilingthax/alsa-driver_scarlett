@@ -44,7 +44,6 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
-#include <sound/soc-dapm.h>
 
 #include <asm/mach-types.h>
 #include <mach/hardware.h>
@@ -241,6 +240,7 @@ static int __init at91sam9g20ek_init(void)
 	if (!at91sam9g20ek_snd_device) {
 		printk(KERN_ERR "ASoC: Platform device allocation failed\n");
 		ret = -ENOMEM;
+		goto err_mclk;
 	}
 
 	platform_set_drvdata(at91sam9g20ek_snd_device,
@@ -249,11 +249,13 @@ static int __init at91sam9g20ek_init(void)
 	ret = platform_device_add(at91sam9g20ek_snd_device);
 	if (ret) {
 		printk(KERN_ERR "ASoC: Platform device allocation failed\n");
-		platform_device_put(at91sam9g20ek_snd_device);
+		goto err_device_add;
 	}
 
 	return ret;
 
+err_device_add:
+	platform_device_put(at91sam9g20ek_snd_device);
 err_mclk:
 	clk_put(mclk);
 	mclk = NULL;

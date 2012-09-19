@@ -30,7 +30,6 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
-#include <sound/soc-dapm.h>
 
 #include <asm/mach-types.h>
 #include <mach/hardware.h>
@@ -168,7 +167,6 @@ static int __init afeb9260_soc_init(void)
 
 	return 0;
 err1:
-	platform_device_del(afeb9260_snd_device);
 	platform_device_put(afeb9260_snd_device);
 	return err;
 }
