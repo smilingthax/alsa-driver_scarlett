@@ -2242,18 +2242,13 @@ int __devinit snd_hda_parse_pin_def_config(struct hda_codec *codec,
 	 * HDA sequence is:
 	 *    4-ch: front/surr  =>  OK as it is
 	 *    6-ch: front/clfe/surr
-	 *    8-ch: front/clfe/side/surr
+	 *    8-ch: front/clfe/rear/side|fc
 	 */
 	switch (cfg->line_outs) {
 	case 3:
-		nid = cfg->line_out_pins[1];
-		cfg->line_out_pins[1] = cfg->line_out_pins[2];
-		cfg->line_out_pins[2] = nid;
-		break;
 	case 4:
 		nid = cfg->line_out_pins[1];
-		cfg->line_out_pins[1] = cfg->line_out_pins[3];
-		cfg->line_out_pins[3] = cfg->line_out_pins[2];
+		cfg->line_out_pins[1] = cfg->line_out_pins[2];
 		cfg->line_out_pins[2] = nid;
 		break;
 	}
@@ -2293,12 +2288,14 @@ int __devinit snd_hda_parse_pin_def_config(struct hda_codec *codec,
 			       sizeof(cfg->speaker_pins));
 			cfg->speaker_outs = 0;
 			memset(cfg->speaker_pins, 0, sizeof(cfg->speaker_pins));
+			cfg->line_out_type = AUTO_PIN_SPEAKER_OUT;
 		} else if (cfg->hp_outs) {
 			cfg->line_outs = cfg->hp_outs;
 			memcpy(cfg->line_out_pins, cfg->hp_pins,
 			       sizeof(cfg->hp_pins));
 			cfg->hp_outs = 0;
 			memset(cfg->hp_pins, 0, sizeof(cfg->hp_pins));
+			cfg->line_out_type = AUTO_PIN_HP_OUT;
 		}
 	}
 
