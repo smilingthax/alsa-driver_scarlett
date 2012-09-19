@@ -1076,10 +1076,14 @@ def cvsps_merge1(f,t=0):
 		elif ok == 1:
 			if line[:14] == "Signed-off-by:":
 				signed.append(line)
-			elif line[:8] == "Summary:":
-				summary = line[8:]
 			elif line[:9] == "Summary: ":
 				summary = line[9:]
+			elif line[:8] == "Summary:":
+				summary = line[8:]
+			elif line[:9] == "Subject: ":
+				summary = line[9:]
+			elif line[:8] == "Subject:":
+				summary = line[8:]
 			else:
 				log.append(line)
 		elif ok == 2:
