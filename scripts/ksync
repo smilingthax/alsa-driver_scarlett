@@ -185,6 +185,7 @@ COMMENT_MAP = [
 		('/sparc'		,'ERROR'),
 		('/include/emux_synth.h','Common EMU synth'),
 		('/synth/emux'		,'Common EMU synth'),
+		('/synth/Makefile'	,'Synth'),
 		('/pcmcia/vx'		,'Digigram VX Pocket driver'),
 		('/pcmcia/pdaudiocf'	,'Sound Core PDAudioCF driver'),
 		('/pcmcia/Kconfig'	,'PCMCIA Kconfig'),
