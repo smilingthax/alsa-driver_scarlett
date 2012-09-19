@@ -465,6 +465,15 @@ static inline void class_simple_device_add(struct class_simple *class, int devnu
 static inline void class_simple_device_remove(int devnum) { return; }
 #endif
 
+/* msleep */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)
+#define msleep(msecs) \
+	do { \
+		set_current_state(TASK_UNINTERRUPTIBLE); \
+		schedule_timeout(((msecs) * HZ + 999) / 1000);	\
+	} while (0)
+#endif
+
 #include "amagic.h"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
