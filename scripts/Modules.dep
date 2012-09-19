@@ -15,6 +15,16 @@
 %makefile endfooter
 %makefile endgroup @if_sequencer
 
+%makefile group @if_sb16_csp
+%makefile header
+%makefile line ifeq ($(CONFIG_SND_SB16_CSP),y)
+%makefile endheader
+%makefile indent 2
+%makefile footer
+%makefile line endif
+%makefile endfooter
+%makefile endgroup @if_sb16_csp
+
 %dir linux/sound/core
 snd
 snd-rawmidi snd
@@ -114,7 +124,7 @@ snd-sb-common
 snd-sb8-dsp snd-sb-common snd-pcm snd-seq-midi
 |snd-sb snd-sb8-dsp snd-opl3-synth
 snd-sb16-dsp snd-sb-common snd-pcm
-snd-sb16-csp snd-sb-common snd-hwdep
+snd-sb16-csp @if_sb16_csp snd-sb-common snd-hwdep
 |snd-sb16 snd-sb16-dsp snd-sb16-csp snd-mpu401-uart snd-opl3-synth
 snd-emu8000-synth @if_sequencer snd-emux-synth
 |snd-sbawe snd-sb16-dsp snd-sb16-csp snd-mpu401-uart \
