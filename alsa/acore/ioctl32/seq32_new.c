@@ -59,6 +59,7 @@ struct sndrv_seq_port_info32 {
 	COPY(write_use);\
 	COPY(flags);\
 	COPY(time_queue);\
+	dst->kernel = 0;\
 }
 
 DEFINE_ALSA_IOCTL(seq_port_info);

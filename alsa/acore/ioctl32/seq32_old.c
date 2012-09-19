@@ -42,7 +42,8 @@ struct sndrv_seq_port_info32 {
 
 	u32 kernel;			/* reserved for kernel use (must be NULL) */
 	u32 flags;		/* misc. conditioning */
-	char reserved[60];		/* for future use */
+	unsigned char time_queue;	/* queue # for timestamping */
+	char reserved[59];		/* for future use */
 };
 
 #define CVT_sndrv_seq_port_info()\
@@ -57,6 +58,8 @@ struct sndrv_seq_port_info32 {
 	COPY(read_use);\
 	COPY(write_use);\
 	COPY(flags);\
+	COPY(time_queue);\
+	dst->kernel = 0;\
 }
 
 DEFINE_ALSA_IOCTL(seq_port_info);
