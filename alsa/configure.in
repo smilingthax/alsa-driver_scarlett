@@ -362,13 +362,11 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
     if test ! -f include/$1; then
       if test -z "$2" ; then
         echo "Creating a dummy <$1>..."
-        mkdir -p include/linux
-        mkdir -p include/asm
+        mkdir -p include/linux include/asm include/media
         touch include/$1
       else
         echo "Creating <$1>..."
-        mkdir -p include/linux
-        mkdir -p include/asm
+        mkdir -p include/linux include/asm include/media
         echo "$2" > include/$1
       fi
     fi
@@ -390,8 +388,7 @@ AC_DEFUN([MODIFY_KERNEL_HEADER], [
     fi
   else
     AC_MSG_RESULT(yes)
-    mkdir -p include/linux
-    mkdir -p include/asm
+    mkdir -p include/linux include/asm include/media
     echo "#ifndef $2" > include/$1
     echo "#define $2" >> include/$1
     cat "$KERNDIR/include/$1" >> include/$1
@@ -608,6 +605,7 @@ CHECK_KERNEL_HEADER(linux/irq.h)
 CHECK_KERNEL_HEADER(linux/threads.h)
 CHECK_KERNEL_HEADER(linux/rwsem.h)
 CHECK_KERNEL_HEADER(linux/gameport.h)
+CHECK_KERNEL_HEADER(media/v4l2-dev.h)
 CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
 CHECK_KERNEL_HEADER(linux/highmem.h)
 CHECK_KERNEL_HEADER(linux/workqueue.h)
