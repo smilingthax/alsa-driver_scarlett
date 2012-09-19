@@ -777,4 +777,11 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 #endif /* to_gameport_driver */
 #endif /* GAMEPORT || GAMEPORT_MODULE */
 
+/* use pci_module_init on older kernels */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#ifdef CONFIG_PCI
+#define pci_register_driver	pci_module_init
+#endif
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
