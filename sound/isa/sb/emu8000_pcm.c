@@ -25,6 +25,29 @@
 
 #define chip_t emu8000_t
 
+/*
+ * define the following if you want to use this pcm with non-interleaved mode
+ */
+/* #define USE_NONINTERLEAVE */
+
+/* NOTE: for using the non-interleaved mode with alsa-lib, you have to set
+ * mmap_emulation flag to 1 in your .asoundrc, such like
+ *
+ *	pcm.emu8k {
+ *		type plug
+ *		slave.pcm {
+ *			type hw
+ *			card 0
+ *			device 1
+ *			mmap_emulation 1
+ *		}
+ *	}
+ *
+ * besides, for the time being, the non-interleaved mode doesn't work well on
+ * alsa-lib...
+ */
+
+
 typedef struct snd_emu8k_pcm emu8k_pcm_t;
 
 struct snd_emu8k_pcm {
@@ -56,18 +79,24 @@ struct snd_emu8k_pcm {
  * open up channels for the simultaneous data transfer and playback
  */
 static int
-emu8k_open_dram_for_pcm(emu8000_t *emu)
+emu8k_open_dram_for_pcm(emu8000_t *emu, int channels)
 {
 	int i;
 
-	/* reserve 2 voices for playback */
+	/* reserve up to 2 voices for playback */
 	snd_emux_lock_voice(emu->emu, 0);
-	snd_emux_lock_voice(emu->emu, 1);
+	if (channels > 1)
+		snd_emux_lock_voice(emu->emu, 1);
 
 	/* reserve 28 voices for loading */
-	for (i = 2; i < EMU8000_DRAM_VOICES; i++) {
+	for (i = channels + 1; i < EMU8000_DRAM_VOICES; i++) {
+		unsigned int mode = EMU8000_RAM_WRITE;
 		snd_emux_lock_voice(emu->emu, i);
-		snd_emu8000_dma_chan(emu, i, EMU8000_RAM_WRITE);
+#ifndef USE_NONINTERLEAVE
+		if (channels > 1 && (i & 1) != 0)
+			mode |= EMU8000_RAM_RIGHT;
+#endif
+		snd_emu8000_dma_chan(emu, i, mode);
 	}
 
 	/* assign voice 31 and 32 to ROM */
@@ -129,7 +158,11 @@ static int calc_rate_offset(int hz)
  */
 
 static snd_pcm_hardware_t emu8k_pcm_hw = {
+#ifdef USE_NONINTERLEAVE
 	info:			SNDRV_PCM_INFO_NONINTERLEAVED,
+#else
+	info:			SNDRV_PCM_INFO_INTERLEAVED,
+#endif
 	formats:		SNDRV_PCM_FMTBIT_S16_LE,
 	rates:			SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_48000,
 	rate_min:		4000,
@@ -399,6 +432,8 @@ do { \
 } while (0)
 
 
+#ifdef USE_NONINTERLEAVE
+/* copy one channel block */
 static int emu8k_transfer_block(emu8000_t *emu, int offset, unsigned short *buf, int count)
 {
 	EMU8000_SMALW_WRITE(emu, offset);
@@ -439,6 +474,7 @@ static int emu8k_pcm_copy(snd_pcm_substream_t *subs,
 	}
 }
 
+/* make a channel block silence */
 static int emu8k_silence_block(emu8000_t *emu, int offset, int count)
 {
 	EMU8000_SMALW_WRITE(emu, offset);
@@ -472,6 +508,67 @@ static int emu8k_pcm_silence(snd_pcm_substream_t *subs,
 	}
 }
 
+#else /* interleave */
+
+/*
+ * copy the interleaved data can be done easily by using
+ * DMA "left" and "right" channels on emu8k engine.
+ */
+static int emu8k_pcm_copy(snd_pcm_substream_t *subs,
+			  int voice,
+			  snd_pcm_uframes_t pos,
+			  void *src,
+			  snd_pcm_uframes_t count)
+{
+	emu8k_pcm_t *rec = subs->runtime->private_data;
+	emu8000_t *emu = rec->emu;
+	unsigned short *buf = src;
+
+	snd_emu8000_write_wait(emu);
+	EMU8000_SMALW_WRITE(emu, pos + rec->loop_start[0]);
+	if (rec->voices > 1)
+		EMU8000_SMARW_WRITE(emu, pos + rec->loop_start[1]);
+
+	while (count-- > 0) {
+		unsigned short sval;
+		CHECK_SCHEDULER();
+		get_user(sval, buf);
+		EMU8000_SMLD_WRITE(emu, sval);
+		buf++;
+		if (rec->voices > 1) {
+			CHECK_SCHEDULER();
+			get_user(sval, buf);
+			EMU8000_SMRD_WRITE(emu, sval);
+			buf++;
+		}
+	}
+	return 0;
+}
+
+static int emu8k_pcm_silence(snd_pcm_substream_t *subs,
+			     int voice,
+			     snd_pcm_uframes_t pos,
+			     snd_pcm_uframes_t count)
+{
+	emu8k_pcm_t *rec = subs->runtime->private_data;
+	emu8000_t *emu = rec->emu;
+
+	snd_emu8000_write_wait(emu);
+	EMU8000_SMALW_WRITE(emu, rec->loop_start[0] + pos);
+	if (rec->voices > 1)
+		EMU8000_SMARW_WRITE(emu, rec->loop_start[1] + pos);
+	while (count-- > 0) {
+		CHECK_SCHEDULER();
+		EMU8000_SMLD_WRITE(emu, 0);
+		if (rec->voices > 1) {
+			CHECK_SCHEDULER();
+			EMU8000_SMRD_WRITE(emu, 0);
+		}
+	}
+	return 0;
+}
+#endif
+
 
 /*
  * allocate a memory block
@@ -492,6 +589,7 @@ static int emu8k_pcm_hw_params(snd_pcm_substream_t *subs,
 	if (! rec->block)
 		return -ENOMEM;
 	rec->offset = EMU8000_DRAM_OFFSET + (rec->block->offset >> 1); /* in word */
+	/* at least dma_bytes must be set for non-interleaved mode */
 	subs->dma_bytes = params_buffer_bytes(hw_params);
 
 	return 0;
@@ -542,7 +640,7 @@ static int emu8k_pcm_prepare(snd_pcm_substream_t *subs)
 		int err, i, ch;
 
 		snd_emux_terminate_all(rec->emu->emu);
-		if ((err = emu8k_open_dram_for_pcm(rec->emu)) != 0)
+		if ((err = emu8k_open_dram_for_pcm(rec->emu, rec->voices)) != 0)
 			return err;
 		rec->dram_opened = 1;
 
