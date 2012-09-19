@@ -20,7 +20,6 @@
  */
 
 
-#include "adriver.h"
 #include <linux/init.h>
 #include <linux/moduleparam.h>
 #include <sound/core.h>

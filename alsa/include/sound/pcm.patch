@@ -1,5 +1,5 @@
---- ../../alsa-kernel/include/pcm.h	2010-06-28 09:42:39.000000000 +0200
-+++ pcm.h	2010-06-28 10:00:49.000000000 +0200
+--- ../../alsa-kernel/include/pcm.h	2010-08-09 14:25:40.000000000 +0200
++++ pcm.h	2010-08-09 14:56:07.000000000 +0200
 @@ -277,9 +277,12 @@ struct snd_pcm_runtime {
  	snd_pcm_uframes_t avail_max;
  	snd_pcm_uframes_t hw_ptr_base;	/* Position at buffer restart */
@@ -90,19 +90,23 @@
  };
  
  struct snd_pcm_group {		/* keep linked substreams */
-@@ -370,7 +408,11 @@ struct snd_pcm_substream {
+@@ -370,7 +408,15 @@ struct snd_pcm_substream {
  	int number;
  	char name[32];			/* substream name */
  	int stream;			/* stream (direction) */
 +#ifdef CONFIG_SND_HAVE_PM_QOS_REQUEST
- 	struct pm_qos_request_list *latency_pm_qos_req; /* pm_qos request */
++#ifdef CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC
+ 	struct pm_qos_request_list latency_pm_qos_req; /* pm_qos request */
++#else
++	struct pm_qos_request_list *latency_pm_qos_req; /* pm_qos request */
++#endif
 +#else
 +	char latency_id[20];
 +#endif
  	size_t buffer_bytes_max;	/* limit ring buffer size */
  	struct snd_dma_buffer dma_buffer;
  	unsigned int dma_buf_id;
-@@ -382,6 +424,9 @@ struct snd_pcm_substream {
+@@ -382,6 +428,9 @@ struct snd_pcm_substream {
          /* -- timer section -- */
  	struct snd_timer *timer;		/* timer */
  	unsigned timer_running: 1;	/* time is running */
