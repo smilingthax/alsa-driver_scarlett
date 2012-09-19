@@ -31,6 +31,7 @@
 #include <asm/io.h>
 #include <asm/dma.h>
 #include <linux/init.h>
+#include <linux/time.h>
 #include <sound/core.h>
 #include <sound/sb.h>
 #include <sound/sb16_csp.h>

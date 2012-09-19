@@ -68,6 +68,7 @@
 #include <asm/io.h>
 #include <asm/dma.h>
 #include <linux/init.h>
+#include <linux/slab.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>

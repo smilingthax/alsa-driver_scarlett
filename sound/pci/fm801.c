@@ -23,6 +23,7 @@
 #include <asm/io.h>
 #include <linux/delay.h>
 #include <linux/init.h>
+#include <linux/slab.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/ac97_codec.h>

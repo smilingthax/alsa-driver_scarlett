@@ -22,6 +22,7 @@
 
 #include <sound/driver.h>
 #include <linux/init.h>
+#include <linux/time.h>
 #include <sound/core.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
