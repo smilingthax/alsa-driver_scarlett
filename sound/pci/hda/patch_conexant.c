@@ -686,7 +686,7 @@ static struct snd_kcontrol_new cxt5045_mixers_hp530[] = {
 
 static struct hda_verb cxt5045_init_verbs[] = {
 	/* Line in, Mic */
-	{0x12, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_IN },
+	{0x12, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_IN|AC_PINCTL_VREF_80 },
 	{0x14, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_IN|AC_PINCTL_VREF_80 },
 	/* HP, Amp  */
 	{0x10, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
@@ -910,7 +910,8 @@ static struct snd_pci_quirk cxt5045_cfg_tbl[] = {
 	SND_PCI_QUIRK(0x152d, 0x0753, "Benq R55E", CXT5045_BENQ),
 	SND_PCI_QUIRK(0x1734, 0x10ad, "Fujitsu Si1520", CXT5045_LAPTOP_MICSENSE),
 	SND_PCI_QUIRK(0x1734, 0x10cb, "Fujitsu Si3515", CXT5045_LAPTOP_HPMICSENSE),
-	SND_PCI_QUIRK(0x1734, 0x110e, "Fujitsu V5505", CXT5045_LAPTOP_HPSENSE),
+	SND_PCI_QUIRK(0x1734, 0x110e, "Fujitsu V5505",
+		      CXT5045_LAPTOP_HPMICSENSE),
 	SND_PCI_QUIRK(0x1509, 0x1e40, "FIC", CXT5045_LAPTOP_HPMICSENSE),
 	SND_PCI_QUIRK(0x1509, 0x2f05, "FIC", CXT5045_LAPTOP_HPMICSENSE),
 	SND_PCI_QUIRK(0x1509, 0x2f06, "FIC", CXT5045_LAPTOP_HPMICSENSE),
@@ -962,6 +963,7 @@ static int patch_cxt5045(struct hda_codec *codec)
 		codec->patch_ops.init = cxt5045_init;
 		break;
 	case CXT5045_LAPTOP_MICSENSE:
+		codec->patch_ops.unsol_event = cxt5045_hp_unsol_event;
 		spec->input_mux = &cxt5045_capture_source;
 		spec->num_init_verbs = 2;
 		spec->init_verbs[1] = cxt5045_mic_sense_init_verbs;
