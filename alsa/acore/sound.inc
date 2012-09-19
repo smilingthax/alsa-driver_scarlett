@@ -40,7 +40,7 @@ EXPORT_SYMBOL(snd_compat_kcalloc);
 EXPORT_SYMBOL(snd_compat_kstrdup);
 #endif
 #endif
-#ifndef CONFIG_HAVE_KCALLOC
+#ifndef CONFIG_HAVE_KZALLOC
 #ifndef CONFIG_SND_DEBUG_MEMORY
 EXPORT_SYMBOL(snd_compat_kzalloc);
 #endif
