@@ -1,14 +1,15 @@
---- ../alsa-kernel/core/memalloc.c	2005-05-31 18:12:41.000000000 +0200
-+++ memalloc.c	2005-06-22 17:21:45.000000000 +0200
+--- ../alsa-kernel/core/memalloc.c	2006-01-28 23:14:55.000000000 +0100
++++ memalloc.c	2006-01-28 23:16:09.000000000 +0100
 @@ -1,3 +1,4 @@
 +#include "memalloc.inc"
  /*
   *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
   *                   Takashi Iwai <tiwai@suse.de>
-@@ -87,7 +88,50 @@
+@@ -83,7 +84,50 @@
   *  Hacks
   */
  
+-#if defined(__i386__)
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 5)
 +static void *snd_dma_alloc_coherent1(struct device *dev, size_t size,
@@ -51,12 +52,12 @@
 +#endif /* >= 2.6.0 */
 +
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
- #if defined(__i386__)
++#if defined(__i386__) || defined(__ppc__) || defined(__x86_64__)
 +
  /*
   * A hack to allocate large buffers via dma_alloc_coherent()
   *
-@@ -104,22 +148,46 @@
+@@ -100,6 +144,30 @@
   * so dma_mask doesn't have to be messed with.
   */
  
@@ -87,7 +88,7 @@
  static void *snd_dma_hack_alloc_coherent(struct device *dev, size_t size,
  					 dma_addr_t *dma_handle,
  					 gfp_t flags)
- {
+@@ -107,15 +175,15 @@
  	void *ret;
  	u64 dma_mask, coherent_dma_mask;
  
@@ -110,16 +111,81 @@
  	if (ret) {
  		/* obtained address is out of range? */
  		if (((unsigned long)*dma_handle + size - 1) & ~dma_mask) {
-@@ -144,6 +212,8 @@
+@@ -140,6 +208,8 @@
  #define dma_alloc_coherent snd_dma_hack_alloc_coherent
  
  #endif /* arch */
 +#endif /* >= 2.4.0 */
 +
  
- #if ! defined(__arm__)
- #define NEED_RESERVE_PAGES
-@@ -545,6 +615,7 @@
+ /*
+  *
+@@ -159,6 +229,24 @@
+ 	snd_allocated_pages -= 1 << order;
+ }
+ 
++static void mark_pages(struct page *page, int order)
++{
++#if ! defined(__arm__) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 16)
++	struct page *last_page = page + (1 << order);
++	while (page < last_page)
++		SetPageReserved(page++);
++#endif
++}
++
++static void unmark_pages(struct page *page, int order)
++{
++#if ! defined(__arm__) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 16)
++	struct page *last_page = page + (1 << order);
++	while (page < last_page)
++		ClearPageReserved(page++);
++#endif
++}
++
+ /**
+  * snd_malloc_pages - allocate pages with the given size
+  * @size: the size to allocate in bytes
+@@ -177,8 +265,10 @@
+ 	snd_assert(gfp_flags != 0, return NULL);
+ 	gfp_flags |= __GFP_COMP;	/* compound page lets parts be mapped */
+ 	pg = get_order(size);
+-	if ((res = (void *) __get_free_pages(gfp_flags, pg)) != NULL)
++	if ((res = (void *) __get_free_pages(gfp_flags, pg)) != NULL) {
++		mark_pages(virt_to_page(res), pg);
+ 		inc_snd_pages(pg);
++	}
+ 	return res;
+ }
+ 
+@@ -197,6 +287,7 @@
+ 		return;
+ 	pg = get_order(size);
+ 	dec_snd_pages(pg);
++	unmark_pages(virt_to_page(ptr), pg);
+ 	free_pages((unsigned long) ptr, pg);
+ }
+ 
+@@ -221,8 +312,10 @@
+ 		| __GFP_NORETRY /* don't trigger OOM-killer */
+ 		| __GFP_NOWARN; /* no stack trace print - this call is non-critical */
+ 	res = dma_alloc_coherent(dev, PAGE_SIZE << pg, dma, gfp_flags);
+-	if (res != NULL)
++	if (res != NULL) {
++		mark_pages(virt_to_page(res), pg);
+ 		inc_snd_pages(pg);
++	}
+ 
+ 	return res;
+ }
+@@ -237,6 +330,7 @@
+ 		return;
+ 	pg = get_order(size);
+ 	dec_snd_pages(pg);
++	unmark_pages(virt_to_page(ptr), pg);
+ 	dma_free_coherent(dev, PAGE_SIZE << pg, ptr, dma);
+ }
+ 
+@@ -515,6 +609,7 @@
  
  /* FIXME: for pci only - other bus? */
  #ifdef CONFIG_PCI
@@ -127,7 +193,7 @@
  #define gettoken(bufp) strsep(bufp, " \t\n")
  
  static int snd_mem_proc_write(struct file *file, const char __user *buffer,
-@@ -632,6 +703,7 @@
+@@ -603,6 +698,7 @@
  		printk(KERN_ERR "snd-page-alloc: invalid proc cmd\n");
  	return (int)count;
  }
@@ -135,7 +201,7 @@
  #endif /* CONFIG_PCI */
  #endif /* CONFIG_PROC_FS */
  
-@@ -646,8 +718,10 @@
+@@ -617,8 +713,10 @@
  	if (snd_mem_proc) {
  		snd_mem_proc->read_proc = snd_mem_proc_read;
  #ifdef CONFIG_PCI
@@ -146,7 +212,7 @@
  	}
  #endif
  	return 0;
-@@ -679,3 +753,5 @@
+@@ -649,3 +747,5 @@
  
  EXPORT_SYMBOL(snd_malloc_pages);
  EXPORT_SYMBOL(snd_free_pages);
