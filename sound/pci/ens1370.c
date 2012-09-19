@@ -1522,8 +1522,10 @@ static int snd_ensoniq_free(ensoniq_t *ensoniq)
 	if (ensoniq->bugbuf)
 		snd_free_pci_pages(ensoniq->pci, 16, ensoniq->bugbuf, ensoniq->bugbuf_addr);
 #endif
-	if (ensoniq->res_port)
+	if (ensoniq->res_port) {
 		release_resource(ensoniq->res_port);
+		kfree(ensoniq->res_port);
+	}
 	if (ensoniq->irq >= 0)
 		free_irq(ensoniq->irq, (void *)ensoniq);
 	snd_magic_kfree(ensoniq);

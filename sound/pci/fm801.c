@@ -876,8 +876,10 @@ static int snd_fm801_free(fm801_t *chip)
 	outw(cmdw, FM801_REG(chip, IRQ_MASK));
 
       __end_hw:
-	if (chip->res_port)
+	if (chip->res_port) {
 		release_resource(chip->res_port);
+		kfree(chip->res_port);
+	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
 

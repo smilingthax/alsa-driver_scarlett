@@ -686,8 +686,10 @@ static void snd_interwave_free(snd_card_t *card)
 	snd_interwave_deactivate(iwcard);
 #endif
 #ifdef SNDRV_STB
-	if (iwcard->i2c_res)
+	if (iwcard->i2c_res) {
 		release_resource(iwcard->i2c_res);
+		kfree(iwcard->i2c_res);
+	}
 #endif
 	if (iwcard->irq >= 0)
 		free_irq(iwcard->irq, (void *)iwcard);

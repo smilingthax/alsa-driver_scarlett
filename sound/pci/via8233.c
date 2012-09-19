@@ -711,8 +711,10 @@ static int snd_via8233_free(via8233_t *chip)
 				   VIA_NUM_OF_DMA_CHANNELS * sizeof(unsigned int) * VIA_MAX_FRAGS * 2,
 				   chip->tables,
 				   chip->tables_addr);
-	if (chip->res_port)
+	if (chip->res_port) {
 		release_resource(chip->res_port);
+		kfree(chip->res_port);
+	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
 	snd_magic_kfree(chip);

@@ -1218,10 +1218,14 @@ static int snd_cs4281_free(cs4281_t *chip)
 		iounmap((void *) chip->ba0);
 	if (chip->ba1)
 		iounmap((void *) chip->ba1);
-	if (chip->ba0_res)
+	if (chip->ba0_res) {
 		release_resource(chip->ba0_res);
-	if (chip->ba1_res)
+		kfree(chip->ba0_res);
+	}
+	if (chip->ba1_res) {
 		release_resource(chip->ba1_res);
+		kfree(chip->ba1_res);
+	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
 

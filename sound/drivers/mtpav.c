@@ -710,8 +710,10 @@ static void free_mtpav(mtpav_t * crd)
 	spin_unlock_irqrestore(&crd->spinlock, flags);
 	if (crd->irq >= 0)
 		free_irq(crd->irq, (void *)crd);
-	if (crd->res_port)
+	if (crd->res_port) {
 		release_resource(crd->res_port);
+		kfree(crd->res_port);
+	}
 	if (crd != NULL)
 		kfree(crd);
 }

@@ -2501,8 +2501,10 @@ static int snd_es1968_free(es1968_t *chip)
 	snd_es1968_set_acpi(chip, ACPI_D3);
 	chip->master_switch = NULL;
 	chip->master_volume = NULL;
-	if (chip->res_io_port)
+	if (chip->res_io_port) {
 		release_resource(chip->res_io_port);
+		kfree(chip->res_io_port);
+	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
 	snd_magic_kfree(chip);

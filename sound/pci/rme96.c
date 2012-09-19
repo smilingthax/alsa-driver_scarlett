@@ -1561,6 +1561,7 @@ snd_rme96_free(void *private_data)
 	}
 	if (rme96->res_port != NULL) {
 		release_resource(rme96->res_port);
+		kfree(rme96->res_port);
 		rme96->res_port = NULL;
 	}
 }

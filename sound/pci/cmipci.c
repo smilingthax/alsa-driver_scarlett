@@ -2446,8 +2446,10 @@ static int snd_cmipci_free(cmipci_t *cm)
 
 		free_irq(cm->irq, (void *)cm);
 	}
-	if (cm->res_iobase)
+	if (cm->res_iobase) {
 		release_resource(cm->res_iobase);
+		kfree(cm->res_iobase);
+	}
 	snd_magic_kfree(cm);
 	return 0;
 }

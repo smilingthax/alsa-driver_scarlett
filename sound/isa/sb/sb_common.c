@@ -174,10 +174,14 @@ static int snd_sbdsp_probe(sb_t * chip)
 
 static int snd_sbdsp_free(sb_t *chip)
 {
-	if (chip->res_port)
+	if (chip->res_port) {
 		release_resource(chip->res_port);
-	if (chip->res_alt_port)
+		kfree(chip->res_port);
+	}
+	if (chip->res_alt_port) {
 		release_resource(chip->res_alt_port);
+		kfree(chip->res_alt_port);
+	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *) chip);
 #ifdef CONFIG_ISA
