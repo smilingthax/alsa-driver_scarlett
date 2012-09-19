@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.60
+SCRIPT_VERSION=0.4.61
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -111,7 +111,7 @@ cleanup() {
 
 withaplay() {
         echo "!!Aplay/Arecord output" >> $FILE
-        echo "!!------------" >> $FILE
+        echo "!!--------------------" >> $FILE
         echo "" >> $FILE
        	echo "APLAY" >> $FILE
 	echo "" >> $FILE 
@@ -149,7 +149,7 @@ withamixer() {
 
 withalsactl() {
 	echo "!!Alsactl output" >> $FILE
-        echo "!!-------------" >> $FILE
+        echo "!!--------------" >> $FILE
         echo "" >> $FILE
         exe=""
         if [ -x /usr/sbin/alsactl ]; then
@@ -244,7 +244,7 @@ withsysfs() {
 
 withdmesg() {
 	echo "!!ALSA/HDA dmesg" >> $FILE
-	echo "!!------------------" >> $FILE
+	echo "!!--------------" >> $FILE
 	echo "" >> $FILE
 	dmesg | grep -C1 -E 'ALSA|HDA|HDMI|sound|hda.codec|hda.intel' >> $FILE
 	echo "" >> $FILE
@@ -416,6 +416,7 @@ ESDINST=$(which esd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 PAINST=$(which pulseaudio 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 ARTSINST=$(which artsd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 JACKINST=$(which jackd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
+ROARINST=$(which roard 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 DMIDECODE=$(which dmidecode 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 
 #Check for DMI data
@@ -424,10 +425,12 @@ if [ -d /sys/class/dmi/id ]; then
     DMI_SYSTEM_MANUFACTURER=$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null)
     DMI_SYSTEM_PRODUCT_NAME=$(cat /sys/class/dmi/id/product_name 2>/dev/null)
     DMI_SYSTEM_PRODUCT_VERSION=$(cat /sys/class/dmi/id/product_version 2>/dev/null)
+    DMI_SYSTEM_FIRMWARE_VERSION=$(cat /sys/class/dmi/id/bios_version 2>/dev/null)
 elif [ -x $DMIDECODE ]; then
     DMI_SYSTEM_MANUFACTURER=$($DMIDECODE -s system-manufacturer 2>/dev/null)
     DMI_SYSTEM_PRODUCT_NAME=$($DMIDECODE -s system-product-name 2>/dev/null)
     DMI_SYSTEM_PRODUCT_VERSION=$($DMIDECODE -s system-version 2>/dev/null)
+    DMI_SYSTEM_FIRMWARE_VERSION=$($DMIDECODE -s bios-version 2>/dev/null)
 fi
 
 cat /proc/asound/modules 2>/dev/null|awk {'print $2'}>$TEMPDIR/alsamodules.tmp
@@ -469,6 +472,7 @@ echo "" >> $FILE
 echo "Manufacturer:      $DMI_SYSTEM_MANUFACTURER" >> $FILE
 echo "Product Name:      $DMI_SYSTEM_PRODUCT_NAME" >> $FILE
 echo "Product Version:   $DMI_SYSTEM_PRODUCT_VERSION" >> $FILE
+echo "Firmware Version:  $DMI_SYSTEM_FIRMWARE_VERSION" >> $FILE
 echo "" >> $FILE
 echo "" >> $FILE
 echo "!!Kernel Information" >> $FILE
@@ -526,7 +530,14 @@ echo "      Installed - Yes ($JACKINST)" >> $FILE
 echo "      Running - $JACKRUNNING" >> $FILE
 echo "" >> $FILE
 fi
-if [[ -z "$PAINST" && -z "$ESDINST" && -z "$ARTSINST" && -z "$JACKINST" ]];then
+if [[ -n $ROARINST ]];then
+[[ `pgrep '^(.*/)?roard$'` ]] && ROARRUNNING="Yes" || ROARRUNNING="No"
+echo "RoarAudio:" >> $FILE
+echo "      Installed - Yes ($ROARINST)" >> $FILE
+echo "      Running - $ROARRUNNING" >> $FILE
+echo "" >> $FILE
+fi
+if [[ -z "$PAINST" && -z "$ESDINST" && -z "$ARTSINST" && -z "$JACKINST" && -z "$ROARINST" ]];then
 echo "No sound servers found." >> $FILE
 echo "" >> $FILE
 fi
@@ -544,7 +555,7 @@ cat $TEMPDIR/lspci.tmp >> $FILE
 echo "" >> $FILE
 echo "" >> $FILE
 echo "!!Advanced information - PCI Vendor/Device/Subsystem ID's" >> $FILE
-echo "!!--------------------------------------------------------" >> $FILE
+echo "!!-------------------------------------------------------" >> $FILE
 echo "" >> $FILE
 lspci -vvn |grep -A1 040[1-3] >> $FILE
 echo "" >> $FILE
@@ -563,7 +574,7 @@ fi
 if [ -d "$SYSFS" ]
 then
 echo "!!Loaded sound module options" >> $FILE
-echo "!!--------------------------" >> $FILE
+echo "!!---------------------------" >> $FILE
 echo "" >> $FILE
 for mod in `cat /proc/asound/modules|awk {'print $2'}`;do
 echo "!!Module: $mod" >> $FILE
@@ -591,7 +602,7 @@ fi
 if [ -s "$TEMPDIR/alsa-ac97.tmp" ]
 then
         echo "!!AC97 Codec information" >> $FILE
-        echo "!!---------------------------" >> $FILE
+        echo "!!----------------------" >> $FILE
         echo "--startcollapse--" >> $FILE
         echo "" >> $FILE
         cat $TEMPDIR/alsa-ac97.tmp >> $FILE
@@ -605,7 +616,7 @@ fi
 if [ -s "$TEMPDIR/alsa-usbmixer.tmp" ]
 then
         echo "!!USB Mixer information" >> $FILE
-        echo "!!---------------------------" >> $FILE
+        echo "!!---------------------" >> $FILE
         echo "--startcollapse--" >> $FILE
         echo "" >> $FILE
         cat $TEMPDIR/alsa-usbmixer.tmp >> $FILE
