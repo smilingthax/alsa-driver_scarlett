@@ -789,6 +789,8 @@ static struct hda_board_config ad1986a_cfg_tbl[] = {
 	{ .modelname = "3stack",	.config = AD1986A_3STACK },
 	{ .pci_subvendor = 0x10de, .pci_subdevice = 0xcb84,
 	  .config = AD1986A_3STACK }, /* ASUS A8N-VM CSM */
+	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x81b3,
+	  .config = AD1986A_3STACK }, /* ASUS P5RD2-VM / P5GPL-X SE */
 	{ .modelname = "laptop",	.config = AD1986A_LAPTOP },
 	{ .pci_subvendor = 0x144d, .pci_subdevice = 0xc01e,
 	  .config = AD1986A_LAPTOP }, /* FSC V2060 */
@@ -809,6 +811,8 @@ static struct hda_board_config ad1986a_cfg_tbl[] = {
 	  .config = AD1986A_LAPTOP_EAPD }, /* ASUS Z62F */
 	{ .pci_subvendor = 0x103c, .pci_subdevice = 0x30af,
 	  .config = AD1986A_LAPTOP_EAPD }, /* HP Compaq Presario B2800 */
+	{ .pci_subvendor = 0x17aa, .pci_subdevice = 0x2066,
+	  .config = AD1986A_LAPTOP_EAPD }, /* Lenovo 3000 N100-07684JU */
 	{}
 };
 
