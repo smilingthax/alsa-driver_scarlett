@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/pcm_native.c	2004-06-29 12:55:17.472672858 +0200
-+++ pcm_native.c	2004-06-29 15:46:07.957852717 +0200
+--- ../alsa-kernel/core/pcm_native.c	2004-07-05 13:11:26.000000000 +0200
++++ pcm_native.c	2004-07-13 18:14:46.623070947 +0200
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
@@ -228,10 +228,10 @@
  	if (runtime->hw.info & SNDRV_PCM_INFO_MMAP_IOMEM) {
  		area->vm_ops = &snd_pcm_vm_ops_data_mmio;
  		area->vm_flags |= VM_IO;
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
 +#define io_remap_page_range remap_page_range
 +#endif
++#ifdef CONFIG_OLD_REMAP_PAGE_RANGE
 +		if (io_remap_page_range(area->vm_start, runtime->dma_addr + offset,
 +					size, area->vm_page_prot))
 +#else

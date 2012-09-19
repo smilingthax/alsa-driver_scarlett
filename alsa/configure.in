@@ -1296,6 +1296,28 @@ if test "$CONFIG_HAVE_VIDEO_GET_DRVDATA" = "1"; then
 fi
 fi
 
+dnl Check for old remap_page_range()
+AC_MSG_CHECKING(for new remap_page_range)
+kcalloc="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/mm.h"
+],[
+  void * (*func)(struct vm_area_struct *, unsigned long, unsigned long, unsigned long, pgprot_t);
+  func = remap_page_range;
+],
+    AC_MSG_RESULT("yes");new_remap="0",
+    AC_MSG_RESULT("no");new_remap="1",
+    AC_MSG_RESULT("unknown");new_remap="1"
+)
+CFLAGS=$ac_save_CFLAGS
+if test "new_remap" = "0"; then
+  AC_DEFINE(CONFIG_OLD_REMAP_PAGE_RANGE)
+fi
+
 dnl Check for kcalloc()
 AC_MSG_CHECKING(for kcalloc)
 kcalloc="0"
