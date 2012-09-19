@@ -10,14 +10,5 @@ config SND_PDPLUS
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-pdplus.
 
-config SND_ASIHPI
-	tristate "AudioScience ASIxxxx"
-	depends on X86
-	select FW_LOADER
-	select SND_PCM
-	select SND_HWDEP
-	help
-	  Say 'Y' or 'M' to include support for AudioScience ASIxxxx soundcards.
-
 endif
 

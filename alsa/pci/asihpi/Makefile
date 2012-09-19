@@ -5,10 +5,13 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-snd-asihpi-objs := asihpi.o hpioctl.o hpimsginit.o\
-	hpicmn.o hpifunc.o hpidebug.o hpidspcd.o\
-	hpios.o hpi6000.o hpi6205.o hpimsgx.o
+clean-files := hpidspcd.c hpios.c
 
-obj-$(CONFIG_SND_ASIHPI) += snd-asihpi.o
+EXTRA_CFLAGS = -I$(SND_TOPDIR)/alsa-kernel/pci/asihpi
+
+include $(SND_TOPDIR)/alsa-kernel/pci/asihpi/Makefile
 
 include $(SND_TOPDIR)/Rules.make
+
+hpidspcd.c: hpidspcd.patch $(SND_TOPDIR)/alsa-kernel/pci/asihpi/hpidspcd.c
+hpios.c: hpios.patch $(SND_TOPDIR)/alsa-kernel/pci/asihpi/hpios.c
