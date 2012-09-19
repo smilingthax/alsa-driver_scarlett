@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/misc.c	2012-03-01 09:14:48.000000000 +0100
-+++ misc.c	2012-03-05 22:25:52.000000000 +0100
+--- ../alsa-kernel/core/misc.c	2012-08-03 13:00:50.000000000 +0200
++++ misc.c	2012-08-03 13:05:22.000000000 +0200
 @@ -1,3 +1,9 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -19,7 +19,7 @@
  	}
  }
  
-@@ -60,6 +66,25 @@
+@@ -60,18 +66,65 @@
  	else
  		return path;
  }
@@ -44,13 +44,40 @@
 +#define print_snd_pfx(level, path, line, format)	0
  #endif
  
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 6, 0)
++static inline int printk_get_level(const char *buffer)
++{
++	if (buffer[0] == '<' && buffer[1]) {
++		switch (buffer[1]) {
++		case '0' ... '7':
++		case 'd':	/* KERN_DEFAULT */
++			return buffer[1];
++		}
++	}
++	return 0;
++}
++
++static inline const char *printk_skip_level(const char *buffer)
++{
++	if (printk_get_level(buffer)) {
++		switch (buffer[1]) {
++		case '0' ... '7':
++		case 'd':	/* KERN_DEFAULT */
++			return buffer + 2;
++		}
++	}
++	return buffer;
++}
++#endif /* < 3.6.0 */
++
  #if defined(CONFIG_SND_DEBUG) || defined(CONFIG_SND_VERBOSE_PRINTK)
-@@ -67,10 +92,12 @@
+ void __snd_printk(unsigned int level, const char *path, int line,
  		  const char *format, ...)
  {
  	va_list args;
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 36)
  #ifdef CONFIG_SND_VERBOSE_PRINTK
+ 	int kern_level;
  	struct va_format vaf;
  	char verbose_fmt[] = KERN_DEFAULT "ALSA %s:%d %pV";
  #endif
@@ -58,7 +85,7 @@
  
  #ifdef CONFIG_SND_DEBUG
  	if (debug < level)
-@@ -78,6 +105,11 @@
+@@ -79,6 +132,11 @@
  #endif
  
  	va_start(args, format);
@@ -70,7 +97,7 @@
  #ifdef CONFIG_SND_VERBOSE_PRINTK
  	vaf.fmt = format;
  	vaf.va = &args;
-@@ -91,6 +123,7 @@
+@@ -96,6 +154,7 @@
  	vprintk(format, args);
  #endif
  	va_end(args);
@@ -78,7 +105,7 @@
  }
  EXPORT_SYMBOL_GPL(__snd_printk);
  #endif
-@@ -140,9 +173,42 @@
+@@ -145,9 +204,42 @@
  const struct snd_pci_quirk *
  snd_pci_quirk_lookup(struct pci_dev *pci, const struct snd_pci_quirk *list)
  {
