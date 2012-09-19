@@ -85,7 +85,7 @@ struct conexant_spec {
 	unsigned int num_kctl_alloc, num_kctl_used;
 	struct snd_kcontrol_new *kctl_alloc;
 	struct hda_input_mux private_imux;
-	hda_nid_t private_dac_nids[4];
+	hda_nid_t private_dac_nids[AUTO_CFG_MAX_OUTS];
 
 };
 
@@ -765,6 +765,7 @@ static struct snd_pci_quirk cxt5045_cfg_tbl[] = {
 	SND_PCI_QUIRK(0x103c, 0x30d9, "HP Spartan", CXT5045_LAPTOP),
 	SND_PCI_QUIRK(0x1734, 0x10ad, "Fujitsu Si1520", CXT5045_FUJITSU),
 	SND_PCI_QUIRK(0x1734, 0x10cb, "Fujitsu Si3515", CXT5045_LAPTOP),
+	SND_PCI_QUIRK(0x1734, 0x110e, "Fujitsu V5505", CXT5045_LAPTOP),
 	SND_PCI_QUIRK(0x8086, 0x2111, "Conexant Reference board", CXT5045_LAPTOP),
 	{}
 };
