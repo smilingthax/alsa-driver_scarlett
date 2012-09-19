@@ -354,7 +354,9 @@ case "$1" in
     insert snd-mpu401-uart.o 
     insert snd-i2c.o
     insert snd-cs8427.o
-    insert snd-ice1712.o enable=1,1
+    insert snd-ak4xxx-adda.o
+    insert snd-ice17xx-ak4xxx.o
+    insert snd-ice1712.o enable=1,1 cs8427_timeout=5
     restore ice1712.conf
     ;;
   i8x0|ich)
