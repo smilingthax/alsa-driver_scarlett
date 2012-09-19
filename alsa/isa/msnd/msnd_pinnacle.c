@@ -116,10 +116,8 @@ static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(index, "Index value for msnd_pinnacle soundcard.");
-MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
 MODULE_PARM(id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
 MODULE_PARM_DESC(id, "ID string for msnd_pinnacle soundcard.");
-MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
 
 #ifndef CONFIG_MSND_WRITE_NDELAY
 #  define CONFIG_MSND_WRITE_NDELAY	1
