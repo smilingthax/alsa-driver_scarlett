@@ -1799,4 +1799,14 @@ static inline void *memdup_user(const void __user *src, size_t len)
 }
 #endif
 
+/* PCI_VEDEVICE() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
+#include <linux/pci.h>
+#ifndef PCI_VDEVICE
+#define PCI_VDEVICE(vendor, device)		\
+	PCI_VENDOR_ID_##vendor, (device),	\
+	PCI_ANY_ID, PCI_ANY_ID, 0, 0
+#endif
+#endif /* < 2.6.20 */
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
