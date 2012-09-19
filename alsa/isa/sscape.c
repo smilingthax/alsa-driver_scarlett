@@ -469,9 +469,7 @@ static int upload_dma_data(struct soundscape *s,
 	 * board through the DMA channel ...
 	 */
 	while (size != 0) {
-		unsigned long len;
-
-		len = size < dma.size ? size : dma.size;
+		unsigned long len = min(size, dma.size);
 
 		/*
 		 * Remember that the data that we want to DMA
