@@ -150,7 +150,7 @@ static const struct ac97_codec_id snd_ac97_codec_ids[] = {
 { 0x49544561, 0xffffffff, "IT2646E",		patch_it2646,	NULL },
 { 0x4e534300, 0xffffffff, "LM4540,43,45,46,48",	NULL,		NULL }, // only guess --jk
 { 0x4e534331, 0xffffffff, "LM4549",		NULL,		NULL },
-{ 0x4e534350, 0xffffffff, "LM4550",		NULL,		NULL },
+{ 0x4e534350, 0xffffffff, "LM4550",		patch_lm4550,  	NULL }, // volume wrap fix 
 { 0x50534304, 0xffffffff, "UCB1400",		NULL,		NULL },
 { 0x53494c20, 0xffffffe0, "Si3036,8",		mpatch_si3036,	mpatch_si3036, AC97_MODEM_PATCH },
 { 0x54524102, 0xffffffff, "TR28022",		NULL,		NULL },
@@ -1029,6 +1029,18 @@ static void check_volume_resolution(struct snd_ac97 *ac97, int reg, unsigned cha
 	unsigned short cbit[3] = { 0x20, 0x10, 0x01 };
 	unsigned char max[3] = { 63, 31, 15 };
 	int i;
+
+	/* first look up the static resolution table */
+	if (ac97->res_table) {
+		const struct snd_ac97_res_table *tbl;
+		for (tbl = ac97->res_table; tbl->reg; tbl++) {
+			if (tbl->reg == reg) {
+				*lo_max = tbl->bits & 0xff;
+				*hi_max = (tbl->bits >> 8) & 0xff;
+				return;
+			}
+		}
+	}
 
 	*lo_max = *hi_max = 0;
 	for (i = 0 ; i < ARRAY_SIZE(cbit); i++) {
