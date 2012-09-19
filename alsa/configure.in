@@ -465,6 +465,7 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
     if test ! -f include/$1; then
       mkdir -p include/linux include/asm include/media
       mkdir -p include/linux/regulator include/linux/usb include/pcmcia
+      mkdir -p include/trace/events
       if test -z "$2" ; then
         echo "Creating a dummy <$1>..."
         touch include/$1
@@ -1587,6 +1588,7 @@ CHECK_KERNEL_HEADER(pcmcia/cs_types.h, [#define SND_HAVE_DUMMY_CS_TYPES_H])
 CHECK_KERNEL_HEADER(pcmcia/cs.h, [#define SND_HAVE_DUMMY_CS_H])
 CHECK_KERNEL_HEADER(trace/events/asoc.h, [#include \"trace_events_asoc_compat.h\"
 ])
+CHECK_KERNEL_HEADER(linux/lzo.h)
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
