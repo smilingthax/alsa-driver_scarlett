@@ -179,13 +179,8 @@
 	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
 		.vendor_name = "Roland",
 		.product_name = "UA-100",
-		.ifnum = 2,
-		.type = QUIRK_MIDI_FIXED_ENDPOINT,
-		.data = & (const snd_usb_midi_endpoint_info_t) {
-			.epnum = -1,
-			.out_cables = 0x0007,
-			.in_cables  = 0x0007
-		}
+		.ifnum = 0,
+		.type = QUIRK_ROLAND_UA100
 	}
 },
 {
