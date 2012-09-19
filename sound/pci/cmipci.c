@@ -2774,10 +2774,14 @@ static int __devinit snd_cmipci_create_fm(struct cmipci *cm, long fm_port)
 	if (!fm_port)
 		goto disable_fm;
 
-	/* first try FM regs in PCI port range */
-	iosynth = cm->iobase + CM_REG_FM_PCI;
-	err = snd_opl3_create(cm->card, iosynth, iosynth + 2,
-			      OPL3_HW_OPL3, 1, &opl3);
+	if (cm->chip_version > 33) {
+		/* first try FM regs in PCI port range */
+		iosynth = cm->iobase + CM_REG_FM_PCI;
+		err = snd_opl3_create(cm->card, iosynth, iosynth + 2,
+				      OPL3_HW_OPL3, 1, &opl3);
+	} else {
+		err = -EIO;
+	}
 	if (err < 0) {
 		/* then try legacy ports */
 		val = snd_cmipci_read(cm, CM_REG_LEGACY_CTRL) & ~CM_FMSEL_MASK;
@@ -2823,7 +2827,7 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 	};
 	unsigned int val = 0;
 	long iomidi;
-	int integrated_midi;
+	int integrated_midi = 0;
 	int pcm_index, pcm_spdif_index;
 	static struct pci_device_id intel_82437vx[] = {
 		{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82437VX) },
@@ -2935,10 +2939,14 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 		return err;
 	}
 
-	integrated_midi = snd_cmipci_read_b(cm, CM_REG_MPU_PCI) != 0xff;
-	if (integrated_midi && mpu_port[dev] == 1)
-		iomidi = cm->iobase + CM_REG_MPU_PCI;
-	else {
+	if (cm->chip_version > 33 && mpu_port[dev] == 1) {
+		val = snd_cmipci_read_b(cm, CM_REG_MPU_PCI + 1);
+		if (val != 0x00 && val != 0xff) {
+			iomidi = cm->iobase + CM_REG_MPU_PCI;
+			integrated_midi = 1;
+		}
+	}
+	if (!integrated_midi) {
 		iomidi = mpu_port[dev];
 		switch (iomidi) {
 		case 0x320: val = CM_VMPU_320; break;
@@ -2955,8 +2963,11 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 		}
 	}
 
-	if ((err = snd_cmipci_create_fm(cm, fm_port[dev])) < 0)
-		return err;
+	if (cm->chip_version < 68) {
+		err = snd_cmipci_create_fm(cm, fm_port[dev]);
+		if (err < 0)
+			return err;
+	}
 
 	/* reset mixer */
 	snd_cmipci_mixer_write(cm, 0, 0);
