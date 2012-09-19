@@ -30,12 +30,12 @@
 #include <linux/pci.h>
 #include <sound/core.h>
 #include <sound/asoundef.h>
+#include <sound/jack.h>
 #include "hda_codec.h"
 #include "hda_local.h"
 #include "hda_patch.h"
 #include "hda_beep.h"
 
-#define NUM_CONTROL_ALLOC	32
 #define STAC_PWR_EVENT		0x20
 #define STAC_HP_EVENT		0x30
 #define STAC_VREF_EVENT		0x40
@@ -216,10 +216,12 @@ struct sigmatel_spec {
 
 	struct hda_pcm pcm_rec[2];	/* PCM information */
 
+	/* jack detection */
+	struct snd_jack *jack;
+
 	/* dynamic controls and input_mux */
 	struct auto_pin_cfg autocfg;
-	unsigned int num_kctl_alloc, num_kctl_used;
-	struct snd_kcontrol_new *kctl_alloc;
+	struct snd_array kctls;
 	struct hda_input_mux private_dimux;
 	struct hda_input_mux private_imux;
 	struct hda_input_mux private_smux;
@@ -1233,6 +1235,8 @@ static const char *slave_sws[] = {
 	NULL
 };
 
+static void stac92xx_free_kctls(struct hda_codec *codec);
+
 static int stac92xx_build_controls(struct hda_codec *codec)
 {
 	struct sigmatel_spec *spec = codec->spec;
@@ -1250,7 +1254,7 @@ static int stac92xx_build_controls(struct hda_codec *codec)
 	}
 	if (spec->num_dmuxes > 0) {
 		stac_dmux_mixer.count = spec->num_dmuxes;
-		err = snd_ctl_add(codec->bus->card,
+		err = snd_hda_ctl_add(codec,
 				  snd_ctl_new1(&stac_dmux_mixer, codec));
 		if (err < 0)
 			return err;
@@ -1282,7 +1286,7 @@ static int stac92xx_build_controls(struct hda_codec *codec)
 			return err;
 		spec->multiout.share_spdif = 1;
 	}
-	if (spec->dig_in_nid && (!spec->gpio_dir & 0x01)) {
+	if (spec->dig_in_nid && !(spec->gpio_dir & 0x01)) {
 		err = snd_hda_create_spdif_in_ctls(codec, spec->dig_in_nid);
 		if (err < 0)
 			return err;
@@ -1305,6 +1309,7 @@ static int stac92xx_build_controls(struct hda_codec *codec)
 			return err;
 	}
 
+	stac92xx_free_kctls(codec); /* no longer needed */
 	return 0;	
 }
 
@@ -2592,28 +2597,16 @@ static int stac92xx_add_control_idx(struct sigmatel_spec *spec, int type,
 {
 	struct snd_kcontrol_new *knew;
 
-	if (spec->num_kctl_used >= spec->num_kctl_alloc) {
-		int num = spec->num_kctl_alloc + NUM_CONTROL_ALLOC;
-
-		knew = kcalloc(num + 1, sizeof(*knew), GFP_KERNEL); /* array + terminator */
-		if (! knew)
-			return -ENOMEM;
-		if (spec->kctl_alloc) {
-			memcpy(knew, spec->kctl_alloc, sizeof(*knew) * spec->num_kctl_alloc);
-			kfree(spec->kctl_alloc);
-		}
-		spec->kctl_alloc = knew;
-		spec->num_kctl_alloc = num;
-	}
-
-	knew = &spec->kctl_alloc[spec->num_kctl_used];
+	snd_array_init(&spec->kctls, sizeof(*knew), 32);
+	knew = snd_array_new(&spec->kctls);
+	if (!knew)
+		return -ENOMEM;
 	*knew = stac92xx_control_templates[type];
 	knew->index = idx;
 	knew->name = kstrdup(name, GFP_KERNEL);
 	if (! knew->name)
 		return -ENOMEM;
 	knew->private_value = val;
-	spec->num_kctl_used++;
 	return 0;
 }
 
@@ -3434,8 +3427,8 @@ static int stac92xx_parse_auto_config(struct hda_codec *codec, hda_nid_t dig_out
 	if (dig_in && spec->autocfg.dig_in_pin)
 		spec->dig_in_nid = dig_in;
 
-	if (spec->kctl_alloc)
-		spec->mixers[spec->num_mixers++] = spec->kctl_alloc;
+	if (spec->kctls.list)
+		spec->mixers[spec->num_mixers++] = spec->kctls.list;
 
 	spec->input_mux = &spec->private_imux;
 	spec->dinput_mux = &spec->private_dimux;
@@ -3536,8 +3529,8 @@ static int stac9200_parse_auto_config(struct hda_codec *codec)
 	if (spec->autocfg.dig_in_pin)
 		spec->dig_in_nid = 0x04;
 
-	if (spec->kctl_alloc)
-		spec->mixers[spec->num_mixers++] = spec->kctl_alloc;
+	if (spec->kctls.list)
+		spec->mixers[spec->num_mixers++] = spec->kctls.list;
 
 	spec->input_mux = &spec->private_imux;
 	spec->dinput_mux = &spec->private_dimux;
@@ -3617,7 +3610,7 @@ static int stac92xx_init(struct hda_codec *codec)
 {
 	struct sigmatel_spec *spec = codec->spec;
 	struct auto_pin_cfg *cfg = &spec->autocfg;
-	int i;
+	int i, err;
 
 	snd_hda_sequence_write(codec, spec->init);
 
@@ -3639,6 +3632,12 @@ static int stac92xx_init(struct hda_codec *codec)
 		stac92xx_auto_set_pinctl(codec, spec->autocfg.line_out_pins[0],
 					 AC_PINCTL_OUT_EN);
 		stac92xx_auto_init_hp_out(codec);
+		/* jack detection */
+		err = snd_jack_new(codec->bus->card,
+			"Headphone Jack",
+			SND_JACK_HEADPHONE, &spec->jack);
+		if (err < 0)
+			return err;
 		/* fake event to set up pins */
 		codec->patch_ops.unsol_event(codec, STAC_HP_EVENT << 26);
 	} else {
@@ -3698,19 +3697,28 @@ static int stac92xx_init(struct hda_codec *codec)
 	return 0;
 }
 
+static void stac92xx_free_kctls(struct hda_codec *codec)
+{
+	struct sigmatel_spec *spec = codec->spec;
+
+	if (spec->kctls.list) {
+		struct snd_kcontrol_new *kctl = spec->kctls.list;
+		int i;
+		for (i = 0; i < spec->kctls.used; i++)
+			kfree(kctl[i].name);
+	}
+	snd_array_free(&spec->kctls);
+}
+
 static void stac92xx_free(struct hda_codec *codec)
 {
 	struct sigmatel_spec *spec = codec->spec;
-	int i;
 
 	if (! spec)
 		return;
 
-	if (spec->kctl_alloc) {
-		for (i = 0; i < spec->num_kctl_used; i++)
-			kfree(spec->kctl_alloc[i].name);
-		kfree(spec->kctl_alloc);
-	}
+	if (spec->jack)
+		snd_device_free(codec->bus->card, spec->jack);
 
 	if (spec->bios_pin_configs)
 		kfree(spec->bios_pin_configs);
@@ -3796,6 +3804,8 @@ static void stac92xx_hp_detect(struct hda_codec *codec, unsigned int res)
 			break;
 		presence = get_hp_pin_presence(codec, cfg->hp_pins[i]);
 	}
+	snd_jack_report(spec->jack,
+		presence ? SND_JACK_HEADPHONE : 0);
 
 	if (presence) {
 		/* disable lineouts, enable hp */
