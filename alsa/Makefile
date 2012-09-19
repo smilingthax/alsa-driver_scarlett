@@ -98,7 +98,7 @@ include/config1.h.in: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps
 all-deps: toplevel.config.in acinclude.m4 include/config1.h.in
 
 include/sndversions.h:
-	make dep
+	$(MAKE) dep
 
 .PHONY: compile
 compile: include/sound/version.h include/sndversions.h
