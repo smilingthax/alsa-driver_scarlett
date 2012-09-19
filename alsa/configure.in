@@ -1788,6 +1788,15 @@ if test "$CONFIG_HAVE_VIDEO_GET_DRVDATA" = "1"; then
 fi
 fi
 
+dnl Check for CONFIG_VIDEO_V4L1
+if test "$CONFIG_VIDEO_DEV" = "y"; then
+if test "$kversion.$kpatchlevel" = "2.6" -a "$ksublevel" -gt 17; then
+CHECK_KERNEL_CONFIG(CONFIG_VIDEO_V4L1, [V4L1 layer])
+else
+CONFIG_VIDEO_V4L1="y"
+fi
+fi
+
 dnl Check for old io_remap_page_range()
 AC_MSG_CHECKING(for io_remap_pfn_range)
 io_remap_pfn_range="0"
@@ -2537,7 +2546,7 @@ ALSA_TOPLEVEL_SELECT
 dnl Workaround for a module -> option dependency that isn't correctly
 dnl handled by ALSA_TOPLEVEL_SELECT
 if ( test "$CONFIG_SND_FM801_TEA575X_BOOL" = "y" ) &&
-   ( test "$CONFIG_VIDEO_DEV" = "y" ); then
+   ( test "$CONFIG_VIDEO_V4L1" = "y" ); then
   CONFIG_SND_FM801_TEA575X="m"
 else
   CONFIG_SND_FM801_TEA575X_BOOL=""
