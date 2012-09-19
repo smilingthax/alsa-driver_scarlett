@@ -69,9 +69,6 @@ int snd_info_check_reserved_words(const char *str)
 
 #ifdef CONFIG_PROC_FS
 
-extern int major;
-extern struct file_operations snd_fops;
-
 static DECLARE_MUTEX(info_mutex);
 
 typedef struct _snd_info_private_data {
@@ -296,7 +293,7 @@ static int snd_info_entry_open(struct inode *inode, struct file *file)
 	down(&info_mutex);
 	p = PDE(inode);
 	entry = p == NULL ? NULL : (snd_info_entry_t *)p->data;
-	if (entry == NULL) {
+	if (entry == NULL || entry->disconnected) {
 		up(&info_mutex);
 		return -ENODEV;
 	}
@@ -537,11 +534,6 @@ static struct file_operations snd_info_entry_operations =
 static struct inode_operations snd_info_entry_inode_operations =
 {
 	&snd_info_entry_operations,	/* default sound info directory file-ops */
-};
-
-static struct inode_operations snd_info_device_inode_operations =
-{
-	&snd_fops,		/* default sound info directory file-ops */
 };
 #endif	/* LINUX_2_2 */
 
@@ -941,6 +933,13 @@ static int snd_info_dev_register_entry(snd_device_t *device)
 	return snd_info_register(entry);
 }
 
+static int snd_info_dev_disconnect_entry(snd_device_t *device)
+{
+	snd_info_entry_t *entry = snd_magic_cast(snd_info_entry_t, device->device_data, return -ENXIO);
+	entry->disconnected = 1;
+	return 0;
+}
+
 static int snd_info_dev_unregister_entry(snd_device_t *device)
 {
 	snd_info_entry_t *entry = snd_magic_cast(snd_info_entry_t, device->device_data, return -ENXIO);
@@ -973,7 +972,7 @@ int snd_card_proc_new(snd_card_t *card, const char *name,
 	static snd_device_ops_t ops = {
 		.dev_free = snd_info_dev_free_entry,
 		.dev_register =	snd_info_dev_register_entry,
-		// .dev_disconnect = snd_info_dev_disconnect_entry,
+		.dev_disconnect = snd_info_dev_disconnect_entry,
 		.dev_unregister = snd_info_dev_unregister_entry
 	};
 	snd_info_entry_t *entry;
@@ -1006,103 +1005,6 @@ void snd_info_free_entry(snd_info_entry_t * entry)
 	if (entry->private_free)
 		entry->private_free(entry);
 	snd_magic_kfree(entry);
-}
-
-#ifdef LINUX_2_2
-static void snd_info_device_fill_inode(struct inode *inode, int fill)
-{
-	struct proc_dir_entry *de;
-	snd_info_entry_t *entry;
-
-	if (!fill) {
-		MOD_DEC_USE_COUNT;
-		return;
-	}
-	MOD_INC_USE_COUNT;
-	de = PDE(inode);
-	if (de == NULL)
-		return;
-	entry = (snd_info_entry_t *) de->data;
-	if (entry == NULL)
-		return;
-	inode->i_gid = device_gid;
-	inode->i_uid = device_uid;
-	inode->i_rdev = MKDEV(entry->c.device.major, entry->c.device.minor);
-}
-
-static inline void snd_info_device_entry_prepare(struct proc_dir_entry *de, snd_info_entry_t *entry)
-{
-	de->fill_inode = snd_info_device_fill_inode;
-	de->ops = &snd_info_device_inode_operations;
-}
-#else
-static inline void snd_info_device_entry_prepare(struct proc_dir_entry *de, snd_info_entry_t *entry)
-{
-	de->rdev = mk_kdev(entry->c.device.major, entry->c.device.minor);
-	de->owner = THIS_MODULE;
-}
-#endif /* LINUX_2_2 */
-
-/*
- * create a procfs device file
- */
-snd_info_entry_t *snd_info_create_device(const char *name, unsigned int number, unsigned int mode)
-{
-	unsigned short _major = number >> 16;
-	unsigned short minor = (unsigned short) number;
-	snd_info_entry_t *entry;
-	struct proc_dir_entry *p = NULL;
-
-	if (!_major)
-		_major = major;
-	if (!mode)
-		mode = S_IFCHR | S_IRUGO | S_IWUGO;
-	mode &= (device_mode & (S_IRUGO | S_IWUGO)) | S_IFCHR | S_IFBLK;
-	entry = snd_info_create_module_entry(THIS_MODULE, name, NULL);
-	if (entry == NULL)
-		return NULL;
-	entry->content = SNDRV_INFO_CONTENT_DEVICE;
-	entry->mode = mode;
-	entry->c.device.major = _major;
-	entry->c.device.minor = minor;
-	down(&info_mutex);
-	p = create_proc_entry(entry->name, entry->mode, snd_proc_dev);
-	if (p) {
-		snd_info_device_entry_prepare(p, entry);
-	} else {
-		up(&info_mutex);
-		snd_info_free_entry(entry);
-		return NULL;
-	}
-	p->gid = device_gid;
-	p->uid = device_uid;
-	p->data = (void *) entry;
-	entry->p = p;
-	up(&info_mutex);
-#ifdef CONFIG_DEVFS_FS
-	if (strncmp(name, "controlC", 8)) {	/* created in sound.c */
-		char dname[32];
-		sprintf(dname, "snd/%s", name);
-		devfs_register(NULL, dname, DEVFS_FL_DEFAULT,
-				_major, minor, mode,
-				&snd_fops, NULL);
-	}
-#endif
-	return entry;
-}
-
-/*
- * release a procfs device file
- */
-void snd_info_free_device(snd_info_entry_t * entry)
-{
-	snd_runtime_check(entry, return);
-	down(&info_mutex);
-	snd_remove_proc_entry(snd_proc_dev, entry->p);
-	up(&info_mutex);
-	if (entry->p && strncmp(entry->name, "controlC", 8))
-		devfs_remove("snd/%s", entry->name);
-	snd_info_free_entry(entry);
 }
 
 /**

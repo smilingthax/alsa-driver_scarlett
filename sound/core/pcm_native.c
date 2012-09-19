@@ -1416,6 +1416,7 @@ static int snd_pcm_capture_drop(snd_pcm_substream_t * substream)
 }
 
 /* WARNING: Don't forget to fput back the file */
+extern int snd_major;
 static struct file *snd_pcm_file_fd(int fd)
 {
 	struct file *file;
@@ -1426,7 +1427,7 @@ static struct file *snd_pcm_file_fd(int fd)
 		return 0;
 	inode = file->f_dentry->d_inode;
 	if (!S_ISCHR(inode->i_mode) ||
-	    major(inode->i_rdev) != CONFIG_SND_MAJOR) {
+	    major(inode->i_rdev) != snd_major) {
 		fput(file);
 		return 0;
 	}
