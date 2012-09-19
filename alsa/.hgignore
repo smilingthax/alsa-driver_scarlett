@@ -46,9 +46,7 @@ include/autoconf-extra.h
 include/config.h
 include/config1.h
 include/config1.h.in
-include/linux/autoconf.h
-include/linux/mutex.h
-include/linux/platform_device.h
+include/linux/*
 include/pci_ids_compat.h
 include/version.h
 pci/ac97/ac97_bus.c

@@ -244,7 +244,7 @@ static int get_ctl_type(struct snd_card *card, struct snd_ctl_elem_id *id)
 	}
 	info.id = *id;
 	snd_power_lock(card);
-	err = snd_power_wait(card, SNDRV_CTL_POWER_D0, NULL);
+	err = snd_power_wait(card, SNDRV_CTL_POWER_D0);
 	if (err >= 0)
 		err = kctl->info(kctl, &info);
 	snd_power_unlock(card);
@@ -327,7 +327,7 @@ static inline int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd,
 	}
 
 	snd_power_lock(card);
-	err = snd_power_wait(card, SNDRV_CTL_POWER_D0, NULL);
+	err = snd_power_wait(card, SNDRV_CTL_POWER_D0);
 	if (err >= 0) {
 		if (native_ctl == SNDRV_CTL_IOCTL_ELEM_READ)
 			err = snd_ctl_elem_read(card, data);
