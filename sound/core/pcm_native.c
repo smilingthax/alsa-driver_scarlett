@@ -1977,6 +1977,9 @@ static int snd_pcm_playback_delay(snd_pcm_substream_t *substream, snd_pcm_sframe
 			err = SNDRV_PCM_STATE_RUNNING ? -EPIPE : -EBADFD;
 		}
 		break;
+	case SNDRV_PCM_STATE_XRUN:
+		err = -EPIPE;
+		break;
 	case SNDRV_PCM_STATE_SUSPENDED:
 		if (runtime->status->suspended_state == SNDRV_PCM_STATE_RUNNING) {
 			n = snd_pcm_playback_hw_avail(runtime);
@@ -2311,7 +2314,9 @@ static ssize_t snd_pcm_write(struct file *file, const char *buf, size_t count, l
 	snd_pcm_runtime_t *runtime;
 	snd_pcm_sframes_t result;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 	up(&file->f_dentry->d_inode->i_sem);
+#endif
 	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, result = -ENXIO; goto end);
 	substream = pcm_file->substream;
 	snd_assert(substream != NULL, result = -ENXIO; goto end);
@@ -2329,7 +2334,9 @@ static ssize_t snd_pcm_write(struct file *file, const char *buf, size_t count, l
 	if (result > 0)
 		result = frames_to_bytes(runtime, result);
  end:
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 	down(&file->f_dentry->d_inode->i_sem);
+#endif
 	return result;
 }
 
@@ -2376,7 +2383,9 @@ static ssize_t snd_pcm_writev(struct file *file, const struct iovec *_vector,
 	void *bufs[128];
 	snd_pcm_uframes_t frames;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 	up(&file->f_dentry->d_inode->i_sem);
+#endif
 	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, result = -ENXIO; goto end);
 	substream = pcm_file->substream;
 	snd_assert(substream != NULL, result = -ENXIO; goto end);
@@ -2397,7 +2406,9 @@ static ssize_t snd_pcm_writev(struct file *file, const struct iovec *_vector,
 	if (result > 0)
 		result = frames_to_bytes(runtime, result);
  end:
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 	down(&file->f_dentry->d_inode->i_sem);
+#endif
 	return result;
 }
 #endif
@@ -2422,6 +2433,8 @@ unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait)
 	avail = snd_pcm_playback_avail(runtime);
 	switch (runtime->status->state) {
 	case SNDRV_PCM_STATE_RUNNING:
+	case SNDRV_PCM_STATE_PREPARED:
+	case SNDRV_PCM_STATE_PAUSED:
 		if (avail >= runtime->control->avail_min) {
 			mask = POLLOUT | POLLWRNORM;
 			break;
@@ -2430,12 +2443,6 @@ unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait)
 	case SNDRV_PCM_STATE_DRAINING:
 		mask = 0;
 		break;
-	case SNDRV_PCM_STATE_PREPARED:
-		if (avail > 0) {
-			mask = POLLOUT | POLLWRNORM;
-			break;
-		}
-		/* Fall through */
 	default:
 		mask = POLLOUT | POLLWRNORM | POLLERR;
 		break;
@@ -2464,6 +2471,8 @@ unsigned int snd_pcm_capture_poll(struct file *file, poll_table * wait)
 	avail = snd_pcm_capture_avail(runtime);
 	switch (runtime->status->state) {
 	case SNDRV_PCM_STATE_RUNNING:
+	case SNDRV_PCM_STATE_PREPARED:
+	case SNDRV_PCM_STATE_PAUSED:
 		if (avail >= runtime->control->avail_min) {
 			mask = POLLIN | POLLRDNORM;
 			break;
