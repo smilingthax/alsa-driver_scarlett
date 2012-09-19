@@ -349,6 +349,7 @@ int __devinit snd_ice1712_ak4524_build_controls(ice1712_t *ice)
 			break;
 		}
 		}
+		ctl.private_data = ice;
 		if ((err = snd_ctl_add(ice->card, snd_ctl_new(&ctl))) < 0)
 			return err;
 	}
