@@ -6,7 +6,7 @@
 ifneq ($(KERNELRELEASE),)
 # call from 2.6 kernel build system
 
-obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ sh/ pcmcia/ aoa/ soc/ misc/
+obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ sh/ pcmcia/ aoa/ soc/ misc/ firewire/
 
 else
 
@@ -103,6 +103,12 @@ SUBDIRS  += sh
 endif
 ifeq (m,$(CONFIG_AC97_BUS))
 SUBDIRS  += misc
+endif
+ifeq (y,$(CONFIG_FIREWIRE))
+SUBDIRS  += firewire
+endif
+ifeq (m,$(CONFIG_FIREWIRE))
+SUBDIRS  += firewire
 endif
 CSUBDIRS += test utils
 

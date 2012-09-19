@@ -3608,6 +3608,10 @@ else
 fi
 AC_SUBST(CONFIG_HAS_DMA)
 
+dnl Check for FireWire support
+CHECK_KERNEL_CONFIG(CONFIG_FIREWIRE, [FireWire support])
+AC_SUBST(CONFIG_FIREWIRE)
+
 dnl Check for which cards to compile driver for...
 CONFIG_SOUND=m
 ALSA_TOPLEVEL_SELECT

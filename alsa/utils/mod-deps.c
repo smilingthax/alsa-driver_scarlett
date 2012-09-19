@@ -122,6 +122,7 @@ static char *kernel_deps[] = {
 	"PCMCIA",
 	"SPI",
 	"I2C*",
+	"FIREWIRE",
 	/* architectures */
 	"ARM*",
 	"PARISC",
@@ -217,6 +218,7 @@ static char *no_cards[] = {
 	"#SND_SUPERH",
 	"#SND_SPARC",
 	"#SND_SPI",
+	"#SND_FIREWIRE",
 	NULL
 };
 
