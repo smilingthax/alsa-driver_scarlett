@@ -662,12 +662,13 @@ void snd_timer_interrupt(struct snd_timer * timer, unsigned long ticks_left)
 	struct snd_timer_instance *ti, *ts;
 	unsigned long resolution, ticks;
 	struct list_head *p, *q, *n, *ack_list_head;
+	unsigned long flags;
 	int use_tasklet = 0;
 
 	if (timer == NULL)
 		return;
 
-	spin_lock(&timer->lock);
+	spin_lock_irqsave(&timer->lock, flags);
 
 	/* remember the current resolution */
 	if (timer->hw.c_resolution)
@@ -752,7 +753,7 @@ void snd_timer_interrupt(struct snd_timer * timer, unsigned long ticks_left)
 
 	/* do we have any slow callbacks? */
 	use_tasklet = !list_empty(&timer->sack_list_head);
-	spin_unlock(&timer->lock);
+	spin_unlock_irqrestore(&timer->lock, flags);
 
 	if (use_tasklet)
 		tasklet_hi_schedule(&timer->task_queue);
@@ -777,8 +778,10 @@ int snd_timer_new(struct snd_card *card, char *id, struct snd_timer_id *tid,
 	snd_assert(rtimer != NULL, return -EINVAL);
 	*rtimer = NULL;
 	timer = kzalloc(sizeof(*timer), GFP_KERNEL);
-	if (timer == NULL)
+	if (timer == NULL) {
+		snd_printk(KERN_ERR "timer: cannot allocate\n");
 		return -ENOMEM;
+	}
 	timer->tmr_class = tid->dev_class;
 	timer->card = card;
 	timer->tmr_device = tid->device;
