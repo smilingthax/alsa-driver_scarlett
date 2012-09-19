@@ -3,6 +3,7 @@
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
  *                   Osamu Tomita <tomita@cinet.co.jp>
  *                   Takashi Iwai <tiwai@suse.de>
+ *                   Hideaki Okubo <okubo@msh.biglobe.ne.jp>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -55,6 +56,7 @@ static int irq[SNDRV_CARDS] = SNDRV_DEFAULT_IRQ;	/* 5,7,9,11,12,15 */
 static int mpu_irq[SNDRV_CARDS] = SNDRV_DEFAULT_IRQ;	/* 9,11,12,15 */
 static int dma1[SNDRV_CARDS] = SNDRV_DEFAULT_DMA;	/* 0,1,3,5,6,7 */
 static int dma2[SNDRV_CARDS] = SNDRV_DEFAULT_DMA;	/* 0,1,3,5,6,7 */
+static int pc98ii[SNDRV_CARDS];				/* PC98II */
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(index, "Index value for " IDENT " soundcard.");
@@ -91,6 +93,9 @@ MODULE_PARM_SYNTAX(dma1, SNDRV_DMA_DESC);
 MODULE_PARM(dma2, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(dma2, "DMA2 # for " IDENT " driver.");
 MODULE_PARM_SYNTAX(dma2, SNDRV_DMA_DESC);
+MODULE_PARM(pc98ii, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(pc98ii, "Roland MPU-PC98II support.");
+MODULE_PARM_SYNTAX(pc98ii, SNDRV_BOOLEAN_FALSE_DESC);
 
 
 static snd_card_t *snd_pc98_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
@@ -143,7 +148,7 @@ static int __init pc98_mpu401_init(int irq)
 	for (count = 0; count < 65000; count ++)
 		if (inb(0x148f) == 0x04)
 			goto set_mode_118;
-	snd_printk(KERN_ERR IDENT ": MIDI daughter board initalize failed at stage1\n\n");
+	snd_printk(KERN_ERR IDENT ": MIDI daughter board initialize failed at stage1\n\n");
 	return -EINVAL;
 
  set_mode_118:
@@ -232,12 +237,12 @@ static int __init pc98_mpu401_init(int irq)
 	for (count = 0; count < 65000; count ++)
 		if (inb(0x148f) == 0x00)
 			goto end_mode_118;
-	snd_printk(KERN_ERR IDENT ": MIDI daughter board initalize failed at stage2\n");
+	snd_printk(KERN_ERR IDENT ": MIDI daughter board initialize failed at stage2\n");
 	return -EINVAL;
 
  end_mode_118:
 	outb(0x3f, 0x148d);
-	snd_printk(KERN_INFO IDENT ": MIDI daughter board initalized\n");
+	snd_printk(KERN_INFO IDENT ": MIDI daughter board initialized\n");
 	return 0;
 }
 
@@ -286,8 +291,13 @@ static int __init pc98_cs4231_chip_init(int dev)
 		snd_printk(KERN_ERR IDENT ": Bad DMA %d\n", dma2[dev]);
 		return -EINVAL;
 	}
-	if (dma1[dev] != dma2[dev] && dma2[dev] >= 0)
+
+	outb(dma1[dev], 0x29);		/* dma1 boundary 64KB */
+	if (dma1[dev] != dma2[dev] && dma2[dev] >= 0) {
+		outb(0, 0x5f);		/* wait */
+		outb(dma2[dev], 0x29);	/* dma2 boundary 64KB */
 		intr_bits |= 0x04;
+	}
 
 	if (PC9800_SOUND_ID() == PC9800_SOUND_ID_118) {
 		/* Set up CanBe control registers. */
@@ -375,7 +385,7 @@ static int __init snd_card_pc98_probe(int dev)
 		err = pc98_mpu401_init(mpu_irq[dev]);
 		if (! err) {
 			err = snd_mpu401_uart_new(card, 0,
-						  MPU401_HW_MPU401,
+						  pc98ii[dev] ? MPU401_HW_PC98II : MPU401_HW_MPU401,
 						  mpu_port[dev], 0,
 						  mpu_irq[dev], SA_INTERRUPT, NULL);
 			if (err < 0)
@@ -434,7 +444,7 @@ module_exit(alsa_card_pc98_exit)
 
 /* format is: snd-pc98-cs4232=enable,index,id,port,
 			 mpu_port,fm_port,
-			 irq,mpu_irq,dma1,dma2 */
+			 irq,mpu_irq,dma1,dma2,pc98ii */
 
 static int __init alsa_card_pc98_setup(char *str)
 {
@@ -451,7 +461,8 @@ static int __init alsa_card_pc98_setup(char *str)
 	       get_option(&str,&irq[nr_dev]) == 2 &&
 	       get_option(&str,&mpu_irq[nr_dev]) == 2 &&
 	       get_option(&str,&dma1[nr_dev]) == 2 &&
-	       get_option(&str,&dma2[nr_dev]) == 2);
+	       get_option(&str,&dma2[nr_dev]) == 2 &&
+	       get_option(&str,&pc98ii[nr_dev]) == 2);
 	nr_dev++;
 	return 1;
 }

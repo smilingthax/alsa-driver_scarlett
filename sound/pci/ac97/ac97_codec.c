@@ -1056,15 +1056,13 @@ static int snd_ac97_ad1980_spdif_source_put(snd_kcontrol_t * kcontrol, snd_ctl_e
 	return snd_ac97_update_bits(ac97, AC97_AD_SERIAL_CFG, 0x0004, val);
 }
 
-static const snd_kcontrol_new_t snd_ac97_ad1980_spdif_source =
-	{
-		.iface	= SNDRV_CTL_ELEM_IFACE_MIXER,
-		.name	= SNDRV_CTL_NAME_IEC958("",PLAYBACK,NONE) "Source",
-		.info	= snd_ac97_ad1980_spdif_source_info,
-		.get	= snd_ac97_ad1980_spdif_source_get,
-		.put	= snd_ac97_ad1980_spdif_source_put,
-	};
-
+static const snd_kcontrol_new_t snd_ac97_ad1980_spdif_source = {
+	.iface	= SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name	= SNDRV_CTL_NAME_IEC958("",PLAYBACK,NONE) "Source",
+	.info	= snd_ac97_ad1980_spdif_source_info,
+	.get	= snd_ac97_ad1980_spdif_source_get,
+	.put	= snd_ac97_ad1980_spdif_source_put,
+};
 
 /*
  * ALC650
