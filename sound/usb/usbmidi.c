@@ -983,8 +983,10 @@ static int snd_usbmidi_out_endpoint_create(struct snd_usb_midi* umidi,
 		snd_usbmidi_out_endpoint_delete(ep);
 		return -ENOMEM;
 	}
-	/* we never use interrupt output pipes */
-	pipe = usb_sndbulkpipe(umidi->chip->dev, ep_info->out_ep);
+	if (ep_info->out_interval)
+		pipe = usb_sndintpipe(umidi->chip->dev, ep_info->out_ep);
+	else
+		pipe = usb_sndbulkpipe(umidi->chip->dev, ep_info->out_ep);
 	if (umidi->chip->usb_id == USB_ID(0x0a92, 0x1020)) /* ESI M4U */
 		/* FIXME: we need more URBs to get reasonable bandwidth here: */
 		ep->max_transfer = 4;
@@ -996,8 +998,14 @@ static int snd_usbmidi_out_endpoint_create(struct snd_usb_midi* umidi,
 		snd_usbmidi_out_endpoint_delete(ep);
 		return -ENOMEM;
 	}
-	usb_fill_bulk_urb(ep->urb, umidi->chip->dev, pipe, buffer,
-			  ep->max_transfer, snd_usbmidi_out_urb_complete, ep);
+	if (ep_info->out_interval)
+		usb_fill_int_urb(ep->urb, umidi->chip->dev, pipe, buffer,
+				 ep->max_transfer, snd_usbmidi_out_urb_complete,
+				 ep, ep_info->out_interval);
+	else
+		usb_fill_bulk_urb(ep->urb, umidi->chip->dev,
+				  pipe, buffer, ep->max_transfer,
+				  snd_usbmidi_out_urb_complete, ep);
 	ep->urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
 
 	spin_lock_init(&ep->buffer_lock);
@@ -1343,6 +1351,13 @@ static int snd_usbmidi_get_ms_info(struct snd_usb_midi* umidi,
 			endpoints[epidx].out_ep = ep->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
 			if ((ep->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_INT)
 				endpoints[epidx].out_interval = ep->bInterval;
+			else if (snd_usb_get_speed(umidi->chip->dev) == USB_SPEED_LOW)
+				/*
+				 * Low speed bulk transfers don't exist, so
+				 * force interrupt transfers for devices like
+				 * ESI MIDI Mate that try to use them anyway.
+				 */
+				endpoints[epidx].out_interval = 1;
 			endpoints[epidx].out_cables = (1 << ms_ep->bNumEmbMIDIJack) - 1;
 			snd_printdd(KERN_INFO "EP %02X: %d jack(s)\n",
 				    ep->bEndpointAddress, ms_ep->bNumEmbMIDIJack);
@@ -1356,6 +1371,8 @@ static int snd_usbmidi_get_ms_info(struct snd_usb_midi* umidi,
 			endpoints[epidx].in_ep = ep->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
 			if ((ep->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_INT)
 				endpoints[epidx].in_interval = ep->bInterval;
+			else if (snd_usb_get_speed(umidi->chip->dev) == USB_SPEED_LOW)
+				endpoints[epidx].in_interval = 1;
 			endpoints[epidx].in_cables = (1 << ms_ep->bNumEmbMIDIJack) - 1;
 			snd_printdd(KERN_INFO "EP %02X: %d jack(s)\n",
 				    ep->bEndpointAddress, ms_ep->bNumEmbMIDIJack);
