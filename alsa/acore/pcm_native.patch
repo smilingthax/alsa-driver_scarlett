@@ -1,12 +1,12 @@
---- ../alsa-kernel/core/pcm_native.c	2006-04-24 12:24:02.000000000 +0200
-+++ pcm_native.c	2006-04-24 12:29:03.000000000 +0200
+--- ../alsa-kernel/core/pcm_native.c	2006-10-04 11:55:09.000000000 +0200
++++ pcm_native.c	2006-10-04 17:01:36.000000000 +0200
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
   *  Digital Audio (PCM) abstract layer
   *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
-@@ -347,7 +348,10 @@
- 	return err;
+@@ -363,7 +364,10 @@ static int period_to_usecs(struct snd_pc
+ 	return usecs;
  }
  
 -static int snd_pcm_hw_params(struct snd_pcm_substream *substream,
@@ -17,7 +17,7 @@
  			     struct snd_pcm_hw_params *params)
  {
  	struct snd_pcm_runtime *runtime;
-@@ -2843,6 +2847,9 @@
+@@ -2832,6 +2836,9 @@ static ssize_t snd_pcm_write(struct file
  	struct snd_pcm_runtime *runtime;
  	snd_pcm_sframes_t result;
  
@@ -27,7 +27,7 @@
  	pcm_file = file->private_data;
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, result = -ENXIO; goto end);
-@@ -2860,9 +2867,13 @@
+@@ -2849,12 +2856,27 @@ static ssize_t snd_pcm_write(struct file
  	if (result > 0)
  		result = frames_to_bytes(runtime, result);
   end:
@@ -38,33 +38,71 @@
  }
  
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 44)
- static ssize_t snd_pcm_readv(struct file *file, const struct iovec *_vector,
- 			     unsigned long count, loff_t * offset)
- 
-@@ -2909,6 +2920,9 @@
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
++#define SND_PCM_USE_AIO
++#else
++#define SND_PCM_USE_READV
++#endif
++
++#ifdef SND_PCM_USE_AIO
+ static ssize_t snd_pcm_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 			     unsigned long nr_segs, loff_t pos)
+-
++#else
++static ssize_t snd_pcm_readv(struct file *file, const struct iovec *iov,
++			     unsigned long nr_segs, loff_t * offset)
++#endif
+ {
+ 	struct snd_pcm_file *pcm_file;
+ 	struct snd_pcm_substream *substream;
+@@ -2864,7 +2886,11 @@ static ssize_t snd_pcm_aio_read(struct k
  	void __user **bufs;
  	snd_pcm_uframes_t frames;
  
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
-+	up(&file->f_dentry->d_inode->i_sem);
++#ifdef SND_PCM_USE_AIO
+ 	pcm_file = iocb->ki_filp->private_data;
++#else
++	pcm_file = file->private_data;
 +#endif
- 	pcm_file = file->private_data;
  	substream = pcm_file->substream;
- 	snd_assert(substream != NULL, result = -ENXIO; goto end);
-@@ -2933,8 +2947,12 @@
- 		result = frames_to_bytes(runtime, result);
- 	kfree(bufs);
-  end:
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
-+	down(&file->f_dentry->d_inode->i_sem);
-+#endif
+ 	snd_assert(substream != NULL, return -ENXIO);
+ 	runtime = substream->runtime;
+@@ -2887,8 +2913,13 @@ static ssize_t snd_pcm_aio_read(struct k
  	return result;
  }
+ 
++#ifdef SND_PCM_USE_AIO
+ static ssize_t snd_pcm_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 			      unsigned long nr_segs, loff_t pos)
++#else
++static ssize_t snd_pcm_writev(struct file *file, const struct iovec *iov,
++			      unsigned long nr_segs, loff_t * offset)
 +#endif
+ {
+ 	struct snd_pcm_file *pcm_file;
+ 	struct snd_pcm_substream *substream;
+@@ -2898,7 +2929,11 @@ static ssize_t snd_pcm_aio_write(struct 
+ 	void __user **bufs;
+ 	snd_pcm_uframes_t frames;
+ 
++#ifdef SND_PCM_USE_AIO
+ 	pcm_file = iocb->ki_filp->private_data;
++#else
++	pcm_file = file->private_data;
++#endif
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL, result = -ENXIO; goto end);
+ 	runtime = substream->runtime;
+@@ -2924,6 +2959,7 @@ static ssize_t snd_pcm_aio_write(struct 
+  end:
+ 	return result;
+ }
++#endif /* >= 2.3.44 */
  
  static unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait)
  {
-@@ -3020,6 +3038,17 @@
+@@ -3009,6 +3045,17 @@ static unsigned int snd_pcm_capture_poll
   * mmap support
   */
  
@@ -82,7 +120,7 @@
  /*
   * Only on coherent architectures, we can mmap the status and the control records
   * for effcient data transfer.  On others, we have to use HWSYNC ioctl...
-@@ -3028,10 +3057,18 @@
+@@ -3017,10 +3064,18 @@ static unsigned int snd_pcm_capture_poll
  /*
   * mmap status record
   */
@@ -102,7 +140,7 @@
  	struct snd_pcm_runtime *runtime;
  	struct page * page;
  	
-@@ -3039,10 +3076,19 @@
+@@ -3028,10 +3083,19 @@ static struct page * snd_pcm_mmap_status
  		return NOPAGE_OOM;
  	runtime = substream->runtime;
  	page = virt_to_page(runtime->status);
@@ -122,7 +160,7 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_status =
-@@ -3063,18 +3109,32 @@
+@@ -3052,18 +3116,32 @@ static int snd_pcm_mmap_status(struct sn
  	if (size != PAGE_ALIGN(sizeof(struct snd_pcm_mmap_status)))
  		return -EINVAL;
  	area->vm_ops = &snd_pcm_vm_ops_status;
@@ -156,7 +194,7 @@
  	struct snd_pcm_runtime *runtime;
  	struct page * page;
  	
-@@ -3082,10 +3142,19 @@
+@@ -3071,10 +3149,19 @@ static struct page * snd_pcm_mmap_contro
  		return NOPAGE_OOM;
  	runtime = substream->runtime;
  	page = virt_to_page(runtime->control);
@@ -176,7 +214,7 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_control =
-@@ -3106,8 +3175,14 @@
+@@ -3095,8 +3182,14 @@ static int snd_pcm_mmap_control(struct s
  	if (size != PAGE_ALIGN(sizeof(struct snd_pcm_mmap_control)))
  		return -EINVAL;
  	area->vm_ops = &snd_pcm_vm_ops_control;
@@ -191,7 +229,7 @@
  	return 0;
  }
  #else /* ! coherent mmap */
-@@ -3129,10 +3204,18 @@
+@@ -3118,10 +3211,18 @@ static int snd_pcm_mmap_control(struct s
  /*
   * nopage callback for mmapping a RAM page
   */
@@ -211,7 +249,7 @@
  	struct snd_pcm_runtime *runtime;
  	unsigned long offset;
  	struct page * page;
-@@ -3142,7 +3225,11 @@
+@@ -3131,7 +3232,11 @@ static struct page *snd_pcm_mmap_data_no
  	if (substream == NULL)
  		return NOPAGE_OOM;
  	runtime = substream->runtime;
@@ -223,7 +261,7 @@
  	offset += address - area->vm_start;
  	snd_assert((offset % PAGE_SIZE) == 0, return NOPAGE_OOM);
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
-@@ -3156,10 +3243,19 @@
+@@ -3145,10 +3250,19 @@ static struct page *snd_pcm_mmap_data_no
  		vaddr = runtime->dma_area + offset;
  		page = virt_to_page(vaddr);
  	}
@@ -243,7 +281,7 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_data =
-@@ -3167,6 +3263,9 @@
+@@ -3156,6 +3270,9 @@ static struct vm_operations_struct snd_p
  	.open =		snd_pcm_mmap_data_open,
  	.close =	snd_pcm_mmap_data_close,
  	.nopage =	snd_pcm_mmap_data_nopage,
@@ -253,7 +291,7 @@
  };
  
  /*
-@@ -3176,8 +3275,14 @@
+@@ -3165,8 +3282,14 @@ static int snd_pcm_default_mmap(struct s
  				struct vm_area_struct *area)
  {
  	area->vm_ops = &snd_pcm_vm_ops_data;
@@ -268,7 +306,7 @@
  	atomic_inc(&substream->mmap_count);
  	return 0;
  }
-@@ -3202,14 +3307,37 @@
+@@ -3191,14 +3314,37 @@ int snd_pcm_lib_mmap_iomem(struct snd_pc
  	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
  #endif
  	area->vm_ops = &snd_pcm_vm_ops_data_mmio;
@@ -307,7 +345,7 @@
  	atomic_inc(&substream->mmap_count);
  	return 0;
  }
-@@ -3245,7 +3373,11 @@
+@@ -3234,7 +3380,11 @@ int snd_pcm_mmap_data(struct snd_pcm_sub
  	    runtime->access == SNDRV_PCM_ACCESS_RW_NONINTERLEAVED)
  		return -EINVAL;
  	size = area->vm_end - area->vm_start;
@@ -319,7 +357,7 @@
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
  	if ((size_t)size > dma_bytes)
  		return -EINVAL;
-@@ -3270,7 +3402,11 @@
+@@ -3259,7 +3409,11 @@ static int snd_pcm_mmap(struct file *fil
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, return -ENXIO);
  
@@ -330,8 +368,8 @@
 +#endif
  	switch (offset) {
  	case SNDRV_PCM_MMAP_OFFSET_STATUS:
- 		if (substream->no_mmap_ctrl)
-@@ -3307,12 +3443,34 @@
+ 		if (pcm_file->no_compat_mmap)
+@@ -3296,12 +3450,34 @@ static int snd_pcm_fasync(int fd, struct
  /*
   * ioctl32 compat
   */
@@ -367,7 +405,7 @@
  /*
   *  To be removed helpers to keep binary compatibility
   */
-@@ -3435,26 +3593,42 @@
+@@ -3424,26 +3600,46 @@ out:
  
  struct file_operations snd_pcm_f_ops[2] = {
  	{
@@ -375,8 +413,10 @@
  		.owner =		THIS_MODULE,
 +#endif
  		.write =		snd_pcm_write,
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 44)
- 		.writev =		snd_pcm_writev,
++#ifdef SND_PCM_USE_AIO
+ 		.aio_write =		snd_pcm_aio_write,
++#elif defined(SND_PCM_USE_READV)
++		.writev =		snd_pcm_writev,
 +#endif
  		.open =			snd_pcm_playback_open,
  		.release =		snd_pcm_release,
@@ -395,8 +435,10 @@
  		.owner =		THIS_MODULE,
 +#endif
  		.read =			snd_pcm_read,
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 44)
- 		.readv =		snd_pcm_readv,
++#ifdef SND_PCM_USE_AIO
+ 		.aio_read =		snd_pcm_aio_read,
++#elif defined(SND_PCM_USE_READV)
++		.readv =		snd_pcm_readv,
 +#endif
  		.open =			snd_pcm_capture_open,
  		.release =		snd_pcm_release,
