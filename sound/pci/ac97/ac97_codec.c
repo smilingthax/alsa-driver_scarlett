@@ -1022,6 +1022,50 @@ static const snd_kcontrol_new_t snd_ac97_controls_ad18xx_lfe[1] = {
 AD18XX_PCM_BITS("LFE Playback Volume", 2, 0, 31)
 };
 
+static int snd_ac97_ad1980_spdif_source_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+{
+	static char *texts[2] = { "AC-Link", "A/D Converter" };
+
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = 2;
+	if (uinfo->value.enumerated.item > 1)
+		uinfo->value.enumerated.item = 1;
+	strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
+	return 0;
+}
+
+static int snd_ac97_ad1980_spdif_source_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	ac97_t *ac97 = snd_kcontrol_chip(kcontrol);
+	unsigned short val;
+
+	val = ac97->regs[AC97_AD_SERIAL_CFG];
+	ucontrol->value.enumerated.item[0] = (val >> 2) & 1;
+	return 0;
+}
+
+static int snd_ac97_ad1980_spdif_source_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	ac97_t *ac97 = snd_kcontrol_chip(kcontrol);
+	unsigned short val;
+
+	if (ucontrol->value.enumerated.item[0] > 1)
+		return -EINVAL;
+	val = ucontrol->value.enumerated.item[0] << 2;
+	return snd_ac97_update_bits(ac97, AC97_AD_SERIAL_CFG, 0x0004, val);
+}
+
+static const snd_kcontrol_new_t snd_ac97_ad1980_spdif_source =
+	{
+		iface: SNDRV_CTL_ELEM_IFACE_MIXER,
+		name: SNDRV_CTL_NAME_IEC958("",PLAYBACK,NONE) "Source",
+		info: snd_ac97_ad1980_spdif_source_info,
+		get: snd_ac97_ad1980_spdif_source_get,
+		put: snd_ac97_ad1980_spdif_source_put,
+	};
+
+
 /*
  * ALC650
  */
@@ -1680,6 +1724,9 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 				for (idx = 0; idx < 3; idx++)
 					if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_ymf753_controls_spdif[idx], ac97))) < 0)
 						return err;
+			} else if (ac97->id == AC97_ID_AD1980) {
+				if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_ad1980_spdif_source, ac97))) < 0)
+					return err;
 			}
 			/* set default PCM S/PDIF params */
 			/* consumer,PCM audio,no copyright,no preemphasis,PCM coder,original,48000Hz */
