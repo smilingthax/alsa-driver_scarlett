@@ -34,8 +34,10 @@ static unsigned int channels_list[10] = {1, 2, 4, 6, 8, 10, 12, 14, 16, 999999};
 static int get_firmware(const struct firmware **fw_entry, const struct firmware *frm, echoaudio_t *chip)
 {
 	int err;
+	char name[30];
 	DE_ACT(("firmware requested: %s\n", frm->data));
-	if ((err = request_firmware(fw_entry, frm->data, pci_device(chip))) < 0)
+	snprintf(name, sizeof(name), "ea/%s", frm->data);
+	if ((err = request_firmware(fw_entry, name, pci_device(chip))) < 0)
 		snd_printk(KERN_ERR "get_firmware(): Firmware not available (%d)\n", err);
 	return err;
 }
