@@ -1,3 +1,5 @@
+#define __NO_VERSION__
+
 /*
  * Functions for the OPL4 proc file
  * Copyright (c) 2003 by Clemens Ladisch <clemens@ladisch.de>

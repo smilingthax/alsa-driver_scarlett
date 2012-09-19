@@ -3,24 +3,21 @@
 # Copyright (c) 2001 by Jaroslav Kysela <perex@suse.cz>
 #
 
-TOPDIR = ..
+TOPDIR = ../..
 
 include $(TOPDIR)/toplevel.config
 include $(TOPDIR)/Makefile.conf
 
 TOPDIR = $(MAINSRCDIR)
 
-subdir-m :=
+export-objs  += pnp.o
 
-ifndef CONFIG_ISAPNP_KERNEL
-ifeq (y,$(CONFIG_ISAPNP))
-subdir-m += isapnp
-endif
-endif
+snd-pnp-objs := pnp.o
 
+# Toplevel Module Dependency
 ifndef CONFIG_PNP_KERNEL
 ifeq (y,$(CONFIG_ISAPNP))
-subdir-m += pnp
+obj-m += snd-pnp.o
 endif
 endif
 

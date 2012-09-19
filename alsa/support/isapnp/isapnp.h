@@ -22,6 +22,8 @@
 #ifndef LINUX_ISAPNP_H
 #define LINUX_ISAPNP_H
 
+#define ISAPNP_ALSA_LOCAL 1
+
 /*
  *  Configuration registers (TODO: change by specification)
  */ 

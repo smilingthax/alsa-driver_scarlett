@@ -33,18 +33,9 @@ dummy2:
 	@echo
 endif
 
-SUBDIRS  =
+SUBDIRS  = support acore i2c drivers isa synth
 CSUBDIRS =
 
-ifndef CONFIG_ISAPNP_KERNEL
-ifeq (y,$(CONFIG_ISAPNP))
-ifeq (y,$(CONFIG_ISA))
-SUBDIRS  += support
-endif
-endif
-endif
-
-SUBDIRS  += acore i2c drivers isa synth
 ifeq (y,$(CONFIG_PCI))
 SUBDIRS  += pci
 endif

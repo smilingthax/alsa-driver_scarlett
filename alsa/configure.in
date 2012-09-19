@@ -628,6 +628,18 @@ else
 fi
 AC_SUBST(CONFIG_ISAPNP_KERNEL)
 
+dnl Check for PnP layer (2.5+) in kernel...
+AC_MSG_CHECKING(for PnP driver in kernel)
+CONFIG_PNP_KERNEL=
+if test -r $CONFIG_SND_KERNELDIR/include/linux/pnp.h; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(CONFIG_PNP_KERNEL)
+  CONFIG_PNP_KERNEL=y
+else
+  AC_MSG_RESULT(no)  
+fi
+AC_SUBST(CONFIG_PNP_KERNEL)
+
 dnl Check for ISA PnP support...
 AC_MSG_CHECKING(for ISA PnP support)
 AC_ARG_WITH(isapnp,
@@ -728,24 +740,34 @@ if test "$CONFIG_HAVE_MUTEX_MACROS" = "1"; then
   AC_DEFINE(CONFIG_HAVE_MUTEX_MACROS)
 fi
 
-if test "$CONFIG_ISAPNP" = "y"; then
+fi
+dnl 2.2 kernel
+
+if test "$CONFIG_ISAPNP_KERNEL" == "y"; then
+  if test -f include/linux/isapnp.h; then
+    echo "Removing local linux/isapnp.h."
+    rm include/linux/isapnp.h
+  fi
+else
   if test ! -f include/linux/isapnp.h; then
     echo "Symlinking <linux/isapnp.h>..."
     mkdir -p include/linux
-    ln -sf ../../support/isapnp.h include/linux/isapnp.h
+    ln -sf ../../support/isapnp/isapnp.h include/linux/isapnp.h
   fi
 fi
 
+if test "$CONFIG_PNP_KERNEL" == "y"; then
+  if test -f include/linux/pnp.h; then
+    echo "Removing local linux/pnp.h."
+    rm include/linux/pnp.h
+  fi
 else
-dnl 2.4/2.5 kernels
-
-if test -f include/linux/isapnp.h; then
-  echo "Removing local linux/isapnp.h."
-  rm include/linux/isapnp.h
+  if test ! -f include/linux/pnp.h; then
+    echo "Symlinking <linux/pnp.h>..."
+    mkdir -p include/linux
+    ln -sf ../../support/pnp/pnp.h include/linux/pnp.h
+  fi
 fi
-
-fi
-dnl 2.2 kernel
 
 dnl Check for vmalloc_to_page...
 AC_MSG_CHECKING(for vmalloc_to_page)

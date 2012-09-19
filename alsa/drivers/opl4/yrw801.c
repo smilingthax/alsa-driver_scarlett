@@ -1,3 +1,5 @@
+#define __NO_VERSION__
+
 /*
  * Information about the Yamaha YRW801 wavetable ROM chip
  *
