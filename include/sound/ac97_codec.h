@@ -475,6 +475,10 @@ struct snd_ac97 {
 	struct snd_ac97_build_ops * build_ops;
 	void *private_data;
 	void (*private_free) (struct snd_ac97 *ac97);
+	/* This field is used by device drivers which serve devices which are
+	 * attached to the AC97 bus.
+	 */
+	void *device_private_data;
 	/* --- */
 	struct snd_ac97_bus *bus;
 	struct pci_dev *pci;	/* assigned PCI device - used for quirks */
