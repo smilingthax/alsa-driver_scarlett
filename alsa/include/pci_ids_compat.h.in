@@ -283,6 +283,14 @@
 #define PCI_DEVICE_ID_INTEL_82371AB_3	0x7113
 #endif
 
+/* cs5535audio */
+#ifndef PCI_VENDOR_ID_NS
+#define PCI_VENDOR_ID_NS		0x100b
+#endif
+#ifndef PCI_DEVICE_ID_NS_CS5535_AUDIO
+#define PCI_DEVICE_ID_NS_CS5535_AUDIO	0x002e
+#endif
+
 /* emu10k1 */
 #ifndef PCI_VENDOR_ID_CREATIVE
 #define PCI_VENDOR_ID_CREATIVE		0x1102
