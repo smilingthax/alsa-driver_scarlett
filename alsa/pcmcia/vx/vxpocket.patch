@@ -1,0 +1,28 @@
+--- vxpocket.c	2004-04-07 19:25:27.053679483 +0200
++++ vxpocket.c	2004-04-07 19:25:17.241893084 +0200
+@@ -35,6 +35,7 @@
+ #include <linux/moduleparam.h>
+ #include <sound/core.h>
+ #include <pcmcia/version.h>
++#include "compat_cs.h"
+ #include "vxpocket.h"
+ #include <sound/initval.h>
+ 
+@@ -72,7 +73,11 @@
+ MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
+ module_param(irq_mask, int, 0444);
+ MODULE_PARM_DESC(irq_mask, "IRQ bitmask for " CARD_NAME " soundcard.");
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
++MODULE_PARM(irq_list, "1-4i");
++#else
+ module_param_array(irq_list, int, boot_devs, 0444);
++#endif
+ MODULE_PARM_DESC(irq_list, "List of Available interrupts for " CARD_NAME " soundcard.");
+ module_param_array(ibl, int, boot_devs, 0444);
+ MODULE_PARM_DESC(ibl, "Capture IBL size for " CARD_NAME " soundcard.");
+@@ -176,3 +181,5 @@
+ 
+ module_init(init_vxpocket);
+ module_exit(exit_vxpocket);
++
++EXPORT_NO_SYMBOLS;

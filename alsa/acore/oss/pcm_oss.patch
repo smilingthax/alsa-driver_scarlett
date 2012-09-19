@@ -1,6 +1,6 @@
---- pcm_oss.c	2003-05-31 13:17:10.000000000 +0200
-+++ pcm_oss.c.old	2003-05-31 13:15:28.000000000 +0200
-@@ -2081,7 +2081,11 @@
+--- pcm_oss.c	2004-04-07 17:00:25.224626911 +0200
++++ pcm_oss.c	2004-04-07 18:37:14.779726129 +0200
+@@ -2213,7 +2213,11 @@
  	if (runtime->oss.plugin_first != NULL)
  		return -EIO;
  
@@ -12,7 +12,7 @@
  		return -EINVAL;
  
  	err = snd_pcm_mmap_data(substream, file, area);
-@@ -2247,7 +2251,9 @@
+@@ -2387,7 +2391,9 @@
  
  static struct file_operations snd_pcm_oss_f_reg =
  {
@@ -22,9 +22,9 @@
  	.read =		snd_pcm_oss_read,
  	.write =	snd_pcm_oss_write,
  	.open =		snd_pcm_oss_open,
-@@ -2393,3 +2399,5 @@
- __setup("snd-pcm-oss=", alsa_pcm_oss_setup);
+@@ -2512,3 +2518,5 @@
  
- #endif /* !MODULE */
+ module_init(alsa_pcm_oss_init)
+ module_exit(alsa_pcm_oss_exit)
 +
 +EXPORT_NO_SYMBOLS;
