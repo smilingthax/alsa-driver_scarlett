@@ -27,6 +27,22 @@ Common functions used by hpixxxx.c modules
 #include "hpicheck.h"
 
 /**
+* Given an HPI Message that was sent out and a response that was received, validate
+* that the response has the correct fields filled in, i.e ObjectType, Function etc
+**/
+u16 HpiValidateResponse(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
+{
+	u16 wError = 0;
+
+	if ((phr->wType != HPI_TYPE_RESPONSE)
+	    || (phr->wObject != phm->wObject)
+	    || (phr->wFunction != phm->wFunction))
+		wError = HPI_ERROR_INVALID_RESPONSE;
+
+	return wError;
+}
+
+/**
 * FindAdapter returns a pointer to the HPI_ADAPTER_OBJ with index wAdapterIndex
 * in an HPI_ADAPTERS_LIST structure.
 *
@@ -143,6 +159,12 @@ short CheckControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 		} else
 			found = 0;	// signal that message was not cached
 		break;
+	case HPI_CONTROL_CHANNEL_MODE:
+		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
+			phr->u.c.dwParam1 = pC->u.m.wMode;
+		} else
+			found = 0;	// signal that message was not cached
+
 	case HPI_CONTROL_LEVEL:
 		if (phm->u.c.wAttribute == HPI_LEVEL_GAIN) {
 			phr->u.c.anLogValue[0] = pC->u.l.anLog[0];
@@ -169,6 +191,12 @@ short CheckControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 		else
 			found = 0;	// signal that message was not cached
 		break;
+	case HPI_CONTROL_AESEBU_TRANSMITTER:
+		if (phm->u.c.wAttribute == HPI_AESEBU_SOURCE)
+			phr->u.c.dwParam1 = pC->u.aes3tx.dwFormat;
+		else
+			found = 0;	// signal that message was not cached
+		break;
 	case HPI_CONTROL_TONEDETECTOR:
 		if (phm->u.c.wAttribute == HPI_TONEDETECTOR_STATE)
 			phr->u.c.dwParam1 = pC->u.tone.wState;
@@ -182,11 +210,90 @@ short CheckControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 		} else
 			found = 0;	// signal that message was not cached
 		break;
+	case HPI_CONTROL_SAMPLECLOCK:
+		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
+			phr->u.c.dwParam1 = pC->u.clk.wSource;
+		else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {
+			if (pC->u.clk.wSourceIndex ==
+			    HPI_ERROR_ILLEGAL_CACHE_VALUE) {
+				phr->u.c.dwParam1 = 0;
+				phr->wError = HPI_ERROR_INVALID_OPERATION;
+			} else
+				phr->u.c.dwParam1 = pC->u.clk.wSourceIndex;
+		} else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SAMPLERATE)
+			phr->u.c.dwParam1 = pC->u.clk.dwSampleRate;
+		else
+			found = 0;	// signal that message was not cached
+		break;
 	default:
 		found = 0;	// signal that message was not cached
 		break;
 	}
+	HPI_PRINT_DEBUG("Adap %d, Control %d, Control type %d, Cached %d",
+			phm->wAdapterIndex,
+			pC->ControlIndex, pC->ControlIndex, found);
 	return found;
+}
+
+/** Updates the cache with Set values.
+
+Only update if no error.
+Volume and Level return the limited values in the response, so use these
+Multiplexer does so use sent values
+*/
+void SyncControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
+		      HPI_RESPONSE * phr)
+{
+	if (phr->wError)
+		return;
+
+	switch (pC->ControlType) {
+	case HPI_CONTROL_VOLUME:
+		if (phm->u.c.wAttribute == HPI_VOLUME_GAIN) {
+			pC->u.v.anLog[0] = phr->u.c.anLogValue[0];
+			pC->u.v.anLog[1] = phr->u.c.anLogValue[1];
+		}
+		break;
+	case HPI_CONTROL_MULTIPLEXER:	// mux does not return its setting on Set command.
+		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
+			pC->u.x.wSourceNodeType = phm->u.c.dwParam1;
+			pC->u.x.wSourceNodeIndex = phm->u.c.dwParam2;
+		}
+		break;
+	case HPI_CONTROL_CHANNEL_MODE:	// mux does not return its setting on Set command.
+		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
+			pC->u.m.wMode = phm->u.c.dwParam1;
+		}
+		break;
+	case HPI_CONTROL_LEVEL:
+		if (phm->u.c.wAttribute == HPI_LEVEL_GAIN) {
+			pC->u.v.anLog[0] = phr->u.c.anLogValue[0];
+			pC->u.v.anLog[1] = phr->u.c.anLogValue[1];
+		}
+		break;
+	case HPI_CONTROL_AESEBU_TRANSMITTER:
+		if (phm->u.c.wAttribute == HPI_AESEBU_SOURCE)
+			pC->u.aes3tx.dwFormat = phm->u.c.dwParam1;
+		break;
+	case HPI_CONTROL_AESEBU_RECEIVER:
+		if (phm->u.c.wAttribute == HPI_AESEBU_SOURCE)
+			pC->u.aes3rx.dwSource = phm->u.c.dwParam1;
+	case HPI_CONTROL_SAMPLECLOCK:
+		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
+			pC->u.clk.wSource = phm->u.c.dwParam1;
+		else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {
+			if (pC->u.clk.wSourceIndex ==
+			    HPI_ERROR_ILLEGAL_CACHE_VALUE) {
+				phr->u.c.dwParam1 = 0;
+				phr->wError = HPI_ERROR_INVALID_OPERATION;
+			} else
+				pC->u.clk.wSourceIndex = phm->u.c.dwParam1;
+		} else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SAMPLERATE)
+			pC->u.clk.dwSampleRate = phm->u.c.dwParam1;
+		break;
+	default:
+		break;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -40,7 +40,7 @@ void snd_asihpi_unbind(adapter_t * hpi_card);
 #   define USE_SPINLOCK 1
 #endif
 
-/*  copy_to_user and friends can be used inside semaphore, but not inside spinlock 
+/*  copy_to_user and friends can be used inside semaphore, but not inside spinlock
     in which case, data must be copied to a local buffer outside the spinlock
 */
 #ifdef HPI_LOCKING
@@ -123,7 +123,7 @@ MODULE_PARM_DESC(bufsize,
 		 "Buffer size to allocate for data transfer from HPI ioctl ");
 
 static int hpi_init(void);
-/* Spinlocks (interrupt disabling on uniprocessor) supposed to prevent contention within and between ALSA 
+/* Spinlocks (interrupt disabling on uniprocessor) supposed to prevent contention within and between ALSA
    or other kernel interrupt contexts and single userspace HPI program that made it past the semaphore.
    These are also needed when multiple ALSA streams are running
 */
@@ -134,8 +134,11 @@ static adapter_t adapters[HPI_MAX_ADAPTERS];
 
 #define HOWNER_KERNEL ((void *)-1)
 
+/* Ludwig Schwardt suggests using current->tgid instead of *file as the owner
+identifier in issue #340 */
+
 /* Wrapper function to HPI_Message to enable dumping of the
-   message and response types.  
+   message and response types.
 */
 static void HPI_MessageF(HPI_MESSAGE * phm,
 			 HPI_RESPONSE * phr, struct file *file)
@@ -224,8 +227,8 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 	get_user(phr, &phpi_ioctl_data->phr);
 
 	/* Now read the message size and data from user space.  */
-	get_user(hm.wSize, (u16 __user *) phm);
-	uncopied_bytes = copy_from_user(&hm, phm, hm.wSize);
+	/* get_user(hm.wSize, (u16 __user *)phm); */
+	uncopied_bytes = copy_from_user(&hm, phm, sizeof(hm));
 	if (uncopied_bytes)
 		return -EFAULT;
 
@@ -233,7 +236,7 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 		HPI_InitResponse(&hr, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN,
 				 HPI_ERROR_BAD_ADAPTER_NUMBER);
 		/* Copy the response back to user space.  */
-		uncopied_bytes = copy_to_user(phr, &hr, hr.wSize);
+		uncopied_bytes = copy_to_user(phr, &hr, sizeof(hr));
 		if (uncopied_bytes)
 			return -EFAULT;
 		return 0;
@@ -252,16 +255,19 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 		switch (hm.wFunction) {
 		case HPI_OSTREAM_WRITE:
 		case HPI_ISTREAM_READ:
-			ptr = (u16 __user *) hm.u.d.u.Data.dwpbData;
+			/* Yes, sparse, this is correct. */
+			ptr = (u16 __user *) hm.u.d.u.Data.pbData;
 			size = hm.u.d.u.Data.dwDataSize;
 			//printk("HPI data size %ld\n",size);
 
 #if (COPY_TO_LOCAL)
-			hm.u.d.u.Data.dwpbData = (u32) pa->pBuffer;
-			if (size > bufsize) {
-				size = bufsize;
-				hm.u.d.u.Data.dwDataSize = size;
-			}
+			hm.u.d.u.Data.pbData = pa->pBuffer;
+			/*
+			   if (size > bufsize) {
+			   size = bufsize;
+			   hm.u.d.u.Data.dwDataSize = size;
+			   }
+			 */
 #endif
 
 			if (hm.wFunction == HPI_ISTREAM_READ)	// from card, WRITE to user mem
@@ -269,31 +275,6 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 			else
 				wrflag = 0;
 			break;
-
-#ifdef HAS_AES18
-		case HPI_CONTROL_SET_STATE:
-			ptr =
-			    (u16 *) hm.u.cx.u.aes18tx_send_message.dwpbMessage;
-			size = hm.u.cx.u.aes18tx_send_message.wMessageLength;
-			wrflag = 0;
-#if (COPY_TO_LOCAL)
-			(char *)hm.u.cx.u.aes18tx_send_message.dwpbMessage =
-			    pa->pBuffer;
-#endif
-			break;
-
-		case HPI_CONTROL_GET_STATE:
-			ptr = (u16 *) hm.u.cx.u.aes18rx_get_message.dwpbMessage;
-			size =
-			    (u16 *) hm.u.cx.u.aes18rx_get_message.
-			    wMessageLength;
-			wrflag = 1;
-#if (COPY_TO_LOCAL)
-			(char *)hm.u.cx.u.aes18rx_get_message.dwpbMessage =
-			    pa->pBuffer;
-#endif
-			break;
-#endif
 
 		default:
 			break;
@@ -322,6 +303,14 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 #else				//  COPY_TO_LOCAL==1
 			if (wrflag == 0) {
 
+				if (size > bufsize) {
+					up(&adapters[nAdapter].sem);
+					HPI_DEBUG_LOG2(WARNING,
+						       "Requested transfer of %d bytes, but max buffer size in %d bytes, returning error.\n",
+						       size, bufsize);
+					return -EINVAL;
+				}
+
 				uncopied_bytes =
 				    copy_from_user(pa->pBuffer, ptr, size);
 				if (uncopied_bytes) {
@@ -334,7 +323,16 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 			HPI_MessageF(&hm, &hr, file);
 
 			if (wrflag == 1) {
-				u32 uncopied_bytes;
+				//u32 uncopied_bytes;
+
+				if (size > bufsize) {
+					up(&adapters[nAdapter].sem);
+					HPI_DEBUG_LOG2(WARNING,
+						       "Requested transfer of %d bytes, but max buffer size in %d bytes, returning error.\n",
+						       size, bufsize);
+					return -EINVAL;
+				}
+
 				uncopied_bytes =
 				    copy_to_user(ptr, pa->pBuffer, size);
 				if (uncopied_bytes) {
@@ -354,7 +352,7 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 		return -EFAULT;
 
 	/* Copy the response back to user space.  */
-	uncopied_bytes = copy_to_user(phr, &hr, hr.wSize);
+	uncopied_bytes = copy_to_user(phr, &hr, sizeof(hr));
 	if (uncopied_bytes)
 		return -EFAULT;
 	return 0;
@@ -419,6 +417,7 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
 	adapter_t adapter;
+	HPI_PCI Pci;
 
 	memset(&adapter, 0, sizeof(adapter));
 
@@ -446,32 +445,31 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 
 		memlen = pci_resource_len(pci_dev, idx);
 		if (memlen) {
-			adapter.dwRemappedMemBase[idx] =
+			adapter.apRemappedMemBase[idx] =
 			    ioremap(pci_resource_start(pci_dev, idx), memlen);
-			if (!adapter.dwRemappedMemBase[idx]) {
+			if (!adapter.apRemappedMemBase[idx]) {
 				HPI_DEBUG_LOG0(ERROR,
 					       "ioremap failed, aborting\n");
 				//unmap previously mapped pci mem space
 				goto err;
 			}
 		} else
-			adapter.dwRemappedMemBase[idx] = NULL;
+			adapter.apRemappedMemBase[idx] = NULL;
 
-		hm.u.s.Resource.r.Pci.dwMemBase[idx] =
-		    (__iomem u32) adapter.dwRemappedMemBase[idx];
+		Pci.apMemBase[idx] = adapter.apRemappedMemBase[idx];
 	}
 
+	Pci.wBusNumber = pci_dev->bus->number;
+	Pci.wVendorId = (u16) pci_dev->vendor;
+	Pci.wDeviceId = (u16) pci_dev->device;
+	Pci.wSubSysVendorId = (u16) (pci_dev->subsystem_vendor & 0xffff);
+	Pci.wSubSysDeviceId = (u16) (pci_dev->subsystem_device & 0xffff);
+	Pci.wDeviceNumber = pci_dev->devfn;
+	Pci.wInterrupt = pci_dev->irq;
+	Pci.pOsData = (void *)pci_dev;
+
 	hm.u.s.Resource.wBusType = HPI_BUS_PCI;
-	hm.u.s.Resource.r.Pci.wBusNumber = pci_dev->bus->number;
-	hm.u.s.Resource.r.Pci.wVendorId = (u16) pci_dev->vendor;
-	hm.u.s.Resource.r.Pci.wDeviceId = (u16) pci_dev->device;
-	hm.u.s.Resource.r.Pci.wSubSysVendorId =
-	    (u16) (pci_dev->subsystem_vendor & 0xffff);
-	hm.u.s.Resource.r.Pci.wSubSysDeviceId =
-	    (u16) (pci_dev->subsystem_device & 0xffff);
-	hm.u.s.Resource.r.Pci.wDeviceNumber = pci_dev->devfn;
-	hm.u.s.Resource.r.Pci.wInterrupt = pci_dev->irq;
-	hm.u.s.Resource.r.Pci.pOsData = (void *)pci_dev;
+	hm.u.s.Resource.r.Pci = &Pci;
 
 	//call CreateAdapterObject on the relevant hpi module
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
@@ -515,9 +513,9 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
       err:
 	// missing code to delete adapter if error happens after creation (unlikely)
 	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; idx++) {
-		if (adapter.dwRemappedMemBase[idx]) {
-			iounmap(adapter.dwRemappedMemBase[idx]);
-			adapter.dwRemappedMemBase[idx] = NULL;
+		if (adapter.apRemappedMemBase[idx]) {
+			iounmap(adapter.apRemappedMemBase[idx]);
+			adapter.apRemappedMemBase[idx] = NULL;
 		}
 	}
 
@@ -549,9 +547,9 @@ static void __devexit adapter_remove(struct pci_dev *pci_dev)
 
 	// unmap PCI memory space, mapped during device init.
 	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; idx++) {
-		if (pa->dwRemappedMemBase[idx]) {
-			iounmap(pa->dwRemappedMemBase[idx]);
-			pa->dwRemappedMemBase[idx] = NULL;
+		if (pa->apRemappedMemBase[idx]) {
+			iounmap(pa->apRemappedMemBase[idx]);
+			pa->apRemappedMemBase[idx] = NULL;
 		}
 	}
 
@@ -568,6 +566,11 @@ static void __devexit adapter_remove(struct pci_dev *pci_dev)
 
 }
 
+// Module device table expects ints not pointers
+// Avoid having to cast the function pointers to long int
+#define HPI_4000 0x4000
+#define HPI_6000 0x6000
+#define HPI_6205 0x6205
 static struct pci_device_id asihpi_pci_tbl[] = {
 #include "hpipcida.h"
 };
@@ -625,7 +628,7 @@ static int __init hpimod_init(void)
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DRIVER_LOAD);
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 
-	// old version of below fn returned +ve number of devices, -ve error 
+	// old version of below fn returned +ve number of devices, -ve error
 	if ((status = pci_register_driver(&asihpi_pci_driver)) < 0) {
 		HPI_DEBUG_LOG1(ERROR, "HPI: pci_register_driver returned %d\n",
 			       status);

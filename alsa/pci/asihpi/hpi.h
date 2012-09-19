@@ -33,12 +33,25 @@ HPI_OS_LINUX         Linux kernel driver
 
 (C) Copyright AudioScience Inc. 1998-2003
 ******************************************************************************/
-
 #ifndef _HPI_H_
 #define _HPI_H_
 
-#define HPI_VER     0x000300L
-#define HPI_RC_VER  1
+/* HPI Version
+If HPI_VER_MINOR is odd then its a development release not intended for the public
+If HPI_VER_MINOR is even then is a release version
+i.e 3.05.02 is a development version
+*/
+#define HPI_VER 0x30506
+
+#define HPI_VER_MAJOR(v) ((v)>>16)
+#define HPI_VER_MINOR(v) (((v)>>8) & 0xFF )
+#define HPI_VER_RELEASE(v) ((v) & 0xFF )
+
+/** Define HPI_WITHOUT_HPI_DATA to remove public definition and use of HPI_DATA struct */
+/* #define HPI_WITHOUT_HPI_DATA */
+
+#define HPI_SUPPORT_ONOFFSWITCH
+#define HPI_SUPPORT_AESEBUTXSETCLKSRC
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,7 +75,7 @@ extern "C" {
 #define __stringify(x) __stringify_1(x)
 #endif
 
-#define UNUSED(param) (void)param
+#define HPI_UNUSED(param) (void)param
 
 /******************************************************************************/
 /******************************************************************************/
@@ -103,6 +116,7 @@ extern "C" {
 #define HPI_ADAPTER_ASI4113             0x4113		/**< 4 play-3out, 1 rec PCM, MPEG*/
 #define HPI_ADAPTER_ASI4215             0x4215		/**< 4 play-5out, 1 rec, PCM, MPEG*/
 
+#define HPI_ADAPTER_FAMILY_ASI4300              0x4300
 #define HPI_ADAPTER_ASI4311             0x4311		/**< 4 play-1out, 1 rec-1in, PCM, MPEG*/
 #define HPI_ADAPTER_ASI4312             0x4312		/**< 4 play-2out, 1 rec-1in, PCM, MPEG*/
 #define HPI_ADAPTER_ASI4332             0x4332		/**< 4 play-2out, 1 rec-3in, PCM, MPEG*/
@@ -125,25 +139,32 @@ extern "C" {
 #define HPI_ADAPTER_FAMILY_ASI5000              0x5000
 #define HPI_ADAPTER_ASI5001             0x5001		/**< ASI5001 OEM, PCM only, 4 in, 1 out analog */
 #define HPI_ADAPTER_ASI5002             0x5002		/**< ASI5002 OEM, PCM only, 4 in, 1 out analog and digital */
+#define HPI_ADAPTER_ASI5020             0x5020		/**< ASI5020 PCM only, 2 analog only in/out */
 #define HPI_ADAPTER_ASI5044             0x5044		/**< ASI5044 PCM only, 4 analog and digital in/out */
 #define HPI_ADAPTER_ASI5041             0x5041		/**< ASI5041 PCM only, 4 digital only in/out */
 #define HPI_ADAPTER_ASI5042             0x5042		/**< ASI5042 PCM only, 4 analog only in/out */
 
+#define HPI_ADAPTER_FAMILY_ASI5100              0x5100
 #define HPI_ADAPTER_ASI5101             0x5101		/**< ASI5101 OEM is ASI5111 with no mic. */
 #define HPI_ADAPTER_ASI5111             0x5111		/**< ASI5111 PCM only */
 
 #define HPI_ADAPTER_ASI6101             0x6101		/**< ASI6101 prototype */
 
+#define HPI_ADAPTER_FAMILY_ASI6000              0x6000
 #define HPI_ADAPTER_ASI6000             0x6000		/**< ASI6000 - generic 1 DSP adapter, exact config undefined */
 #define HPI_ADAPTER_ASI6012             0x6012		/**< ASI6012 - 1 in, 2 out analog only */
 #define HPI_ADAPTER_ASI6022             0x6022		/**< ASI6022 - 2 in, 2 out analog only */
 #define HPI_ADAPTER_ASI6044             0x6044		/**< ASI6044 - 4 in/out analog only */
+
+#define HPI_ADAPTER_FAMILY_ASI6100              0x6100
 #define HPI_ADAPTER_ASI6111             0x6111		/**< ASI6111 - 1 in/out, analog and AES3  */
 #define HPI_ADAPTER_ASI6102             0x6102		/**< ASI6102 - 2out,analog and AES3  */
 #define HPI_ADAPTER_ASI6113             0x6113		/**< 300MHz version of ASI6114 for testing*/
 #define HPI_ADAPTER_ASI6122             0x6122		/**< ASI6122 - 2 in/out, analog and AES3  */
 #define HPI_ADAPTER_ASI6114             0x6114		/**< ASI6114 - 4os,1is,4out,1in,analog and AES3  */
 #define HPI_ADAPTER_ASI6118             0x6118		/**< ASI6118 - 8os,1is,8out,1in analog+AES3 */
+
+#define HPI_ADAPTER_FAMILY_ASI6200              0x6200
 #define HPI_ADAPTER_ASI6201             0x6201		/**< ASI6201 - OEM  */
 #define HPI_ADAPTER_ASI6244             0x6244		/**< ASI6244 - 4os,4is,4out,4in,analog and AES3 */
 #define HPI_ADAPTER_ASI6246             0x6246		/**< ASI6246 - 6os,2is,6out,4in,analog and AES3 */
@@ -154,13 +175,21 @@ extern "C" {
 #define HPI_ADAPTER_ASI6408             0x6408		/**< ASI6408 - cobranet PCI 8 mono in/out */
 #define HPI_ADAPTER_ASI6416             0x6416		/**< ASI6416 - cobranet PCI 16 mono in/out */
 
-#define HPI_ADAPTER_FAMILY_ASI6600              0x6600			/**< PCI Express sound cards */
-#define HPI_ADAPTER_ASI6648             0x6648			/**< ASI6648 - 16os,8is,8out,4in,analog and AES3  */
-#define HPI_ADAPTER_ASI6644             0x6644			/**< ASI6644 - 12os,8is,4out,4in,analog and AES3  */
-#define HPI_ADAPTER_ASI6640             0x6640			/**< ASI6640 - 12os,8is,4out,4in,analog only  */
-#define HPI_ADAPTER_ASI6622             0x6622			/**< ASI6622 - 6os,4is,2out,2in,analog and AES3  */
-#define HPI_ADAPTER_ASI6620             0x6620			/**< ASI6620 - 6os,4is,2out,2in,analog only  */
+#define HPI_ADAPTER_FAMILY_ASI6500              0x6500			/**< ASI6500 PCI sound cards */
+#define HPI_ADAPTER_ASI6514             0x6514			/**< ASI6514 - ASI6114 replacement, 12os,2is,4out,1in,analog and AES3  */
+#define HPI_ADAPTER_ASI6520             0x6520			/**< ASI6520 - 6os,4is,2out,2in,analog only  */
+#define HPI_ADAPTER_ASI6522             0x6522			/**< ASI6522 - 6os,4is,2out,2in,analog and AES3  */
+#define HPI_ADAPTER_ASI6540             0x6540			/**< ASI6540 - 12os,8is,4out,4in,analog only  */
+#define HPI_ADAPTER_ASI6544             0x6544			/**< ASI6544 - 12os,8is,4out,4in,analog and AES3  */
+#define HPI_ADAPTER_ASI6585             0x6585			/**< ASI6585  - 8in, 8out, Livewire */
+
+#define HPI_ADAPTER_FAMILY_ASI6600              0x6600			/**< ASI6600 PCI Express sound cards */
 #define HPI_ADAPTER_ASI6614             0x6614			/**< ASI6614 - ASI6114 replacement, 12os,2is,4out,1in,analog and AES3  */
+#define HPI_ADAPTER_ASI6620             0x6620			/**< ASI6620 - 6os,4is,2out,2in,analog only  */
+#define HPI_ADAPTER_ASI6622             0x6622			/**< ASI6622 - 6os,4is,2out,2in,analog and AES3  */
+#define HPI_ADAPTER_ASI6640             0x6640			/**< ASI6640 - 12os,8is,4out,4in,analog only  */
+#define HPI_ADAPTER_ASI6644             0x6644			/**< ASI6644 - 12os,8is,4out,4in,analog and AES3  */
+#define HPI_ADAPTER_ASI6648             0x6648			/**< ASI6648 - 16os,8is,8out,4in,analog and AES3  */
 
 #define HPI_ADAPTER_ASI8401             0x8401		/**< OEM 4 record */
 #define HPI_ADAPTER_ASI8411             0x8411		/**< OEM RF switcher */
@@ -178,9 +207,20 @@ extern "C" {
 #define HPI_ADAPTER_ASI8708             0x8708		/**< 8 record AM/FM - 6 ext antenna jacks */
 #define HPI_ADAPTER_ASI8709             0x8709		/**< 8 record - no tuners */
 #define HPI_ADAPTER_ASI8710             0x8710		/**< 8 record AM/FM - 1 ext antenna jacks*/
+#define HPI_ADAPTER_ASI8711             0x8711		/**< 8 record AM/FM - 2 ext antenna jacks*/
 
 #define HPI_ADAPTER_ASI8712             0x8712		/**< 4 record AM/FM */
-#define HPI_ADAPTER_ASI8713             0x8713		/**< 4 record TV/FM */
+#define HPI_ADAPTER_ASI8713             0x8713		/**< 4 record NTSC-TV/FM */
+
+#define HPI_ADAPTER_ASI8722             0x8722		/**< 8 record 6xAM/FM+2xNTSC */
+#define HPI_ADAPTER_ASI8723             0x8723		/**< 8 record NTSC */
+#define HPI_ADAPTER_ASI8724             0x8724		/**< 4 record NTSC */
+#define HPI_ADAPTER_ASI8725             0x8725		/**< 4 record 4xAM/FM+4xNTSC */
+
+#define HPI_ADAPTER_ASI8732             0x8732		/**< 8 record 6xAM/FM+2xPAL */
+#define HPI_ADAPTER_ASI8733             0x8733		/**< 8 record PAL */
+#define HPI_ADAPTER_ASI8734             0x8734		/**< 4 record PAL */
+#define HPI_ADAPTER_ASI8735             0x8735		/**< 4 record 4xAM/FM+4xPAL */
 
 #define HPI_ADAPTER_ASI8801             0x8801		/**< OEM 8 record */
 
@@ -296,6 +336,34 @@ delay between left and right channels on both its input (ADC) and output (DAC). 
 Cirrus Logic errata ER284B2.PDF available from http://www.cirrus.com, released by Cirrus in 2001.
 */
 #define HPI_ADAPTER_PROPERTY_ERRATA_1   (1)
+
+/** Adapter grouping property
+Indicates whether the adapter supports the grouping API (for ASIO and SSX2)
+*/
+#define HPI_ADAPTER_PROPERTY_GROUPING           (2)
+
+/** Adapter SSX2 property
+Indicates whether the adapter supports SSX2 multichannel streams
+*/
+#define HPI_ADAPTER_PROPERTY_ENABLE_SSX2        (3)
+
+#define HPI_ADAPTER_PROPERTY_READONLYBASE  (256)	/**< Base number for readonly properties */
+/** Readonly adapter latency property.
+This property returns in the input and output latency in samples.Property 1 is the estimated input latency
+in samples, while Property 2 is that output latency in  samples.
+*/
+#define HPI_ADAPTER_PROPERTY_LATENCY                    (HPI_ADAPTER_PROPERTY_READONLYBASE+0)
+/** Readonly adapter granularity property.
+The granulariy is the smallest size chunk of stereo samples that is processed by
+the adapter. This property returns the record granularity in samples in Property 1. Property 2 returns the
+play granularity.
+*/
+#define HPI_ADAPTER_PROPERTY_GRANULARITY        (HPI_ADAPTER_PROPERTY_READONLYBASE+1)
+/** Readonly adapter number of current channels property.
+The CURCHANNELs property returns is the number of record and playback channels per device. Property 1 is the number
+of record channels per record device, while Property 2 is the number of play channels per playback device.*/
+#define HPI_ADAPTER_PROPERTY_CURCHANNELS        (HPI_ADAPTER_PROPERTY_READONLYBASE+2)
+
 /**\}*/
 
 /** \defgroup adapter_modes Adapter modes used in HPI_AdapterSetMode API
@@ -363,12 +431,29 @@ than HPI_MPEG_MODE_DEFAULT when the number of channels is set to 1 will return a
 #define HPI_MIXER_GET_CONTROL_MULTIPLE_RESET (1)
 /**\}*/
 
+/** Commands used by HPI_MixerStore()
+*/
+	enum HPI_MIXER_STORE_COMMAND {
+		HPI_MIXER_STORE_SAVE = 1,
+				    /**< save all mixer control settings */
+		HPI_MIXER_STORE_RESTORE = 2,
+				    /**< restore all controls from saved */
+		HPI_MIXER_STORE_DELETE = 3,
+				    /**< delete saved control settings*/
+		HPI_MIXER_STORE_ENABLE = 4,
+				    /**< enable auto storage of some control settings */
+		HPI_MIXER_STORE_DISABLE = 5,
+				    /**< disable auto storage of some control settings */
+		HPI_MIXER_STORE_SAVE_SINGLE = 6
+				    /**< save the attributes of a single control */
+	};
+
 /******************************************* CONTROL ATTRIBUTES ****/
 /* (in order of control type ID as above */
 
 /* This allows for 255 control types, 255 unique attributes each */
-#define HPI_CONTROL_SPACING (0x100)
-#define HPI_MAKE_ATTRIBUTE(obj,index) (obj*HPI_CONTROL_SPACING+index)
+/*#define HPI_CONTROL_SPACING (0x100)*/
+#define HPI_MAKE_ATTRIBUTE(obj,index) (obj*0x100+index)
 
 /* Generic control attributes.  If a control uses any of these attributes
 its other attributes must also be defined using HPI_MAKE_ATTRIBUTE()
@@ -376,15 +461,17 @@ its other attributes must also be defined using HPI_MAKE_ATTRIBUTE()
 
 /** Enable a control.
 0=disable, 1=enable
-\note could be generic to all mixer plugins?
+\note generic to all mixer plugins?
 */
-#define HPI_CONTROL_ENABLE     HPI_MAKE_ATTRIBUTE(HPI_CONTROL_GENERIC,1)
+/*#define HPI_CONTROL_ENABLE     HPI_MAKE_ATTRIBUTE(HPI_CONTROL_GENERIC,1)*/
+#define HPI_GENERIC_ENABLE     HPI_MAKE_ATTRIBUTE(HPI_CONTROL_GENERIC,1)
 
 /** Enable event generation for a control.
 0=disable, 1=enable
-\note could be generic to all controls that can generate events
+\note generic to all controls that can generate events
 */
-#define HPI_EVENT_ENABLE       HPI_MAKE_ATTRIBUTE(HPI_CONTROL_GENERIC,2)
+/*#define HPI_EVENT_ENABLE       HPI_MAKE_ATTRIBUTE(HPI_CONTROL_GENERIC,2)*/
+#define HPI_GENERIC_EVENT_ENABLE       HPI_MAKE_ATTRIBUTE(HPI_CONTROL_GENERIC,2)
 
 /* Volume Control attributes */
 #define HPI_VOLUME_GAIN             1
@@ -409,11 +496,6 @@ its other attributes must also be defined using HPI_MAKE_ATTRIBUTE()
 #define HPI_METER_PEAK              2	    /**< return peak signal level */
 #define HPI_METER_RMS_BALLISTICS    3	    /**< ballistics for ALL rms meters on adapter */
 #define HPI_METER_PEAK_BALLISTICS   4	    /**< ballistics for ALL peak meters on adapter */
-#define HPI_METER_SILENCE_ENABLE    5	    /**< Silence detection enable */
-#define HPI_METER_SILENCE_EVENTS    6	    /**< Silence detection events enable */
-#define HPI_METER_SILENCE_STATUS    7	    /**< Silence detection status  */
-#define HPI_METER_SILENCE_THRESHOLD 8	    /**< Set threshold in mB */
-#define HPI_METER_SILENCE_DELAY     9	    /**< Number of milliseconds of silence before detector triggers*/
 
 /* Multiplexer control attributes */
 #define HPI_MULTIPLEXER_SOURCE      1
@@ -466,10 +548,15 @@ Used for HPI_Tuner_SetBand(),HPI_Tuner_GetBand()
 */
 #define HPI_TUNER_BAND_AM               1    /**< AM band */
 #define HPI_TUNER_BAND_FM               2    /**< FM band (mono) */
-#define HPI_TUNER_BAND_TV               3    /**< TV band*/
-#define HPI_TUNER_BAND_FM_STEREO   4	/**< FM band (stereo) */
-#define HPI_TUNER_BAND_AUX             5    /**< Auxiliary input */
-#define HPI_TUNER_BAND_LAST                             5 /**< The index of the last tuner band. */
+#define HPI_TUNER_BAND_TV               3    /**< TV band = NTSC-M*/
+#define HPI_TUNER_BAND_FM_STEREO        4    /**< FM band (stereo) */
+#define HPI_TUNER_BAND_AUX              5    /**< Auxiliary input */
+#define HPI_TUNER_BAND_TV_NTSC_M        HPI_TUNER_BAND_TV    /**< NTSC-M TV band*/
+#define HPI_TUNER_BAND_TV_PAL_BG        6    /**< PAL-B/G TV band*/
+#define HPI_TUNER_BAND_TV_PAL_I         7    /**< PAL-I TV band*/
+#define HPI_TUNER_BAND_TV_PAL_DK        8    /**< PAL-D/K TV band*/
+#define HPI_TUNER_BAND_TV_SECAM_L       9    /**< SECAM-L TV band*/
+#define HPI_TUNER_BAND_LAST                             9 /**< The index of the last tuner band. */
 /** \} */
 
 /** Tuner mode attributes */
@@ -492,11 +579,13 @@ Used for HPI_Tuner_SetBand(),HPI_Tuner_GetBand()
 #define HPI_TUNER_FM_STEREO                                                     0x2000
 /** \} */
 
-/* Multiplexer control attributes */
+#ifdef HPI_SUPPORT_ONOFFSWITCH
+/* switch control attributes */
 #define HPI_ONOFFSWITCH_STATE       1	/* AGE 1/15/98 */
 
 #define HPI_SWITCH_OFF              0
 #define HPI_SWITCH_ON               1
+#endif
 
 /* VOX control attributes */
 #define HPI_VOX_THRESHOLD           1	/* AGE 9/10/98 */
@@ -531,6 +620,7 @@ Currently fixed at EXTERNAL
 #define HPI_SAMPLECLOCK_SOURCE                  1
 #define HPI_SAMPLECLOCK_SAMPLERATE              2
 #define HPI_SAMPLECLOCK_SOURCE_INDEX    3
+#define HPI_SAMPLECLOCK_LOCAL_SAMPLERATE        4
 
 /** \defgroup sampleclock_source SampleClock source values
 \{
@@ -547,8 +637,10 @@ Currently fixed at EXTERNAL
 #define HPI_SAMPLECLOCK_SOURCE_AESEBU_INPUT     6	/**< one of the aesebu inputs */
 #define HPI_SAMPLECLOCK_SOURCE_AESEBU_AUTO      7	/**< the first aesebu input with a valid signal */
 #define HPI_SAMPLECLOCK_SOURCE_COBRANET         8	/**< from Cobranet interface */
+#define HPI_SAMPLECLOCK_SOURCE_LOCAL        9	/**< local PLL on module */
+#define HPI_SAMPLECLOCK_SOURCE_PREV_MODULE 10	/**< from previous adjacent module */
 /*! Update this if you add a new clock source2.*/
-#define HPI_SAMPLECLOCK_SOURCE_LAST                     8
+#define HPI_SAMPLECLOCK_SOURCE_LAST                     10
 /** \} */
 
 /* Microphone control attributes */
@@ -622,11 +714,15 @@ Ethernet header size
 #define HPI_ETHERNET_HEADER_SIZE (16)
 
 /* These defines are used to fill in protocol information for an Ethernet packet sent using HMI on CS18102 */
+#define HPI_ETHERNET_PACKET_ID 0x85	/*!< ID supplied by Cirrius for ASI packets. */
 #define HPI_ETHERNET_PACKET_V1 0x01	/*!< Simple packet - no special routing required */
 #define HPI_ETHERNET_PACKET_HOSTED_VIA_HMI 0x20	/*!< This packet must make its way to the host across the HPI interface */
 #define HPI_ETHERNET_PACKET_HOSTED_VIA_HMI_V1 0x21	/*!< This packet must make its way to the host across the HPI interface */
 #define HPI_ETHERNET_PACKET_HOSTED_VIA_HPI 0x40	/*!< This packet must make its way to the host across the HPI interface */
 #define HPI_ETHERNET_PACKET_HOSTED_VIA_HPI_V1 0x41	/*!< This packet must make its way to the host across the HPI interface */
+
+#define HPI_ETHERNET_UDP_PORT (5151)	/*!< UDP messaging port */
+#define HPI_ETHERNET_UDP_PORT_BROADCAST_RESPONSE (5152)	/*!< UDP message port for returning broadcast responses */
 
 /** \defgroup tonedet_attr Tonedetector attributes
 \{
@@ -671,18 +767,6 @@ Threshold is a -ve number in units of dB/100,
 
 /******************************************* CONTROLX ATTRIBUTES ****/
 /* NOTE: All controlx attributes must be unique, unlike control attributes */
-/* AES18 attributes */
-#define HPI_AES18_CONFIG                101
-#define HPI_AES18_INTERNAL_BUFFER_SIZE  102
-#define HPI_AES18_INTERNAL_BUFFER_STATE 103
-#define HPI_AES18_MESSAGE               104
-#define HPI_AES18_ADDRESS               105
-
-#define HPI_AES18_MODE_MASTER           0
-#define HPI_AES18_MODE_SLAVE            1
-#define HPI_AES18_CHANNEL_MODE_INDEPENDENT            (2)   /**< Left and Right channels operate independently */
-#define HPI_AES18_CHANNEL_MODE_JOINT            (1) /**< Messages use alternating bits on the the left and right channels */
-
 /******************************************* ASYNC ATTRIBUTES ****/
 /** \defgroup async_event Async Event sources
 \{
@@ -766,6 +850,8 @@ any currently playing or recording stream
 #define HPI_ERROR_TOO_MANY_CAPABILITY_CHANGE_ATTEMPTS 313 /**< There have been to attempts to set the adapter's
 capabilities (using bad keys). The card should be returned
 to ASI if further capabilities updates are required */
+#define HPI_ERROR_NO_INTERADAPTER_GROUPS 314 /**< Streams on different adapters cannot be grouped*/
+#define HPI_ERROR_NO_INTERDSP_GROUPS 315 /**< Streams on different DSPs cannot be grouped*/
 
 /** mixer controls */
 #define HPI_ERROR_INVALID_NODE          400
@@ -780,19 +866,11 @@ to ASI if further capabilities updates are required */
 #define HPI_ERROR_NVMEM_FULL                    451
 #define HPI_ERROR_NVMEM_FAIL                    452
 
-/** AES18 specific errors */
-#define HPI_ERROR_AES18BG_BLOCKSPERSEC  500
-#define HPI_ERROR_AES18BG_PRIORITYMASK  501
-#define HPI_ERROR_AES18BG_MODE          502
-#define HPI_ERROR_AES18_INVALID_PRIORITY    503
-#define HPI_ERROR_AES18_INVALID_ADDRESS 504
-#define HPI_ERROR_AES18_INVALID_REPETITION  505
-#define HPI_ERROR_AES18BG_CHANNEL_MODE      506
-#define HPI_ERROR_AES18_INVALID_CHANNEL  507
-
 #define HPI_ERROR_CUSTOM                600 /**< custom error to use for debugging AGE 6/22/99 */
 
 #define HPI_ERROR_MUTEX_TIMEOUT         700 /**< hpioct32.c can't obtain mutex */
+
+#define HPI_ERROR_ILLEGAL_CACHE_VALUE   0xffff /**< indicates a cached u16 value is invalid. */
 /**\}*/
 
 /* maximums */
@@ -803,40 +881,11 @@ to ASI if further capabilities updates are required */
 #define HPI_MAX_CONTROLS        4	/* per node ? */
 #define HPI_MAX_ANC_BYTES_PER_FRAME             (64)	/**< maximum number of ancillary bytes per MPEG frame */
 #define HPI_STRING_LEN          16
-#define HPI_AES18_MAX_CHANNELS  2
-#define HPI_AES18_MAX_PRIORITIES 4
-#define HPI_AES18_MAX_PRIORITYMASK      0x000F
-#define HPI_AES18BG_MAX_BLOCKSPERSEC    100	/**< AES18-1996, 100 blocks/sec */
-#define HPI_AES18BG_MIN_BLOCKSPERSEC    2
-#define HPI_AES18_MAX_ADDRESS           65536	/**< 16 bits address */
-#define HPI_AES18_MAX_REPETITION        5	/**< AES18-1996, pg 5 */
 
 /* units */
 #define HPI_OSTREAM_VELOCITY_UNITS        4096	/* AGE 6/4/99 */
 #define HPI_OSTREAM_TIMESCALE_UNITS       (10000)
 
-/* defaults */
-#define HPI_AES18_DEFAULT_PRIORITY_ENB  0x000F
-/*
-See pg 16, AES18-1996
-@ 40 ms
-44.1 kHz = 1764 bits/block
-48 kHz = 1920 bits/block
-*/
-#define HPI_AES18_DEFAULT_BLOCK_LENGTH  1764	// Bits.  Corresponds to 40ms at 44.1kHz
-#define HPI_AES18_DEFAULT_OP_MODE       HPI_AES18_MODE_MASTER
-
-#ifndef HPI_EXCLUDE_IMPLEMENTATION
-/** Pnp ids */
-#define HPI_ID_ISAPNP_AUDIOSCIENCE      0x0669	/*"ASI"  - actual is "ASX" - need to change */
-#define HPI_PCI_VENDOR_ID_AUDIOSCIENCE  0x175C	 /**< PCI vendor ID that AudioScience uses */
-#define HPI_PCI_VENDOR_ID_MOTOROLA      0x1057	 /**< PCI vendor ID that the DSP56301 has */
-#define HPI_PCI_VENDOR_ID_TI            0x104C	 /**< PCI vendor ID that TI uses */
-
-#define HPI_USB_VENDOR_ID_AUDIOSCIENCE  0x1257
-#define HPI_USB_W2K_TAG         0x57495341	/* "ASIW"       */
-#define HPI_USB_LINUX_TAG       0x4C495341	/* "ASIL"       */
-#endif
 /**
 end group hpi_defines
 \}
@@ -848,6 +897,7 @@ end group hpi_defines
 #pragma pack(push,1)
 #endif
 
+#ifndef SWIG
 	typedef union {
 		struct {
 			unsigned int hwassembly:3;
@@ -862,73 +912,36 @@ end group hpi_defines
 		u16 w;
 		u32 dw;
 	} HPI_VERSION;
+#endif
 
-	typedef struct {
-		u32 dwSampleRate;
-		       /**< 11025, 32000, 44100  ... */
-		u32 dwBitRate;
-		       /**< for MPEG */
-		u32 dwAttributes;
-		       /**<  Stereo/JointStereo/Mono, (?special stuff like CRC/Copyright on/off) */
-		u16 wMode;
-		       /**< Unused except for ancillary mode or idle bit  */
-		u16 wSize;
-		       /**< Unused length of this structure */
-		u16 wChannels;
-		       /**< 1,2... */
-		u16 wFormat;
-		       /**< HPI_FORMAT_PCM16, _AC2, _MPEG ... */
-	} HPI_FORMAT32;
-
-	typedef struct {
-		HPI_FORMAT32 Format;
-		PTR_AS_NUMBER dwpbData;
-				    /**< actually a pointer to BYTE*/
-		u32 dwDataSize;
-	} HPI_DATA32;
-
-#ifdef HPI_64BIT
-
-	typedef struct {
+	typedef struct sHPI_FORMAT {
 		u32 dwSampleRate;
 		       /**< 11025, 32000, 44100 ... */
 		u32 dwBitRate;
 		       /**< for MPEG */
 		u32 dwAttributes;
 		       /**< Stereo/JointStereo/Mono */
+		u32 dwPadTo5;
+		       /**< wMode, wSize removed*/
 		u16 wChannels;
 		       /**< 1,2..., (or ancillary mode or idle bit */
 		u16 wFormat;
 		       /**< HPI_FORMAT_PCM16, _AC2, _MPEG ... */
-	} HPI_FORMAT64;
+	} HPI_FORMAT;
 
-	typedef struct {
-		HPI_FORMAT64 Format;
-		PTR_AS_NUMBER dwpbData;
-				  /**< actually a pointer to BYTE*/
-		u32 dwDataSize;
-	} HPI_DATA64;
+#ifndef HPI_WITHOUT_HPI_DATA
+/**
+Don't access fields in HPI_DATA.  Preferably switch  to
+using HPI_OutStreamWriteBuf(), HPI_InStreamReadBuf().
+Less desirably, always use HPI_DataCreate() to fill in the fields of
+HPI_DATA.
 
-/* dwpbData is now incorrect name, but leave it for now */
-
-	typedef HPI_DATA64 HPI_DATA;
-	typedef HPI_FORMAT64 HPI_FORMAT;
-#else
-	typedef HPI_DATA32 HPI_DATA;
-	typedef HPI_FORMAT32 HPI_FORMAT;
-#endif
-
-/* more desirable if we can change the message format and recompile DSP code:
-Just use the format64 and data64 structs, which have room for 32 OR 64 bit pointers.
-Use PTR64 even in the 32 bit build.
+\deprecated HPI_DATA will eventually disappear from this API
 */
-
-	typedef struct {
-		HPI_FORMAT reserved;/**< placehoder for backward compatability (see dwBufferSize) */
-		u32 dwCommand;	       /**< HPI_BUFFER_CMD_xxx*/
-		u32 dwBufferSize;
-			       /**< must line up with dwDataSize of HPI_DATA*/
-	} HPI_BUFFER;
+	typedef struct sHPI_DATA {
+		u32 opaque_fixed_size[7];
+	} HPI_DATA;
+#endif
 
 	typedef struct {
 		u32 dwValidBitsInThisFrame;
@@ -939,6 +952,13 @@ Use PTR64 even in the 32 bit build.
 		u32 dwPunchInSample;
 		u32 dwPunchOutSample;
 	} HPI_PUNCHINOUT;
+
+	typedef struct {
+		u16 wObjectType;
+		       /**< Type of object, HPI_OBJ_OSTREAM or HPI_OBJ_ISTREAM. */
+		u16 wStreamIndex;
+		   /**< OStream or IStream index. */
+	} HPI_STREAMID;
 
 /** An object for containing a single async event.
 */
@@ -964,62 +984,26 @@ Use PTR64 even in the 32 bit build.
 	typedef unsigned char HPI_ETHERNET_MAC_ADR[6];
 						/**< Used for sending ethernet packets VIA HMI interface */
 
-#ifndef HPI_EXCLUDE_IMPLEMENTATION
-/** PCI bus resource */
-	typedef struct sHPI_PCI {
-		u16 wVendorId;
-		u16 wDeviceId;
-		u16 wSubSysVendorId;
-		u16 wSubSysDeviceId;
-		u16 wBusNumber;
-		u16 wDeviceNumber;
-		u32 dwMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
-		u32 wInterrupt;
-		struct pci_dev *pOsData;
-	} HPI_PCI;
-
-/* USB bus type resource */
-	typedef struct {
-		u16 wVendorId;
-		u16 wDeviceId;
-		void *pReserved;	/* OS specific USB info */
-	} HPI_USB;
-
-/* PortIO */
-	typedef struct {
-		u32 dwAddress;
-		u32 dwData;
-	} HPI_PORTIO;
-
-	typedef struct {
-		union {
-			HPI_PCI Pci;
-			HPI_USB Usb;
-			HPI_PORTIO PortIO;
-
-		} r;
-		u16 wBusType;	/* HPI_BUS_PNPISA, _PCI, _USB etc */
-		u16 wPadding;
-
-	} HPI_RESOURCE;
-
-#endif
-
 /*////////////////////////////////////////////////////////////////////////// */
 /* HPI FUNCTIONS */
 
+	typedef u16 HPI_BOOL;
+	typedef u32 HPI_HANDLE;
+
 /* handles that reference various objects */
 	typedef u16 HPI_HADAPTER;
-	typedef u32 HPI_HOSTREAM;
-	typedef u32 HPI_HISTREAM;
-	typedef u32 HPI_HMIXER;
-	typedef u32 HPI_HCONTROL;
-	typedef u32 HPI_HNVMEMORY;
-	typedef u32 HPI_HGPIO;
-	typedef u32 HPI_HWATCHDOG;
-	typedef u32 HPI_HCLOCK;
-	typedef u32 HPI_HPROFILE;
-	typedef u32 HPI_HASYNC;
+
+	typedef HPI_HANDLE HPI_HOSTREAM;
+	typedef HPI_HANDLE HPI_HISTREAM;
+	typedef HPI_HANDLE HPI_HSTREAM;	/* either InStream or OutStream */
+	typedef HPI_HANDLE HPI_HMIXER;
+	typedef HPI_HANDLE HPI_HCONTROL;
+	typedef HPI_HANDLE HPI_HNVMEMORY;
+	typedef HPI_HANDLE HPI_HGPIO;
+	typedef HPI_HANDLE HPI_HWATCHDOG;
+	typedef HPI_HANDLE HPI_HCLOCK;
+	typedef HPI_HANDLE HPI_HPROFILE;
+	typedef HPI_HANDLE HPI_HASYNC;
 
 #ifndef HPI_ON_DSP
 /* skip host side function declarations for DSP compile and documentation extraction */
@@ -1047,6 +1031,8 @@ Use PTR64 even in the 32 bit build.
 
 	u16 HPI_SubSysGetVersion(HPI_HSUBSYS * phSubSys, u32 * pdwVersion);
 
+	u16 HPI_SubSysGetVersionEx(HPI_HSUBSYS * phSubSys, u32 * pdwVersionEx);
+
 	u16 HPI_SubSysGetInfo(HPI_HSUBSYS * phSubSys,
 			      u32 * pdwVersion,
 			      u16 * pwNumAdapters,
@@ -1057,20 +1043,6 @@ Use PTR64 even in the 32 bit build.
 				   u16 * pwNumAdapters,
 				   u16 awAdapterList[], u16 wListLength);
 
-#ifndef HPI_EXCLUDE_IMPLEMENTATION
-/* used in PnP OS/driver */
-	u16 HPI_SubSysCreateAdapter(HPI_HSUBSYS * phSubSys,
-				    HPI_RESOURCE * pResource,
-				    u16 * pwAdapterIndex);
-	u16 HPI_SubSysDeleteAdapter(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex);
-
-	u16 HPI_SubSysReadPort8(HPI_HSUBSYS * phSubSys,
-				u16 wAddress, u16 * pwData);
-
-	u16 HPI_SubSysWritePort8(HPI_HSUBSYS * phSubSys,
-				 u16 wAddress, u16 wData);
-
-#endif
 /*///////// */
 /* ADAPTER */
 
@@ -1221,8 +1193,16 @@ Use PTR64 even in the 32 bit build.
 				   u32 * pdwSamplesPlayed,
 				   u32 * pdwAuxiliaryDataToPlay);
 
-	u16 HPI_OutStreamWrite(HPI_HSUBSYS * phSubSys,
-			       HPI_HOSTREAM hOutStreamHandle, HPI_DATA * pData);
+	u16 HPI_OutStreamWriteBuf(HPI_HSUBSYS * phSubSys,
+				  HPI_HOSTREAM hOutStream,
+				  u8 * pbWriteBuf,
+				  u32 dwBytesToWrite, HPI_FORMAT * pFormat);
+
+#ifndef HPI_WITHOUT_HPI_DATA
+	DEPRECATED u16 HPI_OutStreamWrite(HPI_HSUBSYS * phSubSys,
+					  HPI_HOSTREAM hOutStreamHandle,
+					  HPI_DATA * pData);
+#endif
 
 	u16 HPI_OutStreamStart(HPI_HSUBSYS * phSubSys,
 			       HPI_HOSTREAM hOutStreamHandle);
@@ -1271,6 +1251,18 @@ Use PTR64 even in the 32 bit build.
 	u16 HPI_OutStreamHostBufferFree(HPI_HSUBSYS * phSubSys,
 					HPI_HOSTREAM hOutStreamHandle);
 
+	u16 HPI_OutStreamGroupAdd(HPI_HSUBSYS * phSubSys,
+				  HPI_HOSTREAM hOutStreamHandle,
+				  HPI_HSTREAM hStreamHandle);
+
+	u16 HPI_OutStreamGroupGetMap(HPI_HSUBSYS * phSubSys,
+				     HPI_HOSTREAM hOutStreamHandle,
+				     u32 * pdwOutStreamMap,
+				     u32 * pdwInStreamMap);
+
+	u16 HPI_OutStreamGroupReset(HPI_HSUBSYS * phSubSys,
+				    HPI_HOSTREAM hOutStreamHandle);
+
 /*////////// */
 /* IN_STREAM */
 	u16 HPI_InStreamOpen(HPI_HSUBSYS * phSubSys,
@@ -1286,8 +1278,15 @@ Use PTR64 even in the 32 bit build.
 	u16 HPI_InStreamSetFormat(HPI_HSUBSYS * phSubSys,
 				  HPI_HISTREAM hInStream, HPI_FORMAT * pFormat);
 
-	u16 HPI_InStreamRead(HPI_HSUBSYS * phSubSys,
-			     HPI_HISTREAM hInStream, HPI_DATA * pData);
+	u16 HPI_InStreamReadBuf(HPI_HSUBSYS * phSubSys,
+				HPI_HISTREAM hInStream,
+				u8 * pbReadBuf, u32 dwBytesToRead);
+
+#ifndef HPI_WITHOUT_HPI_DATA
+	DEPRECATED u16 HPI_InStreamRead(HPI_HSUBSYS * phSubSys,
+					HPI_HISTREAM hInStream,
+					HPI_DATA * pData);
+#endif
 
 	u16 HPI_InStreamStart(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream);
 
@@ -1307,7 +1306,7 @@ Use PTR64 even in the 32 bit build.
 				  u32 * pdwBufferSize,
 				  u32 * pdwDataRecorded,
 				  u32 * pdwSamplesRecorded,
-				  u32 * pdwAuxilaryDataRecorded);
+				  u32 * pdwAuxiliaryDataRecorded);
 
 	u16 HPI_InStreamAncillaryReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM InStreamHandle, u16 wBytesPerFrame, u16 wMode,	/* = HPI_MPEG_ANC_XXX */
 				       u16 wAlignment, u16 wIdleBit);
@@ -1328,6 +1327,18 @@ Use PTR64 even in the 32 bit build.
 
 	u16 HPI_InStreamHostBufferFree(HPI_HSUBSYS * phSubSys,
 				       HPI_HISTREAM hInStream);
+
+	u16 HPI_InStreamGroupAdd(HPI_HSUBSYS * phSubSys,
+				 HPI_HISTREAM hInStreamHandle,
+				 HPI_HSTREAM hStreamHandle);
+
+	u16 HPI_InStreamGroupGetMap(HPI_HSUBSYS * phSubSys,
+				    HPI_HISTREAM hInStreamHandle,
+				    u32 * pdwOutStreamMap,
+				    u32 * pdwInStreamMap);
+
+	u16 HPI_InStreamGroupReset(HPI_HSUBSYS * phSubSys,
+				   HPI_HISTREAM hInStreamHandle);
 
 /*////// */
 /* MIXER */
@@ -1355,6 +1366,9 @@ Use PTR64 even in the 32 bit build.
 				       u16 * pwControlType,
 				       HPI_HCONTROL * phControlHandle);
 
+	u16 HPI_MixerStore(HPI_HSUBSYS * phSubSys,
+			   HPI_HMIXER hMixerHandle,
+			   enum HPI_MIXER_STORE_COMMAND Command, u16 wIndex);
 /*************************/
 /* mixer CONTROLS        */
 /*************************/
@@ -1599,6 +1613,7 @@ HPI_HSUBSYS *phSubSys, HPI_HCONTROL hControl,type dwAttrValue \
 						    u16 * pwData	// channel status data to write
 	    );
 
+#ifdef HPI_SUPPORT_AESEBUTXSETCLKSRC
 	u16 HPI_AESEBU_Transmitter_SetClockSource(	/* SGT nov-4-98 */
 							 HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wClockSource	/* SYNC, ADAPTER */
 	    );
@@ -1606,6 +1621,7 @@ HPI_HSUBSYS *phSubSys, HPI_HCONTROL hControl,type dwAttrValue \
 	u16 HPI_AESEBU_Transmitter_GetClockSource(	/* TFE apr-1-04 */
 							 HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 * pwClockSource	/* SYNC, ADAPTER */
 	    );
+#endif
 
 	u16 HPI_AESEBU_Transmitter_SetFormat(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wOutputFormat	/* HPI_AESEBU_SOURCE_AESEBU, _SPDIF */
 	    );
@@ -1800,8 +1816,9 @@ Tone Detector control
 *******************************/
 
 	 fnHPI_Control_Get(ToneDetector, State, HPI_TONEDETECTOR_STATE, u32)
-	 fnHPI_Control_SetGet(ToneDetector, Enable, HPI_CONTROL_ENABLE, u32)
-	 fnHPI_Control_SetGet(ToneDetector, EventEnable, HPI_EVENT_ENABLE, u32)
+	 fnHPI_Control_SetGet(ToneDetector, Enable, HPI_GENERIC_ENABLE, u32)
+	 fnHPI_Control_SetGet(ToneDetector, EventEnable,
+			      HPI_GENERIC_EVENT_ENABLE, u32)
 	 fnHPI_Control_SetGet(ToneDetector, Threshold,
 			      HPI_TONEDETECTOR_THRESHOLD, int)
 
@@ -1815,9 +1832,9 @@ Silence Detector control
 	 fnHPI_Control_Get(SilenceDetector, State, HPI_SILENCEDETECTOR_STATE,
 			   u32)
 
-	 fnHPI_Control_SetGet(SilenceDetector, Enable, HPI_CONTROL_ENABLE, u32)
-	 fnHPI_Control_SetGet(SilenceDetector, EventEnable, HPI_EVENT_ENABLE,
-			      u32)
+	 fnHPI_Control_SetGet(SilenceDetector, Enable, HPI_GENERIC_ENABLE, u32)
+	 fnHPI_Control_SetGet(SilenceDetector, EventEnable,
+			      HPI_GENERIC_EVENT_ENABLE, u32)
 	 fnHPI_Control_SetGet(SilenceDetector, Delay, HPI_SILENCEDETECTOR_DELAY,
 			      u32)
 	 fnHPI_Control_SetGet(SilenceDetector, Threshold,
@@ -1873,106 +1890,21 @@ Silence Detector control
 				      HPI_HPROFILE hProfile,
 				      u32 * pdwUtilization);
 
-/* /////////////////////// */
-/* AES18 functions */
-
-#ifdef HAS_AES18_ON_HOST
-/* !!! Test code only !!! */
-	void HPI_Aes18Init(void);
-#endif
-
-/* Block Generator */
-	u16 HPI_AES18BGSetConfiguration(HPI_HSUBSYS * phSubSys,
-					HPI_HCONTROL hControlHandle,
-					u16
-					wBlocksPerSec[HPI_AES18_MAX_CHANNELS],
-					u16
-					wPriorityEnableMask
-					[HPI_AES18_MAX_CHANNELS],
-					u16
-					wOperatingMode[HPI_AES18_MAX_CHANNELS],
-					u16 wChannelMode);
-
-/* Transmitter */
-	u16 HPI_AES18TxGetInternalBufferState(HPI_HSUBSYS * phSubSys,
-					      HPI_HCONTROL hControlHandle,
-					      u16
-					      awInternalBufferBusy
-					      [HPI_AES18_MAX_CHANNELS]
-					      [HPI_AES18_MAX_PRIORITIES]
-	    );
-
-	u16 HPI_AES18TxGetInternalBufferSize(HPI_HSUBSYS * phSubSys,
-					     HPI_HCONTROL hControlHandle,
-					     u16
-					     awBytesPerBuffer
-					     [HPI_AES18_MAX_PRIORITIES]
-	    );
-
-	u16 HPI_AES18TxSendMessage(HPI_HSUBSYS * phSubSys,
-				   HPI_HCONTROL hControlHandle,
-				   u16 wChannel,
-				   u8 * pbMessage,
-				   u16 wMessageLength,
-				   u16 wDestinationAddress,
-				   u16 wPriorityIndex, u16 wRepetitionIndex);
-
-/* Receiver */
-	u16 HPI_AES18RxSetAddress(HPI_HSUBSYS * phSubSys,
-				  HPI_HCONTROL hControlHandle,
-				  u16 awDecoderAddress[HPI_AES18_MAX_CHANNELS]
-	    );
-
-	u16 HPI_AES18RxGetInternalBufferSize(HPI_HSUBSYS * phSubSys,
-					     HPI_HCONTROL hControlHandle,
-					     u16
-					     awBytesPerBuffer
-					     [HPI_AES18_MAX_PRIORITIES]
-	    );
-
-	u16 HPI_AES18RxGetInternalBufferState(HPI_HSUBSYS * phSubSys,
-					      HPI_HCONTROL hControlHandle,
-					      u16
-					      awFrameError
-					      [HPI_AES18_MAX_CHANNELS],
-					      u16
-					      awMessageWaiting
-					      [HPI_AES18_MAX_CHANNELS]
-					      [HPI_AES18_MAX_PRIORITIES],
-					      u16
-					      awInternalBufferOverFlow
-					      [HPI_AES18_MAX_CHANNELS]
-					      [HPI_AES18_MAX_PRIORITIES],
-					      u16
-					      awMissedMessage
-					      [HPI_AES18_MAX_CHANNELS]
-					      [HPI_AES18_MAX_PRIORITIES]
-	    );
-
-	u16 HPI_AES18RxGetMessage(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wChannel, u16 wPriority, u16 wQueueSize,	/* in bytes */
-				  u8 * pbMessage, u16 * pwMessageLength	/* in bytes */
-	    );
-
 /*//////////////////// */
 /* UTILITY functions */
 
 	void HPI_GetErrorText(u16 wError, char *pszErrorText);
-
-#if 0
-	extern u32 gadwHpiSpecificError[8];
-
-	void HPI_GetLastErrorDetail(u16 wError,
-				    char *pszErrorText, u32 ** padwError);
-
-#endif
 
 	u16 HPI_FormatCreate(HPI_FORMAT * pFormat,
 			     u16 wChannels,
 			     u16 wFormat,
 			     u32 dwSampleRate, u32 dwBitRate, u32 dwAttributes);
 
-	u16 HPI_DataCreate(HPI_DATA * pData,
-			   HPI_FORMAT * pFormat, u8 * pbData, u32 dwDataSize);
+#ifndef HPI_WITHOUT_HPI_DATA
+	DEPRECATED u16 HPI_DataCreate(HPI_DATA * pData,
+				      HPI_FORMAT * pFormat,
+				      u8 * pbData, u32 dwDataSize);
+#endif
 
 /* Until it's verified, this function is for Windows OSs only */
 #if defined ( HPI_OS_WIN16 ) || defined ( HPI_OS_WIN32_USER ) || defined ( INCLUDE_WINDOWS_ON_LINUX )
@@ -1993,8 +1925,17 @@ Silence Detector control
 /********                     HPI LOW LEVEL MESSAGES                  *********/
 /******************************************************************************/
 /******************************************************************************/
-
 #ifndef HPI_EXCLUDE_IMPLEMENTATION
+/** Pnp ids */
+#define HPI_ID_ISAPNP_AUDIOSCIENCE      0x0669	/*"ASI"  - actual is "ASX" - need to change */
+#define HPI_PCI_VENDOR_ID_AUDIOSCIENCE  0x175C	 /**< PCI vendor ID that AudioScience uses */
+#define HPI_PCI_VENDOR_ID_MOTOROLA      0x1057	 /**< PCI vendor ID that the DSP56301 has */
+#define HPI_PCI_VENDOR_ID_TI            0x104C	 /**< PCI vendor ID that TI uses */
+
+#define HPI_USB_VENDOR_ID_AUDIOSCIENCE  0x1257
+#define HPI_USB_W2K_TAG         0x57495341	/* "ASIW"       */
+#define HPI_USB_LINUX_TAG       0x4C495341	/* "ASIL"       */
+
 /******************************************* message types */
 #define HPI_TYPE_MESSAGE                1
 #define HPI_TYPE_RESPONSE               2
@@ -2075,6 +2016,10 @@ Silence Detector control
 #define HPI_OSTREAM_SET_FORMAT          HPI_MAKE_INDEX(HPI_OBJ_OSTREAM,17)
 #define HPI_OSTREAM_HOSTBUFFER_ALLOC    HPI_MAKE_INDEX(HPI_OBJ_OSTREAM,18)
 #define HPI_OSTREAM_HOSTBUFFER_FREE     HPI_MAKE_INDEX(HPI_OBJ_OSTREAM,19)
+#define HPI_OSTREAM_GROUP_ADD                   HPI_MAKE_INDEX(HPI_OBJ_OSTREAM,20)
+#define HPI_OSTREAM_GROUP_GETMAP                HPI_MAKE_INDEX(HPI_OBJ_OSTREAM,21)
+#define HPI_OSTREAM_GROUP_RESET                 HPI_MAKE_INDEX(HPI_OBJ_OSTREAM,22)
+#define HPI_OSTREAM_FUNCTION_COUNT              (22)
 /* INPUT STREAM */
 #define HPI_ISTREAM_OPEN                HPI_MAKE_INDEX(HPI_OBJ_ISTREAM,1)
 #define HPI_ISTREAM_CLOSE               HPI_MAKE_INDEX(HPI_OBJ_ISTREAM,2)
@@ -2090,6 +2035,10 @@ Silence Detector control
 #define HPI_ISTREAM_ANC_WRITE           HPI_MAKE_INDEX(HPI_OBJ_ISTREAM,12)
 #define HPI_ISTREAM_HOSTBUFFER_ALLOC    HPI_MAKE_INDEX(HPI_OBJ_ISTREAM,13)
 #define HPI_ISTREAM_HOSTBUFFER_FREE     HPI_MAKE_INDEX(HPI_OBJ_ISTREAM,14)
+#define HPI_ISTREAM_GROUP_ADD                   HPI_MAKE_INDEX(HPI_OBJ_ISTREAM,15)
+#define HPI_ISTREAM_GROUP_GETMAP                HPI_MAKE_INDEX(HPI_OBJ_ISTREAM,16)
+#define HPI_ISTREAM_GROUP_RESET                 HPI_MAKE_INDEX(HPI_OBJ_ISTREAM,17)
+#define HPI_ISTREAM_FUNCTION_COUNT              (17)
 /* MIXER */
 /* NOTE: (EWB 2003-05-13)
 GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used */
@@ -2102,8 +2051,9 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 #define HPI_MIXER_GET_CONNECTIONS       HPI_MAKE_INDEX(HPI_OBJ_MIXER,7)	/* for a given destination */
 #define HPI_MIXER_GET_CONTROL_BY_INDEX  HPI_MAKE_INDEX(HPI_OBJ_MIXER,8)	/* get a control index */
 #define HPI_MIXER_GET_CONTROL_ARRAY_BY_INDEX  HPI_MAKE_INDEX(HPI_OBJ_MIXER,9)	/* get a control array index (internal call for the moment) */
-#define HPI_MIXER_GET_CONTROL_MULTIPLE_VALUES  HPI_MAKE_INDEX(HPI_OBJ_MIXER,10)	/* get an arrya of control values (internal call for the moment) */
-#define HPI_MIXER_FUNCTION_COUNT        10
+#define HPI_MIXER_GET_CONTROL_MULTIPLE_VALUES HPI_MAKE_INDEX(HPI_OBJ_MIXER,10)	/* get an array of control values (internal call for the moment) */
+#define HPI_MIXER_STORE                 HPI_MAKE_INDEX(HPI_OBJ_MIXER,11)	/* Access the mixer control store */
+#define HPI_MIXER_FUNCTION_COUNT        11
 /* MIXER CONTROLS */
 #define HPI_CONTROL_GET_INFO            HPI_MAKE_INDEX(HPI_OBJ_CONTROL,1)	/* used by HPI_ControlQuery() */
 #define HPI_CONTROL_GET_STATE           HPI_MAKE_INDEX(HPI_OBJ_CONTROL,2)
@@ -2145,17 +2095,86 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 #ifndef DISABLE_PRAGMA_PACK1
 #pragma pack(push,1)
 #endif
-	    typedef struct {
-/*SGT-for port r/w*/
-/*u32    dwAddress;*/
-/*u32    dwData;*/
+/** PCI bus resource */
+	    typedef struct sHPI_PCI {
+		u32 __iomem *apMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
+		struct pci_dev *pOsData;
+#ifndef HPI_64BIT		/* keep structure size constant */
+		u32 dwPadding[HPI_MAX_ADAPTER_MEM_SPACES + 1];
+#endif
+		u16 wVendorId;
+		u16 wDeviceId;
+		u16 wSubSysVendorId;
+		u16 wSubSysDeviceId;
+		u16 wBusNumber;
+		u16 wDeviceNumber;
+		u32 wInterrupt;
+	} HPI_PCI;
+
+	typedef struct {
+		union {
+			HPI_PCI *Pci;
+#ifndef HPI_64BIT		/* keep structure size constant */
+			u32 dwPadTo64;
+#endif
+		} r;
+		u16 wBusType;	/* HPI_BUS_PNPISA, _PCI, _USB etc */
+		u16 wPadding;
+
+	} HPI_RESOURCE;
+
+/** Format info used inside HPI_MESSAGE. Not the same as public API HPI_FORMAT */
+	typedef struct sHPI_MSG_FORMAT {
+		u32 dwSampleRate;
+		       /**< 11025, 32000, 44100 ... */
+		u32 dwBitRate;
+		       /**< for MPEG */
+		u32 dwAttributes;
+		       /**< Stereo/JointStereo/Mono */
+		u16 wChannels;
+		       /**< 1,2..., (or ancillary mode or idle bit */
+		u16 wFormat;
+		       /**< HPI_FORMAT_PCM16, _AC2, _MPEG ... */
+	} HPI_MSG_FORMAT;
+
+/**  Buffer+format structure.
+Must be kept 7 * 32 bits to match public HPI_DATA struct */
+	typedef struct sHPI_MSG_DATA {
+		HPI_MSG_FORMAT Format;
+		u32 dwDataSize;
+		u8 *pbData;
+#ifndef HPI_64BIT
+		u32 dwPadding;
+#endif
+	} HPI_MSG_DATA;
+
+#ifdef HPI_64BIT
+/* Compatibility version of HPI_DATA */
+	typedef struct {
+		HPI_MSG_FORMAT Format;
+		u32 dwDataSize;
+		u32 pbData;
+		u32 dwPadding;
+	} HPI_DATA_COMPAT32;
+#endif
+
+	typedef struct {
+		HPI_MSG_FORMAT reserved;
+				/**< placehoder for backward compatability (see dwBufferSize) */
+		u32 dwCommand; /**< HPI_BUFFER_CMD_xxx*/
+		u32 dwPciAddress;
+			       /**< PCI physical address of buffer for DSP DMA */
+		u32 dwBufferSize;
+			       /**< must line up with dwDataSize of HPI_DATA*/
+	} HPI_BUFFER;
+
+	typedef struct {
 		HPI_RESOURCE Resource;
 	} HPI_SUBSYS_MSG;
 
 	typedef struct {
 		u32 dwVersion;
-/*SGT-for port r/w*/
-		u32 dwData;
+		u32 dwData;	/* used to return extended version */
 		u16 wNumAdapters;	/* number of adapters */
 		u16 wAdapterIndex;
 		u16 awAdapterList[HPI_MAX_ADAPTERS];	/* array of adapters */
@@ -2224,26 +2243,33 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 	} HPI_ADAPTERX_RES;
 
 	typedef struct {
+		u16 wStreamIndex;
+		u16 wSpare;
 		union {
-			HPI_DATA Data;
+			HPI_MSG_DATA Data;
 			u16 wVelocity;
 			HPI_PUNCHINOUT Pio;
 			u32 dwTimeScale;
 			HPI_BUFFER Buffer;
+			HPI_STREAMID Stream;
 		} u;
-		u16 wOStreamIndex;
-		u16 wIStreamIndex;
 	} HPI_STREAM_MSG;
 
 	typedef struct {
-		u32 dwBufferSize;	/* size of hardware buffer */
-		u32 dwDataAvailable;	/* OutStream - data to play, InStream - data recorded */
-		u32 dwSamplesTransfered;	/* OutStream - samples played, InStream - samples recorded */
-		u16 wState;	/* HPI_STATE_PLAYING, _STATE_STOPPED */
-		u16 wOStreamIndex;
-		u16 wIStreamIndex;
-		u16 wPadding;
-		u32 dwAuxilaryDataAvailable;	/* Adapter - OutStream - data to play, InStream - data recorded */
+		union {
+			struct {
+				u32 dwBufferSize;	/* size of hardware buffer */
+				u32 dwDataAvailable;	/* OutStream - data to play, InStream - data recorded */
+				u32 dwSamplesTransferred;	/* OutStream - samples played, InStream - samples recorded */
+				u32 dwAuxiliaryDataAvailable;	/* Adapter - OutStream - data to play, InStream - data recorded */
+				u16 wState;	/* HPI_STATE_PLAYING, _STATE_STOPPED */
+				u16 wPadding;
+			} stream_info;
+			struct {
+				u32 dwOutStreamGroupMap;	/* bitmap of grouped OutStreams */
+				u32 dwInStreamGroupMap;	/* bitmap of grouped InStreams */
+			} group_info;
+		} u;
 	} HPI_STREAM_RES;
 
 	typedef struct {
@@ -2273,6 +2299,10 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 			u32 dwLengthInBytes;	/* length in bytes of pData */
 			u32 pData;	/* pointer to a data array */
 		} gcabi;
+		struct {
+			u16 wCommand;
+			u16 wIndex;
+		} store;	/* for HPI_MIXER_STORE message */
 	} HPI_MIXERX_MSG;
 
 	typedef union {
@@ -2284,11 +2314,11 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 	} HPI_MIXERX_RES;
 
 	typedef struct {
+		u16 wControlIndex;
+		u16 wAttribute;	/* control attribute or property */
 		u32 dwParam1;	/* generic parameter 1 */
 		u32 dwParam2;	/* generic parameter 2 */
 		short anLogValue[HPI_MAX_CHANNELS];
-		u16 wAttribute;	/* control attribute or property */
-		u16 wControlIndex;
 	} HPI_CONTROL_MSG;
 
 	typedef struct {
@@ -2302,35 +2332,6 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 /* HPI_CONTROLX_STRUCTURES */
 
 /* Message */
-	typedef struct {
-		u16 wBlocksPerSec[HPI_AES18_MAX_CHANNELS];
-		u16 wPriorityMask[HPI_AES18_MAX_CHANNELS];
-		u16 wOperatingMode[HPI_AES18_MAX_CHANNELS];
-		u16 wChannelMode;
-		u16 wPadding;
-	} HPI_CONTROLX_MSG_AES18BG;
-
-	typedef struct {
-		u16 wAddress[HPI_AES18_MAX_CHANNELS];
-	} HPI_CONTROLX_MSG_AES18RX_ADDRESS;
-
-	typedef struct {
-		PTR32 dwpbMessage;
-		u16 wChannel;
-		u16 wMessageLength;
-		u16 wDestinationAddress;
-		u16 wPriorityIndex;
-		u16 wRepetitionIndex;
-		u16 wPadding;
-	} HPI_CONTROLX_MSG_AES18TX_SEND_MESSAGE;
-
-	typedef struct {
-		PTR32 dwpbMessage;	/* actually a pointer to byte */
-		u16 wChannel;
-		u16 wPriority;
-		u16 wQueueSize;
-		u16 wPadding;
-	} HPI_CONTROLX_MSG_AES18RX_GET_MESSAGE;
 
 /** Used for all HMI variables where max length <= 8 bytes
 */
@@ -2345,7 +2346,10 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 	typedef struct {
 		u32 dwHmiAddress;
 		u32 dwByteCount;
-		PTR32 dwpbData;
+		u8 *pbData;
+#ifndef HPI_64BIT
+		u32 dwPadding;
+#endif
 	} HPI_CONTROLX_MSG_COBRANET_BIGDATA;
 
 /** Used for generic data
@@ -2356,46 +2360,17 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 	} HPI_CONTROLX_MSG_GENERIC;
 
 	typedef struct {
+		u16 wControlIndex;
+		u16 wAttribute;	/* control attribute or property */
 		union {
-			HPI_CONTROLX_MSG_AES18BG aes18bg;
-			HPI_CONTROLX_MSG_AES18RX_ADDRESS aes18rx_address;
-			HPI_CONTROLX_MSG_AES18TX_SEND_MESSAGE
-			    aes18tx_send_message;
-			HPI_CONTROLX_MSG_AES18RX_GET_MESSAGE
-			    aes18rx_get_message;
 			HPI_CONTROLX_MSG_COBRANET_DATA cobranet_data;
 			HPI_CONTROLX_MSG_COBRANET_BIGDATA cobranet_bigdata;
 			HPI_CONTROLX_MSG_GENERIC generic;
 /* nothing extra to send for status read */
 		} u;
-		u16 wControlIndex;
-		u16 wAttribute;	/* control attribute or property */
 	} HPI_CONTROLX_MSG;
 
 /* Response */
-
-	typedef struct {
-		u16 awFrameErrorPacked;
-		u16 awMessageWaitingPacked;
-		u16 awInternalBufferOverFlowPacked;
-		u16 awMissedMessagePacked;
-	} HPI_CONTROLX_RES_AES18RX_BUFFER_STATE;
-
-	typedef struct {
-		u16 awBytesPerBuffer[HPI_AES18_MAX_PRIORITIES];
-	} HPI_CONTROLX_RES_AES18RX_BUFFER_SIZE;
-
-	typedef struct {
-		u16 wReturnedMessageSize;
-	} HPI_CONTROLX_RES_AES18RX_GET_MESSAGE;
-
-	typedef struct {
-		u16 wInternalBufferBusyPacked;
-	} HPI_CONTROLX_RES_AES18TX_BUFFER_STATE;
-
-	typedef struct {
-		u16 awBytesPerBuffer[HPI_AES18_MAX_PRIORITIES];
-	} HPI_CONTROLX_RES_AES18TX_BUFFER_SIZE;
 
 /**
 */
@@ -2421,16 +2396,6 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 
 	typedef struct {
 		union {
-			HPI_CONTROLX_RES_AES18RX_BUFFER_STATE
-			    aes18rx_internal_buffer_state;
-			HPI_CONTROLX_RES_AES18RX_BUFFER_SIZE
-			    aes18rx_internal_buffer_size;
-			HPI_CONTROLX_RES_AES18RX_GET_MESSAGE
-			    aes18rx_get_message;
-			HPI_CONTROLX_RES_AES18TX_BUFFER_STATE
-			    aes18tx_internal_buffer_state;
-			HPI_CONTROLX_RES_AES18TX_BUFFER_SIZE
-			    aes18tx_internal_buffer_size;
 			HPI_CONTROLX_RES_COBRANET_BIGDATA cobranet_bigdata;
 			HPI_CONTROLX_RES_COBRANET_DATA cobranet_data;
 			HPI_CONTROLX_RES_COBRANET_STATUS cobranet_status;
@@ -2534,9 +2499,19 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 	} HPI_PROFILE_RES;
 
 /* the size of the part of the message outside the union.  MUST update if more elements are added */
-#define HPI_MESSAGE_FIXED_SIZE (6 * sizeof(u16))
+	typedef struct {
+		u16 wSize;
+		u16 wType;	/* HPI_MSG_MESSAGE, HPI_MSG_RESPONSE */
+		u16 wObject;	/* HPI_OBJ_SUBSYS, _OBJ_ADAPTER, _OBJ_DEVICE, _OBJ_MIXER */
+		u16 wFunction;	/* HPI_SUBSYS_xxx, HPI_ADAPTER_xxx */
+		u16 wAdapterIndex;	/* the adapter index */
+		u16 wDspIndex;	/* the dsp index on the adapter */
+	} HPI_MESSAGE_HEADER;
+
+#define HPI_MESSAGE_FIXED_SIZE (sizeof(HPI_MESSAGE_HEADER))
 
 	typedef struct sHPI_MESSAGE {
+/* following fields must match HPI_MESSAGE_HEADER */
 		u16 wSize;
 		u16 wType;	/* HPI_TYPE_MESSAGE, HPI_TYPE_RESPONSE */
 		u16 wObject;	/* HPI_OBJ_SUBSYS, _OBJ_ADAPTER, _OBJ_DEVICE, _OBJ_MIXER */
@@ -2558,6 +2533,9 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 			HPI_CLOCK_MSG t;	/* dsp time */
 			HPI_PROFILE_MSG p;	/* profile */
 			HPI_ASYNC_MSG as;	/* async event */
+#ifdef HPI_MESSAGE_FORCE_SIZE
+			u8 _x[HPI_MESSAGE_FORCE_SIZE - HPI_MESSAGE_FIXED_SIZE];
+#endif
 		} u;
 	} HPI_MESSAGE;
 
@@ -2579,11 +2557,19 @@ HPI_MESSAGE_FIXED_SIZE + sizeof(HPI_CONTROLX_MSG),\
 HPI_MESSAGE_FIXED_SIZE + sizeof(HPI_ASYNC_MSG) \
 }
 
-/* Test message,response size - moved to hpicheck.h, included by hpifunc.c */
-
 /* the size of the part of the response outside the union.  MUST update if more elements are added */
-#define HPI_RESPONSE_FIXED_SIZE (6 * sizeof(u16))
-	typedef struct sHPI_RESPONSE {
+
+	typedef struct sHPI_RESPONSE_HEADER {
+		u16 wSize;
+		u16 wType;	/* HPI_MSG_MESSAGE, HPI_MSG_RESPONSE */
+		u16 wObject;	/* HPI_OBJ_SUBSYS, _OBJ_ADAPTER, _OBJ_DEVICE, _OBJ_MIXER */
+		u16 wFunction;	/* HPI_SUBSYS_xxx, HPI_ADAPTER_xxx */
+		u16 wError;	/* HPI_ERROR_xxx */
+		u16 wSpecificError;	/* Adapter specific error */
+	} HPI_RESPONSE_HEADER;
+#define HPI_RESPONSE_FIXED_SIZE (sizeof(HPI_RESPONSE_HEADER))
+
+	typedef struct sHPI_RESPONSE {	/* following fields must match HPI_RESPONSE_HEADER */
 		u16 wSize;
 		u16 wType;	/* HPI_MSG_MESSAGE, HPI_MSG_RESPONSE */
 		u16 wObject;	/* HPI_OBJ_SUBSYS, _OBJ_ADAPTER, _OBJ_DEVICE, _OBJ_MIXER */
@@ -2646,12 +2632,15 @@ HPI_RESPONSE_FIXED_SIZE + sizeof(HPI_ASYNC_RES) \
 		u16 anLogRMS[2];
 	} tHPIControlCachedPeak;
 	typedef struct {
-		u16 anLog[2];
-	} tHPIControlCachedMode;
+		u16 wMode;
+	} tHPIControlCachedChannelMode;
 	typedef struct {
 		u32 dwErrorStatus;
 		u32 dwSource;
 	} tHPIControlCachedAES3RxStatus;
+	typedef struct {
+		u32 dwFormat;
+	} tHPIControlCachedAES3Tx;
 	typedef struct {
 		u16 wSourceNodeType;
 		u16 wSourceNodeIndex;
@@ -2672,6 +2661,11 @@ HPI_RESPONSE_FIXED_SIZE + sizeof(HPI_ASYNC_RES) \
 		u32 dwCount;
 	} tHPIControlCachedSilenceDetector;
 	typedef struct {
+		u16 wSource;
+		u16 wSourceIndex;
+		u32 dwSampleRate;
+	} tHPIControlCachedSampleClock;
+	typedef struct {
 		u32 dw1;
 		u32 dw2;
 	} tHPIControlCachedGeneric;
@@ -2687,22 +2681,29 @@ Used for efficient transfer of the control state between DSP and host or across 
 		union {
 			tHPIControlCachedVolume v;
 			tHPIControlCachedPeak p;
-			tHPIControlCachedMode m;
+			tHPIControlCachedChannelMode m;
 			tHPIControlCachedMultiplexer x;
 			tHPIControlCachedLevel l;
 			tHPIControlCachedTuner t;
 			tHPIControlCachedAES3RxStatus aes3rx;
+			tHPIControlCachedAES3Tx aes3tx;
 			tHPIControlCachedToneDetector tone;
 			tHPIControlCachedSilenceDetector silence;
+			tHPIControlCachedSampleClock clk;
 			tHPIControlCachedGeneric g;
 		} u;
 	} tHPIControlCacheSingle;
+/*//////////////////////////////////////////////////////////////////////////////// */
+/* declarations for 2^N sized FIFO buffer (internal to HPI<->DSP interaction)      */
+	typedef struct {
+		u32 dwSize;
+		u32 dwDSPIndex;
+		u32 dwHostIndex;
+	} tHPIFIFOBuffer;
 
 #ifndef DISABLE_PRAGMA_PACK1
 #pragma pack(pop)
 #endif
-
-#endif				// ifndef HPI_EXCLUDE_IMPLEMENTATION
 
 #ifndef HPI_ON_DSP
 /* skip host side function declarations for DSP compile and documentation extraction */
@@ -2712,26 +2713,29 @@ Used for efficient transfer of the control state between DSP and host or across 
 
 /*////////////////////////////////////////////////////////////////////////// */
 /* main HPI entry point */
-	void HPI_Message(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
+	HPI_HandlerFunc HPI_Message;
 
 #ifndef HPI_KERNEL_MODE		//----------------- not Win95,WinNT,WDM kernel
 	u16 HPI_DriverOpen(void);
 	void HPI_DriverClose(void);
 #endif
 
-#ifndef HPI_EXCLUDE_IMPLEMENTATION
+/* used in PnP OS/driver */
+	u16 HPI_SubSysCreateAdapter(HPI_HSUBSYS * phSubSys,
+				    HPI_RESOURCE * pResource,
+				    u16 * pwAdapterIndex);
+
+	u16 HPI_SubSysDeleteAdapter(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex);
+
 /*////////////////////////////////////////////////////////////////////////// */
 /* declarations for individual HPI entry points */
-	void HPI_4000(HPI_MESSAGE * phm, HPI_RESPONSE * phr);	/* ASI450X and ASI400 MPEG Play/Record */
-	void HPI_4500(HPI_MESSAGE * phm, HPI_RESPONSE * phr);	/* ASI450X MPEG Play/Record */
-	void HPI_8400(HPI_MESSAGE * phm, HPI_RESPONSE * phr);	/* ASI840X OEM */
-	void HPI_8411(HPI_MESSAGE * phm, HPI_RESPONSE * phr);	/* ASI8411 OEM */
-	void HPI_6000(HPI_MESSAGE * phm, HPI_RESPONSE * phr);	/* ASI6xxx and ASI8801 */
-	void HPI_Usb(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
-	void HPI_6205(HPI_MESSAGE * phm, HPI_RESPONSE * phr);	/* ASI5000, TI C6205 based */
-#endif
+	HPI_HandlerFunc HPI_4000;
+	HPI_HandlerFunc HPI_6000;
+	HPI_HandlerFunc HPI_6205;
 
 #endif				/* ndef HPI_ON_DSP */
+
+#endif				/* ndef HPI_EXCLUDE_IMPLEMENTATION */
 
 #ifdef __cplusplus
 }

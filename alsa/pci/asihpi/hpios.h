@@ -42,10 +42,11 @@ HPI Operating System function declarations
 #define STR_SIZE(a) (a)
 #endif
 
-/* provide defaults until all OSes have these new typedefs */
-#ifndef IMPLEMENTED_PTR32
-typedef u32 PTR32;
-typedef PTR32 PTR_AS_NUMBER;
+#ifndef __user
+#define __user
+#endif
+#ifndef __iomem
+#define __iomem
 #endif
 
 #ifndef HPI_LOCKING
@@ -70,10 +71,6 @@ typedef struct {
 #endif
 
 /* /////////////////////////// PROTOTYPES /////////////////////////////////// */
-/* monochrome screen debug functions */
-void HpiOs_DebugInit(void);
-void HpiOs_DebugString(char *pszString);	/* print a string to the monochrome display */
-void HpiOs_DebugDword(u32 dwDword);
 
 /* memory allocation */
 void *HpiOs_MemAlloc(u32 dwSize);
@@ -83,18 +80,43 @@ void HpiOs_MemFree(void *ptr);
 #ifndef NO_HPIOS_LOCKEDMEM_OPS
 void HpiOs_LockedMem_Init(void);
 void HpiOs_LockedMem_FreeAll(void);
-u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
-			  void *pOsReference);
+
+/** Allocate and map an area of locked memory for bus master DMA operations.
+
+On success, *pLockedMemeHandle is a valid handle, and 0 is returned
+On error *pLockedMemHandle=NULL, non-zero returned.
+
+If this function succeeds, then HpiOs_LockedMem_GetVirtAddr() and
+HpiOs_LockedMem_GetPyhsAddr() will always succed on the returned handle.
+*/
+u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle,
+					  /**< memory handle */
+			  u32 dwSize,
+	     /**< Size in bytes to allocate */
+			  void *pOsReference
+		   /**< OS specific data required for memory allocation */
+    );
+
+/** Free mapping and memory represented by LockedMemHandle
+
+Returns 0 on success, 1 if handle is NULL
+*/
 u16 HpiOs_LockedMem_Free(HpiOs_LockedMem_Handle LockedMemHandle);
+
+/** Get the physical PCI address of memory represented by LockedMemHandle.
+
+If handle is NULL *pPhysicalAddr is set to zero and return 1 
+*/
 u16 HpiOs_LockedMem_GetPhysAddr(HpiOs_LockedMem_Handle LockedMemHandle,
 				u32 * pPhysicalAddr);
+
+/** Get the CPU address of of memory represented by LockedMemHandle.
+
+If handle is NULL *ppvVirtualAddr is set to NULL and return 1 
+*/
 u16 HpiOs_LockedMem_GetVirtAddr(HpiOs_LockedMem_Handle LockedMemHandle,
 				void **ppvVirtualAddr);
 
-/* Old API, no longer use???
-u16 HpiOs_AllocLockedMemory( u32 dwSize, void  **ppvLinear, u32 *pPhysical );
-u16 HpiOs_FreeLockedMemory( void  *pvLinear );
-*/
 #endif
 
 /* memory read/write */
@@ -123,6 +145,10 @@ void HpiOs_SetDspCodePath(char *pPath);
 /* /////////////////////////// HpiPCI_* PROTOTYPES /////////////////////////////////// */
 
 struct sHPI_PCI;
+struct sHPI_MESSAGE;
+struct sHPI_RESPONSE;
+
+typedef void HPI_HandlerFunc(struct sHPI_MESSAGE *, struct sHPI_RESPONSE *);
 
 typedef struct {
 	u16 wVendorId;
@@ -133,7 +159,7 @@ typedef struct {
 	u16 wClass;
 	u16 wClassMask;
 
-	u32 drvData;
+	HPI_HandlerFunc *drvData;
 } HPI_PCI_DEVICE_ID;
 
 /* given the device index (Nth occurance), vendor and device id, returns the bus

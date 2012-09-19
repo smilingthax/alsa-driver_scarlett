@@ -24,7 +24,7 @@ Public declarations for DSP Proramming Interface to PCI-based 56301 DSP
 #define _HPI56301_H_
 
 typedef struct {
-	u32 dwMemBase;
+	__iomem u32 *pMemBase;
 	u32 dwHCTR;
 	u32 dwHCVR;
 } HPI_56301_INFO_OBJ;

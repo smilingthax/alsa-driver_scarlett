@@ -94,6 +94,7 @@ typedef struct {
 #define HPI6000_ERROR_SEND_DATA_CMD                             915
 #define HPI6000_ERROR_SEND_DATA_WRITE                   916
 #define HPI6000_ERROR_SEND_DATA_IDLECMD                 917
+#define HPI6000_ERROR_SEND_DATA_VERIFY                  918
 
 #define HPI6000_ERROR_GET_DATA_IDLE_TIMEOUT     921
 #define HPI6000_ERROR_GET_DATA_ACK                              922
@@ -101,21 +102,34 @@ typedef struct {
 #define HPI6000_ERROR_GET_DATA_READ                             924
 #define HPI6000_ERROR_GET_DATA_IDLECMD                  925
 
-#define HPI6000_ERROR_CONTROL_CACHE_ADDRLEN             931
-#define HPI6000_ERROR_CONTROL_CACHE_READ                932
-#define HPI6000_ERROR_CONTROL_CACHE_FLUSH               933
+#define HPI6000_ERROR_CONTROL_CACHE_ADDRLEN             951
+#define HPI6000_ERROR_CONTROL_CACHE_READ                952
+#define HPI6000_ERROR_CONTROL_CACHE_FLUSH               953
 
-#define HPI6000_ERROR_MSG_RESP_GETRESPCMD               941
-#define HPI6000_ERROR_MSG_RESP_IDLECMD                  942
+#define HPI6000_ERROR_MSG_RESP_GETRESPCMD               961
+#define HPI6000_ERROR_MSG_RESP_IDLECMD                  962
+#define HPI6000_ERROR_MSG_RESP_BLOCKVERIFY32    963
 
 // adapter init errors
+#define HPI6000_ERROR_UNHANDLED_SUBSYS_ID       930
+
 // 931 - can't access PCI2040
+#define HPI6000_ERROR_INIT_PCI2040              931
 // 932 - can't access DSP HPI i/f
+#define HPI6000_ERROR_INIT_DSPHPI               932
 // 933 - can't access internal DSP memory
+#define HPI6000_ERROR_INIT_DSPINTMEM            933
 // 934 - can't access SDRAM - test#1
+#define HPI6000_ERROR_INIT_SDRAM1               934
 // 935 - can't access SDRAM - test#2
-// 936 - timeout while waiting for DSP code to respond
-// 937 -
+#define HPI6000_ERROR_INIT_SDRAM2               935
+
+#define HPI6000_ERROR_INIT_VERIFY               938
+
+#define HPI6000_ERROR_INIT_NOACK                939
+
+#define HPI6000_ERROR_INIT_PLDTEST1             941
+#define HPI6000_ERROR_INIT_PLDTEST2             942
 
 #endif				// _HPI6000_H_
 

@@ -27,6 +27,11 @@ Debug macro translation.
 /* Debug level; 0 quiet; 1 informative, 2 debug, 3 verbose debug.  */
 int hpiDebugLevel = HPI_DEBUG_LEVEL_DEFAULT;
 
+void HPI_DebugInit(void)
+{
+	HPIOS_DEBUG_PRINTF("Debug Start\n");
+}
+
 int HPI_DebugLevelSet(int level)
 {
 	int old_level;
@@ -34,6 +39,11 @@ int HPI_DebugLevelSet(int level)
 	old_level = hpiDebugLevel;
 	hpiDebugLevel = level;
 	return old_level;
+}
+
+int HPI_DebugLevelGet(void)
+{
+	return (hpiDebugLevel);
 }
 
 #ifdef HPIOS_DEBUG_PRINT
@@ -44,12 +54,13 @@ void hpi_debug_printf(char *fmt, ...)
 {
 	va_list arglist;
 	char buffer[256];
-
 	va_start(arglist, fmt);
-	vswprintf(buffer, fmt, arglist);
+
+// the following may work only for Windows kernel?
+
 	if (buffer[0])
 		HPIOS_DEBUG_PRINT(buffer);
-	va_end(ap);
+	va_end(arglist);
 }
 #endif
 
@@ -138,20 +149,21 @@ void hpi_debug_message(HPI_MESSAGE * phm)
 {
 	if (phm) {
 		if ((phm->wObject <= HPI_OBJ_MAXINDEX) && phm->wObject) {
-			HPIOS_DEBUG_PRINTF("Adapter #%d %s",
-					   phm->wAdapterIndex,
-					   hpi_function_string(phm->wFunction));
+
 			switch (phm->wObject) {
 			case HPI_OBJ_OSTREAM:
-				HPIOS_DEBUG_PRINTF("#%d ",
-						   phm->u.d.wOStreamIndex);
-				break;
 			case HPI_OBJ_ISTREAM:
-				HPIOS_DEBUG_PRINTF("#%d ",
-						   phm->u.d.wIStreamIndex);
+			case HPI_OBJ_CONTROLEX:
+			case HPI_OBJ_CONTROL:
+				HPIOS_DEBUG_PRINTF("Adapter #%d %s #%d \n", phm->wAdapterIndex, hpi_function_string(phm->wFunction), phm->u.c.wControlIndex);	/* controlex, stream index at same offset */
+				break;
+			default:
+				HPIOS_DEBUG_PRINTF("Adapter #%d %s \n",
+						   phm->wAdapterIndex,
+						   hpi_function_string(phm->
+								       wFunction));
 				break;
 			}
-			HPIOS_DEBUG_PRINTF("\n");
 		} else {
 			HPIOS_DEBUG_PRINTF("Adap=%d, Invalid Obj=%d, Func=%d\n",
 					   phm->wAdapterIndex, phm->wObject,
@@ -186,8 +198,7 @@ void hpi_debug_data(u16 * pdata, u32 len)
 		lines = 8;
 
 	for (i = 0, j = 0; j < lines; j++) {
-		HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_VERBOSE "%08x:",
-				   (u32) (pdata + i));
+		HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_VERBOSE "%p:", (pdata + i));
 
 		for (k = 0; k < cols && i < len; i++, k++) {
 			HPIOS_DEBUG_PRINTF("%s%04x", k == 0 ? "" : " ",

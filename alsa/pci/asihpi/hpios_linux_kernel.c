@@ -84,23 +84,28 @@ typedef struct {
 	size_t size;
 } HpiOs_LockedMem_Area;
 
-kmem_cache_t *memAreaCache = NULL;
+static kmem_cache_t *memAreaCache = NULL;
 
 void HpiOs_LockedMem_Init(void)
 {
 	memAreaCache = kmem_cache_create("asihpi_mem_area",
 					 sizeof(HpiOs_LockedMem_Area), 0,
-					 SLAB_HWCACHE_ALIGN, 0, 0);
+					 SLAB_HWCACHE_ALIGN, NULL, NULL);
 	if (memAreaCache == NULL)
 		HPI_DEBUG_LOG0(ERROR, "Mem area cache\n");
 }
 
+/** Allocated an area of locked memory for bus master DMA operations.
+
+On error, return -ENOMEM, and *pLockedMemHandle=NULL
+*/
 u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
 			  void *pOsReference)
 {
 	struct pci_dev *pdev = *(struct pci_dev **)pOsReference;
 	HpiOs_LockedMem_Area *pMemArea;
 
+	*pLockedMemHandle = NULL;
 	if (!memAreaCache)
 		return -ENOMEM;
 
@@ -109,7 +114,6 @@ u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
 	if (pMemArea == NULL) {
 		HPI_DEBUG_LOG0(WARNING,
 			       "Couldn't allocate mem control struct\n");
-		pLockedMemHandle = NULL;
 		return -ENOMEM;
 	}
 
@@ -117,10 +121,10 @@ u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
 	    pci_alloc_consistent(pdev, dwSize, &pMemArea->dma_addr);
 
 	if (pMemArea->cpu_addr) {
-		HPI_DEBUG_LOG3(INFO, "Allocated %d bytes, dma 0x%x vma 0x%x\n",
+		HPI_DEBUG_LOG3(INFO, "Allocated %d bytes, dma 0x%x vma %p\n",
 			       dwSize,
 			       (unsigned int)pMemArea->dma_addr,
-			       (unsigned int)pMemArea->cpu_addr);
+			       pMemArea->cpu_addr);
 		pMemArea->pdev = pdev;
 		pMemArea->size = dwSize;
 		*pLockedMemHandle = pMemArea;
@@ -129,7 +133,6 @@ u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
 		HPI_DEBUG_LOG1(WARNING,
 			       "Failed to allocate %d bytes locked memory\n",
 			       dwSize);
-		pLockedMemHandle = NULL;
 		kmem_cache_free(memAreaCache, pMemArea);
 		return -ENOMEM;
 	}
@@ -146,10 +149,10 @@ u16 HpiOs_LockedMem_Free(HpiOs_LockedMem_Handle LockedMemHandle)
 	if (pMemArea->size) {
 		pci_free_consistent(pMemArea->pdev, pMemArea->size,
 				    pMemArea->cpu_addr, pMemArea->dma_addr);
-
-		HPI_DEBUG_LOG3(DEBUG, "Freed %d bytes, dma 0x%x vma 0x%x\n",
-			       pMemArea->size, (unsigned int)pMemArea->dma_addr,
-			       (unsigned int)pMemArea->cpu_addr);
+		HPI_DEBUG_LOG3(DEBUG, "Freed %lu bytes, dma 0x%x vma %p\n",
+			       (unsigned long)pMemArea->size,
+			       (unsigned int)pMemArea->dma_addr,
+			       pMemArea->cpu_addr);
 		pMemArea->size = 0;
 	}
 	kmem_cache_free(memAreaCache, pMemArea);

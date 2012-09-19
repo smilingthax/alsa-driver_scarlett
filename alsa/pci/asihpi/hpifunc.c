@@ -23,6 +23,7 @@ Hardware Programming Interface (HPI) functions
 
 #define HPI_GENERATE_FUNCTIONS 1
 #include "hpi.h"
+#include "hpicheck.h"
 
 #ifndef HPI_KERNEL_MODE
 #include <stdio.h>
@@ -33,24 +34,46 @@ Hardware Programming Interface (HPI) functions
 
 // local prototypes
 
-#define UNUSED(param) (void)param
+#define HPI_UNUSED(param) (void)param
 
 void HPI_InitMessage(HPI_MESSAGE * phm, u16 wObject, u16 wFunction);
-u32 HPI_IndexesToHandle(const char cObject, const u16 wIndex1,
-			const u16 wIndex2);
-void HPI_HandleToIndexes(const u32 dwHandle, u16 * pwIndex1, u16 * pwIndex2);
-u32 HPI_IndexesToHandle3(const char cObject, const u16 wIndex1,
-			 const u16 wIndex2, const u16 wIndex0);
-void HPI_HandleToIndexes3(const u32 dwHandle, u16 * pwIndex1, u16 * pwIndex2,
-			  u16 * pwIndex0);
+HPI_HANDLE HPI_IndexesToHandle3(const char cObject,	///< HPI_OBJ_* the type of object
+				const u16 wAdapterIndex,	///< The Adapter index
+				const u16 wObjectIndex,	///< The stream or control index, if used
+				const u16 wDspIndex	///< The index of the DSP which implements the object
+    );
 
-#ifdef HAS_AES18_ON_HOST
-void AES18_Message(int wControlType, HPI_MESSAGE * phm, HPI_RESPONSE * phr);
-void Aes18_Init(void);
-#endif
+HPI_HANDLE HPI_IndexesToHandle(const char cObject,	///< HPI_OBJ_* the type of object
+			       const u16 wAdapterIndex,	///< The Adapter index
+			       const u16 wObjectIndex	///< The stream or control index, if used
+    );
 
-#define HPI_HANDLETOINDEXES(h,i1,i2) if (h==0) return HPI_ERROR_INVALID_OBJ; else HPI_HandleToIndexes(h,i1,i2)
+void HPI_HandleToIndexes3(const HPI_HANDLE dwHandle, u16 * pwIndex1,
+			  u16 * pwIndex2, u16 * pwIndex0);
+char HPI_HandleObject(const HPI_HANDLE dwHandle);
+
+#define HPI_HANDLETOINDEXES(h,i1,i2) if (h==0) return HPI_ERROR_INVALID_OBJ; else HPI_HandleToIndexes3(h,i1,i2,NULL)
 #define HPI_HANDLETOINDEXES3(h,i1,i2,i0) if (h==0) return HPI_ERROR_INVALID_OBJ; else HPI_HandleToIndexes3(h,i1,i2,i0)
+
+/* Note: Can't use memcpy or typecast because some fields have different offsets */
+static void HPI_FORMAT_TO_MSG(HPI_MSG_FORMAT * pMF, HPI_FORMAT * pF)
+{
+	pMF->dwSampleRate = pF->dwSampleRate;
+	pMF->dwBitRate = pF->dwBitRate;
+	pMF->dwAttributes = pF->dwAttributes;
+	pMF->wChannels = pF->wChannels;
+	pMF->wFormat = pF->wFormat;
+}
+
+static void HPI_MSG_TO_FORMAT(HPI_FORMAT * pF, HPI_MSG_FORMAT * pMF)
+{
+	pF->dwSampleRate = pMF->dwSampleRate;
+	pF->dwBitRate = pMF->dwBitRate;
+	pF->dwAttributes = pMF->dwAttributes;
+	pF->wChannels = pMF->wChannels;
+	pF->wFormat = pMF->wFormat;
+	pF->dwPadTo5 = 0;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 /**\defgroup subsys HPI Subsystem
@@ -58,6 +81,11 @@ void Aes18_Init(void);
 */
 static HPI_HSUBSYS ghSubSys;	// not really used
 
+/** HPI Subsystem create.
+* Creates, opens and initializes the audio subsystem. Must be called before other
+* HPI functions are called.
+* \return Pointer to HPI subsystem handle. Returns NULL on error.
+*/
 HPI_HSUBSYS *HPI_SubSysCreate(void)
 {
 	HPI_MESSAGE hm;
@@ -85,7 +113,11 @@ HPI_HSUBSYS *HPI_SubSysCreate(void)
 	return (NULL);
 }
 
-void HPI_SubSysFree(HPI_HSUBSYS * phSubSys)
+/** HPI Subsystem free.
+* Closes the HPI subsystem, freeing any resources allocated.  Must be the last HPI function called.
+*/
+void HPI_SubSysFree(HPI_HSUBSYS * phSubSys	///< Pointer to HPI subsystem handle.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -100,12 +132,22 @@ void HPI_SubSysFree(HPI_HSUBSYS * phSubSys)
 #endif
 }
 
-u16 HPI_SubSysGetVersion(HPI_HSUBSYS * phSubSys, u32 * pdwVersion)
+/** HPI subsystem get version.
+* Returns the HPI subsystem major and minor versions that were embedded into the HPI module at compile time. On a
+* Windows machine this version is embedded in the kernel driver .sys file.
+* 
+* \param pdwVersion 32 bit word containing version of HPI. Upper 24bits is major 
+* version number and lower 8 bits is minor version number, i.e., 0x00000304 is 
+* version 3.04.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_SubSysGetVersion(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+			 u32 * pdwVersion)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
 
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_GET_VERSION);
 	HPI_Message(&hm, &hr);
@@ -113,13 +155,41 @@ u16 HPI_SubSysGetVersion(HPI_HSUBSYS * phSubSys, u32 * pdwVersion)
 	return (hr.wError);
 }
 
+/** HPI subsystem extended get version that returns Major, Minor and Build versions.
+* Returns extended HPI subsystem version that was embedded into the HPI module at compile time. On a
+* Windows machine this version is embedded in the kernel driver .sys file.
+* 
+* \param pdwVersionEx 32 bit word containing version of HPI.\n
+*     B23..16 = Major version\n
+*     B15..8 = Minor version\n
+*     B7..0 = Build version\n
+*     i.e. 0x00030402 is version 3.04.02
+*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_SubSysGetVersionEx(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+			   u32 * pdwVersionEx)
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+
+	HPI_UNUSED(phSubSys);
+
+	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_GET_VERSION);
+	HPI_Message(&hm, &hr);
+	*pdwVersionEx = hr.u.s.dwData;
+	return (hr.wError);
+}
+
+/** \deprecated Use a combination of HPI_SubSysGetVersionEx() and HPI_SubSysFindAdapters() instead.
+*/
 u16 HPI_SubSysGetInfo(HPI_HSUBSYS * phSubSys,
 		      u32 * pdwVersion,
 		      u16 * pwNumAdapters, u16 awAdapterList[], u16 wListLength)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_GET_INFO);
 
 	HPI_Message(&hm, &hr);
@@ -133,40 +203,54 @@ u16 HPI_SubSysGetInfo(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_SubSysCreateAdapter(HPI_HSUBSYS * phSubSys,
-			    HPI_RESOURCE * pResource, u16 * pwAdapterIndex)
+/** Find all adapters that the HPI subsystem knows about.
+*
+* The type and adapter number of each adapter is returned in an array of u16 pointed to by 
+* awAdapterList.  Each position in the array identifies an adapter with an adapter index of 
+* the corresponding array index.  The value of the array indicates the adapter type.
+* A value of zero indicates that no adapter exists for that adapter number.  
+*
+* For example if awAdapterList had a 6114 in position 0, a 0 in position 1 and a 6514 in 
+* position 2, that would indicate an 6114 adapter set to adapter number 1 and a 6514 adapter 
+* set to adapter number 3 in the system. 
+* Note that the Adapter number (as set on the card/adapter) will be one more than the array index.
+<table border=1 cellspacing=0 cellpadding=5>
+<tr>
+<td width=200><p><b>Index:</b></p></td>
+<td width=80 align=center><p><b>0</b></p></td>
+<td width=80 align=center><p><b>1</b></p></td>
+<td width=80 align=center><p><b>2</b></p></td>
+<td width=80 align=center><p><b>3</b></p></td>
+</tr>
+<tr>
+<td width=200><p>awAdapterList</p></td>
+<td width=80 align=center><p>0x6244</p></td>
+<td width=80 align=center><p>0</p></td>
+<td width=80 align=center><p>0x4346</p></td>
+<td width=80 align=center><p>0</p></td>
+</tr>
+</table>
+* 
+* \return
+* The return value is the last error that occurred when initializing all the adapters.  As there 
+* is only one error return, when there are multiple adapters some of the adapters may have 
+* initialized correctly and still be usable. This is indicated by wNumAdapters > 0.
+* It is up to the application whether to continue or fail, but the user should be notified of the error in any case.
+* Some possible return values are: \n
+* HPI_DUPLICATE_ADAPTER_NUMBER - two adapters have the same jumper setting. Only the first one will be accessible.\n
+* HPI_ERROR_DSP_BOOTLOAD - something went wrong with starting the adapter DSP.\n
+* HPI_ERROR_DSP_FILE_NOT_FOUND - probably an old driver and a new card, or asidsp.bin is missing.\n
+* Other errors in the 900 range are adapter specific.
+*/
+u16 HPI_SubSysFindAdapters(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+			   u16 * pwNumAdapters,	///< Returned number of initialised adapters in the audio sub-system.
+			   u16 awAdapterList[],	///< Array of adapter types (see description).
+			   u16 wListLength	///< Size (in elements) of *pawAdapterList array.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
-
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CREATE_ADAPTER);
-	memcpy(&hm.u.s.Resource, pResource, sizeof(HPI_RESOURCE));
-
-	HPI_Message(&hm, &hr);
-
-	*pwAdapterIndex = hr.u.s.wAdapterIndex;
-	return (hr.wError);
-}
-
-u16 HPI_SubSysDeleteAdapter(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex)
-{
-	HPI_MESSAGE hm;
-	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DELETE_ADAPTER);
-	hm.wAdapterIndex = wAdapterIndex;
-	HPI_Message(&hm, &hr);
-	return (hr.wError);
-}
-
-u16 HPI_SubSysFindAdapters(HPI_HSUBSYS * phSubSys,
-			   u16 * pwNumAdapters,
-			   u16 awAdapterList[], u16 wListLength)
-{
-	HPI_MESSAGE hm;
-	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_FIND_ADAPTERS);
 
 	HPI_Message(&hm, &hr);
@@ -184,34 +268,48 @@ u16 HPI_SubSysFindAdapters(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-/// port read/write functions (for use through a VxD or Kernel driver)
-u16 HPI_SubSysReadPort8(HPI_HSUBSYS * phSubSys, u16 wAddress, u16 * pwData)
+#ifndef HPI_EXCLUDE_IMPLEMENTATION
+/* Internal functions follow. */
+/** \internal
+*/
+
+/** Used by a PnP OS to create an adapter.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_SubSysCreateAdapter(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+			    HPI_RESOURCE * pResource,	///< Pointer to the resources used by this adapter.
+			    u16 * pwAdapterIndex	///< Returned index of the adapter that was just created.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_READ_PORT_8);
-	hm.u.s.Resource.r.PortIO.dwAddress = (u32) wAddress;
+	HPI_UNUSED(phSubSys);
+
+	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CREATE_ADAPTER);
+	memcpy(&hm.u.s.Resource, pResource, sizeof(HPI_RESOURCE));
 
 	HPI_Message(&hm, &hr);
 
-	*pwData = (u16) hr.u.s.dwData;
+	*pwAdapterIndex = hr.u.s.wAdapterIndex;
 	return (hr.wError);
 }
 
-u16 HPI_SubSysWritePort8(HPI_HSUBSYS * phSubSys, u16 wAddress, u16 wData)
+/** Used by a PnP OS to delete an adapter.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_SubSysDeleteAdapter(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+			    u16 wAdapterIndex	///< Index of the adapter to delete.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_WRITE_PORT_8);
-	hm.u.s.Resource.r.PortIO.dwAddress = (u32) wAddress;
-	hm.u.s.Resource.r.PortIO.dwData = (u32) wData;
-
+	HPI_UNUSED(phSubSys);
+	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DELETE_ADAPTER);
+	hm.wAdapterIndex = wAdapterIndex;
 	HPI_Message(&hm, &hr);
-
 	return (hr.wError);
 }
+#endif
 
 ///\}
 ///////////////////////////////////////////////////////////////////////////
@@ -220,11 +318,19 @@ u16 HPI_SubSysWritePort8(HPI_HSUBSYS * phSubSys, u16 wAddress, u16 wData)
 @{
 */
 
-u16 HPI_AdapterOpen(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex)
+/** Opens an adapter for use.
+* The adapter is specified by wAdapterIndex which corresponds to the adapter 
+* index on the adapter hardware (set using jumpers or switch).
+*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_AdapterOpen(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+		    u16 wAdapterIndex	///< Index of adapter to be opened. Ranges from 0 to 15 and corresponds to the Adapter Index set on the adapter hardware.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
@@ -234,11 +340,17 @@ u16 HPI_AdapterOpen(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex)
 
 }
 
-u16 HPI_AdapterClose(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex)
+/** Closes the adapter associated with the wAdapterIndex.
+*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_AdapterClose(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+		     u16 wAdapterIndex	///< Index of adapter to be closed. Ranges from 0 to 15 and corresponds to the Adapter Index set on the adapter hardware.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_CLOSE);
 	hm.wAdapterIndex = wAdapterIndex;
 
@@ -247,22 +359,23 @@ u16 HPI_AdapterClose(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex)
 	return (hr.wError);
 }
 
-/*!
-Given an object type HPI_OBJ_*, index, and adapter index,
-Determine if the object exists, and if so the dsp index of the object.
-Implementation is non-trivial only for multi-DSP adapters
-
-/return u16 an error code HPI_ERROR_*
+/**     Given an object type HPI_OBJ_*, index, and adapter index,
+*     determine if the object exists, and if so the dsp index of the object.
+* The DSP index defines which DSP on the adapter has the specified object.
+*     Implementation is non-trivial only for multi-DSP adapters.
+*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
-u16 HPI_AdapterFindObject(const HPI_HSUBSYS * phSubSys, u16 wAdapterIndex,	//< Index of adapter to search
-			  u16 wObjectType,	//< Type of object HPI_OBJ_*
-			  u16 wObjectIndex,	//< Index of object
-			  u16 * pDspIndex	//< Output the index of the DSP containing the object
+u16 HPI_AdapterFindObject(const HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+			  u16 wAdapterIndex,	///< Index of adapter to search.
+			  u16 wObjectType,	///< Type of object HPI_OBJ_*.
+			  u16 wObjectIndex,	///< Index of object
+			  u16 * pDspIndex	///< Return the index of the DSP containing the object.
     )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_FIND_OBJECT);
@@ -285,15 +398,82 @@ u16 HPI_AdapterFindObject(const HPI_HSUBSYS * phSubSys, u16 wAdapterIndex,	//< I
 	return hr.wError;
 }
 
-u16 HPI_AdapterSetMode(HPI_HSUBSYS * phSubSys,
-		       u16 wAdapterIndex, u32 dwAdapterMode)
+/** Sets the operating mode of an adapter. The adapter must be restarted for the mode 
+* to take affect. Under Windows this means that the computer must be rebooted.
+*
+* Currently defined modes are:
+<table border=1 cellspacing=0>
+<tr>
+<td><b>Mode</b></td>
+<td><b>Description</b></td>
+</tr>
+
+<tr>
+<td><small>HPI_ADAPTER_MODE_4OSTREAM</small></td>
+<td><small>
+ASI4401, 4 stereo/mono ostreams -> 1 stereo line out.<br>
+ASI4215, 4 ostreams -> 4 line outs.<br>
+ASI6114, 4 ostreams -> 4 line outs.
+</small></td>
+</tr>
+
+<tr><td><small>HPI_ADAPTER_MODE_6OSTREAM</small></td>
+<td><small>ASI4401, 6 mono ostreams -> 2 mono line outs.</small></td></tr>
+
+<tr><td><small>HPI_ADAPTER_MODE_8OSTREAM</small></td>
+<td><small>
+ASI6114, 8 ostreams -> 4 line outs.<br>
+ASI6118, 8 ostreams -> 8 line outs.
+</small></td></tr>
+
+<tr><td><small>HPI_ADAPTER_MODE_9OSTREAM</small></td>
+<td><small>ASI6044, 9 ostreams -> 4 lineouts.</small></td></tr>
+
+<tr><td><small>HPI_ADAPTER_MODE_12OSTREAM</small></td>
+<td><small>ASI504X, 12 ostreams -> 4 lineouts.</small></td></tr>
+
+<tr><td><small>HPI_ADAPTER_MODE_16OSTREAM</small></td>
+<td><small>ASI6118, 16 ostreams -> 8 line outs.</small></td></tr>
+
+<tr><td><small>HPI_ADAPTER_MULTICHANNEL</small></td>
+<td><small>ASI504X, 2 ostreams -> 4 line outs (1 to 8 channel streams), 4 lineins -> 1 instream (1 to 8 channel streams) at 0-48kHz. For more info see the SSX Specification.</small></td></tr>
+
+<tr><td><small>HPI_ADAPTER_MODE1</small></td>
+<td><small>ASI504X, 12 ostream, 4 instream 0 to 48kHz sample rates (see ASI504X datasheet for more info).</small></td></tr>
+
+<tr><td><small>HPI_ADAPTER_MODE2</small></td>
+<td><small>ASI504X, 4 ostream, 4 instream 0 to 192kHz sample rates (see ASI504X datasheet for more info).</small></td></tr>
+
+<tr><td><small>HPI_ADAPTER_MODE3</small></td>
+<td><small>ASI504X, 4 ostream, 4 instream 0 to 192kHz sample rates (see ASI504X datasheet for more info).</small></td></tr>
+
+</table>
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_AdapterSetMode(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+		       u16 wAdapterIndex,	///< Index of adapter to set mode on.
+		       u32 dwAdapterMode	///< The adapter mode. See list of modes in the function description.
+    )
 {
 	return HPI_AdapterSetModeEx(phSubSys, wAdapterIndex, dwAdapterMode,
 				    HPI_ADAPTER_MODE_SET);
 }
 
-u16 HPI_AdapterSetModeEx(HPI_HSUBSYS * phSubSys,
-			 u16 wAdapterIndex, u32 dwAdapterMode, u16 wQueryOrSet)
+/** Adapter set mode extended. This updated version of adapter set mode supports.
+*     querying supported modes.  A return value of 0 indicates success. 
+* \param wQueryOrSet Controls whether the mode is being set or queried. Valid values are
+* HPI_ADAPTER_MODE_SET or HPI_ADAPTER_MODE_QUERY. When a mode is being queried the function
+* returns 0 if the mode is supported, otherwise HPI_ERROR_BAD_ADAPTER_MODE is returned.
+* When wSetOrQuery is set to HPI_ADAPTER_MODE_SET the mode of the adapter is changed.
+* The adapter must be restarted for the mode to take affect. Under Windows this means that 
+* the computer must be rebooted.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs. HPI_ERROR_BAD_ADAPTER_MODE
+* is returned if an unsupported mode is requested.
+*/
+u16 HPI_AdapterSetModeEx(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+			 u16 wAdapterIndex,	///< Index of adapter to set mode on.
+			 u32 dwAdapterMode,	///< The adapter mode. See list of modes in the function HPI_AdapterSetMode().
+			 u16 wQueryOrSet)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -305,12 +485,17 @@ u16 HPI_AdapterSetModeEx(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_AdapterGetMode(HPI_HSUBSYS * phSubSys,
-		       u16 wAdapterIndex, u32 * pdwAdapterMode)
+/** Read the current mode setting.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_AdapterGetMode(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+		       u16 wAdapterIndex,	///< Index of adapter to get mode from.
+		       u32 * pdwAdapterMode	///< The returned adapter mode. Will be one of HPI_ADAPTER_MODE_XXXX.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_MODE);
 	hm.wAdapterIndex = wAdapterIndex;
 	HPI_Message(&hm, &hr);
@@ -319,17 +504,52 @@ u16 HPI_AdapterGetMode(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_AdapterGetInfo(HPI_HSUBSYS * phSubSys,
-		       u16 wAdapterIndex,
-		       u16 * pwNumOutStreams, u16 * pwNumInStreams,
+/** Obtains information about the specified adapter, including the number of output streams 
+* and number of input streams, version, serial number and it's type. The adapter is assumed to have one mixer.
+* \param pwVersion Adapter hardware and DSP software version information.
+* The 16bit word contains the following information:<br>
+<table border=1 cellspacing=0 cellpadding=5>
+<tr>
+<td><p><b>Bits</b></p></td>
+<td><p><b>Description</b></p></td>
+<td><p><b>Range</b></p></td>
+</tr>
+<tr>
+<td><p>b15-13</p></td>
+<td><p>DSP software major version</p></td>
+<td><p>0..7</p></td>
+</tr>
+<tr>
+<td><p>b12-b7</p></td>
+<td><p>DSP software minor version</p></td>
+<td><p>0..63</p></td>
+</tr>
+<tr>
+<td><p>b6-b3</p></td>
+<td><p>Adapter PCB revision</p></td>
+<td><p>A..P represented as 0..15</p></td>
+</tr>
+<tr>
+<td><p>b2-b0</p></td>
+<td><p>Adapter assembly revision</p></td>
+<td><p>0..7</p></td>
+</tr>
+</table>
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_AdapterGetInfo(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+		       u16 wAdapterIndex,	///< Index of adapter to read mode from.
+		       u16 * pwNumOutStreams,	///< Number of output streams (play) on the adapter.
+		       u16 * pwNumInStreams,	///< Number of input streams (record) on the adapter.
 //u8   szAdapterName[],
 //u16 wStringLen
-		       u16 * pwVersion,
-		       u32 * pdwSerialNumber, u16 * pwAdapterType)
+		       u16 * pwVersion, u32 * pdwSerialNumber,	///< Adapter serial number.  Starts at 1 and goes up.
+		       u16 * pwAdapterType	///< Adapter ID code, defined in HPI.H.  Examples are HPI_ADAPTER_ASI6114 (0x6114).
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_INFO);
 	hm.wAdapterIndex = wAdapterIndex;
 
@@ -360,14 +580,22 @@ u32    *pdwValue
 }
 */
 
-u16 HPI_AdapterGetAssert(HPI_HSUBSYS * phSubSys,
-			 u16 wAdapterIndex,
-			 u16 * wAssertPresent,
-			 char *pszAssert, u16 * pwLineNumber)
+/** Returns DSP generated assert messages.
+* Most ASI adapters have a small buffer that can collect up to 16 asserts
+* that are conditionally generated as the DSP code is running. This API
+* provides a mechanism for the host to read any asserts pending in the
+* queue.
+*/
+u16 HPI_AdapterGetAssert(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+			 u16 wAdapterIndex,	///< Adpater index to read assert from.
+			 u16 * wAssertPresent,	///< Set to 1 if an assert was returned, otherwise it returns 0.
+			 char *pszAssert,	///< char buffer to contain the returned assert string. String should be declared as<br>char szAssert[STR_SIZE(HPI_STRING_LEN)].
+			 u16 * pwLineNumber	///< The line number that caused the assert.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_ASSERT);
 	hm.wAdapterIndex = wAdapterIndex;
 	HPI_Message(&hm, &hr);
@@ -400,21 +628,22 @@ u16 HPI_AdapterGetAssert(HPI_HSUBSYS * phSubSys,
 }
 
 /** Extended Get Assert
-adds 32 bit 'line number' and dsp index to standard assert
-
-\return u16 error code HPI_ERROR_*
+* The extened assert interface adds 32 bit 'line number' and dsp 
+* index to standard assert API.
+* \todo Review whether this is actually implemented anywhere ?
+* \return u16 error code HPI_ERROR_*
 */
-u16 HPI_AdapterGetAssertEx(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
-			   u16 wAdapterIndex,	///<  Adapter to query
-			   u16 * wAssertPresent,	///< OUT* The number of asserts waiting including this one
-			   char *pszAssert,	///< OUT* Assert message, traditionally file name
-			   u32 * pdwLineNumber,	///< OUT* Assert number, traditionally line number in file
-			   u16 * pwAssertOnDsp	///< OUT* The index of the DSP that generated the assert
+u16 HPI_AdapterGetAssertEx(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			   u16 wAdapterIndex,	///<  Adapter to query.
+			   u16 * wAssertPresent,	///< OUT* The number of asserts waiting including this one.
+			   char *pszAssert,	///< OUT* Assert message, traditionally file name.
+			   u32 * pdwLineNumber,	///< OUT* Assert number, traditionally line number in file.
+			   u16 * pwAssertOnDsp	///< OUT* The index of the DSP that generated the assert.
     )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_ASSERT);
 	hm.wAdapterIndex = wAdapterIndex;
 
@@ -452,12 +681,20 @@ u16 HPI_AdapterGetAssertEx(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
 	return (hr.wError);
 }
 
-u16 HPI_AdapterTestAssert(HPI_HSUBSYS * phSubSys,
-			  u16 wAdapterIndex, u16 wAssertId)
+/** This function tests that asserts are working correctly on the selected adapter.
+* The message processing code on the target adapter generates an assert when this
+* function is called and that assert can then be read back using the HPI_AdapterGetAssert()
+* function.
+* \return u16 error code HPI_ERROR_*
+*/
+u16 HPI_AdapterTestAssert(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
+			  u16 wAdapterIndex,	///< Index of adapter to generate the test assert.
+			  u16 wAssertId	///< An assert id number that is returned as the line number in HPI_AdapterGetAssert().
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_TEST_ASSERT);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.a.wAssertId = wAssertId;
@@ -467,12 +704,15 @@ u16 HPI_AdapterTestAssert(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
+/** Turn on a particular adapter capability.
+*
+*/
 u16 HPI_AdapterEnableCapability(HPI_HSUBSYS * phSubSys,
 				u16 wAdapterIndex, u16 wCapability, u32 dwKey)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_ENABLE_CAPABILITY);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.a.wAssertId = wCapability;
@@ -487,7 +727,7 @@ u16 HPI_AdapterSelfTest(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_SELFTEST);
 	hm.wAdapterIndex = wAdapterIndex;
 	HPI_Message(&hm, &hr);
@@ -512,7 +752,7 @@ u16 HPI_AdapterSetProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_SET_PROPERTY);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.ax.property_set.wProperty = wProperty;
@@ -542,7 +782,7 @@ u16 HPI_AdapterGetProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_PROPERTY);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.ax.property_set.wProperty = wProperty;
@@ -581,7 +821,7 @@ u16 HPI_AdapterEnumerateProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem hand
 Perform audio I/O and format conversion
 @{
 */
-u16 HPI_StreamEstimateBufferSize(HPI_FORMAT * pF,
+u16 HPI_StreamEstimateBufferSize(HPI_FORMAT * pFormat,
 				 u32 dwHostPollingRateInMilliSeconds,
 				 u32 * dwRecommendedBufferSize)
 {
@@ -589,6 +829,7 @@ u16 HPI_StreamEstimateBufferSize(HPI_FORMAT * pF,
 	u32 dwBytesPerSecond;
 	u32 dwSize;
 	u16 wChannels;
+	HPI_FORMAT *pF = pFormat;
 
 	wChannels = pF->wChannels;
 
@@ -636,16 +877,17 @@ u16 HPI_OutStreamOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
-	hm.u.d.wOStreamIndex = wOutStreamIndex;
+	hm.u.d.wStreamIndex = wOutStreamIndex;
 
 	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0)
 		*phOutStream =
-		    HPI_IndexesToHandle('O', wAdapterIndex, wOutStreamIndex);
+		    HPI_IndexesToHandle(HPI_OBJ_OSTREAM, wAdapterIndex,
+					wOutStreamIndex);
 	else
 		*phOutStream = 0;
 	return (hr.wError);
@@ -655,16 +897,17 @@ u16 HPI_OutStreamClose(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_FREE);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 	HPI_Message(&hm, &hr);
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_CLOSE);
-	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+	hm.wFunction = HPI_OSTREAM_GROUP_RESET;
+	HPI_Message(&hm, &hr);
+
+	hm.wFunction = HPI_OSTREAM_CLOSE;
 	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
@@ -697,51 +940,84 @@ u16 HPI_OutStreamGetInfoEx(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_GET_INFO);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 
 	HPI_Message(&hm, &hr);
 
 // only send back data if valid pointers supplied!!
 	if (pwState)
-		*pwState = hr.u.d.wState;
+		*pwState = hr.u.d.u.stream_info.wState;
 	if (pdwBufferSize)
-		*pdwBufferSize = hr.u.d.dwBufferSize;
+		*pdwBufferSize = hr.u.d.u.stream_info.dwBufferSize;
 	if (pdwDataToPlay)
-		*pdwDataToPlay = hr.u.d.dwDataAvailable;
+		*pdwDataToPlay = hr.u.d.u.stream_info.dwDataAvailable;
 	if (pdwSamplesPlayed)
-		*pdwSamplesPlayed = hr.u.d.dwSamplesTransfered;
+		*pdwSamplesPlayed = hr.u.d.u.stream_info.dwSamplesTransferred;
 	if (pdwAuxiliaryDataToPlay)
-		*pdwAuxiliaryDataToPlay = hr.u.d.dwAuxilaryDataAvailable;
+		*pdwAuxiliaryDataToPlay =
+		    hr.u.d.u.stream_info.dwAuxiliaryDataAvailable;
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamWrite(HPI_HSUBSYS * phSubSys,
-		       HPI_HOSTREAM hOutStream, HPI_DATA * pData)
+/** Write data of a given format from a buffer to an OutStream
+
+*/
+u16 HPI_OutStreamWriteBuf(HPI_HSUBSYS * phSubSys,	///< subystem handle
+			  HPI_HOSTREAM hOutStream,	///< stream handle
+			  u8 * pbData,	///< Pointer to buffer containing data
+			  u32 dwBytesToWrite,	///< Number of bytes to write, must be <= space available
+			  HPI_FORMAT * pFormat	///< Format structure describing the format of the data
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_WRITE);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
-	memcpy(&hm.u.d.u.Data, pData, sizeof(HPI_DATA));
+			    &hm.u.d.wStreamIndex);
+	hm.u.d.u.Data.pbData = pbData;
+	hm.u.d.u.Data.dwDataSize = dwBytesToWrite;
+
+	HPI_FORMAT_TO_MSG(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
 
+#ifndef HPI_WITHOUT_HPI_DATA
+/** Write data described by HPI_DATA to an OutStream
+
+\deprecated Use HPI_OutStreamWriteBuf() instead. This function may disappear from a future version.
+*/
+u16 HPI_OutStreamWrite(HPI_HSUBSYS * phSubSys,
+		       HPI_HOSTREAM hOutStream, HPI_DATA * pData)
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+	HPI_UNUSED(phSubSys);
+	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_WRITE);
+	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
+			    &hm.u.d.wStreamIndex);
+	memcpy(&hm.u.d.u.Data, pData, sizeof(hm.u.d.u.Data));
+
+	HPI_Message(&hm, &hr);
+
+	return (hr.wError);
+}
+#endif
+
 u16 HPI_OutStreamStart(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_START);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 
 	HPI_Message(&hm, &hr);
 
@@ -752,10 +1028,10 @@ u16 HPI_OutStreamStop(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_STOP);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 
 	HPI_Message(&hm, &hr);
 
@@ -766,10 +1042,10 @@ u16 HPI_OutStreamSinegen(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_SINEGEN);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 
 	HPI_Message(&hm, &hr);
 
@@ -780,10 +1056,10 @@ u16 HPI_OutStreamReset(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_RESET);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 
 	HPI_Message(&hm, &hr);
 
@@ -795,12 +1071,13 @@ u16 HPI_OutStreamQueryFormat(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_QUERY_FORMAT);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
-	memcpy(&hm.u.d.u.Data.Format, pFormat, sizeof(HPI_FORMAT));
+			    &hm.u.d.wStreamIndex);
+
+	HPI_FORMAT_TO_MSG(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);
 
@@ -813,11 +1090,11 @@ u16 HPI_OutStreamSetVelocity(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_SET_VELOCITY);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 	hm.u.d.u.wVelocity = nVelocity;
 
 	HPI_Message(&hm, &hr);
@@ -834,7 +1111,7 @@ u16 HPI_OutStreamSetPunchInOut(HPI_HSUBSYS * phSubSys,
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_SET_PUNCHINOUT);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 
 	hm.u.d.u.Pio.dwPunchInSample = dwPunchInSample;
 	hm.u.d.u.Pio.dwPunchOutSample = dwPunchOutSample;
@@ -849,16 +1126,12 @@ u16 HPI_OutStreamAncillaryReset(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_ANC_RESET);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
-#ifdef HPI_64BIT
+			    &hm.u.d.wStreamIndex);
 	hm.u.d.u.Data.Format.wChannels = wMode;
-#else
-	hm.u.d.u.Data.Format.wMode = wMode;
-#endif
 	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
@@ -869,16 +1142,17 @@ u16 HPI_OutStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_ANC_GET_INFO);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 	HPI_Message(&hm, &hr);
 	if (hr.wError == 0) {
 		if (pdwFramesAvailable)
 			*pdwFramesAvailable =
-			    hr.u.d.dwDataAvailable / sizeof(HPI_ANC_FRAME);
+			    hr.u.d.u.stream_info.dwDataAvailable /
+			    sizeof(HPI_ANC_FRAME);
 	}
 	return (hr.wError);
 }
@@ -893,8 +1167,8 @@ u16 HPI_OutStreamAncillaryRead(HPI_HSUBSYS * phSubSys,
 	HPI_RESPONSE hr;
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_ANC_READ);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
-	hm.u.d.u.Data.dwpbData = (PTR_AS_NUMBER) pAncFrameBuffer;
+			    &hm.u.d.wStreamIndex);
+	hm.u.d.u.Data.pbData = (u8 *) pAncFrameBuffer;
 	hm.u.d.u.Data.dwDataSize =
 	    dwNumberOfAncillaryFramesToRead * sizeof(HPI_ANC_FRAME);
 	if (hm.u.d.u.Data.dwDataSize <= dwAncFrameBufferSizeInBytes)
@@ -912,7 +1186,7 @@ u16 HPI_OutStreamSetTimeScale(HPI_HSUBSYS * phSubSys,
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_SET_TIMESCALE);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 
 	hm.u.d.u.dwTimeScale = dwTimeScale;
 
@@ -926,11 +1200,11 @@ u16 HPI_OutStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_ALLOC);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
 	hm.u.d.u.Data.dwDataSize = dwSizeInBytes;
 	HPI_Message(&hm, &hr);
 	return (hr.wError);
@@ -940,11 +1214,85 @@ u16 HPI_OutStreamHostBufferFree(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_FREE);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
-			    &hm.u.d.wOStreamIndex);
+			    &hm.u.d.wStreamIndex);
+	HPI_Message(&hm, &hr);
+	return (hr.wError);
+}
+
+u16 HPI_OutStreamGroupAdd(HPI_HSUBSYS * phSubSys,
+			  HPI_HOSTREAM hOutStreamHandle,
+			  HPI_HSTREAM hStreamHandle)
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+	u16 wAdapter;
+	u16 wDspIndex;
+	char cObjType;
+	HPI_UNUSED(phSubSys);
+
+	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_GROUP_ADD);
+	hr.wError = 0;
+	HPI_HANDLETOINDEXES(hOutStreamHandle, &hm.wAdapterIndex,
+			    &hm.u.d.wStreamIndex);
+	cObjType = HPI_HandleObject(hStreamHandle);
+	switch (cObjType) {
+	case HPI_OBJ_OSTREAM:
+		hm.u.d.u.Stream.wObjectType = HPI_OBJ_OSTREAM;
+		HPI_HANDLETOINDEXES(hStreamHandle, &wAdapter,
+				    &hm.u.d.u.Stream.wStreamIndex);
+		break;
+	case HPI_OBJ_ISTREAM:
+		hm.u.d.u.Stream.wObjectType = HPI_OBJ_ISTREAM;
+		HPI_HANDLETOINDEXES3(hStreamHandle, &wAdapter,
+				     &hm.u.d.u.Stream.wStreamIndex, &wDspIndex);
+		if (wDspIndex != 0)
+			return HPI_ERROR_NO_INTERDSP_GROUPS;
+		break;
+	default:
+		hr.wError = HPI_ERROR_INVALID_STREAM;
+	}
+	if (wAdapter != hm.wAdapterIndex)
+		hr.wError = HPI_ERROR_NO_INTERADAPTER_GROUPS;
+	if (hr.wError == 0)
+		HPI_Message(&hm, &hr);
+	return (hr.wError);
+}
+
+u16 HPI_OutStreamGroupGetMap(HPI_HSUBSYS * phSubSys,
+			     HPI_HOSTREAM hOutStreamHandle,
+			     u32 * pdwOutStreamMap, u32 * pdwInStreamMap)
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+	HPI_UNUSED(phSubSys);
+
+	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_GROUP_GETMAP);
+	HPI_HANDLETOINDEXES(hOutStreamHandle, &hm.wAdapterIndex,
+			    &hm.u.d.wStreamIndex);
+	HPI_Message(&hm, &hr);
+
+	if (pdwOutStreamMap)
+		*pdwOutStreamMap = hr.u.d.u.group_info.dwOutStreamGroupMap;
+	if (pdwInStreamMap)
+		*pdwInStreamMap = hr.u.d.u.group_info.dwInStreamGroupMap;
+
+	return (hr.wError);
+}
+
+u16 HPI_OutStreamGroupReset(HPI_HSUBSYS * phSubSys,
+			    HPI_HOSTREAM hOutStreamHandle)
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+	HPI_UNUSED(phSubSys);
+
+	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_GROUP_RESET);
+	HPI_HANDLETOINDEXES(hOutStreamHandle, &hm.wAdapterIndex,
+			    &hm.u.d.wStreamIndex);
 	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
@@ -962,7 +1310,7 @@ u16 HPI_InStreamOpen(HPI_HSUBSYS * phSubSys,
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
 	u16 wDspIndex;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 // only need to make this call for objects that can be distributed
 	hr.wError = HPI_AdapterFindObject(phSubSys, wAdapterIndex,
@@ -973,7 +1321,7 @@ u16 HPI_InStreamOpen(HPI_HSUBSYS * phSubSys,
 		HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_OPEN);
 		hm.wDspIndex = wDspIndex;	// overloaded member
 		hm.wAdapterIndex = wAdapterIndex;
-		hm.u.d.wIStreamIndex = wInStreamIndex;
+		hm.u.d.wStreamIndex = wInStreamIndex;
 
 		HPI_Message(&hm, &hr);
 
@@ -981,7 +1329,7 @@ u16 HPI_InStreamOpen(HPI_HSUBSYS * phSubSys,
 // and stream index
 		if (hr.wError == 0)
 			*phInStream =
-			    HPI_IndexesToHandle3('I', wAdapterIndex,
+			    HPI_IndexesToHandle3(HPI_OBJ_ISTREAM, wAdapterIndex,
 						 wInStreamIndex, wDspIndex);
 		else
 			*phInStream = 0;
@@ -995,16 +1343,17 @@ u16 HPI_InStreamClose(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_FREE);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
 	HPI_Message(&hm, &hr);
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_CLOSE);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
+	hm.wFunction = HPI_ISTREAM_GROUP_RESET;
+	HPI_Message(&hm, &hr);
+
+	hm.wFunction = HPI_ISTREAM_CLOSE;
 	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
@@ -1015,13 +1364,13 @@ u16 HPI_InStreamQueryFormat(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_QUERY_FORMAT);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
-	memcpy(&hm.u.d.u.Data.Format, pFormat, sizeof(HPI_FORMAT));
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
+	HPI_FORMAT_TO_MSG(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
@@ -1033,49 +1382,80 @@ u16 HPI_InStreamSetFormat(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_SET_FORMAT);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
-	memcpy(&hm.u.d.u.Data.Format, pFormat, sizeof(HPI_FORMAT));
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
+	HPI_FORMAT_TO_MSG(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
 	return (hr.wError);
 }
+
+/** Read data from an InStream into a buffer
+*/
+u16 HPI_InStreamReadBuf(HPI_HSUBSYS * phSubSys,	///< subsystem handle
+			HPI_HISTREAM hInStream,	///< InStream handle
+			u8 * pbData,	///< Pointer to buffer for read data
+			u32 dwBytesToRead	///< Number of bytes to read, must be <= number available
+    )
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+	HPI_UNUSED(phSubSys);
+
+// contruct the HPI message from the function parameters
+	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_READ);
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
+	hm.u.d.u.Data.dwDataSize = dwBytesToRead;
+	hm.u.d.u.Data.pbData = pbData;
+
+	HPI_Message(&hm, &hr);	// send the message to all the HPIs
+
+	return (hr.wError);
+}
+
+#ifndef HPI_WITHOUT_HPI_DATA
+/** Read data to a buffer described by HPI_DATA
+
+Note that the format part of HPI_DATA is ignored.
+
+\deprecated Use HPI_InStreamReadBuf() instead. This function may disappear from a future version.
+*/
 
 u16 HPI_InStreamRead(HPI_HSUBSYS * phSubSys,
 		     HPI_HISTREAM hInStream, HPI_DATA * pData)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_READ);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
-	memcpy(&hm.u.d.u.Data, pData, sizeof(HPI_DATA));
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
+	memcpy(&hm.u.d.u.Data, pData, sizeof(hm.u.d.u.Data));
 
 	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
-// get the return parameters from the HPI response
-	memcpy(pData, &hm.u.d.u.Data, sizeof(HPI_DATA));
 	return (hr.wError);
 }
+#endif
 
 u16 HPI_InStreamStart(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_START);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
 
 	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
@@ -1086,12 +1466,12 @@ u16 HPI_InStreamStop(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_STOP);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
 
 	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
@@ -1102,12 +1482,12 @@ u16 HPI_InStreamReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_RESET);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
 
 	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
@@ -1136,28 +1516,29 @@ u16 HPI_InStreamGetInfoEx(HPI_HSUBSYS * phSubSys,
 			  u32 * pdwBufferSize,
 			  u32 * pdwDataRecorded,
 			  u32 * pdwSamplesRecorded,
-			  u32 * pdwAuxilaryDataRecorded)
+			  u32 * pdwAuxiliaryDataRecorded)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_GET_INFO);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
 
 	HPI_Message(&hm, &hr);
 
 // only send back data if valid pointers supplied!!
 	if (pwState)
-		*pwState = hr.u.d.wState;
+		*pwState = hr.u.d.u.stream_info.wState;
 	if (pdwBufferSize)
-		*pdwBufferSize = hr.u.d.dwBufferSize;
+		*pdwBufferSize = hr.u.d.u.stream_info.dwBufferSize;
 	if (pdwDataRecorded)
-		*pdwDataRecorded = hr.u.d.dwDataAvailable;
+		*pdwDataRecorded = hr.u.d.u.stream_info.dwDataAvailable;
 	if (pdwSamplesRecorded)
-		*pdwSamplesRecorded = hr.u.d.dwSamplesTransfered;
-	if (pdwAuxilaryDataRecorded)
-		*pdwAuxilaryDataRecorded = hr.u.d.dwAuxilaryDataAvailable;
+		*pdwSamplesRecorded = hr.u.d.u.stream_info.dwSamplesTransferred;
+	if (pdwAuxiliaryDataRecorded)
+		*pdwAuxiliaryDataRecorded =
+		    hr.u.d.u.stream_info.dwAuxiliaryDataAvailable;
 	return (hr.wError);
 }
 
@@ -1166,10 +1547,10 @@ u16 HPI_InStreamAncillaryReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream, u
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_ANC_RESET);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
 /*
 * Format structure packing
 * dwAttributes = wBytesPerFrame
@@ -1178,11 +1559,7 @@ u16 HPI_InStreamAncillaryReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream, u
 */
 	hm.u.d.u.Data.Format.dwAttributes = wBytesPerFrame;
 	hm.u.d.u.Data.Format.wFormat = (wMode << 8) | (wAlignment & 0xff);
-#ifdef HPI_64BIT
 	hm.u.d.u.Data.Format.wChannels = wIdleBit;
-#else
-	hm.u.d.u.Data.Format.wMode = wIdleBit;
-#endif
 	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
@@ -1192,15 +1569,16 @@ u16 HPI_InStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_ANC_GET_INFO);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
 	HPI_Message(&hm, &hr);
 	if (pdwFrameSpace)
 		*pdwFrameSpace =
-		    (hr.u.d.dwBufferSize -
-		     hr.u.d.dwDataAvailable) / sizeof(HPI_ANC_FRAME);
+		    (hr.u.d.u.stream_info.dwBufferSize -
+		     hr.u.d.u.stream_info.dwDataAvailable) /
+		    sizeof(HPI_ANC_FRAME);
 	return (hr.wError);
 }
 
@@ -1212,12 +1590,12 @@ u16 HPI_InStreamAncillaryWrite(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_ANC_WRITE);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
-	hm.u.d.u.Data.dwpbData = (PTR_AS_NUMBER) pAncFrameBuffer;
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
+	hm.u.d.u.Data.pbData = (u8 *) pAncFrameBuffer;
 	hm.u.d.u.Data.dwDataSize =
 	    dwNumberOfAncillaryFramesToWrite * sizeof(HPI_ANC_FRAME);
 	if (hm.u.d.u.Data.dwDataSize <= dwAncFrameBufferSizeInBytes)
@@ -1232,11 +1610,11 @@ u16 HPI_InStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_ALLOC);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
 	hm.u.d.u.Data.dwDataSize = dwSizeInBytes;
 	HPI_Message(&hm, &hr);
 	return (hr.wError);
@@ -1246,11 +1624,84 @@ u16 HPI_InStreamHostBufferFree(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_FREE);
-	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
-			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
+	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
+			     &hm.wDspIndex);
+	HPI_Message(&hm, &hr);
+	return (hr.wError);
+}
+
+u16 HPI_InStreamGroupAdd(HPI_HSUBSYS * phSubSys,
+			 HPI_HISTREAM hInStreamHandle,
+			 HPI_HSTREAM hStreamHandle)
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+	u16 wAdapter;
+	u16 wDspIndex;
+	char cObjType;
+	HPI_UNUSED(phSubSys);
+
+	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_GROUP_ADD);
+	hr.wError = 0;
+	HPI_HANDLETOINDEXES3(hInStreamHandle, &hm.wAdapterIndex,
+			     &hm.u.d.wStreamIndex, &hm.wDspIndex);
+	cObjType = HPI_HandleObject(hStreamHandle);
+	switch (cObjType) {
+	case HPI_OBJ_OSTREAM:
+		hm.u.d.u.Stream.wObjectType = HPI_OBJ_OSTREAM;
+		HPI_HANDLETOINDEXES(hStreamHandle, &wAdapter,
+				    &hm.u.d.u.Stream.wStreamIndex);
+		break;
+	case HPI_OBJ_ISTREAM:
+		hm.u.d.u.Stream.wObjectType = HPI_OBJ_ISTREAM;
+		HPI_HANDLETOINDEXES3(hStreamHandle, &wAdapter,
+				     &hm.u.d.u.Stream.wStreamIndex, &wDspIndex);
+		if (wDspIndex != hm.wDspIndex)
+			return HPI_ERROR_NO_INTERDSP_GROUPS;
+		break;
+	default:
+		hr.wError = HPI_ERROR_INVALID_STREAM;
+	}
+	if (wAdapter != hm.wAdapterIndex)
+		hr.wError = HPI_ERROR_NO_INTERADAPTER_GROUPS;
+	if (hr.wError == 0)
+		HPI_Message(&hm, &hr);
+	return (hr.wError);
+}
+
+u16 HPI_InStreamGroupGetMap(HPI_HSUBSYS * phSubSys,
+			    HPI_HISTREAM hInStreamHandle,
+			    u32 * pdwOutStreamMap, u32 * pdwInStreamMap)
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+	HPI_UNUSED(phSubSys);
+
+	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_FREE);
+	HPI_HANDLETOINDEXES3(hInStreamHandle, &hm.wAdapterIndex,
+			     &hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_Message(&hm, &hr);
+
+	if (pdwOutStreamMap)
+		*pdwOutStreamMap = hr.u.d.u.group_info.dwOutStreamGroupMap;
+	if (pdwInStreamMap)
+		*pdwInStreamMap = hr.u.d.u.group_info.dwInStreamGroupMap;
+
+	return (hr.wError);
+}
+
+u16 HPI_InStreamGroupReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStreamHandle)
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+	HPI_UNUSED(phSubSys);
+
+	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_GROUP_RESET);
+	HPI_HANDLETOINDEXES3(hInStreamHandle, &hm.wAdapterIndex,
+			     &hm.u.d.wStreamIndex, &hm.wDspIndex);
 	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
@@ -1269,14 +1720,15 @@ u16 HPI_MixerOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0)
-		*phMixerHandle = HPI_IndexesToHandle('M', wAdapterIndex, 0);
+		*phMixerHandle =
+		    HPI_IndexesToHandle(HPI_OBJ_MIXER, wAdapterIndex, 0);
 	else
 		*phMixerHandle = 0;
 	return (hr.wError);
@@ -1286,7 +1738,7 @@ u16 HPI_MixerClose(HPI_HSUBSYS * phSubSys, HPI_HMIXER hMixerHandle)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_CLOSE);
 	HPI_HANDLETOINDEXES(hMixerHandle, &hm.wAdapterIndex, NULL);
 	HPI_Message(&hm, &hr);
@@ -1298,7 +1750,7 @@ u16 HPI_MixerGetControl(HPI_HSUBSYS * phSubSys, HPI_HMIXER hMixerHandle, u16 wSr
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_GET_CONTROL);
 	HPI_HANDLETOINDEXES(hMixerHandle, &hm.wAdapterIndex, NULL);
 	hm.u.m.wNodeType1 = wSrcNodeType;
@@ -1312,7 +1764,7 @@ u16 HPI_MixerGetControl(HPI_HSUBSYS * phSubSys, HPI_HMIXER hMixerHandle, u16 wSr
 // each control in an adapter/mixer has a unique index.
 	if (hr.wError == 0)
 		*phControlHandle =
-		    HPI_IndexesToHandle('C', hm.wAdapterIndex,
+		    HPI_IndexesToHandle(HPI_OBJ_CONTROL, hm.wAdapterIndex,
 					hr.u.m.wControlIndex);
 	else
 		*phControlHandle = 0;
@@ -1342,7 +1794,7 @@ u16 HPI_MixerGetControlByIndex(HPI_HSUBSYS * phSubSys,	///<  HPI subsystem handl
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_GET_CONTROL_BY_INDEX);
 	HPI_HANDLETOINDEXES(hMixerHandle, &hm.wAdapterIndex, NULL);
 	hm.u.m.wControlIndex = wControlIndex;
@@ -1359,11 +1811,35 @@ u16 HPI_MixerGetControlByIndex(HPI_HSUBSYS * phSubSys,	///<  HPI subsystem handl
 	if (phControlHandle) {
 		if (hr.wError == 0)
 			*phControlHandle =
-			    HPI_IndexesToHandle('C', hm.wAdapterIndex,
+			    HPI_IndexesToHandle(HPI_OBJ_CONTROL,
+						hm.wAdapterIndex,
 						wControlIndex);
 		else
 			*phControlHandle = 0;
 	}
+	return (hr.wError);
+}
+
+/** Execute a command on the Mixer Control store
+Valid commands are members of HPI_MIXER_STORE_COMMAND
+
+\return HPI_ERROR_*
+\retval HPI_ERROR_INVALID_OBJ_INDEX when wControlIndex > number of mixer controls
+*/
+u16 HPI_MixerStore(HPI_HSUBSYS * phSubSys,	///<  HPI subsystem handle
+		   HPI_HMIXER hMixerHandle,	///<  Mixer Handle
+		   enum HPI_MIXER_STORE_COMMAND command,	///< Command to execute
+		   u16 wIndex	///< Optional index
+    )
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+	HPI_UNUSED(phSubSys);
+	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_STORE);
+	HPI_HANDLETOINDEXES(hMixerHandle, &hm.wAdapterIndex, NULL);
+	hm.u.mx.store.wCommand = command;
+	hm.u.mx.store.wIndex = wIndex;
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
@@ -1565,7 +2041,9 @@ u16 HPI_AESEBU_Receiver_GetSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlH
 	return wErr;
 }
 
-/// get the sample rate of the current AES/EBU input
+/* get the sample rate of the current AES/EBU input
+* Returns HPI_ERROR_INVALID_OPERATION if PLL unlocked.
+*/
 u16 HPI_AESEBU_Receiver_GetSampleRate(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u32 * pdwSampleRate	//0, 32000,44100 or 48000 returned
     )
 {
@@ -1580,7 +2058,7 @@ u16 HPI_AESEBU_Receiver_GetUserData(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hContro
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
@@ -1601,7 +2079,7 @@ u16 HPI_AESEBU_Receiver_GetChannelStatus(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hC
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
@@ -1682,7 +2160,7 @@ u16 HPI_AESEBU_Transmitter_GetChannelStatus(HPI_HSUBSYS * phSubSys, HPI_HCONTROL
 #if 0
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
@@ -1700,6 +2178,7 @@ u16 HPI_AESEBU_Transmitter_GetChannelStatus(HPI_HSUBSYS * phSubSys, HPI_HCONTROL
 #endif
 }
 
+#ifdef HPI_SUPPORT_AESEBUTXSETCLKSRC
 /** sets the AES3 Transmitter clock source to be say the adapter or external sync
 */
 u16 HPI_AESEBU_Transmitter_SetClockSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wClockSource	/* SYNC, ADAPTER */
@@ -1723,6 +2202,19 @@ u16 HPI_AESEBU_Transmitter_GetClockSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL h
 
 	return wErr;
 }
+#elif defined HPIDLL_EXPORTS
+u16 HPI_AESEBU_Transmitter_SetClockSource(HPI_HSUBSYS * phSubSys,
+					  HPI_HCONTROL hControlHandle,
+					  u16 wClockSource)
+{
+return HPI_ERROR_INVALID_FUNC};
+
+u16 HPI_AESEBU_Transmitter_GetClockSource(HPI_HSUBSYS * phSubSys,
+					  HPI_HCONTROL hControlHandle,
+					  u16 * pwClockSource)
+{
+return HPI_ERROR_INVALID_FUNC};
+#endif
 
 u16 HPI_AESEBU_Transmitter_SetFormat(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wOutputFormat	/* HPI_AESEBU_SOURCE_AESEBU, _SPDIF */
     )
@@ -1774,7 +2266,7 @@ u16 HPI_Bitstream_GetActivity(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
@@ -1850,7 +2342,7 @@ u16 HPI_Cobranet_HmiWrite(HPI_HSUBSYS * phSubSys,	///<Subsystem handle
 		memcpy(hm.u.cx.u.cobranet_data.dwData, pbData, dwByteCount);
 		hm.u.cx.wAttribute = HPI_COBRANET_SET;
 	} else {
-		hm.u.cx.u.cobranet_bigdata.dwpbData = (u32) pbData;
+		hm.u.cx.u.cobranet_bigdata.pbData = pbData;
 		hm.u.cx.wAttribute = HPI_COBRANET_SET_DATA;
 	}
 
@@ -1887,7 +2379,7 @@ u16 HPI_Cobranet_HmiRead(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 	if (dwMaxByteCount <= 8) {
 		hm.u.cx.wAttribute = HPI_COBRANET_GET;
 	} else {
-		hm.u.cx.u.cobranet_bigdata.dwpbData = (u32) pbData;
+		hm.u.cx.u.cobranet_bigdata.pbData = pbData;
 		hm.u.cx.wAttribute = HPI_COBRANET_GET_DATA;
 	}
 
@@ -2147,7 +2639,7 @@ u16 HPI_LevelGetGain(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
@@ -2460,7 +2952,7 @@ u16 HPI_Multiplexer_QuerySource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHan
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
@@ -2477,6 +2969,7 @@ u16 HPI_Multiplexer_QuerySource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHan
 }
 
 /**\}*/
+#ifdef HPI_SUPPORT_ONOFFSWITCH
 /////////////////////////////////////////////////////////////////////////
 /** \defgroup onoff On/off switch control
 This control allows make/break connections to be supported.
@@ -2503,6 +2996,17 @@ u16 HPI_OnOffSwitch_GetState(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle
 }
 
 /**\}*/
+#elif defined HPIDLL_EXPORTS
+u16 HPI_OnOffSwitch_SetState(HPI_HSUBSYS * phSubSys,
+			     HPI_HCONTROL hControlHandle, u16 wState)
+{
+return HPI_ERROR_INVALID_FUNC};
+
+u16 HPI_OnOffSwitch_GetState(HPI_HSUBSYS * phSubSys,
+			     HPI_HCONTROL hControlHandle, u16 * wState)
+{
+return HPI_ERROR_INVALID_FUNC};
+#endif
 /////////////////////////////////////////////////////////////////////////////////
 /**\addtogroup parmeq  Parametric Equalizer control
 \{
@@ -2908,7 +3412,7 @@ u16 HPI_VolumeSetGain(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
@@ -3030,7 +3534,7 @@ u16 HPI_VoxSetThreshold(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
@@ -3080,7 +3584,7 @@ u16 HPI_VoxGetThreshold(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
@@ -3143,7 +3647,7 @@ u16 HPI_ClockOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CLOCK, HPI_CLOCK_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
@@ -3159,7 +3663,7 @@ u16 HPI_ClockOpen(HPI_HSUBSYS * phSubSys,
 		phClock->valid = 0;
 #else
 	if (hr.wError == 0)
-		*phClock = HPI_IndexesToHandle('T', wAdapterIndex, 0);	// only 1 clock obj per adapter
+		*phClock = HPI_IndexesToHandle(HPI_OBJ_CLOCK, wAdapterIndex, 0);	// only 1 clock obj per adapter
 	else
 		*phClock = 0;
 #endif
@@ -3174,7 +3678,7 @@ u16 HPI_ClockSetTime(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CLOCK, HPI_CLOCK_SET_TIME);
 #ifdef TRY_NEW_HANDLE_STRUCT
 	if (!hClock.valid)
@@ -3200,7 +3704,7 @@ u16 HPI_ClockGetTime(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CLOCK, HPI_CLOCK_GET_TIME);
 #ifdef TRY_NEW_HANDLE_STRUCT
 	if (!hClock.valid)
@@ -3240,14 +3744,14 @@ u16 HPI_GpioOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0) {
-		*phGpio = HPI_IndexesToHandle('L', wAdapterIndex, 0);	// only 1 digital i/o obj per adapter
+		*phGpio = HPI_IndexesToHandle(HPI_OBJ_GPIO, wAdapterIndex, 0);	// only 1 digital i/o obj per adapter
 		if (pwNumberInputBits)
 			*pwNumberInputBits = hr.u.l.wNumberInputBits;
 		if (pwNumberOutputBits)
@@ -3263,7 +3767,7 @@ u16 HPI_GpioReadBit(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_READ_BIT);
 	HPI_HANDLETOINDEXES(hGpio, &hm.wAdapterIndex, NULL);	// only one dig i/o obj per adapter
 	hm.u.l.wBitIndex = wBitIndex;
@@ -3280,7 +3784,7 @@ u16 HPI_GpioReadAllBits(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_READ_ALL);
 	HPI_HANDLETOINDEXES(hGpio, &hm.wAdapterIndex, NULL);	// only one dig i/o obj per adapter
 
@@ -3296,7 +3800,7 @@ u16 HPI_GpioWriteBit(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_WRITE_BIT);
 	HPI_HANDLETOINDEXES(hGpio, &hm.wAdapterIndex, NULL);	// only one dig i/o obj per adapter
 	hm.u.l.wBitIndex = wBitIndex;
@@ -3374,14 +3878,14 @@ u16 HPI_AsyncEventOpen(HPI_HSUBSYS * phSubSys,	///< Subsystem handle.
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0) {
-		*phAsync = HPI_IndexesToHandle('E', wAdapterIndex, 0);	// only 1 nv-memory obj per adapter
+		*phAsync = HPI_IndexesToHandle(HPI_OBJ_ASYNCEVENT, wAdapterIndex, 0);	// only 1 nv-memory obj per adapter
 	} else
 		*phAsync = 0;
 	return (hr.wError);
@@ -3397,7 +3901,7 @@ u16 HPI_AsyncEventClose(HPI_HSUBSYS * phSubSys,	///< Subsystem handle.
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_OPEN);
 	HPI_HANDLETOINDEXES(hAsync, &hm.wAdapterIndex, NULL);
 
@@ -3432,7 +3936,7 @@ u16 HPI_AsyncEventGetCount(HPI_HSUBSYS * phSubSys,	///< Subsystem handle.
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_GETCOUNT);
 	HPI_HANDLETOINDEXES(hAsync, &hm.wAdapterIndex, NULL);
 
@@ -3459,7 +3963,7 @@ u16 HPI_AsyncEventGet(HPI_HSUBSYS * phSubSys,	///< Subsystem handle.
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_GET);
 	HPI_HANDLETOINDEXES(hAsync, &hm.wAdapterIndex, NULL);
 
@@ -3491,14 +3995,14 @@ u16 HPI_NvMemoryOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_NVMEMORY, HPI_NVMEMORY_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0) {
-		*phNvMemory = HPI_IndexesToHandle('N', wAdapterIndex, 0);	// only 1 nv-memory obj per adapter
+		*phNvMemory = HPI_IndexesToHandle(HPI_OBJ_NVMEMORY, wAdapterIndex, 0);	// only 1 nv-memory obj per adapter
 		if (pwSizeInBytes)
 			*pwSizeInBytes = hr.u.n.wSizeInBytes;
 	} else
@@ -3511,7 +4015,7 @@ u16 HPI_NvMemoryReadByte(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_NVMEMORY, HPI_NVMEMORY_READ_BYTE);
 	HPI_HANDLETOINDEXES(hNvMemory, &hm.wAdapterIndex, NULL);	// only one NvMem obj per adapter
 	hm.u.n.wIndex = wIndex;
@@ -3527,7 +4031,7 @@ u16 HPI_NvMemoryWriteByte(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_NVMEMORY, HPI_NVMEMORY_WRITE_BYTE);
 	HPI_HANDLETOINDEXES(hNvMemory, &hm.wAdapterIndex, NULL);	// only one NvMem obj per adapter
 	hm.u.n.wIndex = wIndex;
@@ -3564,7 +4068,7 @@ u16 HPI_ProfileOpenAll(HPI_HSUBSYS * phSubSys,	///<[in] HPI subsystem handle
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_OPEN_ALL);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.wDspIndex = wProfileIndex;
@@ -3573,7 +4077,8 @@ u16 HPI_ProfileOpenAll(HPI_HSUBSYS * phSubSys,	///<[in] HPI subsystem handle
 	*pwMaxProfiles = hr.u.p.u.o.wMaxProfiles;
 	if (hr.wError == 0)
 		*phProfile =
-		    HPI_IndexesToHandle('P', wAdapterIndex, wProfileIndex);
+		    HPI_IndexesToHandle(HPI_OBJ_PROFILE, wAdapterIndex,
+					wProfileIndex);
 	else
 		*phProfile = 0;
 	return (hr.wError);
@@ -3589,7 +4094,7 @@ u16 HPI_ProfileGet(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
 	hm.u.p.wIndex = wIndex;
@@ -3616,7 +4121,7 @@ u16 HPI_ProfileGetIdleCount(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET_IDLECOUNT);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
 	hm.u.p.wIndex = wIndex;
@@ -3644,7 +4149,7 @@ u16 HPI_ProfileGetUtilization(HPI_HSUBSYS * phSubSys,	///<[in] HPI subsystem han
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET_UTILIZATION);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
 	HPI_Message(&hm, &hr);
@@ -3664,7 +4169,7 @@ u16 HPI_ProfileGetName(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET_NAME);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
 	hm.u.p.wIndex = wIndex;
@@ -3683,7 +4188,7 @@ u16 HPI_ProfileStartAll(HPI_HSUBSYS * phSubSys, HPI_HPROFILE hProfile)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_START_ALL);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
 	HPI_Message(&hm, &hr);
@@ -3695,7 +4200,7 @@ u16 HPI_ProfileStopAll(HPI_HSUBSYS * phSubSys, HPI_HPROFILE hProfile)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_STOP_ALL);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
 	HPI_Message(&hm, &hr);
@@ -3716,14 +4221,14 @@ u16 HPI_WatchdogOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_WATCHDOG, HPI_WATCHDOG_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0)
-		*phWatchdog = HPI_IndexesToHandle('W', wAdapterIndex, 0);	// only 1 watchdog obj per adapter
+		*phWatchdog = HPI_IndexesToHandle(HPI_OBJ_WATCHDOG, wAdapterIndex, 0);	// only 1 watchdog obj per adapter
 	else
 		*phWatchdog = 0;
 	return (hr.wError);
@@ -3737,7 +4242,7 @@ u16 HPI_WatchdogSetTime(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_WATCHDOG, HPI_WATCHDOG_SET_TIME);
 	HPI_HANDLETOINDEXES(hWatchdog, &hm.wAdapterIndex, NULL);	// only one watchdog obj per adapter
 	hm.u.w.dwTimeMs = dwTimeMillisec;
@@ -3752,7 +4257,7 @@ u16 HPI_WatchdogPing(HPI_HSUBSYS * phSubSys, HPI_HWATCHDOG hWatchdog)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_WATCHDOG, HPI_WATCHDOG_PING);
 	HPI_HANDLETOINDEXES(hWatchdog, &hm.wAdapterIndex, NULL);	// only one watchdog obj per adapter
 
@@ -3762,6 +4267,7 @@ u16 HPI_WatchdogPing(HPI_HSUBSYS * phSubSys, HPI_HWATCHDOG hWatchdog)
 }
 
 ///\}
+#ifdef HPI_OS_DELETE
 
 /////////////////////////////////////////////////////////////////////////////////
 /**\defgroup aes18 AES18 data transfer over AES/EBU link
@@ -3796,7 +4302,7 @@ u16 HPI_AES18BGSetConfiguration(HPI_HSUBSYS * phSubSys,
 	HPI_RESPONSE hr;
 	HPI_CONTROLX_MSG_AES18BG *pAes18BGSetConfiguration = &hm.u.cx.u.aes18bg;
 
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_SET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
@@ -3865,7 +4371,7 @@ u16 HPI_AES18RxSetAddress(HPI_HSUBSYS * phSubSys,
 	HPI_CONTROLX_MSG_AES18RX_ADDRESS *pAes18RxSetAddress =
 	    &hm.u.cx.u.aes18rx_address;
 
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_SET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
@@ -3916,7 +4422,7 @@ u16 HPI_AES18RxGetInternalBufferState(HPI_HSUBSYS * phSubSys,
 	HPI_RESPONSE hr;
 	HPI_CONTROLX_RES_AES18RX_BUFFER_STATE *pAes18RxGetIBState =
 	    &hr.u.cx.u.aes18rx_internal_buffer_state;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
@@ -3984,7 +4490,7 @@ u16 HPI_AES18RxGetInternalBufferSize(HPI_HSUBSYS * phSubSys,
 	HPI_CONTROLX_RES_AES18RX_BUFFER_SIZE *pAes18RxGetIBSize =
 	    &hr.u.cx.u.aes18rx_internal_buffer_size;
 
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.cx.wControlIndex);
@@ -4020,7 +4526,7 @@ u16 HPI_AES18RxGetMessage(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u
 	HPI_CONTROLX_MSG_AES18RX_GET_MESSAGE *pAes18MsgRxGetMessage =
 	    &hm.u.cx.u.aes18rx_get_message;
 
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
@@ -4037,7 +4543,7 @@ u16 HPI_AES18RxGetMessage(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u
 	pAes18MsgRxGetMessage->wChannel = wChannel;
 	pAes18MsgRxGetMessage->wPriority = wPriority;
 	pAes18MsgRxGetMessage->wQueueSize = wQueueSize;
-	pAes18MsgRxGetMessage->dwpbMessage = (PTR32) pbMessage;
+	pAes18MsgRxGetMessage->dwpbMessage = (u32) pbMessage;
 
 #ifndef HAS_AES18_ON_HOST
 
@@ -4066,7 +4572,7 @@ u16 HPI_AES18TxSendMessage(HPI_HSUBSYS * phSubSys,
 	HPI_CONTROLX_MSG_AES18TX_SEND_MESSAGE *pAes18SendMsg =
 	    &hm.u.cx.u.aes18tx_send_message;
 
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_SET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.cx.wControlIndex);
@@ -4089,7 +4595,7 @@ return(HPI_ERROR_AES18_INVALID_ADDRESS);
 		return (HPI_ERROR_AES18_INVALID_REPETITION);
 
 	pAes18SendMsg->wChannel = wChannel;
-	pAes18SendMsg->dwpbMessage = (PTR_AS_NUMBER) pbMessage;
+	pAes18SendMsg->dwpbMessage = (u32) pbMessage;
 	pAes18SendMsg->wMessageLength = wMessageLength;
 	pAes18SendMsg->wDestinationAddress = wDestinationAddress;
 	pAes18SendMsg->wPriorityIndex = wPriorityIndex;
@@ -4118,7 +4624,7 @@ u16 HPI_AES18TxGetInternalBufferState(HPI_HSUBSYS * phSubSys,
 	HPI_RESPONSE hr;
 	HPI_CONTROLX_RES_AES18TX_BUFFER_STATE *pAes18TxGetIBState =
 	    &hr.u.cx.u.aes18tx_internal_buffer_state;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
@@ -4165,7 +4671,7 @@ u16 HPI_AES18TxGetInternalBufferSize(HPI_HSUBSYS * phSubSys,
 	HPI_RESPONSE hr;
 	HPI_CONTROLX_RES_AES18TX_BUFFER_SIZE *pAes18TxGetIBSize =
 	    &hr.u.cx.u.aes18tx_internal_buffer_size;
-	UNUSED(phSubSys);
+	HPI_UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.cx.wControlIndex);
@@ -4243,6 +4749,96 @@ void AES18_Message(int wControlType, HPI_MESSAGE * pHm, HPI_RESPONSE * pHr)
 }
 #endif				/* HAS_AES18_ON_HOST */
 ///\}
+#elif defined HPIDLL_EXPORTS
+
+#define HPI_AES18_MAX_CHANNELS  2
+#define HPI_AES18_MAX_PRIORITIES 4
+
+/* stub functions for dll compatibility */
+u16 HPI_AES18BGSetConfiguration(HPI_HSUBSYS * phSubSys,
+				HPI_HCONTROL hControlHandle,
+				u16 wBlocksPerSec[HPI_AES18_MAX_CHANNELS],
+				u16 wPriorityEnableMask[HPI_AES18_MAX_CHANNELS],
+				u16 wOperatingMode[HPI_AES18_MAX_CHANNELS],
+				u16 wChannelMode)
+{
+	return HPI_ERROR_INVALID_FUNC;
+}
+
+u16 HPI_AES18RxSetAddress(HPI_HSUBSYS * phSubSys,
+			  HPI_HCONTROL hControlHandle,
+			  u16 awDecoderAddress[HPI_AES18_MAX_CHANNELS]
+    )
+{
+	return HPI_ERROR_INVALID_FUNC;
+}
+
+u16 HPI_AES18RxGetInternalBufferState(HPI_HSUBSYS * phSubSys,
+				      HPI_HCONTROL hControlHandle,
+				      u16 awFrameError[HPI_AES18_MAX_CHANNELS],
+				      u16
+				      awMessageWaiting[HPI_AES18_MAX_CHANNELS]
+				      [HPI_AES18_MAX_PRIORITIES],
+				      u16
+				      awInternalBufferOverFlow
+				      [HPI_AES18_MAX_CHANNELS]
+				      [HPI_AES18_MAX_PRIORITIES],
+				      u16
+				      awMissedMessage[HPI_AES18_MAX_CHANNELS]
+				      [HPI_AES18_MAX_PRIORITIES]
+    )
+{
+	return HPI_ERROR_INVALID_FUNC;
+}
+
+u16 HPI_AES18RxGetInternalBufferSize(HPI_HSUBSYS * phSubSys,
+				     HPI_HCONTROL hControlHandle,
+				     u16
+				     awBytesPerBuffer[HPI_AES18_MAX_PRIORITIES]
+    )
+{
+	return HPI_ERROR_INVALID_FUNC;
+}
+
+u16 HPI_AES18RxGetMessage(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wChannel, u16 wPriority, u16 wQueueSize,	// In bytes
+			  u8 * pbMessage, u16 * pwMessageLength	// in bytes
+    )
+{
+	return HPI_ERROR_INVALID_FUNC;
+}
+
+u16 HPI_AES18TxSendMessage(HPI_HSUBSYS * phSubSys,
+			   HPI_HCONTROL hControlHandle,
+			   u16 wChannel,
+			   u8 * pbMessage,
+			   u16 wMessageLength,
+			   u16 wDestinationAddress,
+			   u16 wPriorityIndex, u16 wRepetitionIndex)
+{
+	return HPI_ERROR_INVALID_FUNC;
+}
+
+u16 HPI_AES18TxGetInternalBufferState(HPI_HSUBSYS * phSubSys,
+				      HPI_HCONTROL hControlHandle,
+				      u16
+				      awInternalBufferBusy
+				      [HPI_AES18_MAX_CHANNELS]
+				      [HPI_AES18_MAX_PRIORITIES]
+    )
+{
+	return HPI_ERROR_INVALID_FUNC;
+}
+
+u16 HPI_AES18TxGetInternalBufferSize(HPI_HSUBSYS * phSubSys,
+				     HPI_HCONTROL hControlHandle,
+				     u16
+				     awBytesPerBuffer[HPI_AES18_MAX_PRIORITIES]
+    )
+{
+	return HPI_ERROR_INVALID_FUNC;
+}
+
+#endif				/* elif defined HPIDLL_EXPORTS */
 /////////////////////////////////////////////////////////////////////////
 /** \defgroup utility Utility Functions
 @{
@@ -4302,7 +4898,7 @@ void HPI_GetErrorText(u16 wError, char *pszErrorText)
 		       "GetInfo call from SubSysFindAdapters failed");
 		break;
 	case HPI_ERROR_INVALID_RESPONSE:	// 108
-		strcat(pszErrorText, "Response structure not updated");
+		strcat(pszErrorText, "Invalid HPI Response");
 		break;
 	case HPI_ERROR_PROCESSING_MESSAGE:	// 109
 		strcat(pszErrorText, "wSize field of response was not updated");
@@ -4440,6 +5036,20 @@ void HPI_GetErrorText(u16 wError, char *pszErrorText)
 	case HPI_ERROR_BAD_ADAPTER_MODE:	// 312
 		strcat(pszErrorText, "Invalid adapter mode");
 		break;
+	case HPI_ERROR_TOO_MANY_CAPABILITY_CHANGE_ATTEMPTS:	// 313
+		strcat(pszErrorText,
+		       "There have been too many attempts to set the adapter's "
+		       "capabilities (using bad keys). The card should be returned "
+		       "to ASI if further capabilities updates are required");
+		break;
+	case HPI_ERROR_NO_INTERADAPTER_GROUPS:	// 314
+		strcat(pszErrorText,
+		       "Streams on different adapters cannot be grouped.");
+		break;
+	case HPI_ERROR_NO_INTERDSP_GROUPS:	// 315
+		strcat(pszErrorText,
+		       "Streams on different DSPs cannot be grouped.");
+		break;
 
 	case HPI_ERROR_INVALID_NODE:	//400
 		strcat(pszErrorText, "Invalid mixer node");
@@ -4461,17 +5071,6 @@ void HPI_GetErrorText(u16 wError, char *pszErrorText)
 		strcat(pszErrorText, "Non-volatile memory is busy");
 		break;
 
-	case HPI_ERROR_AES18BG_BLOCKSPERSEC:	//  500
-	case HPI_ERROR_AES18BG_PRIORITYMASK:	//  501
-	case HPI_ERROR_AES18BG_MODE:	//          502
-	case HPI_ERROR_AES18_INVALID_PRIORITY:	//    503
-	case HPI_ERROR_AES18_INVALID_ADDRESS:	// 504
-	case HPI_ERROR_AES18_INVALID_REPETITION:	//  505
-	case HPI_ERROR_AES18BG_CHANNEL_MODE:	//      506
-	case HPI_ERROR_AES18_INVALID_CHANNEL:	//  507
-		strcat(pszErrorText, "an AES18 error");
-		break;
-
 	default:
 		strcat(pszErrorText, "Unknown Error");
 	}
@@ -4489,6 +5088,7 @@ u16 HPI_FormatCreate(HPI_FORMAT * pFormat,	///< [out] Format structure to be ini
     )
 {
 	u16 wError = 0;
+	HPI_MSG_FORMAT Format;
 
 // can be mono or stereo
 	if (wChannels < 1)
@@ -4496,7 +5096,7 @@ u16 HPI_FormatCreate(HPI_FORMAT * pFormat,	///< [out] Format structure to be ini
 	if (wChannels > 8)
 		wChannels = 8;
 
-	pFormat->wChannels = wChannels;
+	Format.wChannels = wChannels;
 
 // make sure we have a valid audio format
 	switch (wFormat) {
@@ -4521,7 +5121,7 @@ u16 HPI_FormatCreate(HPI_FORMAT * pFormat,	///< [out] Format structure to be ini
 		wError = HPI_ERROR_INVALID_FORMAT;
 		return (wError);
 	}
-	pFormat->wFormat = wFormat;
+	Format.wFormat = wFormat;
 
 //sample rate can be between 8kHz and 200kHz
 	if (dwSampleRate < 8000L) {
@@ -4532,7 +5132,7 @@ u16 HPI_FormatCreate(HPI_FORMAT * pFormat,	///< [out] Format structure to be ini
 		wError = HPI_ERROR_INCOMPATIBLE_SAMPLERATE;
 		dwSampleRate = 200000L;
 	}
-	pFormat->dwSampleRate = dwSampleRate;
+	Format.dwSampleRate = dwSampleRate;
 
 // for some formats (MPEG) we accept a bitrate
 // for some (PCM) we calculate the bit rate
@@ -4540,21 +5140,21 @@ u16 HPI_FormatCreate(HPI_FORMAT * pFormat,	///< [out] Format structure to be ini
 	case HPI_FORMAT_MPEG_L1:
 	case HPI_FORMAT_MPEG_L2:
 	case HPI_FORMAT_MPEG_L3:
-		pFormat->dwBitRate = dwBitRate;	// should validate!!!!!!!
+		Format.dwBitRate = dwBitRate;	// should validate!!!!!!!
 		break;
 	case HPI_FORMAT_PCM16_SIGNED:
 	case HPI_FORMAT_PCM16_BIGENDIAN:
-		pFormat->dwBitRate = (u32) wChannels *dwSampleRate * 2;
+		Format.dwBitRate = (u32) wChannels *dwSampleRate * 2;
 		break;
 	case HPI_FORMAT_PCM32_SIGNED:
 	case HPI_FORMAT_PCM32_FLOAT:
-		pFormat->dwBitRate = (u32) wChannels *dwSampleRate * 4;
+		Format.dwBitRate = (u32) wChannels *dwSampleRate * 4;
 		break;
 	case HPI_FORMAT_PCM8_UNSIGNED:
-		pFormat->dwBitRate = (u32) wChannels *dwSampleRate;
+		Format.dwBitRate = (u32) wChannels *dwSampleRate;
 		break;
 	default:
-		pFormat->dwBitRate = 0;
+		Format.dwBitRate = 0;
 	}
 
 // Set the dwAttributes field.
@@ -4568,12 +5168,13 @@ u16 HPI_FormatCreate(HPI_FORMAT * pFormat,	///< [out] Format structure to be ini
 			dwAttributes = HPI_MPEG_MODE_DEFAULT;	// correct the error anyway !
 			wError = HPI_ERROR_INVALID_FORMAT;
 		}
-		pFormat->dwAttributes = dwAttributes;
+		Format.dwAttributes = dwAttributes;
 		break;
 	default:
-		pFormat->dwAttributes = dwAttributes;
+		Format.dwAttributes = dwAttributes;
 	}
 
+	HPI_MSG_TO_FORMAT(pFormat, &Format);
 	return (wError);
 }
 
@@ -4646,7 +5247,6 @@ u16 HPI_WaveFormatToHpiFormat(const PWAVEFORMATEX lpFormatEx,
 		    ((MPEG1WAVEFORMAT *) lpFormatEx)->dwHeadBitrate;
 		if (pHpiFormat->dwBitRate == 0)
 			pHpiFormat->dwBitRate = 256000L;	// must have a default
-		pHpiFormat->wMode = 0;	//((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadMode;
 		break;
 	case WAVE_FORMAT_MPEGLAYER3:
 		pHpiFormat->wFormat = HPI_FORMAT_MPEG_L3;
@@ -4655,7 +5255,6 @@ u16 HPI_WaveFormatToHpiFormat(const PWAVEFORMATEX lpFormatEx,
 		    8;
 		if (pHpiFormat->dwBitRate == 0)
 			pHpiFormat->dwBitRate = 256000L;	// must have a default
-		pHpiFormat->wMode = 0;	//((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadMode;
 		break;
 
 	default:
@@ -4663,8 +5262,8 @@ u16 HPI_WaveFormatToHpiFormat(const PWAVEFORMATEX lpFormatEx,
 	}
 	pHpiFormat->wChannels = lpFormatEx->nChannels;
 	pHpiFormat->dwSampleRate = lpFormatEx->nSamplesPerSec;
-	pHpiFormat->wMode = 0;
 	pHpiFormat->dwAttributes = 0;
+	pHpiFormat->dwPadTo5 = 0;
 
 	return (wError);
 }
@@ -4770,18 +5369,26 @@ u16 HPI_HpiFormatToWaveFormat(const HPI_FORMAT * pHpiFormat,
 
 #endif				/* defined(HPI_OS_WIN16) || defined(HPI_OS_WIN32_USER) */
 
-/// Initialize a HPI_DATA structure
+#ifndef HPI_WITHOUT_HPI_DATA
+/** Initialize a HPI_DATA structure
+\deprecated HPI_DATA struct may be removed from a future version.
+To avoid using HPI_DATA switch to using HPI_OutStreamWriteBuf() and HPI_InStreamReadBuf()
+*/
 u16 HPI_DataCreate(HPI_DATA * pData,	///<[inout] Structure to be initialised
 		   HPI_FORMAT * pFormat,	///<[in] format of the data
 		   u8 * pbData,	///<[in] pointer to data buffer
 		   u32 dwDataSize	///<[in] amount of data in buffer
     )
 {
-	memcpy(&pData->Format, pFormat, sizeof(HPI_FORMAT));
-	pData->dwpbData = (PTR_AS_NUMBER) pbData;
-	pData->dwDataSize = dwDataSize;
+	HPI_MSG_DATA *pMD = (HPI_MSG_DATA *) pData;
+
+	HPI_FORMAT_TO_MSG(&pMD->Format, pFormat);
+
+	pMD->pbData = pbData;
+	pMD->dwDataSize = dwDataSize;
 	return (0);
 }
+#endif
 
 /// The actual message size for each object type
 static u16 aMsgSize[HPI_OBJ_MAXINDEX + 1] = HPI_MESSAGE_SIZE_BY_OBJECT;
@@ -4822,31 +5429,20 @@ void HPI_InitResponse(HPI_RESPONSE * phr, u16 wObject, u16 wFunction,
 ////////////////////////////////////////////////////////////////////////
 // local functions
 
-/** make a handle to an object from the indexes that reference it
-\sa HPI_HandleToIndexes()
-*/
-u32 HPI_IndexesToHandle(const char cObject,	///< a character representing the type of object
-			const u16 wIndex1,	///< The Adapter index
-			const u16 wIndex2	///< The stream or control index, if used
-    )
-{
-	u32 dwHandle = 0;
-	dwHandle =
-	    (((u32) cObject) << 24) | ((u32) (wIndex1 & 0xFFF) << 12) |
-	    ((u32) (wIndex2 & 0xFFF));
-	return (dwHandle);
-}
+/** handle struct for internal hpifunc use.  Total bit count must be <= 32 */
+struct sHANDLE {
+	unsigned int objIndex:12;	///< Up to 4096 objects
+	unsigned int objType:4;	///< HPI_OBJ_*
+	unsigned int adapterIndex:14;	///< up to 16K
+	unsigned int dspIndex:1;	///< for asi62xx
+	unsigned int readOnly:1;	///< future readonly flag
+};
 
-/** turn a handle back into indexes
-/sa HPI_IndexesToHandle()
-*/
-void HPI_HandleToIndexes(const u32 dwHandle, u16 * pwIndex1, u16 * pwIndex2)
-{
-	if (pwIndex1)
-		*pwIndex1 = (u16) ((dwHandle >> 12) & 0xFFF);
-	if (pwIndex2)
-		*pwIndex2 = (u16) (dwHandle & 0xFFF);
-}
+/** allow conversion from handle to u32 */
+typedef union {
+	struct sHANDLE h;
+	u32 w;
+} tHANDLE;
 
 /**
 Encode 3 indices and an object type into a 32 bit handle.
@@ -4854,17 +5450,27 @@ Encode 3 indices and an object type into a 32 bit handle.
 \return Object handle
 \sa HPI_HandleToIndexes3()
 */
-u32 HPI_IndexesToHandle3(const char cObject,	///< a character representing the type of object
-			 const u16 wAdapterIndex,	///< The Adapter index
-			 const u16 wObjectIndex,	///< The stream or control index, if used
-			 const u16 wDspIndex	///< The index of the DSP which implements the object
+HPI_HANDLE HPI_IndexesToHandle3(const char cObject,	///< HPI_OBJ_* - the type code of object
+				const u16 wAdapterIndex,	///< The Adapter index
+				const u16 wObjectIndex,	///< The stream or control index, if used
+				const u16 wDspIndex	///< The index of the DSP which implements the object, usually 0
     )
 {
-	u32 dwHandle = 0;
-	dwHandle = (((u32) cObject) << 24) |
-	    ((u32) (wDspIndex & 0xFF) << 16) |
-	    ((u32) (wAdapterIndex & 0xFF) << 8) | ((u32) (wObjectIndex & 0xFF));
-	return (dwHandle);
+	tHANDLE handle;
+
+	handle.h.adapterIndex = wAdapterIndex;
+	handle.h.dspIndex = wDspIndex;
+	handle.h.readOnly = 0;
+	handle.h.objType = cObject;
+	handle.h.objIndex = wObjectIndex;
+	return handle.w;
+}
+
+HPI_HANDLE HPI_IndexesToHandle(const char cObject,	///< HPI_OBJ_* - the type code of object
+			       const u16 wAdapterIndex,	///< The Adapter index
+			       const u16 wObjectIndex)	///< The stream or control index, if used
+{
+	return HPI_IndexesToHandle3(cObject, wAdapterIndex, wObjectIndex, 0);
 }
 
 /**
@@ -4873,18 +5479,28 @@ Extract up to 3 indices from an object handle, if non-NULL pointers are supplied
 /sa HPI_IndexesToHandle3(), HPI_IndexesToHandle()
 */
 
-void HPI_HandleToIndexes3(const u32 dwHandle,	///< The handle to decode
+void HPI_HandleToIndexes3(const HPI_HANDLE dwHandle,	///< The handle to decode
 			  u16 * pwAdapterIndex,	///< Where to store the Adapter index
 			  u16 * pwObjectIndex,	///< Where to store the stream or control index, if used
 			  u16 * pwDspIndex	///< Where to store the index of the DSP which implements the object
     )
 {
+	tHANDLE handle;
+	handle.w = dwHandle;
+
 	if (pwDspIndex)
-		*pwDspIndex = (u16) ((dwHandle >> 16) & 0xFF);
+		*pwDspIndex = handle.h.dspIndex;
 	if (pwAdapterIndex)
-		*pwAdapterIndex = (u16) ((dwHandle >> 8) & 0xFF);
+		*pwAdapterIndex = handle.h.adapterIndex;
 	if (pwObjectIndex)
-		*pwObjectIndex = (u16) (dwHandle & 0xFF);
+		*pwObjectIndex = handle.h.objIndex;
+}
+
+char HPI_HandleObject(const HPI_HANDLE dwHandle)
+{
+	tHANDLE handle;
+	handle.w = dwHandle;
+	return handle.h.objType;
 }
 
 ///////////////////////////////////////////////////////////////////////////

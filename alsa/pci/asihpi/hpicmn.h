@@ -46,6 +46,9 @@ void WipeAdapterList(HPI_ADAPTERS_LIST * adaptersList);
 void SubSysGetAdapters(HPI_ADAPTERS_LIST * adaptersList, HPI_RESPONSE * phr);
 short CheckControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 			HPI_RESPONSE * phr);
+void SyncControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
+		      HPI_RESPONSE * phr);
+u16 HpiValidateResponse(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
 
 /*
 */

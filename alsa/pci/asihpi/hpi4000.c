@@ -273,17 +273,18 @@ static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
 
 	memset(&ao, 0, sizeof(HPI_ADAPTER_OBJ));
 
-	if ((phm->u.s.Resource.wBusType != HPI_BUS_PCI)
-	    || (phm->u.s.Resource.r.Pci.wVendorId !=
-		HPI_PCI_VENDOR_ID_MOTOROLA))
+	if (phm->u.s.Resource.wBusType != HPI_BUS_PCI)
+		return;
+	if (phm->u.s.Resource.r.Pci->wVendorId != HPI_PCI_VENDOR_ID_MOTOROLA)
 		return;
 
 	ao.priv = HpiOs_MemAlloc(sizeof(HPI_HW_OBJ));
 	memset(ao.priv, 0, sizeof(HPI_HW_OBJ));
 // create the adapter object based on the resource information
-	memcpy(&ao.Pci, &phm->u.s.Resource.r.Pci, sizeof(ao.Pci));
+//? memcpy(&ao.Pci,&phm->u.s.Resource.r.Pci,sizeof(ao.Pci));
+	ao.Pci = *phm->u.s.Resource.r.Pci;
 
-	((HPI_HW_OBJ *) ao.priv)->hpi56301info.dwMemBase = ao.Pci.dwMemBase[0];
+	((HPI_HW_OBJ *) ao.priv)->hpi56301info.pMemBase = ao.Pci.apMemBase[0];
 
 	nError = CreateAdapterObj(&ao, &dwOsErrorCode);
 	if (nError) {
@@ -298,7 +299,9 @@ static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
 		phr->wError = HPI_DUPLICATE_ADAPTER_NUMBER;
 		return;
 	}
-	memcpy(&adaptersList->adapter[ao.wIndex], &ao, sizeof(HPI_ADAPTER_OBJ));
+//? memcpy( &adaptersList->adapter[ ao.wIndex ], &ao, sizeof(HPI_ADAPTER_OBJ));
+	adaptersList->adapter[ao.wIndex] = ao;
+
 	HpiOs_Dsplock_Init(&adaptersList->adapter[ao.wIndex]);
 
 	adaptersList->gwNumAdapters++;	// inc the number of adapters known by this HPI

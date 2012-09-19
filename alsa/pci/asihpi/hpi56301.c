@@ -281,7 +281,8 @@ void MessageBuffer_Sprintf(const char *pFmt, ...)
 #include "boot4ka.h"
 
 // DSP56301 PCI HOST registers (these are the offset from the base address)
-#define REG56301_HCTR       0x0010	// HI32 control reg
+// pMemBase is pointer to u32
+#define REG56301_HCTR      (0x0010/sizeof(u32))	// HI32 control reg
 
 #define HCTR_HTF0           0x0100
 #define HCTR_HTF1           0x0200
@@ -290,16 +291,16 @@ void MessageBuffer_Sprintf(const char *pFmt, ...)
 #define HCTR_XFER_FORMAT    (HCTR_HTF0|HCTR_HRF0)
 #define HCTR_XFER_FORMAT_MASK    (HCTR_HTF0|HCTR_HTF1|HCTR_HRF0|HCTR_HRF1)
 
-#define REG56301_HSTR       0x0014	// HI32 status reg
+#define REG56301_HSTR       (0x0014/sizeof(u32))	// HI32 status reg
 #define HSTR_TRDY           0x0001	/* tx fifo empty */
 #define HSTR_HTRQ           0x0002	/* txfifo not full */
 #define HSTR_HRRQ           0x0004	/* rx fifo not empty */
 #define HSTR_HF4            0x0010
 
-#define REG56301_HCVR       0x0018	// HI32 command vector reg
+#define REG56301_HCVR       (0x0018/sizeof(u32))	// HI32 command vector reg
 
-#define REG56301_HTXR       0x001C	// Host Transmit data reg (FIFO)
-#define REG56301_HRXS       0x001C	// Host Receive data reg (FIFO)
+#define REG56301_HTXR       (0x001C/sizeof(u32))	// Host Transmit data reg (FIFO)
+#define REG56301_HRXS       (0x001C/sizeof(u32))	// Host Receive data reg (FIFO)
 
 #define TIMEOUT             100000	// # of times to retry operations
 
@@ -342,7 +343,7 @@ static short DpiData_Write24(HPI_56301_INFO_OBJ * pio, u32 * pdwData);
 // test out PCI i/f by writing a message block
 // and then receiving it back again
 #if 0
-short Hpi56301_SelfTest(u32 dwMemBase)
+short Hpi56301_SelfTest(u32 pMemBase)
 {
 
 	u32 i = 0;
@@ -360,7 +361,7 @@ short Hpi56301_SelfTest(u32 dwMemBase)
 // Put some self test code here at some stage!
 // Some silly code to get rid of compiler warnings until we complete
 // this function
-	dwData = dwMemBase;
+	dwData = pMemBase;
 	i = dwData;
 	dwData = i;
 
@@ -375,16 +376,16 @@ short Hpi56301_CheckAdapterPresent(HPI_56301_INFO_OBJ * pio)
 {
 	u32 dwData = 0;
 //! Don't set TWSD
-	HPIOS_MEMWRITE32(pio->dwMemBase + REG56301_HCTR, 0xFFF7FFFFL);
-	dwData = HPIOS_MEMREAD32(pio->dwMemBase + REG56301_HCTR);
+	HPIOS_MEMWRITE32(pio->pMemBase + REG56301_HCTR, 0xFFF7FFFFL);
+	dwData = HPIOS_MEMREAD32(pio->pMemBase + REG56301_HCTR);
 	if (dwData != 0x1DBFEL) {
 		HPI_DEBUG_LOG1(DEBUG, "Read should be 1DBFE, but is %X\n",
 			       dwData);
 		return (1);	//error
 	} else {
 		u32 dwHSTR = 0, dwHCVR = 0;
-		dwHSTR = HPIOS_MEMREAD32(pio->dwMemBase + REG56301_HSTR);
-		dwHCVR = HPIOS_MEMREAD32(pio->dwMemBase + REG56301_HCVR);
+		dwHSTR = HPIOS_MEMREAD32(pio->pMemBase + REG56301_HSTR);
+		dwHCVR = HPIOS_MEMREAD32(pio->pMemBase + REG56301_HCVR);
 		HPI_DEBUG_LOG3(VERBOSE,
 			       "PCI registers, HCTR=%08X HSTR=%08X HCVR=%08X\n",
 			       dwData, dwHSTR, dwHCVR);
@@ -393,12 +394,12 @@ short Hpi56301_CheckAdapterPresent(HPI_56301_INFO_OBJ * pio)
 }
 
 /************************************************************************/
-//short Hpi56301_BootLoadDsp( u32 dwMemBase, u32  * apaDspCodeArrays[] ) old
+//short Hpi56301_BootLoadDsp( u32 pMemBase, u32  * apaDspCodeArrays[] ) old
 
 short Hpi56301_BootLoadDsp(HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio,
 			   u32 * pdwOsErrorCode)
 {
-	u32 dwMemBase = pio->dwMemBase;
+	__iomem u32 *pMemBase = pio->pMemBase;
 	DSP_CODE DspCode;
 	short nError = 0;
 
@@ -427,7 +428,7 @@ short Hpi56301_BootLoadDsp(HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio,
 //  Use this if not bootloading
 	Dpi_Command(pio, CVR_RESTART + CVR_NMI);
 	dwHSTR = 0;
-	HPIOS_MEMWRITE32(dwMemBase + REG56301_HCTR, dwHSTR);
+	HPIOS_MEMWRITE32(pMemBase + REG56301_HCTR, dwHSTR);
 	LogRegisterWrite(REG56301_HCTR, dwHSTR);
 	HPIOS_DEBUG_STRING("reset\n");	//*************** debug
 	return (0);
@@ -437,7 +438,7 @@ short Hpi56301_BootLoadDsp(HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio,
 // If board isn't reset, try to reset it now
 	i = 0;
 	do {
-		dwHSTR = HPIOS_MEMREAD32(dwMemBase + REG56301_HSTR);
+		dwHSTR = HPIOS_MEMREAD32(pMemBase + REG56301_HSTR);
 		bFlags = (short)(dwHSTR & HF_MASK);
 		if (bFlags) {
 			HPIOS_DEBUG_STRING("reset,");	//*************** debug
@@ -459,7 +460,7 @@ short Hpi56301_BootLoadDsp(HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio,
 // Set up the transmit and receive FIFO for 24bit words in lower portion of 32 bit word
 // Also set HS[2-0] to 111b to distinguish it from HSTR
 	pio->dwHCTR = HCTR_XFER_FORMAT | 0x1C000;
-	HPIOS_MEMWRITE32(dwMemBase + REG56301_HCTR, pio->dwHCTR);
+	HPIOS_MEMWRITE32(pMemBase + REG56301_HCTR, pio->dwHCTR);
 	LogRegisterWrite(REG56301_HCTR, pio->dwHCTR);
 
 	HpiOs_DelayMicroSeconds(100);
@@ -486,13 +487,13 @@ short Hpi56301_BootLoadDsp(HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio,
 // SGT NOV-25-97 - get adapter ID from bootloader through HF3,4,5, wait until !=0
 	HPIOS_DEBUG_STRING("Id,");	//*************** debug
 	for (k = 10000; k != 0; k--) {
-		dwHSTR = HPIOS_MEMREAD32(dwMemBase + REG56301_HSTR);
+		dwHSTR = HPIOS_MEMREAD32(pMemBase + REG56301_HSTR);
 		LogRegisterRead(REG56301_HSTR, dwHSTR, 0);
 		if (dwHSTR & 0x0038)
 			break;
 	}
 	if (k == 0)
-		return (DPI_ERROR_DOWNLOAD + 5);
+		return (DPI_ERROR_DOWNLOAD + 5);	// 935
 
 	wAdapterId = (unsigned short)(dwHSTR & 0x38) >> 3;
 
@@ -505,17 +506,11 @@ short Hpi56301_BootLoadDsp(HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio,
 	case 2:		// ASI4300
 		nLoadFamily = Load4300;
 		break;
-	case 3:		// ASI4400
-		nLoadFamily = Load4400;
-		break;
 	case 4:		// ASI4100
 		nLoadFamily = Load4100;
 		break;
-	case 6:		// ASI4600
-		nLoadFamily = Load4600;
-		break;
 	default:		// ASI4500
-		nLoadFamily = Load4500;
+		nLoadFamily = Load4300;
 		break;
 	}
 
@@ -612,7 +607,7 @@ short Hpi56301_BootLoadDsp(HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio,
 //********************** steve test
 #endif
 //HpiOs_DelayMicroSeconds( 500000 );
-//if (Dpi_WaitFlags(dwMemBase,HF_DSP_STATE_IDLE))
+//if (Dpi_WaitFlags(pMemBase,HF_DSP_STATE_IDLE))
 //          return(DPI_ERROR_DOWNLOAD+11);  // Never got to idle
 
 // SGT - use custom WaitFlags code that has an extra long timeout
@@ -650,9 +645,9 @@ static u16 Hpi56301_Resync(HPI_56301_INFO_OBJ * pio)
 	wError = Dpi_WaitFlags(pio, HF_DSP_STATE_IDLE);
 	dwTimeout = TIMEOUT;
 	while (dwTimeout
-	       && (HPIOS_MEMREAD32(pio->dwMemBase + REG56301_HSTR) & HSTR_HRRQ))
+	       && (HPIOS_MEMREAD32(pio->pMemBase + REG56301_HSTR) & HSTR_HRRQ))
 	{
-//?         dwData=HPIOS_MEMREAD32(dwMemBase + REG56301_HRXS);
+//?         dwData=HPIOS_MEMREAD32(pMemBase + REG56301_HRXS);
 		dwTimeout--;
 	}
 	if (dwTimeout == 0)
@@ -673,8 +668,8 @@ static short Hpi56301_Send(HPI_56301_INFO_OBJ * pio,
 	u32 dwLength;
 	u32 dwTotal;
 
-	HPI_DEBUG_LOG3(VERBOSE, "Send, ptr = 0x%x, len = %d, cmd = %d\n",
-		       (u32) pData, dwLengthInWords, wDataType);
+	HPI_DEBUG_LOG3(VERBOSE, "Send, ptr=%p, len=%d, cmd=%d\n",
+		       pData, dwLengthInWords, wDataType);
 	HPI_DEBUG_DATA(pData, dwLengthInWords);
 
 	wError = Dpi_WaitFlags(pio, HF_DSP_STATE_IDLE);
@@ -826,10 +821,9 @@ static short Hpi56301_Get(HPI_56301_INFO_OBJ * pio,
 	u32 dwJunk;
 	u32 *pdwJunk = &dwJunk;
 
-	HPI_DEBUG_LOG2(VERBOSE, "Get, ptr = 0x%x, cmd = %d\n", (u32) pData,
-		       wDataType);
-	MessageBuffer_Sprintf("Get, ptr = 0x%x, len = 0x%x, cmd = %d\n",
-			      (u32) pData, dwMaxLengthInWords * 2, wDataType);
+	HPI_DEBUG_LOG2(VERBOSE, "Get, ptr=%p, cmd=%d\n", pData, wDataType);
+	MessageBuffer_Sprintf("Get, ptr =0x%lx, len = 0x%x, cmd = %d\n", pData,
+			      dwMaxLengthInWords * 2, wDataType);
 
 // Wait for indication that previous command has been processed
 	if (wDataType == CMD_GET_RESP) {
@@ -1032,7 +1026,7 @@ still may be an error in the message, so dont assign directly */
 		HPIOS_DEBUG_STRING("C");	// *************** debug
 // note - this transfers the entire packet in one go!
 		nError = Hpi56301_Send(pio,
-				       (u16 *) phm->u.d.u.Data.dwpbData,
+				       (u16 *) phm->u.d.u.Data.pbData,
 				       (phm->u.d.u.Data.dwDataSize /
 					sizeof(u16)), CMD_SEND_DATA);
 		if (nError) {
@@ -1045,7 +1039,7 @@ still may be an error in the message, so dont assign directly */
 		HPIOS_DEBUG_STRING("D");	// *************** debug
 // note - this transfers the entire packet in one go!
 		nError = Hpi56301_Get(pio,
-				      (u16 *) phm->u.d.u.Data.dwpbData,
+				      (u16 *) phm->u.d.u.Data.pbData,
 				      &dwSize,
 				      CMD_GET_DATA,
 				      phm->u.d.u.Data.dwDataSize / sizeof(u16));
@@ -1056,48 +1050,6 @@ still may be an error in the message, so dont assign directly */
 
 		if (phm->u.d.u.Data.dwDataSize != (dwSize * 2)) {	// mismatch in requested and received data size
 			phr->wError = HPI_ERROR_INVALID_DATA_TRANSFER;
-		}
-	}
-
-	if ((phm->wObject == HPI_OBJ_CONTROLEX)
-	    && (phm->u.cx.wAttribute == HPI_AES18_MESSAGE)) {
-
-		if (phm->wFunction == HPI_CONTROL_SET_STATE) {
-			HPIOS_DEBUG_STRING("E");	// *************** debug
-// note - this transfers the entire packet in one go!
-			nError = Hpi56301_Send(pio,
-					       (u16 *) phm->u.cx.u.
-					       aes18tx_send_message.dwpbMessage,
-					       (phm->u.cx.u.
-						aes18tx_send_message.
-						wMessageLength / sizeof(u16)),
-					       CMD_SEND_DATA);
-			if (nError) {
-				phr->wError = nError;
-				return;
-			}
-		}
-
-		if (phm->wFunction == HPI_CONTROL_GET_STATE) {
-			HPIOS_DEBUG_STRING("F");	// *************** debug
-// note - this transfers the entire packet in one go!
-			nError = Hpi56301_Get(pio,
-					      (u16 *) phm->u.cx.u.
-					      aes18rx_get_message.dwpbMessage,
-					      &dwSize, CMD_GET_DATA,
-					      phm->u.cx.u.aes18rx_get_message.
-					      wQueueSize / sizeof(u16));
-			if (nError) {
-				phr->wError = nError;
-				return;
-			}
-
-/*
-if (phm->u.d.Data.dwDataSize != (dwSize *2))
-{   // mismatch in requested and received data size
-phr->wError=HPI_ERROR_INVALID_DATA_TRANSFER;
-}
-*/
 		}
 	}
 
@@ -1114,7 +1066,7 @@ static u32 Dpi_SafeReadHSTR(HPI_56301_INFO_OBJ * pio)
 
 	do {
 		dwTimeout--;
-		dwHSTR = HPIOS_MEMREAD32(pio->dwMemBase + REG56301_HSTR);
+		dwHSTR = HPIOS_MEMREAD32(pio->pMemBase + REG56301_HSTR);
 		if (dwHSTR & CVR_NMI) {
 			LogRegisterRead(REG56301_HSTR, dwHSTR, 1);
 			HPI_DEBUG_LOG1(DEBUG,
@@ -1142,7 +1094,7 @@ static u32 Dpi_SafeReadHCVR(HPI_56301_INFO_OBJ * pio)
 
 	do {
 		dwTimeout--;
-		dwHCVR = HPIOS_MEMREAD32(pio->dwMemBase + REG56301_HCVR);
+		dwHCVR = HPIOS_MEMREAD32(pio->pMemBase + REG56301_HCVR);
 		if ((dwHCVR | CVR_INT) != pio->dwHCVR) {
 			LogRegisterRead(REG56301_HCVR, dwHCVR, 1);
 			HPI_DEBUG_LOG1(DEBUG,
@@ -1165,7 +1117,7 @@ static u32 Dpi_SafeReadHCVR(HPI_56301_INFO_OBJ * pio)
 
 static void Dpi_SafeWriteHCVR(HPI_56301_INFO_OBJ * pio, u32 dwHCVR)
 {
-	HPIOS_MEMWRITE32(pio->dwMemBase + REG56301_HCVR, dwHCVR | CVR_NMI);
+	HPIOS_MEMWRITE32(pio->pMemBase + REG56301_HCVR, dwHCVR | CVR_NMI);
 	LogRegisterWrite(REG56301_HCVR, dwHCVR | CVR_NMI);
 	pio->dwHCVR = dwHCVR | CVR_NMI | CVR_INT;
 }
@@ -1174,7 +1126,7 @@ static void Dpi_SetFlags(HPI_56301_INFO_OBJ * pio, short Flagval)
 {
 	pio->dwHCTR = (pio->dwHCTR & HF_CLEAR) | Flagval;
 
-	HPIOS_MEMWRITE32(pio->dwMemBase + REG56301_HCTR, pio->dwHCTR);
+	HPIOS_MEMWRITE32(pio->pMemBase + REG56301_HCTR, pio->dwHCTR);
 	LogRegisterWrite(REG56301_HCTR, pio->dwHCTR);
 }
 
@@ -1288,13 +1240,13 @@ static short DpiData_Read32(HPI_56301_INFO_OBJ * pio, u32 * pdwData)
 	if (!DpiData_ReadHandshake(pio))
 		return (DPI_ERROR);
 
-	dwD1 = HPIOS_MEMREAD32(pio->dwMemBase + REG56301_HRXS);
+	dwD1 = HPIOS_MEMREAD32(pio->pMemBase + REG56301_HRXS);
 	LogRegisterRead(REG56301_HRXS, dwD1, 0);
 
 	if (!DpiData_ReadHandshake(pio))
 		return (DPI_ERROR);
 
-	dwD2 = HPIOS_MEMREAD32(pio->dwMemBase + REG56301_HRXS);
+	dwD2 = HPIOS_MEMREAD32(pio->pMemBase + REG56301_HRXS);
 	LogRegisterRead(REG56301_HRXS, dwD2, 0);
 
 	*pdwData = (dwD2 << 16) | (dwD1 & 0xFFFF);
@@ -1308,7 +1260,7 @@ static short DpiData_Read16(HPI_56301_INFO_OBJ * pio, u16 * pwData)
 	if (!DpiData_ReadHandshake(pio))
 		return (DPI_ERROR);
 
-	dwD1 = HPIOS_MEMREAD32(pio->dwMemBase + REG56301_HRXS);
+	dwD1 = HPIOS_MEMREAD32(pio->pMemBase + REG56301_HRXS);
 	LogRegisterRead(REG56301_HRXS, dwD1, 0);
 	dwD1 &= 0xFFFF;
 	*pwData = (u16) dwD1;
@@ -1347,7 +1299,7 @@ static short DpiData_Write32(HPI_56301_INFO_OBJ * pio, u32 * pdwData)
 	if (!DpiData_WriteHandshake(pio, HSTR_HTRQ))
 		return (DPI_ERROR);
 
-	HPIOS_MEMWRITE32(pio->dwMemBase + REG56301_HTXR, dwD1);
+	HPIOS_MEMWRITE32(pio->pMemBase + REG56301_HTXR, dwD1);
 	LogRegisterWrite(REG56301_HTXR, dwD1);
 /*
 HPI_DEBUG_LOG1(VERBOSE,"Wrote (lo) 0x%08lx, hstr = 0x%08lx," \
@@ -1358,7 +1310,7 @@ dwD1, dwHSTR, TIMEOUT - dwTimeout);
 	if (!DpiData_WriteHandshake(pio, HSTR_HTRQ))
 		return (DPI_ERROR);
 
-	HPIOS_MEMWRITE32(pio->dwMemBase + REG56301_HTXR, dwD2);
+	HPIOS_MEMWRITE32(pio->pMemBase + REG56301_HTXR, dwD2);
 	LogRegisterWrite(REG56301_HTXR, dwD2);
 /*
 HPI_DEBUG_LOG1(VERBOSE,"Wrote (hi) 0x%08lx, hstr = 0x%08lx," \
@@ -1376,7 +1328,7 @@ static short DpiData_Write24(HPI_56301_INFO_OBJ * pio, u32 * pdwData)
 	if (!DpiData_WriteHandshake(pio, HSTR_HTRQ))
 		return (DPI_ERROR);
 
-	HPIOS_MEMWRITE32(pio->dwMemBase + REG56301_HTXR, *pdwData);
+	HPIOS_MEMWRITE32(pio->pMemBase + REG56301_HTXR, *pdwData);
 	LogRegisterWrite(REG56301_HTXR, *pdwData);
 	return (0);
 }
@@ -1392,7 +1344,7 @@ static short DpiData_Write16(HPI_56301_INFO_OBJ * pio, u16 * pwData)
 		return (DPI_ERROR);
 
 	wData = (u32) * pwData;
-	HPIOS_MEMWRITE32(pio->dwMemBase + REG56301_HTXR, wData);
+	HPIOS_MEMWRITE32(pio->pMemBase + REG56301_HTXR, wData);
 	LogRegisterWrite(REG56301_HTXR, wData);
 //  HPI_DEBUG_LOG1(VERBOSE,"Wrote 0x%08lx, hstr = 0x%08lx, attempts = %ld\n",
 //                    wData, dwHSTR, TIMEOUT - dwTimeout);
@@ -1486,7 +1438,7 @@ short DpiData_WriteBlock32(u32 dwBase, u32 * pdwData, u32 dwLength)
 static short DpiData_WriteBlock16(HPI_56301_INFO_OBJ * pio, u16 * pwData,
 				  u32 dwLength)
 {
-	u32 dwAddrFifoWrite = pio->dwMemBase + REG56301_HTXR;
+	__iomem void *dwAddrFifoWrite = pio->pMemBase + REG56301_HTXR;
 	u32 dwD0, dwD1, dwD2, dwD3, dwD4, dwD5;
 	u32 dwLeft;
 

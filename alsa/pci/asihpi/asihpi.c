@@ -21,6 +21,7 @@
  *  would appreciate it if you grant us the right to use those modifications
  *  for any purpose including commercial applications.
  */
+#define REALLY_VERBOSE_LOGGING 0
 
 // Mixer control
 #ifndef ASI_STYLE_NAMES
@@ -76,7 +77,8 @@ static int enable_bbm = 1;
 
 /* defaults */
 #ifndef MAX_BUFFER_SIZE
-#define MAX_BUFFER_SIZE		(64*1024)
+//#define MAX_BUFFER_SIZE               (64*1024)
+#define MAX_BUFFER_SIZE		(256*1024)
 #endif
 
 #define TIMER_JIFFIES 15
@@ -125,7 +127,8 @@ typedef struct snd_card_asihpi_pcm {
 	unsigned int pcm_buf_pos;	/* position in buffer */
 	struct snd_pcm_substream *substream;
 	HPI_HOSTREAM hStream;
-	HPI_DATA Data;
+	//HPI_DATA Data;
+	HPI_FORMAT Format;
 	unsigned int pcm_hpi_pos;	/* position in buffer */
 
 } snd_card_asihpi_pcm_t;
@@ -145,12 +148,34 @@ static void _HandleError(u16 err, int line, char *filename)
 
 #define HPI_HandleError(x)  _HandleError(x,__LINE__,__FILE__)
 /***************************** GENERAL PCM ****************/
+#if REALLY_VERBOSE_LOGGING
+static void print_hwparams(struct snd_pcm_hw_params *p)
+{
+	snd_printd("HWPARAMS \n");
+	snd_printd("samplerate %d \n", params_rate(p));
+	snd_printd("Channels %d \n", params_channels(p));
+	snd_printd("Format %d \n", params_format(p));
+	snd_printd("subformat %d \n", params_subformat(p));
+	snd_printd("Buffer bytes %d \n", params_buffer_bytes(p));
+	snd_printd("Period bytes %d \n", params_period_bytes(p));
+	snd_printd("access %d \n", params_access(p));
+	snd_printd("period_size %d \n", params_period_size(p));
+	snd_printd("periods %d \n", params_periods(p));
+	snd_printd("buffer_size %d \n", params_buffer_size(p));
+	snd_printd("tick_time %d \n", params_tick_time(p));
+}
+#endif
+
 static int snd_card_asihpi_pcm_hw_params(struct snd_pcm_substream *substream,
 					 struct snd_pcm_hw_params *params)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	unsigned int bps;
+
+#if REALLY_VERBOSE_LOGGING
+	print_hwparams(params);
+#endif
 
 	bps = params_rate(params) * params_channels(params);
 	bps *= snd_pcm_format_width(params_format(params));
@@ -173,7 +198,10 @@ static void snd_card_asihpi_pcm_timer_start(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 
-	dpcm->timer.expires = dpcm->pcm_jiffie_per_period + jiffies;
+	/* wait longer the first time, for samples to propagate */
+	dpcm->timer.expires =
+	    jiffies + dpcm->pcm_jiffie_per_period +
+	    dpcm->pcm_jiffie_per_period / 4;
 	dpcm->respawn_timer = 1;
 	add_timer(&dpcm->timer);
 }
@@ -251,7 +279,7 @@ static void snd_card_asihpi_playback_timer_function(unsigned long data)
 				     &dwBufferSize, &dwDataToPlay,
 				     &dwSamplesPlayed, NULL);
 	HPI_HandleError(err);
-#ifdef REALLY_VERBOSE_LOGGING
+#if REALLY_VERBOSE_LOGGING
 	snd_printd(KERN_DEBUG
 		   "Playback timer state=%d, played=%d, left=%d\n", wState,
 		   (int)dwSamplesPlayed, (int)dwDataToPlay);
@@ -291,34 +319,29 @@ static int snd_card_asihpi_playback_trigger(struct snd_pcm_substream *substream,
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
-	u16 err;
 
 	snd_printd(KERN_INFO "playback trigger\n");
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 		snd_printd("\tstart\n");
-		err = HPI_OutStreamStart(phSubSys, dpcm->hStream);
+		HPI_HandleError(HPI_OutStreamStart(phSubSys, dpcm->hStream));
 		snd_card_asihpi_pcm_timer_start(substream);
-		HPI_HandleError(err);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 		snd_printd("\tstop\n");
 		snd_card_asihpi_pcm_timer_stop(substream);
-		//?     err = HPI_OutStreamStop(phSubSys,dpcm->hStream );
-		err = HPI_OutStreamReset(phSubSys, dpcm->hStream);
-		HPI_HandleError(err);
+		HPI_HandleError(HPI_OutStreamReset(phSubSys, dpcm->hStream));
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		snd_printd("\tpause release\n");
-		err = HPI_OutStreamStart(phSubSys, dpcm->hStream);
+		HPI_HandleError(HPI_OutStreamStart(phSubSys, dpcm->hStream));
 		snd_card_asihpi_pcm_timer_start(substream);
-		HPI_HandleError(err);
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		snd_printd("\tpause push\n");
 		snd_card_asihpi_pcm_timer_stop(substream);
-		err = HPI_OutStreamStop(phSubSys, dpcm->hStream);
-		HPI_HandleError(err);
+		HPI_HandleError(HPI_OutStreamStop(phSubSys, dpcm->hStream));
+		break;
 	default:
 		snd_printd("\tINVALID\n");
 		return -EINVAL;
@@ -344,27 +367,23 @@ static int snd_card_asihpi_playback_hw_params(struct snd_pcm_substream
 	if (err != 0)
 		return err;
 
-	err =
-	    HPI_FormatCreate(&dpcm->Data.Format, params_channels(params),
-			     wFormat, params_rate(params), 0, 0);
+	err = HPI_FormatCreate(&dpcm->Format, params_channels(params),
+			       wFormat, params_rate(params), 0, 0);
 	HPI_HandleError(err);
-
-	dpcm->Data.dwpbData = (u32) runtime->dma_area;
-	dpcm->Data.dwDataSize = MAX_BUFFER_SIZE;
 
 	if (enable_bbm) {
 		dpcm->hpi_out_buffer_allocated = 0;
 		minBufSize = 0;
 
-		err = HPI_StreamEstimateBufferSize(&dpcm->Data.Format,
+		err = HPI_StreamEstimateBufferSize(&dpcm->Format,
 						   (u32) (1000 / HZ),
 						   &minBufSize);
 		snd_printd(KERN_INFO
 			   "OutStreamHostBuffer estimated size: %d bytes\n",
 			   (int)minBufSize);
 
-		if (minBufSize < MAX_BUFFER_SIZE)
-			minBufSize = MAX_BUFFER_SIZE;
+		if (minBufSize < params_buffer_bytes(params))	/* paranoia check */
+			minBufSize = params_buffer_bytes(params);
 
 		// Need to request 4 bytes extra, because buffer is never allowed
 		// to become completely full.
@@ -455,7 +474,7 @@ static struct snd_pcm_hardware snd_card_asihpi_playback = {
 static void snd_card_asihpi_playback_format(snd_card_asihpi_t * asihpi,
 					    HPI_HOSTREAM hStream, u64 * formats)
 {
-	HPI_FORMAT hpi_format = { 48000, 128000, 0, 0, 0, 2, 0 };
+	HPI_FORMAT hpi_format;
 	u16 wFormat;
 	u16 err;
 	HPI_HCONTROL hControl;
@@ -472,7 +491,7 @@ static void snd_card_asihpi_playback_format(snd_card_asihpi_t * asihpi,
 
 	for (wFormat = HPI_FORMAT_PCM8_UNSIGNED;
 	     wFormat <= HPI_FORMAT_PCM24_SIGNED; wFormat++) {
-		hpi_format.wFormat = wFormat;
+		HPI_FormatCreate(&hpi_format, 2, wFormat, 48000, 128000, 0);
 		err = HPI_OutStreamQueryFormat(phSubSys, hStream, &hpi_format);
 		if (!err && (hpi_to_alsa_formats[wFormat] != -1)) {
 			*formats |= (1ULL << hpi_to_alsa_formats[wFormat]);
@@ -555,14 +574,13 @@ static int snd_card_asihpi_playback_copy(struct snd_pcm_substream *substream,
 	if (copy_from_user(runtime->dma_area, src, len))
 		return -EFAULT;
 
-#ifdef REALLY_VERBOSE_LOGGING
+#if REALLY_VERBOSE_LOGGING
 	snd_printd(KERN_DEBUG "playback_copy %u bytes\n", len);
 #endif
 
-	dpcm->Data.dwDataSize = len;
-	dpcm->Data.dwpbData = (u32) runtime->dma_area;
-
-	err = HPI_OutStreamWrite(phSubSys, dpcm->hStream, &dpcm->Data);
+	err =
+	    HPI_OutStreamWriteBuf(phSubSys, dpcm->hStream, runtime->dma_area,
+				  len, &dpcm->Format);
 	HPI_HandleError(err);
 
 	return 0;
@@ -581,7 +599,9 @@ static int snd_card_asihpi_playback_silence(struct snd_pcm_substream *substream,
 	snd_printd(KERN_INFO "playback silence  %u bytes\n", len);
 
 	memset(runtime->dma_area, 0, len);
-	err = HPI_OutStreamWrite(phSubSys, dpcm->hStream, &dpcm->Data);
+	err =
+	    HPI_OutStreamWriteBuf(phSubSys, dpcm->hStream, runtime->dma_area,
+				  len, &dpcm->Format);
 	HPI_HandleError(err);
 	return 0;
 }
@@ -606,20 +626,21 @@ static void snd_card_asihpi_capture_timer_function(unsigned long data)
 	u16 wState, err;
 	u32 dwBufferSize, dwDataToPlay, dwSamplesPlayed;
 
-	dpcm->timer.expires = dpcm->pcm_jiffie_per_period + jiffies;
-
 	err =
 	    HPI_InStreamGetInfoEx(phSubSys, dpcm->hStream, &wState,
 				  &dwBufferSize, &dwDataToPlay,
 				  &dwSamplesPlayed, NULL);
 	HPI_HandleError(err);
 
+	/* Used by capture_pointer */
 	dpcm->pcm_buf_pos = (dpcm->pcm_irq_pos + dwDataToPlay) % dpcm->pcm_size;
-#ifdef REALLY_VERBOSE_LOGGING
+#if REALLY_VERBOSE_LOGGING
 	snd_printd("Capture timer %d samples, %d left, pos %d\n",
 		   (int)dwSamplesPlayed, (int)dwDataToPlay, dpcm->pcm_buf_pos);
 #endif
 
+	/* Future: if data will be left over, make timer expire sooner ? */
+	dpcm->timer.expires = dpcm->pcm_jiffie_per_period + jiffies;
 	if (dpcm->respawn_timer)
 		add_timer(&dpcm->timer);
 
@@ -638,10 +659,8 @@ static int snd_card_asihpi_capture_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
-	int err;
 
-	err = HPI_InStreamReset(phSubSys, dpcm->hStream);
-	HPI_HandleError(err);
+	HPI_HandleError(HPI_InStreamReset(phSubSys, dpcm->hStream));
 	dpcm->pcm_irq_pos = 0;
 	dpcm->pcm_buf_pos = 0;
 
@@ -668,35 +687,35 @@ static int snd_card_asihpi_capture_hw_params(struct snd_pcm_substream
 					     &wFormat)) != 0)
 		return err;
 
-	// HPI_InstreamQueryFormat();
-
+#if REALLY_VERBOSE_LOGGING
+	snd_printd(KERN_INFO "Format %d chan, %d format, %dHz\n ",
+		   params_channels(params), wFormat, params_rate(params));
+#endif
 	err =
-	    HPI_FormatCreate(&dpcm->Data.Format, params_channels(params),
+	    HPI_FormatCreate(&dpcm->Format, params_channels(params),
 			     wFormat, params_rate(params), 0, 0);
 	HPI_HandleError(err);
 
-	if ((err =
-	     HPI_InStreamSetFormat(phSubSys, dpcm->hStream,
-				   &dpcm->Data.Format)) != 0)
+	if (HPI_InStreamReset(phSubSys, dpcm->hStream) != 0)
 		return -EINVAL;
 
-	dpcm->Data.dwpbData = (u32) runtime->dma_area;
-	dpcm->Data.dwDataSize = MAX_BUFFER_SIZE;
+	if (HPI_InStreamSetFormat(phSubSys, dpcm->hStream, &dpcm->Format) != 0)
+		return -EINVAL;
 
 	if (enable_bbm) {
 		dpcm->hpi_in_buffer_allocated = 0;
 		minBufSize = 0;
 
 		err =
-		    HPI_StreamEstimateBufferSize(&dpcm->Data.Format,
+		    HPI_StreamEstimateBufferSize(&dpcm->Format,
 						 (u32) (1000 / HZ),
 						 &minBufSize);
 		snd_printd(KERN_INFO
-			   "OutStreamHostBuffer estimated size: %d bytes\n",
+			   "InStreamHostBuffer estimated size: %d bytes\n",
 			   (int)minBufSize);
 
-		if (minBufSize < MAX_BUFFER_SIZE)	/* paranoia check */
-			minBufSize = MAX_BUFFER_SIZE;
+		if (minBufSize < params_buffer_bytes(params))	/* paranoia check */
+			minBufSize = params_buffer_bytes(params);
 
 		if (err == 0) {
 			err =
@@ -706,10 +725,10 @@ static int snd_card_asihpi_capture_hw_params(struct snd_pcm_substream
 			if (err == 0) {
 				dpcm->hpi_in_buffer_allocated = minBufSize;
 				snd_printd(KERN_INFO
-					   "InStreamHostBufferAllocate succeded");
+					   "InStreamHostBufferAllocate succeded\n");
 			} else if (err != 0 && err != HPI_ERROR_INVALID_FUNC) {
 				snd_printd(KERN_INFO
-					   "InStreamHostBufferAllocate error(%d)",
+					   "InStreamHostBufferAllocate error(%d)\n",
 					   err);
 				return err;
 			}
@@ -717,7 +736,7 @@ static int snd_card_asihpi_capture_hw_params(struct snd_pcm_substream
 			snd_printd(KERN_INFO
 				   "Cannot estimate minimum bus master buffer size\n");
 		}
-		snd_printd(KERN_INFO "InStreamHostBufferAllocate status(%d)",
+		snd_printd(KERN_INFO "InStreamHostBufferAllocate status(%d)\n",
 			   dpcm->hpi_in_buffer_allocated);
 	}
 
@@ -743,19 +762,34 @@ static int snd_card_asihpi_capture_trigger(struct snd_pcm_substream *substream,
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
-	u16 err;
 
-	if (cmd == SNDRV_PCM_TRIGGER_START) {
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
 		snd_printd("Capture Trigger Start\n");
-		err = HPI_InStreamStart(phSubSys, dpcm->hStream);
+		HPI_HandleError(HPI_InStreamStart(phSubSys, dpcm->hStream));
 		snd_card_asihpi_pcm_timer_start(substream);
-	} else if (cmd == SNDRV_PCM_TRIGGER_STOP) {
+		break;
+	case SNDRV_PCM_TRIGGER_STOP:
 		snd_printd("Capture Trigger Stop\n");
 		snd_card_asihpi_pcm_timer_stop(substream);
-		err = HPI_InStreamStop(phSubSys, dpcm->hStream);
-	} else {
+		/*???? should this be stream reset???  Prepare and hwparams do reset */
+		HPI_HandleError(HPI_InStreamStop(phSubSys, dpcm->hStream));
+		break;
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		snd_printd("Capture Trigger Pause release\n");
+		HPI_HandleError(HPI_InStreamStart(phSubSys, dpcm->hStream));
+		snd_card_asihpi_pcm_timer_start(substream);
+		break;
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+		snd_printd("Capture Trigger Pause\n");
+		snd_card_asihpi_pcm_timer_stop(substream);
+		HPI_HandleError(HPI_InStreamStop(phSubSys, dpcm->hStream));
+		break;
+	default:
+		snd_printd("\tINVALID\n");
 		return -EINVAL;
 	}
+
 	return 0;
 }
 
@@ -765,7 +799,9 @@ snd_card_asihpi_capture_pointer(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 
-	//snd_printd("Capture pointer %d\n",dpcm->pcm_buf_pos);
+#if REALLY_VERBOSE_LOGGING
+	snd_printd("Capture pointer %d\n", dpcm->pcm_buf_pos);
+#endif
 	return bytes_to_frames(runtime, dpcm->pcm_buf_pos);
 }
 
@@ -779,8 +815,8 @@ static struct snd_pcm_hardware snd_card_asihpi_capture = {
 	.channels_max = 2,
 	.buffer_bytes_max = MAX_BUFFER_SIZE,
 	.period_bytes_min = MAX_BUFFER_SIZE / 64,
-	.period_bytes_max = MAX_BUFFER_SIZE,
-	.periods_min = 1,
+	.period_bytes_max = MAX_BUFFER_SIZE / 4,
+	.periods_min = 2,
 	.periods_max = 64,
 	.fifo_size = 0,
 };
@@ -788,7 +824,7 @@ static struct snd_pcm_hardware snd_card_asihpi_capture = {
 static void snd_card_asihpi_capture_format(snd_card_asihpi_t * asihpi,
 					   HPI_HOSTREAM hStream, u64 * formats)
 {
-	HPI_FORMAT hpi_format = { 48000, 128000, 0, 0, 0, 2, 0 };
+	HPI_FORMAT hpi_format;
 	u16 wFormat;
 	u16 err;
 	HPI_HCONTROL hControl;
@@ -806,7 +842,8 @@ static void snd_card_asihpi_capture_format(snd_card_asihpi_t * asihpi,
 
 	for (wFormat = HPI_FORMAT_PCM8_UNSIGNED;
 	     wFormat <= HPI_FORMAT_PCM24_SIGNED; wFormat++) {
-		hpi_format.wFormat = wFormat;
+
+		HPI_FormatCreate(&hpi_format, 2, wFormat, 48000, 128000, 0);
 		err = HPI_InStreamQueryFormat(phSubSys, hStream, &hpi_format);
 		if (!err)
 			*formats |= (1ULL << hpi_to_alsa_formats[wFormat]);
@@ -872,20 +909,22 @@ static int snd_card_asihpi_capture_copy(struct snd_pcm_substream *substream,
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	u16 err;
+	u32 dwDataSize;
 
-	dpcm->Data.dwpbData = (u32) runtime->dma_area;
-	dpcm->Data.dwDataSize = frames_to_bytes(runtime, count);
+	dwDataSize = frames_to_bytes(runtime, count);
 
-#ifdef REALLY_VERBOSE_LOGGING
-	snd_printd("Capture copy %d bytes\n", dpcm->Data.dwDataSize);
+#if REALLY_VERBOSE_LOGGING
+	snd_printd("Capture copy %d bytes\n", dwDataSize);
 #endif
-	err = HPI_InStreamRead(phSubSys, dpcm->hStream, &dpcm->Data);
+	err =
+	    HPI_InStreamReadBuf(phSubSys, dpcm->hStream, runtime->dma_area,
+				dwDataSize);
 	HPI_HandleError(err);
 
-	dpcm->pcm_irq_pos =
-	    (dpcm->pcm_irq_pos + dpcm->Data.dwDataSize) % dpcm->pcm_size;
+	/* Used by capture_pointer */
+	dpcm->pcm_irq_pos = (dpcm->pcm_irq_pos + dwDataSize) % dpcm->pcm_size;
 
-	if (copy_to_user(dst, runtime->dma_area, dpcm->Data.dwDataSize))
+	if (copy_to_user(dst, runtime->dma_area, dwDataSize))
 		return -EFAULT;
 
 	return 0;
@@ -945,10 +984,20 @@ typedef struct {
 	TEXT("invalid"), \
 	TEXT("AM"), \
 	TEXT("FM (mono)"), \
-	TEXT("TV"), \
+	TEXT("TV NTSC-M"), \
 	TEXT("FM (stereo)"), \
-	TEXT("AUX") \
+	TEXT("AUX"), \
+	TEXT("TV PAL BG"), \
+	TEXT("TV PAL I"), \
+	TEXT("TV PAL DK"), \
+	TEXT("TV SECAM"), \
 }
+
+#define NUM_TUNER_STRINGS 10
+
+#if ( NUM_TUNER_STRINGS != (HPI_TUNER_BAND_LAST+1) )
+#error "Tuner band strings don't agree with HPI defines - version mismatch?"
+#endif
 
 #ifdef ASI_STYLE_NAMES
 #define ASIHPI_SOURCENODE_STRINGS \
@@ -1007,11 +1056,8 @@ typedef struct {
 #endif
 #define NUM_DESTNODE_STRINGS 7
 
-#if ( (NUM_SOURCENODE_STRINGS < (HPI_SOURCENODE_LAST_INDEX-HPI_SOURCENODE_BASE+1)) || (NUM_DESTNODE_STRINGS < (HPI_DESTNODE_LAST_INDEX-HPI_DESTNODE_BASE+1)))
-#error "Fewer node strings than #defines - new HPI?"
-#endif
-#if ( (NUM_SOURCENODE_STRINGS > (HPI_SOURCENODE_LAST_INDEX-HPI_SOURCENODE_BASE+1)) || (NUM_DESTNODE_STRINGS < (HPI_DESTNODE_LAST_INDEX-HPI_DESTNODE_BASE+1)))
-#warning "More Node strings than HPI defines - old HPI?"
+#if ( (NUM_SOURCENODE_STRINGS != (HPI_SOURCENODE_LAST_INDEX-HPI_SOURCENODE_BASE+1)) || (NUM_DESTNODE_STRINGS != (HPI_DESTNODE_LAST_INDEX-HPI_DESTNODE_BASE+1)))
+#error "Node strings don't agree with HPI defines - version mismatch?"
 #endif
 
 static char *asihpi_src_names[] = ASIHPI_SOURCENODE_STRINGS;
@@ -1306,78 +1352,6 @@ static int snd_asihpi_aesebu_tx_format_put(struct snd_kcontrol *kcontrol,
 					    HPI_AESEBU_Transmitter_SetFormat);
 }
 
-/* TX clock source */
-
-#define ASIHPI_AESEBU_CLOCKSOURCE_STRINGS \
-{ \
-	TEXT("N/A"), \
-	TEXT("Adapter"), \
-	TEXT("AES/EBU sync"), \
-}
-
-static char *asihpi_aesebu_clocksource_names[] =
-    ASIHPI_AESEBU_CLOCKSOURCE_STRINGS;
-
-static int snd_asihpi_aesebu_tx_clocksource_info(struct snd_kcontrol *kcontrol,
-						 struct snd_ctl_elem_info
-						 *uinfo)
-{
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
-	uinfo->count = 1;
-	uinfo->value.enumerated.items = 3;
-
-	if (uinfo->value.enumerated.item >= uinfo->value.enumerated.items)
-		uinfo->value.enumerated.item =
-		    uinfo->value.enumerated.items - 1;
-
-	strcpy(uinfo->value.enumerated.name,
-	       asihpi_aesebu_clocksource_names[uinfo->value.enumerated.item]);
-
-	return 0;
-}
-
-static int snd_asihpi_aesebu_tx_clocksource_get(struct snd_kcontrol *kcontrol,
-						struct snd_ctl_elem_value
-						*ucontrol)
-{
-	HPI_HCONTROL hControl = kcontrol->private_value;
-	u16 sync, err;
-
-	err = HPI_AESEBU_Transmitter_GetClockSource(phSubSys, hControl, &sync);
-
-	/* default to N/A */
-	ucontrol->value.enumerated.item[0] = 0;
-	/* return success but set the control to N/A */
-	if (err)
-		return 0;
-	if (sync == HPI_AESEBU_CLOCKSOURCE_ADAPTER)
-		ucontrol->value.enumerated.item[0] = 1;
-	if (sync == HPI_AESEBU_CLOCKSOURCE_AESEBU_SYNC)
-		ucontrol->value.enumerated.item[0] = 2;
-
-	return 0;
-}
-
-static int snd_asihpi_aesebu_tx_clocksource_put(struct snd_kcontrol *kcontrol,
-						struct snd_ctl_elem_value
-						*ucontrol)
-{
-	HPI_HCONTROL hControl = kcontrol->private_value;
-	/* default to AES/EBU sync */
-	u16 sync = HPI_AESEBU_CLOCKSOURCE_AESEBU_SYNC;
-
-	if (ucontrol->value.enumerated.item[0] == 1)
-		sync = HPI_AESEBU_CLOCKSOURCE_ADAPTER;
-	if (ucontrol->value.enumerated.item[0] == 2)
-		sync = HPI_AESEBU_CLOCKSOURCE_AESEBU_SYNC;
-
-	if (HPI_AESEBU_Transmitter_SetClockSource(phSubSys, hControl, sync)
-	    != 0)
-		return -EINVAL;
-
-	return 1;
-}
-
 /* AESEBU control group initializers  */
 
 static int __devinit snd_asihpi_aesebu_rx_new(snd_card_asihpi_t * asihpi,
@@ -1421,19 +1395,6 @@ static int __devinit snd_asihpi_aesebu_tx_new(snd_card_asihpi_t * asihpi,
 
 	asihpi_ctl_name_prefix(snd_control, asihpi_control);
 	strcat(snd_control->name, " Format");
-
-	if (ctl_add(card, snd_control, asihpi) < 0)
-		return -EINVAL;
-
-/* TX Sample rate source*/
-
-	snd_control->info = snd_asihpi_aesebu_tx_clocksource_info;
-	snd_control->get = snd_asihpi_aesebu_tx_clocksource_get;
-	snd_control->put = snd_asihpi_aesebu_tx_clocksource_put;
-	snd_control->index = asihpi_control->wDstNodeIndex + 1;
-
-	asihpi_ctl_name_prefix(snd_control, asihpi_control);
-	strcat(snd_control->name, " Clock Source");
 
 	if (ctl_add(card, snd_control, asihpi) < 0)
 		return -EINVAL;
@@ -1717,45 +1678,97 @@ static int __devinit snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi,
 /*------------------------------------------------------------
    Meter controls
  ------------------------------------------------------------*/
+#define ASIHPI_LINEAR_METERS 1
+#define ASIHPI_LOG_METERS 0
+
 static int snd_asihpi_meter_info(struct snd_kcontrol *kcontrol,
 				 struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-	uinfo->count = 2;
-	uinfo->value.integer.min = -192 * HPI_UNITS_PER_dB;
+	uinfo->count = HPI_MAX_CHANNELS;
+#if ASIHPI_LINEAR_METERS
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 0x7FFFFFFF;
+#else
+	uinfo->value.integer.min = HPI_METER_MINIMUM;
+#if ASIHPI_LOG_METERS
+	uinfo->value.integer.max = 0;
+#else
 	uinfo->value.integer.max = 32767;
+#endif
+#endif
+
 	return 0;
 }
+
+#if ASIHPI_LINEAR_METERS
+/* linear values for 10dB steps */
+static int log2lin[] = {
+	0x7FFFFFFF,		/* 0dB */
+	679093956,
+	214748365,
+	67909396,
+	21474837,
+	6790940,
+	2147484,		/* -60dB */
+	679094,
+	214748,
+	67909,
+	21475,
+	6791,
+	2147,
+	679,
+	214,
+	68,
+	21,
+	7,
+	2
+};
+#endif
 
 static int snd_asihpi_meter_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	HPI_HCONTROL hControl = kcontrol->private_value;
 	short anGain0_01dB[HPI_MAX_CHANNELS], i;
-	short nLinear = 0;
 	u16 err;
 
 	err = HPI_MeterGetRms(phSubSys, hControl, anGain0_01dB);
 
 	// convert 0..32767 level to 0.01dB (20log10), 0 is -100.00dB
 	for (i = 0; i < HPI_MAX_CHANNELS; i++) {
-		nLinear = anGain0_01dB[i];
-		if ((nLinear == 0) || err)
-			anGain0_01dB[i] = -192 * HPI_UNITS_PER_dB;
+#if ASIHPI_LINEAR_METERS
+		if (err) {
+			ucontrol->value.integer.value[i] = 0;
+		} else if (anGain0_01dB[i] >= 0) {
+			ucontrol->value.integer.value[i] =
+			    anGain0_01dB[i] << 16;
+		} else {
+			/* -ve is log value in millibels < -60dB, convert to (roughly!) linear, */
+			ucontrol->value.integer.value[i] =
+			    log2lin[anGain0_01dB[i] / -1000];
+		}
+#elif ASIHPI_LOG_METERS
+		ucontrol->value.integer.value[i] = anGain0_01dB[i];
+		if ((anGain0_01dB[i] == 0) || err)
+			ucontrol->value.integer.value[i] = HPI_METER_MINIMUM;
+		else if (anGain0_01dB[i] > 0) {
 #if 0
-/* need fixed point log calculation */
-		else if (nLinear > 0) {
-			// actually should always be > 32  32768 => 0dB, 32.768=>-60dB
+			/* need fixed point log calculation convert 32..32767 to -60.00..0.00dB */
+			// actually should always be > 32  32767 => 0dB, 32.767=>-60dB
 			anGain0_01dB[i] =
 			    (short)((float)
 				    (20 * log10((float)nLinear / 32767.0)) *
 				    100.0);
 			// units are 0.01dB
+#endif
 		}		// else don't have to touch the LogValue when it is -ve since it is already a log value
+#else				/* RAW_METERS */
+		ucontrol->value.integer.value[i] = anGain0_01dB[i];
+		if (err)
+			ucontrol->value.integer.value[i] = 0;
 #endif
 	}
-	ucontrol->value.integer.value[0] = anGain0_01dB[0];
-	ucontrol->value.integer.value[1] = anGain0_01dB[1];
 
 	return 0;
 }
@@ -2018,18 +2031,17 @@ static int snd_asihpi_clksrc_put(struct snd_kcontrol *kcontrol,
 	snd_card_asihpi_t *asihpi =
 	    (snd_card_asihpi_t *) (kcontrol->private_data);
 	struct clk_cache *clkcache = &asihpi->cc;
-	int change, index;
+	int change, item;
 	HPI_HCONTROL hControl = kcontrol->private_value;
 
 	change = 1;
-	index = ucontrol->value.enumerated.item[0];
-	if (index >= clkcache->count)
-		index = clkcache->count - 1;
+	item = ucontrol->value.enumerated.item[0];
+	if (item >= clkcache->count)
+		item = clkcache->count - 1;
 
-	HPI_SampleClock_SetSource(phSubSys, hControl,
-				  clkcache->s[index].source);
-	HPI_SampleClock_SetSourceIndex(phSubSys, hControl,
-				       clkcache->s[index].index);
+	HPI_SampleClock_SetSource(phSubSys, hControl, clkcache->s[item].source);
+	HPI_SampleClock_SetSourceIndex(phSubSys,
+				       hControl, clkcache->s[item].index);
 	return change;
 }
 

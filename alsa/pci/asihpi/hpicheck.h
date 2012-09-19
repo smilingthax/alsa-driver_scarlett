@@ -35,11 +35,11 @@ typedef char msg[(cond) ? 1 : -1]
 
 /* check that size is exactly some number */
 #define compile_time_size_check(sym,size) \
-compile_time_assert(sizeof(sym)==size,sizechk##sym)
+compile_time_assert(sizeof(sym)==(size),sizechk##sym)
 
 /* check that size is a multiple of unit */
 #define compile_time_unit_check(sym,unit) \
-compile_time_assert((sizeof(sym)%unit)==0,unitchk##sym)
+compile_time_assert((sizeof(sym)%(unit))==0,unitchk##sym)
 
 /* Each object MSG and RES must be multiple of 4 bytes */
 #define compile_time_obj_check(obj) \
@@ -50,8 +50,12 @@ compile_time_unit_check(obj##_RES,4)
 compile_time_size_check(u8, 1);
 compile_time_size_check(u16, 2);
 compile_time_size_check(u32, 4);
-
+#ifdef HPI_MESSAGE_FORCE_SIZE
+compile_time_size_check(HPI_MESSAGE, HPI_MESSAGE_FORCE_SIZE);
+#else
 compile_time_size_check(HPI_MESSAGE, 44);
+#endif
+
 compile_time_size_check(HPI_RESPONSE, 64);
 
 compile_time_obj_check(HPI_SUBSYS);
@@ -66,3 +70,17 @@ compile_time_obj_check(HPI_WATCHDOG);
 compile_time_obj_check(HPI_CLOCK);
 compile_time_obj_check(HPI_PROFILE);
 compile_time_obj_check(HPI_ASYNC);
+
+/* API HPI_FORMAT must have fixed size */
+compile_time_size_check(HPI_FORMAT, 5 * 4);
+
+/* Message FORMAT must fit inside API format */
+compile_time_assert((sizeof(HPI_MSG_FORMAT) <= sizeof(HPI_FORMAT)), format_fit);
+
+#ifndef HPI_WITHOUT_HPI_DATA
+/* API HPI_FORMAT must have fixed size */
+compile_time_size_check(HPI_DATA, 7 * 4);
+
+/* Message DATA must fit inside API data */
+compile_time_assert((sizeof(HPI_MSG_DATA) <= sizeof(HPI_DATA)), data_fit);
+#endif

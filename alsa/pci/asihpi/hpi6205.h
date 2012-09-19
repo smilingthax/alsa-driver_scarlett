@@ -70,19 +70,37 @@ Types used for mixer control caching
 
 #define H620_MAX_ISTREAMS 32
 #define H620_MAX_OSTREAMS 32
-#define HPI_NMIXER_CONTROLS 350
+#define HPI_NMIXER_CONTROLS 2048
 
-/***********************************************************
-This is used for background buffer bus mastering.
-************************************************************/
+/*********************************************************************
+This is used for background buffer bus mastering stream buffers.
+**********************************************************************/
 typedef volatile struct {
 	u32 dwSamplesProcessed;
-	u32 dwAuxilaryDataAvailable;
+	u32 dwAuxiliaryDataAvailable;
 	u32 dwStreamState;
 	u32 dwDSPIndex;		// DSP index in to the host bus master buffer.
 	u32 dwHostIndex;	// Host index in to the host bus master buffer.
 	u32 dwSizeInBytes;
 } H620_HOSTBUFFER_STATUS;
+
+/*********************************************************************
+This is used for dynamic control cache allocation
+**********************************************************************/
+typedef volatile struct {
+	u32 dwNumberOfControls;
+	u32 dwPhysicalPCI32address;
+	u32 dwSpare;
+} H620_CONTROLCACHE;
+
+/*********************************************************************
+This is used for dynamic allocation of async event array
+**********************************************************************/
+typedef volatile struct {
+	u32 dwPhysicalPCI32address;
+	u32 dwSpare;
+	tHPIFIFOBuffer b;
+} H620_ASYNC_EVENT_BUFFER;
 
 /***********************************************************
 The Host located memory buffer that the 6205 will bus master
@@ -98,7 +116,8 @@ typedef volatile struct {
 		HPI_RESPONSE ResponseBuffer;
 		u8 bData[HPI6205_SIZEOF_DATA];
 	} u;
-	tHPIControlCacheSingle ControlCache[HPI_NMIXER_CONTROLS];
+	H620_CONTROLCACHE aControlCache;
+	H620_ASYNC_EVENT_BUFFER aAsyncBuffer;
 	H620_HOSTBUFFER_STATUS aInStreamHostBufferStatus[H620_MAX_ISTREAMS];
 	H620_HOSTBUFFER_STATUS aOutStreamHostBufferStatus[H620_MAX_OSTREAMS];
 } tBusMasteringInterfaceBuffer;

@@ -55,7 +55,7 @@ extern "C" {
 #define HPI_DEBUG_LEVEL_DEFAULT HPI_DEBUG_LEVEL_NOTICE
 #endif
 
-/* an OS can define an extra flag string that is appended to 
+/* an OS can define an extra flag string that is appended to
 the start of each message, eg see hpios_linux.h */
 #ifndef HPI_DEBUG_FLAG_ERROR
 #define HPI_DEBUG_FLAG_ERROR
@@ -78,7 +78,9 @@ The printf functionality then provided by hpidebug.c::hpi_debug_printf
 #if ! defined ( HPIOS_DEBUG_PRINT ) && ! defined ( HPIOS_DEBUG_PRINTF ) && defined ( HPI_DEBUG )
 #undef HPI_DEBUG
 #undef HPI_DEBUG_VERBOSE
-#warning "Can't debug with this build because no debug print functions defined"
+#ifdef _MSC_VER
+#pragma message "Warning: Can't debug with this build because no debug print functions defined"
+#endif
 #endif
 
 /* HPI_DEBUG_VERBOSE causes file and line to be printed with each message */
@@ -154,9 +156,11 @@ HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level FILE_LINE __stringify(level) " " fmt,p
 #define HPIOS_DEBUG_STRING(s)
 #endif
 
-	extern int hpiDebugLevel;
-
+	void HPI_DebugInit(void);
 	int HPI_DebugLevelSet(int level);
+	int HPI_DebugLevelGet(void);
+	extern int hpiDebugLevel;	// needed by Linux driver for dynamic debug level changes
+
 	void hpi_debug_message(HPI_MESSAGE * phm);
 	void hpi_debug_response(HPI_RESPONSE * phr);
 
@@ -190,7 +194,7 @@ HPI_DEBUG_LOG0(VERBOSE,"OK\n"); \
 } while (0)
 #endif
 
-/* Be careful with these macros.  Ensure that they are used within a block.  
+/* Be careful with these macros.  Ensure that they are used within a block.
 Otherwise the second if might have an else after it... */
 #define HPI_PRINT_ERROR \
 HPIOS_DEBUG_PRINTF("%s,%d ",__FILE__,__LINE__); \
@@ -309,7 +313,10 @@ TEXT("HPI_OSTREAM_ANC_READ"),       \
 TEXT("HPI_OSTREAM_SET_TIMESCALE"),            \
 TEXT("HPI_OSTREAM_SET_FORMAT"), \
 TEXT("HPI_OSTREAM_HOSTBUFFER_ALLOC"), \
-TEXT("HPI_OSTREAM_HOSTBUFFER_FREE") \
+TEXT("HPI_OSTREAM_HOSTBUFFER_FREE"), \
+TEXT("HPI_OSTREAM_GROUP_ADD"),\
+TEXT("HPI_OSTREAM_GROUP_GETMAP"), \
+TEXT("HPI_OSTREAM_GROUP_RESET"), \
 };
 
 #define HPI_ISTREAM_STRINGS     \
@@ -327,7 +334,10 @@ TEXT("HPI_ISTREAM_ANC_RESET"),      \
 TEXT("HPI_ISTREAM_ANC_GET_INFO"),   \
 TEXT("HPI_ISTREAM_ANC_WRITE"),   \
 TEXT("HPI_ISTREAM_HOSTBUFFER_ALLOC"), \
-TEXT("HPI_ISTREAM_HOSTBUFFER_FREE") \
+TEXT("HPI_ISTREAM_HOSTBUFFER_FREE"), \
+TEXT("HPI_ISTREAM_GROUP_ADD"), \
+TEXT("HPI_ISTREAM_GROUP_GETMAP"), \
+TEXT("HPI_ISTREAM_GROUP_RESET"), \
 };
 
 #define HPI_MIXER_STRINGS       \
@@ -339,7 +349,10 @@ TEXT("HPI_MIXER_GET_NODE_INFO"),      \
 TEXT("HPI_MIXER_GET_CONTROL"),        \
 TEXT("HPI_MIXER_SET_CONNECTION"),     \
 TEXT("HPI_MIXER_GET_CONNECTIONS"),    \
-TEXT("HPI_MIXER_GET_CONTROL_BY_INDEX")        \
+TEXT("HPI_MIXER_GET_CONTROL_BY_INDEX"),       \
+TEXT("HPI_MIXER_GET_CONTROL_ARRAY_BY_INDEX"), \
+TEXT("HPI_MIXER_GET_CONTROL_MULTIPLE_VALUES"),        \
+TEXT("HPI_MIXER_STORE"),      \
 };
 
 #define HPI_CONTROL_STRINGS     \
@@ -462,6 +475,8 @@ TEXT("HPI_CHANNEL_MODE_SWAP"), \
 TEXT("HPI_CHANNEL_MODE_LEFT_ONLY"), \
 TEXT("HPI_CHANNEL_MODE_RIGHT_ONLY") \
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 #ifdef __cplusplus
 }

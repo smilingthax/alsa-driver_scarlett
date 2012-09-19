@@ -55,22 +55,13 @@ HPI Operating System Specific macros for Linux
 #define __iomem
 #endif
 
-#ifdef ALSA_BUILD
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-#define irqs_disabled()							\
-({									\
-	unsigned long flags;						\
-	__asm__ __volatile__("pushfl ; popl %0" : "=g"(flags) : );	\
-	!(flags & (1 << 9));						\
-})
-#endif
-#endif
-
 //Use the kernel firmware loader
 #define DSPCODE_FIRMWARE 1
 
+#ifdef CONFIG_64BIT
+#define HPI_64BIT
+#endif
 /* //////////////////////////////////////////////////////////////////////// */
-
 struct hpi_ioctl_linux {
 	void __user *phm;
 	void __user *phr;
@@ -101,19 +92,11 @@ typedef void *HpiOs_LockedMem_Handle;
 #define HOUTBUF8(p,a,l) outsb(p,a,l)
 
 /* Memory read/write */
-/*? Casting to (void __iomem *) here may hide problems??? */
-#define HPIOS_MEMWRITE32(a,d)       writel((d),(void __iomem *)(a))
-#define HPIOS_MEMREAD32(a)          ((volatile u32)readl((void __iomem *)a))
-#define HPIOS_MEMWRITEBLK32(f,t,n) HpiOs_MemWriteBlk32(f,t,n)
-/* based on linux/string.h */
-static inline void HpiOs_MemWriteBlk32(const u32 * from, u32 * to, size_t n)
-{
-	int d0, d1, d2;
+#define HPIOS_MEMWRITE32(a,d) iowrite32((d),(a))
+#define HPIOS_MEMREAD32(a) ioread32((a))
 
-	__asm__ __volatile__("rep \n\t movsl":"=&c"(d0), "=&D"(d1), "=&S"(d2)
-			     :"0"(n), "1"((long)to), "2"((long)from)
-			     :"memory");
-}
+#define HPIOS_MEMWRITEBLK32(from,to,nwords) iowrite32_rep(to,from,nwords)
+#define HPIOS_MEMREADBLK32(from,to,nwords)  ioread32_rep(from,to,nwords)
 
 #if 1
 
@@ -252,7 +235,7 @@ typedef struct {
 	void *snd_card_asihpi;
 
 	char *pBuffer;
-	void __iomem *dwRemappedMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
+	void __iomem *apRemappedMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
 
 } adapter_t;
 
