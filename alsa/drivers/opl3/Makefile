@@ -10,6 +10,8 @@ endif
 
 obj-$(CONFIG_SND_PC98_CS4232) += $(OPL3_OBJS)
 
+export-objs  := opl3_lib.o
+
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/drivers/opl3/Makefile
 

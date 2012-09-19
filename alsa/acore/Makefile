@@ -11,6 +11,12 @@ obj-$(CONFIG_SND_VXPOCKET) += snd-pcm.o snd-timer.o snd.o snd-rawmidi.o
 obj-$(CONFIG_SND_VXP440) += snd-pcm.o snd-timer.o snd.o
 obj-$(CONFIG_SND_HARMONY) += snd-pcm.o snd-timer.o snd.o
 
+export-objs := sound.o pcm.o pcm_lib.o rawmidi.o timer.o hwdep.o
+
+ifeq ($(CONFIG_PCI),y)
+export-objs += pcm_sgbuf.o
+endif
+
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/core/Makefile
 
