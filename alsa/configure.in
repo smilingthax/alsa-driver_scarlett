@@ -175,6 +175,8 @@ CHECK_KERNEL_HEADER(linux/irq.h)
 CHECK_KERNEL_HEADER(linux/threads.h)
 CHECK_KERNEL_HEADER(linux/rwsem.h)
 
+CHECK_KERNEL_HEADER(linux/workqueue.h)
+
 dnl Check kernel configurations
 
 AC_DEFUN(CHECK_KERNEL_CONFIG, [

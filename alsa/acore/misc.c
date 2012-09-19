@@ -1,5 +1,6 @@
 #define __NO_VERSION__
 #include "../alsa-kernel/core/misc.c"
+#include <linux/smp_lock.h>
 
 
 #if defined(CONFIG_DEVFS_FS) && LINUX_VERSION_CODE < KERNEL_VERSION(2,5,29)
@@ -525,3 +526,40 @@ int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 }
 
 #endif /* kernel version < 2.3.0 && CONFIG_APM */
+
+/* workqueue-alike; 2.5.45 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 45)
+
+static int work_caller(void *data)
+{
+	struct work_struct *works = data;
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+	lock_kernel();
+#endif
+	daemonize();
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+	reparent_to_init();
+#endif
+	strcpy(current->comm, "snd-free"); /* FIXME: different names? */
+
+	works->func(works->data);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+	unlock_kernel();
+#endif
+	kfree(works);
+
+	return 0;
+}
+
+int snd_compat_schedule_work(struct work_struct *works)
+{
+	struct work_struct *wp = kmalloc(sizeof(*wp), GFP_KERNEL);
+	if (! wp)
+		return 0;
+	*wp = *works;
+	return kernel_thread(work_caller, wp, 0) >= 0;
+}
+
+#endif
