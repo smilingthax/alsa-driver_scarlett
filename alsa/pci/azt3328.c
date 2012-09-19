@@ -3,12 +3,12 @@
  *  Copyright (C) 2002 by Andreas Mohr <hw7oshyuv3001@sneakemail.com>
  *
  *  Framework borrowed from Bart Hartgers's als4000.c.
- *  Driver developed on the PCI168 AP(W) version (subsystem ID 1801),
+ *  Driver developed on PCI168 AP(W) version (PCI rev. 10, subsystem ID 1801),
  *  found in a Fujitsu-Siemens PC ("Cordant", aluminum case).
  *  Other versions are:
  *  PCI168 A(W), sub ID 1800
  *  PCI168 A/AP, sub ID 8000
- *  Please give me feedback in case you try my driver with one of these !!
+ *  Please give me feedback in case you try my driver with one of these!!
  *
  * GPL LICENSE
  *  This program is free software; you can redistribute it and/or modify
@@ -52,9 +52,14 @@
  *    required for Microsoft's logo compliance (FIXME: where ?)
  *  - PCI168 AP(W) card: power amplifier with 4 Watts/channel at 4 Ohms
  *
- *  As this card probably doesn't have a DMA FIFO buffer, it is susceptible
- *  to DMA traffic underruns (resulting in sound crackling/clicking/popping).
- *  This is the case with VIA chipsets or, in my case, an SiS735, which is
+ *  Certain PCI versions of this card are susceptible to DMA traffic underruns
+ *  in some systems (resulting in sound crackling/clicking/popping),
+ *  probably because they don't have a DMA FIFO buffer or so.
+ *  Overview (PCI ID/PCI subID/PCI rev.):
+ *  - no DMA crackling on SiS735: 0x50DC/0x1801/16
+ *  - unknown performance: 0x50DC/0x1801/10
+ *  
+ *  Crackling happens with VIA chipsets or, in my case, an SiS735, which is
  *  supposed to be very fast and supposed to get rid of crackling much
  *  better than a VIA, yet ironically I still get crackling, like many other
  *  people with the same chipset.

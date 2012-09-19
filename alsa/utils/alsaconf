@@ -96,6 +96,16 @@ while true ; do
     esac
 done
 
+#
+# check the snd_ prefix for ALSA module options
+# snd_ prefix is obsoleted since 0.9.0rc4.
+#
+if modinfo -p snd | grep -q snd_ ; then
+  mpfx="snd_"
+else
+  mpfx=""
+fi
+
 alsa_device_opts=""
 if [ x"$alsa_uid" != x0 ]; then
     alsa_device_opts="$alsa_device_opts ${mpfx}device_uid=$alsa_uid"
@@ -116,16 +126,6 @@ elif [ -e /etc/conf.modules ]; then
 else
   cfgfile="/etc/modules.conf"
   touch /etc/modules.conf
-fi
-
-#
-# check the snd_ prefix for ALSA module options
-# snd_ prefix is obsoleted since 0.9.0rc4.
-#
-if modinfo -p snd | grep -q snd_ ; then
-  mpfx="snd_"
-else
-  mpfx=""
 fi
 
 # Check for dialog, whiptail, gdialog, awk, ... ?
@@ -780,7 +780,7 @@ ac_try_dmas () {
     return 1
 }
 
-# check if the option $2 exists in card §1: set value $3
+# check if the option $2 exists in card $1: set value $3
 ac_check_option () {
     if modinfo -p snd-$1 | grep $2 > /dev/null 2>&1 ; then
       echo "$2=$3"
@@ -995,7 +995,7 @@ devs_found=()
 if [ -s "$FOUND" ]; then
     while read dev card ; do
 	/sbin/modprobe -a -l | grep $card'\.o' >/dev/null 2>&1 || continue
-	cardname=`find_device_name $dev`
+	cardname=`find_device_name $dev | cut -c 1-64`
 	if [ -z "$cardname" ]; then
 	    cardname="$card"
 	fi
