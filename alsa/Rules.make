@@ -235,12 +235,14 @@ endif
 
 $(MODINCL)/$(MODPREFIX)%.ver: %.c
 	@if [ ! -r $(MODINCL)/$(MODPREFIX)$*.stamp -o $(MODINCL)/$(MODPREFIX)$*.stamp -ot $< ]; then \
+		if [ ! -f $(CONFIG_SND_KERNELDIR)/include/linux/modules/$*.stamp ]; then \
 		echo '$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -E -D__GENKSYMS__ $<'; \
 		echo '| $(GENKSYMS) $(genksyms_smp_prefix) > $@.tmp'; \
 		$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -E -D__GENKSYMS__ $< \
 		| $(GENKSYMS) $(genksyms_smp_prefix) > $@.tmp; \
 		if [ -r $@ ] && cmp -s $@ $@.tmp; then echo $@ is unchanged; rm -f $@.tmp; \
 		else echo mv $@.tmp $@; mv -f $@.tmp $@; fi; \
+		fi; \
 	fi; touch $(MODINCL)/$(MODPREFIX)$*.stamp
 
 $(addprefix $(MODINCL)/$(MODPREFIX),$(export-objs:.o=.ver)): $(TOPDIR)/include/config.h $(TOPDIR)/include/config1.h
