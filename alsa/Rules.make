@@ -261,14 +261,6 @@ $(SNDVERSIONS):
 
 $(active-objs): $(SNDVERSIONS)
 
-$(ld-multi-used-m): $(addprefix $(TOPDIR)/modules/,$(ld-multi-used-m))
-
-$(TOPDIR)/modules/%.o: dummy
-	@if ! test -L $@; then \
-	    echo "ln -sf ../$(MODCURDIR)/$(notdir $@) $(TOPDIR)/modules/$(notdir $@)" ; \
-	    ln -sf ../$(MODCURDIR)/$(notdir $@) $(TOPDIR)/modules/$(notdir $@) ; \
-	fi
-
 else # !CONFIG_SND_MVERSION
 
 define update-sndvers
@@ -279,6 +271,14 @@ $(SNDVERSIONS):
 	$(update-sndvers)
 
 endif # CONFIG_SND_MVERSION
+
+$(ld-multi-used-m): $(addprefix $(TOPDIR)/modules/,$(ld-multi-used-m))
+
+$(TOPDIR)/modules/%.o: dummy
+	@if ! test -L $@; then \
+	    echo "ln -sf ../$(MODCURDIR)/$(notdir $@) $(TOPDIR)/modules/$(notdir $@)" ; \
+	    ln -sf ../$(MODCURDIR)/$(notdir $@) $(TOPDIR)/modules/$(notdir $@) ; \
+	fi
 
 .PHONY: update-sndversions
 update-sndversions: dummy
