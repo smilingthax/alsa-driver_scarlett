@@ -741,11 +741,8 @@ int main(void)
   AC_MSG_RESULT("unknown");rtcsup="n"
 )
 CFLAGS=$ac_save_CFLAGS
-CONFIG_SND_RTC=$rtcsup
-AC_SUBST(CONFIG_SND_RTC)
-if test "$CONFIG_SND_RTC" = "1"; then
-  AC_DEFINE(CONFIG_SND_RTC)
-fi
+CONFIG_SND_RTCTIMER=$rtcsup
+AC_SUBST(CONFIG_SND_RTCTIMER)
 
 dnl Check for which cards to compile driver for...
 ALSA_TOPLEVEL_INIT

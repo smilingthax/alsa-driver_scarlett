@@ -53,7 +53,7 @@ CONFIG_SND_MIXER_OSS	= n
 CONFIG_SND_PCM_OSS	= n
 CONFIG_SND_SEQUENCER_OSS = n
 endif
-CONFIG_SND_RTC		= @CONFIG_SND_RTC@
+CONFIG_SND_RTCTIMER	= @CONFIG_SND_RTCTIMER@
 
 INCLUDE		= -I$(TOPDIR)/include -I$(CONFIG_SND_KERNELDIR)/include
 CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
