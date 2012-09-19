@@ -455,11 +455,34 @@ static const struct snd_soc_dapm_widget aic3x_dapm_widgets[] = {
 	SND_SOC_DAPM_MUX("Right Line2R Mux", SND_SOC_NOPM, 0, 0,
 			 &aic3x_right_line2_mux_controls),
 
+	/*
+	 * Not a real mic bias widget but similar function. This is for dynamic
+	 * control of GPIO1 digital mic modulator clock output function when
+	 * using digital mic.
+	 */
+	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "GPIO1 dmic modclk",
+			 AIC3X_GPIO1_REG, 4, 0xf,
+			 AIC3X_GPIO1_FUNC_DIGITAL_MIC_MODCLK,
+			 AIC3X_GPIO1_FUNC_DISABLED),
+
+	/*
+	 * Also similar function like mic bias. Selects digital mic with
+	 * configurable oversampling rate instead of ADC converter.
+	 */
+	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "DMic Rate 128",
+			 AIC3X_ASD_INTF_CTRLA, 0, 3, 1, 0),
+	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "DMic Rate 64",
+			 AIC3X_ASD_INTF_CTRLA, 0, 3, 2, 0),
+	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "DMic Rate 32",
+			 AIC3X_ASD_INTF_CTRLA, 0, 3, 3, 0),
+
 	/* Mic Bias */
-	SND_SOC_DAPM_MICBIAS("Mic Bias 2V", MICBIAS_CTRL, 6, 0),
-	SND_SOC_DAPM_MICBIAS("Mic Bias 2.5V", MICBIAS_CTRL, 7, 0),
-	SND_SOC_DAPM_MICBIAS("Mic Bias AVDD", MICBIAS_CTRL, 6, 0),
-	SND_SOC_DAPM_MICBIAS("Mic Bias AVDD", MICBIAS_CTRL, 7, 0),
+	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias 2V",
+			 MICBIAS_CTRL, 6, 3, 1, 0),
+	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias 2.5V",
+			 MICBIAS_CTRL, 6, 3, 2, 0),
+	SND_SOC_DAPM_REG(snd_soc_dapm_micbias, "Mic Bias AVDD",
+			 MICBIAS_CTRL, 6, 3, 3, 0),
 
 	/* Left PGA to Left Output bypass */
 	SND_SOC_DAPM_MIXER("Left PGA Bypass Mixer", SND_SOC_NOPM, 0, 0,
@@ -568,6 +591,7 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"Left PGA Mixer", "Mic3L Switch", "MIC3L"},
 
 	{"Left ADC", NULL, "Left PGA Mixer"},
+	{"Left ADC", NULL, "GPIO1 dmic modclk"},
 
 	/* Right Input */
 	{"Right Line1R Mux", "single-ended", "LINE1R"},
@@ -581,6 +605,7 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"Right PGA Mixer", "Mic3R Switch", "MIC3R"},
 
 	{"Right ADC", NULL, "Right PGA Mixer"},
+	{"Right ADC", NULL, "GPIO1 dmic modclk"},
 
 	/* Left PGA Bypass */
 	{"Left PGA Bypass Mixer", "Line Switch", "Left PGA Mixer"},
@@ -641,6 +666,14 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"Right Line Out", NULL, "Right Line2 Bypass Mixer"},
 	{"Mono Out", NULL, "Right Line2 Bypass Mixer"},
 	{"Right HP Out", NULL, "Right Line2 Bypass Mixer"},
+
+	/*
+	 * Logical path between digital mic enable and GPIO1 modulator clock
+	 * output function
+	 */
+	{"GPIO1 dmic modclk", NULL, "DMic Rate 128"},
+	{"GPIO1 dmic modclk", NULL, "DMic Rate 64"},
+	{"GPIO1 dmic modclk", NULL, "DMic Rate 32"},
 };
 
 static int aic3x_add_widgets(struct snd_soc_codec *codec)
@@ -807,8 +840,10 @@ static int aic3x_set_dai_fmt(struct snd_soc_codec_dai *codec_dai,
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
 	struct aic3x_priv *aic3x = codec->private_data;
-	u8 iface_areg = 0;
-	u8 iface_breg = 0;
+	u8 iface_areg, iface_breg;
+
+	iface_areg = aic3x_read_reg_cache(codec, AIC3X_ASD_INTF_CTRLA) & 0x3f;
+	iface_breg = aic3x_read_reg_cache(codec, AIC3X_ASD_INTF_CTRLB) & 0x3f;
 
 	/* set master/slave audio interface */
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
