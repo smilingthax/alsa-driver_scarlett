@@ -98,7 +98,7 @@
 
 
 MODULE_AUTHOR("Karsten Wiese <annabellesgarden@yahoo.de>");
-MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.6.0");
+MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.6.1");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{TASCAM(0x1604), "NAME_ALLCAPS"(0x8001)(0x8007) }}");
@@ -155,7 +155,7 @@ void snd_usX2Y_In04Int(struct urb* urb)
 	usX2Y->In04IntCalls++;
 
 	if (urb->status) {
-		snd_printk( "Interrupt Pipe 4 came back with status=%i\n", urb->status);
+		snd_printd("Interrupt Pipe 4 came back with status=%i\n", urb->status);
 		return;
 	}
 
