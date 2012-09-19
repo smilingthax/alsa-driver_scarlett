@@ -2138,14 +2138,13 @@ static void do_ali_reset(intel8x0_t *chip)
 	iputdword(chip, ICHREG(ALI_FIFOCR2), 0x83838383);
 	iputdword(chip, ICHREG(ALI_FIFOCR3), 0x83838383);
 	iputdword(chip, ICHREG(ALI_INTERFACECR),
-		  ICH_ALI_IF_MC|ICH_ALI_IF_PI|ICH_ALI_IF_PO);
+		  ICH_ALI_IF_PI|ICH_ALI_IF_PO);
 	iputdword(chip, ICHREG(ALI_INTERRUPTCR), 0x00000000);
 	iputdword(chip, ICHREG(ALI_INTERRUPTSR), 0x00000000);
 }
 
 #define do_delay(chip) do {\
-	set_current_state(TASK_UNINTERRUPTIBLE);\
-	schedule_timeout(1);\
+	schedule_timeout_uninterruptible(1);\
 } while (0)
 
 static int snd_intel8x0_ich_chip_init(intel8x0_t *chip, int probing)
@@ -2484,7 +2483,7 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	do_gettimeofday(&stop_time);
 	/* stop */
 	if (chip->device_type == DEVICE_ALI) {
-		iputdword(chip, ICHREG(ALI_DMACR), 1 << (ichdev->ali_slot + 8));
+		iputdword(chip, ICHREG(ALI_DMACR), 1 << (ichdev->ali_slot + 16));
 		iputbyte(chip, port + ICH_REG_OFF_CR, 0);
 		while (igetbyte(chip, port + ICH_REG_OFF_CR))
 			;
