@@ -38,13 +38,7 @@
 
 #if defined(ALSA_BUILD) && LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
-#define MODVERSIONS
-#include <linux/modversions.h>
 #include "sndversions.h"
-#endif
-#ifdef SNDRV_NO_MODVERS
-#undef MODVERSIONS
-#undef _set_ver
 #endif
 #endif /* ALSA_BUILD && KERNEL < 2.6.0 */
 
@@ -670,6 +664,7 @@ unsigned long snd_compat_msleep_interruptible(unsigned int msecs);
 
 /* dump_stack hack */
 #ifndef CONFIG_HAVE_DUMP_STACK
+#undef dump_stack
 #define dump_stack()
 #endif
 
@@ -761,16 +756,26 @@ struct snd_gameport {
 };
 static inline struct gameport *gameport_allocate_port(void)
 {
+	extern void *snd_hidden_kcalloc(size_t n, size_t size, int flags);
 	struct snd_gameport *gp;
+#ifdef CONFIG_SND_DEBUG_MEMORY
+	gp = snd_hidden_kcalloc(1, sizeof(*gp), GFP_KERNEL);
+#else
 	gp = kcalloc(1, sizeof(*gp), GFP_KERNEL);
+#endif
 	if (gp)
 		return &gp->gp;
 	return NULL;
 }
 static inline void snd_gameport_unregister_port(struct gameport *gp)
 {
+	extern void snd_hidden_kfree(const void *obj);
 	gameport_unregister_port(gp);
+#ifdef CONFIG_SND_DEBUG_MEMORY
+	snd_hidden_kfree(gp);
+#else
 	kfree(gp);
+#endif
 }
 #undef gameport_unregister_port
 #define gameport_unregister_port(gp)	snd_gameport_unregister_port(gp)

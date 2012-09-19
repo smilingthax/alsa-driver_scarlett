@@ -54,14 +54,14 @@ static int check_asic_status(echoaudio_t *chip)
 	/* What box type was set? */
 	box_status = le32_to_cpu(chip->comm_page->ext_box_status);
 	if (box_status == E3G_ASIC_NOT_LOADED) {
-		DE_INIT(("check_asic_status: box not conected\n"));
+		DE_INIT(("box not conected\n"));
 		return -ENODEV;
 	}
 
 	box_type = box_status & E3G_BOX_TYPE_MASK;
-	if (box_type != ECHOCARD_BOX) {
-		DE_INIT(("check_asic_status: wrong box type: %x\n", box_type));
-		return -ENODEV;
+	if (box_type != chip->e3g_box_type) {
+		DE_INIT(("wrong box type: %x\n", box_type));
+		return box_type + 1;
 	}
 
 	chip->asic_loaded = TRUE;
@@ -130,17 +130,17 @@ static int set_digital_mode(echoaudio_t *chip, u8 mode)
 	if (err >= 0 && previous_mode != mode &&
 	    (previous_mode == DIGITAL_MODE_ADAT || mode == DIGITAL_MODE_ADAT)) {
 		spin_lock_irq(&chip->lock);
-		for (o = 0; o < NUM_BUSSES_OUT; o++)
-			for (i = 0; i < NUM_BUSSES_IN; i++)
+		for (o = 0; o < num_busses_out(chip); o++)
+			for (i = 0; i < num_busses_in(chip); i++)
 				set_monitor_gain(chip, o, i, chip->monitor_gain[o][i]);
 
 #ifdef ECHOCARD_HAS_INPUT_GAIN
-		for (i = 0; i < NUM_BUSSES_IN; i++)
+		for (i = 0; i < num_busses_in(chip); i++)
 			set_input_gain(chip, i, chip->input_gain[i]);
 		update_input_line_level(chip);
 #endif
 
-		for (o = 0; o < NUM_BUSSES_OUT; o++)
+		for (o = 0; o < num_busses_out(chip); o++)
 			set_output_gain(chip, o, chip->output_gain[o]);
 		update_output_line_level(chip);
 		spin_unlock_irq(&chip->lock);

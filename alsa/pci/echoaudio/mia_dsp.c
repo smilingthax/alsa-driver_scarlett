@@ -70,11 +70,11 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 		return err;
 
 	/* Set professional nominal levels (FALSE is +4dBu) */
-	for (i = 0; i < NUM_ANALOG_BUSSES_OUT; i++)
+	for (i = 0; i < num_analog_busses_out(chip); i++)
 		err = set_nominal_level(chip, i, FALSE);
 
-	for (i = 0; i < NUM_ANALOG_BUSSES_IN; i++)
-		err = set_nominal_level(chip, BX_ANALOG_IN + i, FALSE);
+	for (i = 0; i < num_analog_busses_in(chip); i++)
+		err = set_nominal_level(chip, bx_analog_in(chip) + i, FALSE);
 
 	/* Default routing of the virtual channels: vchannels 0-3 go to analog
 	outputs and vchannels 4-7 go to S/PDIF outputs */
@@ -215,13 +215,13 @@ static int set_vmixer_gain(echoaudio_t *chip, u16 output, u16 pipe, int gain)
 {
 	int index;
 
-	snd_assert(pipe < NUM_PIPES_OUT && output < NUM_BUSSES_OUT, return -EINVAL);
+	snd_assert(pipe < num_pipes_out(chip) && output < num_busses_out(chip), return -EINVAL);
 
 	if (wait_handshake(chip))
 		return -EIO;
 
 	chip->vmixer_gain[output][pipe] = gain;
-	index = output * NUM_PIPES_OUT + pipe;
+	index = output * num_pipes_out(chip) + pipe;
 	chip->comm_page->vmixer[index] = gain;
 
 	DE_ACT(("set_vmixer_gain: pipe %d, out %d = %d\n", pipe, output, gain));

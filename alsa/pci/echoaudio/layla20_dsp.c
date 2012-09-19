@@ -69,11 +69,11 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 		return err;
 
 	/* Set professional nominal levels (FALSE is +4dBu) */
-	for (i = 0; i < NUM_ANALOG_BUSSES_OUT; i++)
+	for (i = 0; i < num_analog_busses_out(chip); i++)
 		err = set_nominal_level(chip, i, FALSE);
 
-	for (i = 0; i < NUM_ANALOG_BUSSES_IN; i++)
-		err = set_nominal_level(chip, BX_ANALOG_IN + i, FALSE);
+	for (i = 0; i < num_analog_busses_in(chip); i++)
+		err = set_nominal_level(chip, bx_analog_in(chip) + i, FALSE);
 
 	/* Set the S/PDIF output format to "professional" */
 	err = set_professional_spdif(chip, TRUE);
@@ -311,7 +311,7 @@ static int set_output_clock(echoaudio_t *chip, u16 clock)
    where ECHOGAIN_MININP <= gain <= ECHOGAIN_MAXINP) */
 static int set_input_gain(echoaudio_t *chip, u16 input, int gain)
 {
-	snd_assert(input < NUM_BUSSES_IN, return -EINVAL);
+	snd_assert(input < num_busses_in(chip), return -EINVAL);
 
 	/* Wait for the handshake (OK even if ASIC is not loaded) */
 	if (wait_handshake(chip))

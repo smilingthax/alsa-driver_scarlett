@@ -288,17 +288,6 @@
 #define PIPE_STATE_STARTED	2	// Pipe has been started
 #define PIPE_STATE_PENDING	3	// Pipe has pending start
 
-/* Number of channels */
-#define NUM_PIPES		PX_NUM
-#define NUM_PIPES_OUT		(PX_ANALOG_IN - PX_ANALOG_OUT)
-#define NUM_PIPES_IN		(PX_NUM - PX_ANALOG_IN)
-#define NUM_BUSSES_OUT		(BX_ANALOG_IN - BX_ANALOG_OUT)
-#define NUM_BUSSES_IN		(BX_NUM - BX_ANALOG_IN)
-#define NUM_ANALOG_BUSSES_OUT	(BX_DIGITAL_OUT - BX_ANALOG_OUT)
-#define NUM_ANALOG_BUSSES_IN	(BX_DIGITAL_IN - BX_ANALOG_IN)
-#define NUM_DIGITAL_BUSSES_OUT	(NUM_BUSSES_OUT - NUM_ANALOG_BUSSES_OUT)
-#define NUM_DIGITAL_BUSSES_IN	(NUM_BUSSES_IN - NUM_ANALOG_BUSSES_IN)
-
 
 /* Debug initialization */
 #if (CONFIG_SND_DEBUG)
@@ -362,6 +351,7 @@ struct echoaudio_chip {
 	snd_kcontrol_t *clock_src_ctl;
 	snd_pcm_t *analog_pcm, *digital_pcm;
 	snd_card_t *card;
+	const char *card_name;
 	struct pci_dev *pci;
 	unsigned long dsp_registers_phys;
 	struct resource *iores;
@@ -388,6 +378,7 @@ struct echoaudio_chip {
 	u8 clock_state;				/* Gina20, Darla20, Darla24 - only */
 	u8 input_clock;				/* Currently selected sample clock source */
 	u8 output_clock;			/* Layla20 only */
+	u8 e3g_box_type;			/* The loaded fw supports this box type */
 
 	char meters_enabled;			/* VU-meters status */
 	char asic_loaded;			/* Set TRUE when ASIC loaded */
@@ -395,9 +386,16 @@ struct echoaudio_chip {
 	char professional_spdif;		/* 0 = consumer; 1 = professional */
 	char non_audio_spdif;			/* 3G - only */
 	char digital_in_automute;		/* Gina24, Layla24, Mona - only */
+	char has_phantom_power;
 	char phantom_power;			/* Gina3G - only */
 	char has_midi;
 	char midi_input_enabled;
+
+#ifdef ECHOCARD_ECHO3G
+	/* External module -dependent pipe and bus indexes */
+	char px_digital_out, px_analog_in, px_digital_in, px_num;
+	char bx_digital_out, bx_analog_in, bx_digital_in, bx_num;
+#endif
 
 	char nominal_level[ECHO_MAXAUDIOPIPES];	/* True == -10dBV  False == +4dBu */
 	s8 input_gain[ECHO_MAXAUDIOINPUTS];	/* Input level -50..+50 unit is 0.5dB */
@@ -456,6 +454,99 @@ static inline void set_dsp_register(echoaudio_t *chip, u32 index, u32 value)
 {
 	writel(value, &chip->dsp_registers[index]);
 }
+
+
+/* Pipe and bus indexes. PX_* and BX_* are defined as chip->px_* and chip->bx_*
+for 3G cards because they depend on the external box. They are integer
+constants for all other cards.
+Never use those defines directly, use the following functions instead. */
+
+static inline int px_digital_out(const echoaudio_t *chip)
+{
+	return PX_DIGITAL_OUT;
+}
+
+static inline int px_analog_in(const echoaudio_t *chip)
+{
+	return PX_ANALOG_IN;
+}
+
+static inline int px_digital_in(const echoaudio_t *chip)
+{
+	return PX_DIGITAL_IN;
+}
+
+static inline int px_num(const echoaudio_t *chip)
+{
+	return PX_NUM;
+}
+
+static inline int bx_digital_out(const echoaudio_t *chip)
+{
+	return BX_DIGITAL_OUT;
+}
+
+static inline int bx_analog_in(const echoaudio_t *chip)
+{
+	return BX_ANALOG_IN;
+}
+
+static inline int bx_digital_in(const echoaudio_t *chip)
+{
+	return BX_DIGITAL_IN;
+}
+
+static inline int bx_num(const echoaudio_t *chip)
+{
+	return BX_NUM;
+}
+
+static inline int num_pipes_out(const echoaudio_t *chip)
+{
+	return px_analog_in(chip);
+}
+
+static inline int num_pipes_in(const echoaudio_t *chip)
+{
+	return px_num(chip) - px_analog_in(chip);
+}
+
+static inline int num_busses_out(const echoaudio_t *chip)
+{
+	return bx_analog_in(chip);
+}
+
+static inline int num_busses_in(const echoaudio_t *chip)
+{
+	return bx_num(chip) - bx_analog_in(chip);
+}
+
+static inline int num_analog_busses_out(const echoaudio_t *chip)
+{
+	return bx_digital_out(chip);
+}
+
+static inline int num_analog_busses_in(const echoaudio_t *chip)
+{
+	return bx_digital_in(chip) - bx_analog_in(chip);
+}
+
+static inline int num_digital_busses_out(const echoaudio_t *chip)
+{
+	return num_busses_out(chip) - num_analog_busses_out(chip);
+}
+
+static inline int num_digital_busses_in(const echoaudio_t *chip)
+{
+	return num_busses_in(chip) - num_analog_busses_in(chip);
+}
+
+// The monitor array is a one-dimensional array; compute the offset into the array
+static inline int monitor_index(const echoaudio_t *chip, int out, int in)
+{
+        return out * num_busses_in(chip) + in;
+}
+
 
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
