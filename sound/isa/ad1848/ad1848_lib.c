@@ -213,13 +213,14 @@ static void snd_ad1848_mce_down(struct snd_ad1848 *chip)
 	/* end of cleanup sequence */
 	for (timeout = 12000; timeout > 0 && (inb(AD1848P(chip, REGSEL)) & AD1848_INIT); timeout--)
 		udelay(100);
-#if 0
-	printk("(1) timeout = %i\n", timeout);
-#endif
+
+	snd_printdd("(1) timeout = %d\n", timeout);
+
 #ifdef CONFIG_SND_DEBUG
 	if (inb(AD1848P(chip, REGSEL)) & AD1848_INIT)
 		snd_printk(KERN_WARNING "mce_down [0x%lx] - auto calibration time out (0)\n", AD1848P(chip, REGSEL));
 #endif
+
 	chip->mce_bit &= ~AD1848_MCE;
 	timeout = inb(AD1848P(chip, REGSEL));
 	outb(chip->mce_bit | (timeout & 0x1f), AD1848P(chip, REGSEL));
@@ -229,18 +230,17 @@ static void snd_ad1848_mce_down(struct snd_ad1848 *chip)
 		spin_unlock_irqrestore(&chip->reg_lock, flags);
 		return;
 	}
-	/* calibration process */
 
-	for (timeout = 500; timeout > 0 && (snd_ad1848_in(chip, AD1848_TEST_INIT) & AD1848_CALIB_IN_PROGRESS) == 0; timeout--);
-	if ((snd_ad1848_in(chip, AD1848_TEST_INIT) & AD1848_CALIB_IN_PROGRESS) == 0) {
-		snd_printd("mce_down - auto calibration time out (1)\n");
-		spin_unlock_irqrestore(&chip->reg_lock, flags);
-		return;
-	}
-#if 0
-	printk("(2) timeout = %i, jiffies = %li\n", timeout, jiffies);
-#endif
-	time = HZ / 4;
+	/*
+	 * Wait for (possible -- during init auto-calibration may not be set)
+	 * calibration process to start. Needs upto 5 sample periods on AD1848
+	 * which at the slowest possible rate of 5.5125 kHz means 907 us.
+	 */
+	msleep(1);
+
+	snd_printdd("(2) jiffies = %lu\n", jiffies);
+
+	time = msecs_to_jiffies(250);
 	while (snd_ad1848_in(chip, AD1848_TEST_INIT) & AD1848_CALIB_IN_PROGRESS) {
 		spin_unlock_irqrestore(&chip->reg_lock, flags);
 		if (time <= 0) {
@@ -250,10 +250,10 @@ static void snd_ad1848_mce_down(struct snd_ad1848 *chip)
 		time = schedule_timeout(time);
 		spin_lock_irqsave(&chip->reg_lock, flags);
 	}
-#if 0
-	printk("(3) jiffies = %li\n", jiffies);
-#endif
-	time = HZ / 10;
+
+	snd_printdd("(3) jiffies = %lu\n", jiffies);
+
+	time = msecs_to_jiffies(100);
 	while (inb(AD1848P(chip, REGSEL)) & AD1848_INIT) {
 		spin_unlock_irqrestore(&chip->reg_lock, flags);
 		if (time <= 0) {
@@ -264,10 +264,9 @@ static void snd_ad1848_mce_down(struct snd_ad1848 *chip)
 		spin_lock_irqsave(&chip->reg_lock, flags);
 	}
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
-#if 0
-	printk("(4) jiffies = %li\n", jiffies);
-	snd_printk("mce_down - exit = 0x%x\n", inb(AD1848P(chip, REGSEL)));
-#endif
+
+	snd_printdd("(4) jiffies = %lu\n", jiffies);
+	snd_printd("mce_down - exit = 0x%x\n", inb(AD1848P(chip, REGSEL)));
 }
 
 static unsigned int snd_ad1848_get_count(unsigned char format,
