@@ -19,8 +19,8 @@
  *
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/cs4231.h>
 #include <sound/mpu401.h>
 #include <sound/opl3.h>

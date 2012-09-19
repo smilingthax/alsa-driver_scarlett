@@ -20,8 +20,8 @@
  */
 
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/version.h>
 #include "pmac.h"
 
 #define chip_t pmac_t

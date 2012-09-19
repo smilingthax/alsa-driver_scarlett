@@ -22,7 +22,6 @@
  *
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include "opl3_voice.h"
 #include <sound/initval.h>
 

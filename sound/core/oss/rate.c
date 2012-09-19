@@ -19,9 +19,11 @@
  *
  */
   
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/pcm.h>
-#include <sound/pcm_plugin.h>
+#include "pcm_plugin.h"
 
 #define SHIFT	11
 #define BITS	(1<<SHIFT)

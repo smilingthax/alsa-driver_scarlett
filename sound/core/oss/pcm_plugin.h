@@ -89,7 +89,6 @@ static inline void bitset_one(bitset_t *dst, unsigned int nbits)
 		*dst++ = ~(bitset_t)0;
 }
 
-typedef struct _snd_pcm_plugin snd_pcm_plugin_t;
 #define snd_pcm_plug_t snd_pcm_substream_t
 #define snd_pcm_plug_stream(plug) ((plug)->stream)
 

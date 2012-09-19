@@ -22,6 +22,7 @@
  *
  */
 
+#define __NO_VERSION__
 #include "emux_voice.h"
 
 #ifdef SNDRV_EMUX_USE_RAW_EFFECT

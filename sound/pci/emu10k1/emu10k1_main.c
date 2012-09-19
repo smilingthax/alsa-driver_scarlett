@@ -25,10 +25,9 @@
  *
  */
 
-#if 0
-#define SNDRV_MAIN_OBJECT_FILE
-#endif
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/emu10k1.h>
 
 #if 0

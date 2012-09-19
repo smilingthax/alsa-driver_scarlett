@@ -20,7 +20,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <sound/driver.h>
+#define __NO_VERSION__
 #include "seq_oss_device.h"
 #include "seq_oss_readq.h"
 #include "seq_oss_writeq.h"

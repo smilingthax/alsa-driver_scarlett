@@ -18,8 +18,8 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 #include <sound/ad1816a.h>

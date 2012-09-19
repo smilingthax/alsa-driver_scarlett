@@ -20,6 +20,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#define __NO_VERSION__
 #include "seq_oss_synth.h"
 #include "seq_oss_midi.h"
 #include "../seq_lock.h"
@@ -28,7 +29,7 @@
  * constants
  */
 #define SNDRV_SEQ_OSS_MAX_SYNTH_NAME	30
-#define MAX_SYSEX_BUFLEN	128
+#define MAX_SYSEX_BUFLEN		128
 
 
 /*

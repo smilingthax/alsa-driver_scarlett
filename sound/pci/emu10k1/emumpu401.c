@@ -19,7 +19,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/emu10k1.h>
 
 #define EMU10K1_MIDI_MODE_INPUT		(1<<0)

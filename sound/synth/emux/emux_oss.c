@@ -22,10 +22,12 @@
  * 				midi emulation.
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
 
 #ifdef CONFIG_SND_OSSEMUL
 
+#include <sound/core.h>
 #include "emux_voice.h"
 
 static int snd_emux_open_seq_oss(snd_seq_oss_arg_t *arg, void *closure);

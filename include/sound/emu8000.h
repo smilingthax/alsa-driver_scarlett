@@ -22,6 +22,7 @@
  */
 
 #include "driver.h"
+#include "core.h"
 #include "emux_synth.h"
 #include "seq_kernel.h"
 

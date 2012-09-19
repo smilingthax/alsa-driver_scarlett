@@ -20,6 +20,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#define __NO_VERSION__
 #include "seq_oss_midi.h"
 #include "seq_oss_readq.h"
 #include "seq_oss_timer.h"

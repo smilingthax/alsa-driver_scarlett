@@ -25,7 +25,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/emu10k1.h>
 
 static int voice_alloc(emu10k1_t *emu, emu10k1_voice_type_t type, int pair, emu10k1_voice_t **rvoice)

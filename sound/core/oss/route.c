@@ -19,9 +19,11 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/pcm.h>
-#include <sound/pcm_plugin.h>
+#include "pcm_plugin.h"
 
 /* The best possible hack to support missing optimization in gcc 2.7.2.3 */
 #if ROUTE_PLUGIN_RESOLUTION & (ROUTE_PLUGIN_RESOLUTION - 1) != 0

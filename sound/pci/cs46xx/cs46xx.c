@@ -25,8 +25,8 @@
     reloading the module may solve this.
 */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/cs46xx.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>

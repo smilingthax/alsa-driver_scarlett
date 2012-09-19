@@ -19,7 +19,10 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
+
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 
 #include <sound/seq_kernel.h>
 #include "seq_memory.h"

@@ -19,7 +19,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/info.h>
 #include <sound/version.h>

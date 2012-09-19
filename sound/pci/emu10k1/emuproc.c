@@ -25,7 +25,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/emu10k1.h>
 
 static void snd_emu10k1_proc_spdif_status(emu10k1_t * emu,

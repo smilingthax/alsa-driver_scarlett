@@ -18,7 +18,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/gus.h>
 #define __GUS_TABLES_ALLOC__
 #include "gus_tables.h"

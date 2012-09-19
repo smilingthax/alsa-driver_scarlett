@@ -41,8 +41,8 @@
  * - Run application using a midi device (eg. /dev/snd/midiC1D0)
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/seq_kernel.h>
 #include <sound/seq_virmidi.h>
 #define SNDRV_GET_ID

@@ -20,7 +20,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include "seq_timer.h"
 #include "seq_queue.h"
 #include "seq_info.h"

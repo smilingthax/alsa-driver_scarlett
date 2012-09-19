@@ -21,7 +21,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/gus.h>
 
 #define chip_t snd_gus_card_t

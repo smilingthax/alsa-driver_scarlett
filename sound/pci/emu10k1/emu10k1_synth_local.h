@@ -21,6 +21,7 @@
  */
 
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/emu10k1_synth.h>
 
 /* emu10k1_patch.c */

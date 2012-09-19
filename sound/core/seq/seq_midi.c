@@ -26,8 +26,8 @@ Possible options for midisynth module:
 */
 
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/rawmidi.h>
 #include <sound/seq_kernel.h>
 #include <sound/seq_device.h>

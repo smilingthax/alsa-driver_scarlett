@@ -19,9 +19,11 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/pcm.h>
-#include <sound/pcm_plugin.h>
+#include "pcm_plugin.h"
 
 static snd_pcm_sframes_t copy_transfer(snd_pcm_plugin_t *plugin,
 			     const snd_pcm_plugin_channel_t *src_channels,

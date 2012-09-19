@@ -16,10 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if 0
-#define SNDRV_MAIN_OBJECT_FILE
-#endif
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/snd_wavefront.h>
 #include <sound/yss225.h>
 #include <sound/initval.h>

@@ -19,8 +19,9 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include "pmac.h"
 #include "burgundy.h"
 

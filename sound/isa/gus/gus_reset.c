@@ -18,7 +18,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/gus.h>
 
 extern void snd_gf1_timers_init(snd_gus_card_t * gus);

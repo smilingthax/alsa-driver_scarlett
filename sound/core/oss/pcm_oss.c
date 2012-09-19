@@ -23,11 +23,12 @@
 #define PLUGIN_DEBUG
 #endif
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
+#include "pcm_plugin.h"
 #include <sound/info.h>
 #include <linux/soundcard.h>
 #include <sound/initval.h>

@@ -43,9 +43,8 @@
  *  full control over both mixers.
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
-
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/ad1848.h>
 #include <sound/sb.h>
 #define SNDRV_GET_ID

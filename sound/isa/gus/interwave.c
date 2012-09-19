@@ -22,8 +22,8 @@
  *
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/gus.h>
 #include <sound/cs4231.h>
 #ifdef SNDRV_STB

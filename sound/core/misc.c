@@ -19,7 +19,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 
 int snd_task_name(struct task_struct *task, char *name, size_t size)
 {

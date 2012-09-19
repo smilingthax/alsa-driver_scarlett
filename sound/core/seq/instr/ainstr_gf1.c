@@ -18,8 +18,8 @@
  *
  */
  
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/ainstr_gf1.h>
 #include <sound/initval.h>
 

@@ -20,6 +20,7 @@
  */
 
 #include <sound/driver.h>
+#include <sound/core.h>
 
 int snd_device_new(snd_card_t *card, snd_device_type_t type,
 		   void *device_data, snd_device_ops_t *ops)
