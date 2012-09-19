@@ -872,6 +872,8 @@ int main(void) {
 	fprintf(file, "amba");
 #elif defined(CONFIG_PARISC)
 	fprintf(file, "parisc");
+#elif defined(CONFIG_MVIAC3_2)
+	fprintf(file, "viac3_2");
 #else
 	fclose(file);
 	exit(1);
@@ -1115,6 +1117,14 @@ EOF
     c_opts="-mno-space-regs -mfast-indirect-calls -mschedule=7200 -mdisable-fpregs"
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
+  viac3_2)
+    ARCH=i386
+    if $KCC -march=c3-2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+      c_opts="-march=c3-2"
+    else
+      c_opts="-march=i686"
+    fi
+    ;;
   *)
     processor="unknown"
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
@@ -1123,7 +1133,7 @@ esac
 
 dnl set ia32 (X86)
 case "$processor" in
-  i?86*|k?|crusoe|mcyrixiii|mwinchip)
+  i?86*|k?|crusoe|mcyrixiii|mwinchip|viac3_2)
     if $KCC -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-mpreferred-stack-boundary=2 $c_opts"
       CONFIG_X86=y
