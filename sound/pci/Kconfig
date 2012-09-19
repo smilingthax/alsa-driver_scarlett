@@ -17,7 +17,8 @@ config SND_AZT3328
 
 config SND_CS46XX
 	tristate "Cirrus Logic (Sound Fusion) CS4280/CS461x/CS462x/CS463x"
-	depends on SND && GAMEPORT
+	depends on SND
+	select GAMEPORT
 	help
 	  Say 'Y' or 'M' to include support for Cirrus Logic CS4610 / CS4612 /
 	  CS4614 / CS4615 / CS4622 / CS4624 / CS4630 / CS4280 chips.
