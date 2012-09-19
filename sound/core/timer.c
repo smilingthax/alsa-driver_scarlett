@@ -35,10 +35,19 @@
 #include <linux/kerneld.h>
 #endif
 
+#if !defined(CONFIG_SND_RTCTIMER) && !defined(CONFIG_SND_RTCTIMER_MODULE)
+#define DEFAULT_TIMER_LIMIT 1
+#else
+#define DEFAULT_TIMER_LIMIT 2
+#endif
+
+int snd_timer_limit = DEFAULT_TIMER_LIMIT;
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>, Takashi Iwai <tiwai@suse.de>");
 MODULE_DESCRIPTION("ALSA timer interface");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
+MODULE_PARM(snd_timer_limit, "i");
+MODULE_PARM_DESC(snd_timer_limit, "Maximum global timers in system.");
 
 typedef struct {
 	snd_timer_instance_t *timeri;
@@ -143,10 +152,14 @@ static void snd_timer_request(snd_timer_id_t *tid)
 	
 	switch (tid->dev_class) {
 	case SNDRV_TIMER_CLASS_GLOBAL:
+		if (tid->device >= snd_timer_limit)
+			return;
 		sprintf(str, "snd-timer-%i", tid->device);
 		break;
 	case SNDRV_TIMER_CLASS_CARD:
 	case SNDRV_TIMER_CLASS_PCM:
+		if (tid->card >= snd_ecards_limit)
+			return;
 		sprintf(str, "snd-card-%i", tid->card);
 		break;
 	default:

@@ -84,7 +84,7 @@ snd-opl3-synth @if_sequencer snd-opl3-lib snd-seq-device \
 |snd-als100 snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-azt2320 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-cmi8330 snd-ad1848-lib snd-sb16-dsp
-|snd-dt0197h snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-dt019x snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-es18xx snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-opl3sa2 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-sgalaxy snd-ad1848-lib
