@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/sound.c	2005-10-06 02:59:43.000000000 +0200
-+++ sound.c	2005-10-06 03:56:46.000000000 +0200
+--- ../alsa-kernel/core/sound.c	2005-10-10 12:59:52.000000000 +0200
++++ sound.c	2005-10-10 20:08:25.000000000 +0200
 @@ -64,7 +64,15 @@
  
  static DECLARE_MUTEX(sound_mutex);
@@ -50,12 +50,16 @@
  
  	list_del(&mptr->list);
  	up(&sound_mutex);
-@@ -328,6 +346,15 @@
+@@ -328,6 +346,19 @@
   *  INIT PART
   */
  
++#ifdef CONFIG_SND_DEBUG_MEMORY
 +extern void snd_memory_done(void);
-+#ifdef CONFIG_PROC_FS
++#else
++#define snd_memory_done()
++#endif
++#if defined(CONFIG_SND_DEBUG_MEMORY) && defined(CONFIG_PROC_FS)
 +extern int snd_memory_info_init(void);
 +extern void snd_memory_info_done(void);
 +#else
@@ -66,7 +70,7 @@
  #ifdef CONFIG_SND_GENERIC_DRIVER
  extern struct device_driver snd_generic_driver;
  #endif
-@@ -353,17 +380,24 @@
+@@ -353,17 +384,24 @@
  	if (snd_info_init() < 0) {
  		unregister_chrdev(major, "alsa");
  		devfs_remove("snd");
@@ -91,7 +95,7 @@
  	return 0;
  }
  
-@@ -375,13 +409,20 @@
+@@ -375,13 +413,20 @@
  		devfs_remove("snd/controlC%d", controlnum);
  
  #ifdef CONFIG_SND_GENERIC_DRIVER
@@ -112,7 +116,7 @@
  }
  
  module_init(alsa_sound_init)
-@@ -483,3 +524,5 @@
+@@ -483,3 +528,5 @@
  #if defined(CONFIG_SND_DEBUG) && defined(CONFIG_SND_VERBOSE_PRINTK)
  EXPORT_SYMBOL(snd_verbose_printd);
  #endif

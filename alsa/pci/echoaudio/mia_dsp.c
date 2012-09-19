@@ -38,7 +38,7 @@ static int update_vmixer_level(echoaudio_t *chip);
 
 static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 {
-	int err, i;
+	int err;
 
 	DE_INIT(("init_hw() - Mia\n"));
 	snd_assert((subdevice_id & 0xfff0) == MIA, return -ENODEV);

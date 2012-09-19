@@ -976,8 +976,6 @@ static int rest_in_peace(echoaudio_t *chip)
 /* Fills the comm page with default values */
 static int init_dsp_comm_page(echoaudio_t *chip)
 {
-	int i;
-
 	/* Check if the compiler added extra padding inside the structure */
 	if (offsetof(comm_page_t, midi_output) != 0xbe0) {
 		DE_INIT(("init_dsp_comm_page() - Invalid comm_page_t structure\n"));

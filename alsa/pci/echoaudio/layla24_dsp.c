@@ -39,7 +39,7 @@ static int check_asic_status(echoaudio_t *chip);
 
 static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 {
-	int err, i;
+	int err;
 
 	DE_INIT(("init_hw() - Layla24\n"));
 	snd_assert((subdevice_id & 0xfff0) == LAYLA24, return -ENODEV);
