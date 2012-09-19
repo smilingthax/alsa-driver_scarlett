@@ -69,7 +69,7 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	set_vmixer_gain(chip, 1, 5, 0);
 	set_vmixer_gain(chip, 0, 6, 0);
 	set_vmixer_gain(chip, 1, 7, 0);
-	update_vmixer_level(chip);
+	err = update_vmixer_level(chip);
 
 	DE_INIT(("init_hw done\n"));
 	return err;
@@ -84,7 +84,7 @@ static u32 detect_input_clocks(const struct echoaudio *chip)
 
 
 
-/* The Mia has no ASIC. Just do nothing */
+/* The Indigo has no ASIC. Just do nothing */
 static int load_asic(struct echoaudio *chip)
 {
 	return 0;
@@ -116,10 +116,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 		DE_ACT(("set_sample_rate: %d invalid!\n", rate));
 		return -EINVAL;
 	}
-
-	/* Override the clock setting if this Mia is set to S/PDIF clock */
-	if (chip->input_clock == ECHO_CLOCK_SPDIF)
-		control_reg |= MIA_SPDIF;
 
 	/* Set the control register if it has changed */
 	if (control_reg != le32_to_cpu(chip->comm_page->control_register)) {

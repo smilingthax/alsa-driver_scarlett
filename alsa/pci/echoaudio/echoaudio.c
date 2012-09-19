@@ -1939,8 +1939,9 @@ static int __devinit snd_echo_probe(struct pci_dev *pci, const struct pci_device
 #endif
 
 #ifdef ECHOCARD_HAS_INPUT_NOMINAL_LEVEL
-	if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_echo_intput_nominal_level, chip))) < 0)
-		goto ctl_error;
+	if (!chip->hasnt_input_nominal_level)
+		if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_echo_intput_nominal_level, chip))) < 0)
+			goto ctl_error;
 #endif
 
 #ifdef ECHOCARD_HAS_OUTPUT_NOMINAL_LEVEL
