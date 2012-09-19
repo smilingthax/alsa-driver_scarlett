@@ -1885,4 +1885,10 @@ static inline pid_t pid_vnr(struct pid *pid)
 )
 #endif
 
+/* skip_spaces() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 33)
+char *compat_skip_spaces(const char *);
+#define skip_spaces	compat_skip_spaces
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */

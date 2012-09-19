@@ -327,3 +327,14 @@ void snd_free_irq(unsigned int irq, void *data)
 EXPORT_SYMBOL(snd_free_irq);
 #endif /* !CONFIG_SND_NEW_IRQ_HANDLER */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 33)
+#include <linux/ctype.h>
+
+char *compat_skip_spaces(const char *str)
+{
+	while (isspace(*str))
+		++str;
+	return (char *)str;
+}
+EXPORT_SYMBOL(compat_skip_spaces);
+#endif /* < 2.6.33 */

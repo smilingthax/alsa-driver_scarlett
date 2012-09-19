@@ -1,5 +1,5 @@
---- ../alsa-kernel/soc/soc-core.c	2009-07-02 10:22:17.000000000 +0200
-+++ soc-core.c	2009-07-02 10:43:49.000000000 +0200
+--- ../alsa-kernel/soc/soc-core.c	2009-12-18 14:00:11.000000000 +0100
++++ soc-core.c	2009-12-18 14:08:12.000000000 +0100
 @@ -1,3 +1,8 @@
 +#include "adriver.h"
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 27)
@@ -9,12 +9,12 @@
  /*
   * soc-core.c  --  ALSA SoC Audio Layer
   *
-@@ -1039,21 +1044,43 @@
+@@ -1236,21 +1241,43 @@
  	return 0;
  }
  
 +#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 30)
- static struct dev_pm_ops soc_pm_ops = {
+ static const struct dev_pm_ops soc_pm_ops = {
  	.suspend = soc_suspend,
  	.resume = soc_resume,
  	.poweroff = soc_poweroff,
