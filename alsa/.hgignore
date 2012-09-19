@@ -23,6 +23,11 @@ version
 Module*.symvers
 .tmp_versions/*
 
+alsa-kernel
+scripts
+sound
+include/sound
+
 acore/control.c
 acore/hwdep.c
 acore/info.c
