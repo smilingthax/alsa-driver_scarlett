@@ -205,6 +205,9 @@ dnl
 dnl kernel_compiler="gcc egcs-2.91.66 19990314/Linux (egcs-1.1.2 release)"
 dnl my_compiler="egcs-2.91.66"
 dnl
+dnl kernel_compiler="gcc 2.95.3 20010315 (release)"
+dnl my_compiler="2.95.3"
+dnl
 kernel_compiler_type=`echo $kernel_compiler | cut -d ' ' -f 1`
 kernel_compiler_version=`echo $kernel_compiler | cut -d ' ' -f 2`
 if test "${kernel_compiler_version:0:5}" = "egcs-"; then
@@ -222,6 +225,9 @@ else
     my_compiler_type=`echo $my_compiler | cut -d ' ' -f 1`
     my_compiler_version=`echo $my_compiler | cut -d ' ' -f 3`
   fi
+fi
+if test "$my_compiler_type" = "$my_compiler_version"; then
+  my_compiler_type="gcc"
 fi
 AC_MSG_RESULT(Kernel compiler: $kernel_compiler Used compiler: $my_compiler);
 if test -z "$kernel_compiler"; then
