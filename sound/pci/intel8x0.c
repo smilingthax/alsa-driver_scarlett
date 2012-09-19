@@ -54,7 +54,8 @@ MODULE_DEVICES("{{Intel,82801AA-ICH},"
 		"{SiS,SI7012},"
 		"{NVidia,NForce Audio},"
 		"{AMD,AMD768},"
-		"{AMD,AMD8111}}");
+		"{AMD,AMD8111},"
+	        "{ALI,M5455}}");
 
 #define SUPPORT_JOYSTICK 1
 #define SUPPORT_MIDI 1

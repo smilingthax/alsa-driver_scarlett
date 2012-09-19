@@ -203,4 +203,4 @@ snd-trident-synth @if_sequencer snd-seq-midi-emul snd-ainstr-simple
 
 %dir linux/sound/usb
 |snd-usb-audio snd-pcm
-|snd-usb-midi @if_sequencer snd-seq-device snd-seq-midi-event
+snd-usb-midi @if_sequencer snd-seq-device snd-seq-midi-event
