@@ -740,16 +740,20 @@ static int snd_via686_capture_prepare(snd_pcm_substream_t *substream)
  */
 static int via_lock_rate(struct via_rate_lock *rec, int rate)
 {
+	int changed = 0;
+
 	spin_lock(&rec->lock);
 	if (rec->rate) {
 		if (rec->rate != rate && rec->used > 1) {
 			spin_unlock(&rec->lock);
 			return -EINVAL;
 		}
-	} else
+	} else {
 		rec->rate = rate;
+		changed = 1;
+	}
 	spin_unlock(&rec->lock);
-	return 0;
+	return changed;
 }
 
 /*
@@ -761,19 +765,24 @@ static int snd_via8233_playback_prepare(snd_pcm_substream_t *substream)
 	viadev_t *viadev = (viadev_t *)substream->runtime->private_data;
 	unsigned long port = chip->port + viadev->reg_offset;
 	snd_pcm_runtime_t *runtime = substream->runtime;
+	int rate_changed;
+	u32 rbits;
 
-	if (via_lock_rate(&chip->rates[0], runtime->rate) < 0)
-		return -EINVAL;
-	snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE, runtime->rate);
-	if (viadev->reg_offset == 0x30) /* DSX3 */
+	if ((rate_changed = via_lock_rate(&chip->rates[0], runtime->rate)) < 0)
+		return rate_changed;
+	if (rate_changed) {
+		snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE, runtime->rate);
 		snd_ac97_set_rate(chip->ac97, AC97_SPDIF, runtime->rate);
+	}
+	rbits = (0xfffff / 48000) * runtime->rate + ((0xfffff % 48000) * runtime->rate) / 48000;
+	snd_assert((rbits & ~0xfffff) == 0, return -EINVAL);
 	snd_via82xx_channel_reset(chip, viadev);
 	outl((u32)viadev->table_addr, port + VIA_REG_OFFSET_TABLE_PTR);
 	outb(0 , VIAREG(chip, PLAYBACK_VOLUME_L));
 	outb(0 , VIAREG(chip, PLAYBACK_VOLUME_R));
 	outl((runtime->format == SNDRV_PCM_FORMAT_S16_LE ? VIA8233_REG_TYPE_16BIT : 0) | /* format */
 	     (runtime->channels > 1 ? VIA8233_REG_TYPE_STEREO : 0) | /* stereo */
-	     (0xffff * runtime->rate)/(48000/16) | /* rate */
+	     rbits | /* rate */
 	     0xff000000,    /* STOP index is never reached */
 	     port + VIA_REG_OFFSET_STOP_IDX);
 	return 0;
@@ -796,6 +805,7 @@ static int snd_via8233_multi_prepare(snd_pcm_substream_t *substream)
 	snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE, runtime->rate);
 	snd_ac97_set_rate(chip->ac97, AC97_PCM_SURR_DAC_RATE, runtime->rate);
 	snd_ac97_set_rate(chip->ac97, AC97_PCM_LFE_DAC_RATE, runtime->rate);
+	snd_ac97_set_rate(chip->ac97, AC97_SPDIF, runtime->rate);
 	snd_via82xx_channel_reset(chip, viadev);
 	outl((u32)viadev->table_addr, port + VIA_REG_OFFSET_TABLE_PTR);
 
@@ -1350,6 +1360,7 @@ static snd_kcontrol_new_t snd_via82xx_joystick_control __devinitdata = {
 static int snd_via8233_init_misc(via82xx_t *chip, int dev)
 {
 	int i, err, caps;
+	unsigned char val;
 
 	caps = chip->revision == VIA_REV_8233A ? 1 : 2;
 	for (i = 0; i < caps; i++) {
@@ -1361,6 +1372,12 @@ static int snd_via8233_init_misc(via82xx_t *chip, int dev)
 	err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_via8233_dxs3_spdif_control, chip));
 	if (err < 0)
 		return err;
+
+	/* select spdif data slot 10/11 */
+	pci_read_config_byte(chip->pci, 0x49, &val);
+	val &= ~0x03;
+	pci_write_config_byte(chip->pci, 0x49, val);
+
 	return 0;
 }
 
@@ -1585,7 +1602,8 @@ static int __devinit snd_via82xx_create(snd_card_t * card,
 
 	spin_lock_init(&chip->reg_lock);
 	spin_lock_init(&chip->ac97_lock);
-	spin_lock_init(&chip->rate_lock);
+	spin_lock_init(&chip->rates[0].lock);
+	spin_lock_init(&chip->rates[1].lock);
 	chip->card = card;
 	chip->pci = pci;
 	chip->irq = -1;

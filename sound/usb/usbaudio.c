@@ -1918,75 +1918,58 @@ static int snd_usb_create_streams(snd_usb_audio_t *chip, int ctrlif,
 	return 0;
 }
 
-static int snd_usb_roland_ua100_hack_intf(snd_usb_audio_t *chip, int ifnum)
+/*
+ * create a stream for an endpoint/altsetting without proper descriptors
+ */
+static int create_fixed_stream_quirk(snd_usb_audio_t *chip,
+				     struct usb_interface *iface,
+				     const snd_usb_audio_quirk_t *quirk)
 {
 	struct audioformat *fp;
-	int err;
+	struct usb_host_interface *alts;
+	int stream, err;
 
 	fp = kmalloc(sizeof(*fp), GFP_KERNEL);
 	if (! fp) {
 		snd_printk(KERN_ERR "cannot malloc\n");
 		return -ENOMEM;
 	}
-	memset(fp, 0, sizeof(*fp));
-	fp->format = SNDRV_PCM_FORMAT_S16_LE;
-	fp->channels = ifnum == 0 ? 4 : 2;
-	fp->iface = ifnum;
-	fp->altsetting = 1;
-	fp->altset_idx = 1;
-	fp->attributes = ifnum == 0 ? 0 : EP_CS_ATTR_FILL_MAX;
-	fp->endpoint = ifnum == 0 ? 0x01 : 0x81;
-	fp->ep_attr = ifnum == 0 ? 0x09 : 0x05;
-	fp->rates = SNDRV_PCM_RATE_CONTINUOUS;
-	fp->rate_min = fp->rate_max = 44100;
-
-	err = add_audio_endpoint(chip, ifnum == 0 ? SNDRV_PCM_STREAM_PLAYBACK
-				 : SNDRV_PCM_STREAM_CAPTURE, fp);
+	memcpy(fp, quirk->data, sizeof(*fp));
+	stream = (fp->endpoint & USB_DIR_IN)
+		? SNDRV_PCM_STREAM_CAPTURE : SNDRV_PCM_STREAM_PLAYBACK;
+	err = add_audio_endpoint(chip, stream, fp);
 	if (err < 0) {
 		kfree(fp);
 		return err;
 	}
-	usb_set_interface(chip->dev, ifnum, 0);
+	alts = &iface->altsetting[fp->altset_idx];
+	usb_set_interface(chip->dev, fp->iface, 0);
+	init_usb_pitch(chip->dev, fp->iface, alts, fp);
+	init_usb_sample_rate(chip->dev, fp->iface, alts, fp, fp->rate_max);
 	return 0;
 }
 
-static int snd_usb_roland_ua100_hack(snd_usb_audio_t *chip)
+static int snd_usb_create_quirk(snd_usb_audio_t *chip,
+				struct usb_interface *iface,
+				const snd_usb_audio_quirk_t *quirk);
+
+/*
+ * handle the quirk(s) for the current interface
+ */
+static int create_composite_quirk(snd_usb_audio_t *chip,
+				  struct usb_interface *iface,
+				  const snd_usb_audio_quirk_t *quirk)
 {
-	static const snd_usb_midi_endpoint_info_t ep_quirk = {
-		.out_cables = 0x0007,
-		.in_cables  = 0x0007
-	};
-	static const snd_usb_audio_quirk_t midi_quirk = {
-		.vendor_name = "Roland",
-		.product_name = "UA-100",
-		.ifnum = 2,
-		.type = QUIRK_MIDI_FIXED_ENDPOINT,
-		.data = &ep_quirk
-	};
-	struct usb_host_config *cfg = chip->dev->actconfig;
-	struct usb_interface *iface;
+	struct usb_host_interface *alts = &iface->altsetting[0];
+	int ifnum = get_iface_desc(alts)->bInterfaceNumber;
 	int err;
 
-	if (get_cfg_desc(cfg)->bNumInterfaces != 3) {
-		snd_printdd(KERN_ERR "invalid UA-100 descriptor\n");
-		return -ENXIO;
-	}
-	/* if 0: output */
-	if ((err = snd_usb_roland_ua100_hack_intf(chip, 0)) < 0)
-		return err;
-	/* if 1: input */
-	iface = &cfg->interface[1];
-	if (! usb_interface_claimed(iface)) {
-		if ((err = snd_usb_roland_ua100_hack_intf(chip, 1)) < 0)
-			return err;
-		usb_driver_claim_interface(&usb_audio_driver, iface, (void*)-1);
-	}
-	/* if 2: MIDI */
-	iface = &cfg->interface[2];
-	if (! usb_interface_claimed(iface)) {
-		if ((err = snd_usb_create_midi_interface(chip, iface, &midi_quirk)) < 0)
-			return err;
-		usb_driver_claim_interface(&usb_audio_driver, iface, (void*)-1);
+	for (quirk = quirk->data; quirk->ifnum >= 0; ++quirk) {
+		if (quirk->ifnum == ifnum) {
+			err = snd_usb_create_quirk(chip, iface, quirk);
+			if (err < 0)
+				return err;
+		}
 	}
 	return 0;
 }
@@ -2000,8 +1983,10 @@ static int snd_usb_create_quirk(snd_usb_audio_t *chip,
 	case QUIRK_MIDI_YAMAHA:
 	case QUIRK_MIDI_MIDIMAN:
 		return snd_usb_create_midi_interface(chip, iface, quirk);
-	case QUIRK_ROLAND_UA100:
-		return snd_usb_roland_ua100_hack(chip);
+	case QUIRK_COMPOSITE:
+		return create_composite_quirk(chip, iface, quirk);
+	case QUIRK_AUDIO_FIXED_ENDPOINT:
+		return create_fixed_stream_quirk(chip, iface, quirk);
 	default:
 		snd_printd(KERN_ERR "invalid quirk type %d\n", quirk->type);
 		return -ENXIO;
