@@ -1,0 +1,43 @@
+--- ../alsa-kernel/ppc/tumbler.c	2004-08-16 12:48:40.285950840 +0200
++++ tumbler.c	2004-08-16 12:51:36.742361538 +0200
+@@ -1,3 +1,4 @@
++#define __NO_VERSION__
+ /*
+  * PMac Tumbler/Snapper lowlevel functions
+  *
+@@ -846,7 +847,11 @@
+ 	}
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
++static struct tq_struct device_change;
++#else
+ static struct work_struct device_change;
++#endif
+ 
+ static void
+ device_change_handler(void *self)
+@@ -895,7 +900,11 @@
+ 
+ 		/* finally we need to schedule an update of the mixer values
+ 		   (master and DRC are enough for now) -ReneR */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
++		schedule_task(&device_change);
++#else
+ 		schedule_work(&device_change);
++#endif
+ 
+ 	}
+ }
+@@ -1156,7 +1165,11 @@
+ 	chip->resume = tumbler_resume;
+ #endif
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
++	INIT_TQUEUE(&device_change, device_change_handler, (void *)chip);
++#else
+ 	INIT_WORK(&device_change, device_change_handler, (void *)chip);
++#endif
+ 
+ #ifdef PMAC_SUPPORT_AUTOMUTE
+ 	if (mix->headphone_irq >=0 && (err = snd_pmac_add_automute(chip)) < 0)
