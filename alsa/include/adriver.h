@@ -97,8 +97,8 @@
 #ifndef mk_kdev
 #define mk_kdev(maj, min) MKDEV(maj, min)
 #endif
-#ifndef bitmap_member
-#define bitmap_member(name,bits) \
+#ifndef DECLARE_BITMAP
+#define DECLARE_BITMAP(name,bits) \
 	unsigned long name[((bits)+BITS_PER_LONG-1)/BITS_PER_LONG]
 #endif
 
