@@ -1,2 +1,2 @@
 #include "adriver.h"
-#include "../alsa-kernel/imx/mx27vis_wm8974.c"
+#include "../../alsa-kernel/soc/imx/mx27vis_wm8974.c"

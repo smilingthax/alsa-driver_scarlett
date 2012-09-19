@@ -1587,6 +1587,8 @@ CHECK_KERNEL_HEADER(linux/gfp.h)
 CHECK_KERNEL_HEADER(pcmcia/cs_types.h, [#define SND_HAVE_DUMMY_CS_TYPES_H])
 CHECK_KERNEL_HEADER(pcmcia/cs.h, [#define SND_HAVE_DUMMY_CS_H])
 CHECK_KERNEL_HEADER(linux/lzo.h)
+CHECK_KERNEL_HEADER(linux/async.h, [#include \"async_compat.h\"
+])
 
 mkdir -p include/trace/events
 echo "Creating a dummy <trace/events/asoc.h>..."
