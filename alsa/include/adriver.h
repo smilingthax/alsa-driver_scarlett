@@ -207,8 +207,8 @@ void snd_compat_devfs_remove(const char *fmt, ...);
 #define devfs_remove snd_compat_devfs_remove
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 67)
 #undef devfs_mk_dir
-devfs_handle_t snd_compat_devfs_mkdir(const char *dir);
-#define devfs_mk_dir snd_compat_devfs_mkdir
+devfs_handle_t snd_compat_devfs_mk_dir(const char *dir);
+#define devfs_mk_dir snd_compat_devfs_mk_dir
 #endif
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)

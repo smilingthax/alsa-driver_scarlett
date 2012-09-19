@@ -30,6 +30,8 @@ void snd_wrapper_kill_fasync(struct fasync_struct **fp, int sig, int band)
 #endif
 }
 
+#endif /* < 2.3.0 */
+
 #if defined(CONFIG_DEVFS_FS)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 10)
@@ -47,7 +49,7 @@ void snd_compat_devfs_remove(const char *fmt, ...)
 	va_start(args, fmt);
 	n = vsnprintf(buf, 64, fmt, args);
 	if (n < 64 && buf[0]) {
-		devfs_handle_t de = devfs_find_handle(NULL, buf, 0, 0, 0, 0);
+		devfs_handle_t de = devfs_get_handle(NULL, buf, 0, 0, 0, 0);
 		devfs_unregister(de);
 		devfs_put(de);
 	}
@@ -79,5 +81,3 @@ void *snd_compat_vmap(struct page **pages, unsigned int count, unsigned long fla
 }
 
 #endif
-
-#endif /* < 2.3.0 */
