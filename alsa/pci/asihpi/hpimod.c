@@ -91,6 +91,18 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("AudioScience <support@audioscience.com>");
 MODULE_DESCRIPTION("AudioScience HPI");
 
+#ifdef MODULE_FIRMWARE
+MODULE_FIRMWARE("asihpi/dsp2400.bin");
+MODULE_FIRMWARE("asihpi/dsp4100.bin");
+MODULE_FIRMWARE("asihpi/dsp4300.bin");
+MODULE_FIRMWARE("asihpi/dsp5000.bin");
+MODULE_FIRMWARE("asihpi/dsp6200.bin");
+MODULE_FIRMWARE("asihpi/dsp6205.bin");
+MODULE_FIRMWARE("asihpi/dsp6413.bin");
+MODULE_FIRMWARE("asihpi/dsp6600.bin");
+MODULE_FIRMWARE("asihpi/dsp8713.bin");
+#endif
+
 static int major = 0;
 #if COPY_TO_LOCAL
 static int bufsize = HPIMOD_DEFAULT_BUF_SIZE;

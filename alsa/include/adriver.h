@@ -755,6 +755,10 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 #define MODULE_ALIAS_CHARDEV_MAJOR(x)
 #endif
 
+#ifndef MODULE_FIRMWARE
+#define MODULE_FIRMWARE(x)
+#endif
+
 #ifndef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
 #define pci_set_consistent_dma_mask(p,x) 0 /* success */
 #endif
