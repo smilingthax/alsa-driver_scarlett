@@ -98,7 +98,7 @@ endif
 	patch -p0 -i $<
 
 %.isapnp: %.c
-	$(CPP) -C -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -D__isapnp_now__ -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) $< | $(TOPDIR)/utils/convert_isapnp_ids > $@
+	$(CPP) -C -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -D__isapnp_now__ -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) $< | awk $(TOPDIR)/utils/convert_isapnp_ids > $@
 
 #
 #
