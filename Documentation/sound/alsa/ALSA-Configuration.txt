@@ -410,6 +410,13 @@ Prior to version 0.9.0rc4 options had a 'snd_' prefix. This was removed.
 
     The power-management is supported.
     
+  Module snd-cs5535audio
+  ----------------------
+
+    Module for multifunction CS5535 companion PCI device
+
+    Module supports up to 8 cards.
+
   Module snd-dt019x
   -----------------
 
@@ -1474,7 +1481,7 @@ the proper value with this option.
 
 The following strings are accepted:
     - default	Don't override the default setting
-    - disable	Disable the quirk
+    - none	Disable the quirk
     - hp_only	Bind Master and Headphone controls as a single control
     - swap_hp	Swap headphone and master controls
     - swap_surround  Swap master and surround controls

@@ -288,6 +288,9 @@ static int init_unsol_queue(struct hda_bus *bus)
 {
 	struct hda_bus_unsolicited *unsol;
 
+	if (bus->unsol) /* already initialized */
+		return 0;
+
 	unsol = kzalloc(sizeof(*unsol), GFP_KERNEL);
 	if (! unsol) {
 		snd_printk(KERN_ERR "hda_codec: can't allocate unsolicited queue\n");
@@ -372,8 +375,6 @@ int snd_hda_bus_new(snd_card_t *card, const struct hda_bus_template *temp,
 
 	init_MUTEX(&bus->cmd_mutex);
 	INIT_LIST_HEAD(&bus->codec_list);
-
-	init_unsol_queue(bus);
 
 	if ((err = snd_device_new(card, SNDRV_DEV_BUS, bus, &dev_ops)) < 0) {
 		snd_hda_bus_free(bus);
@@ -539,6 +540,9 @@ int snd_hda_codec_new(struct hda_bus *bus, unsigned int codec_addr,
 		snd_hda_codec_free(codec);
 		return err;
 	}
+
+	if (codec->patch_ops.unsol_event)
+		init_unsol_queue(bus);
 
 	snd_hda_codec_proc_new(codec);
 
@@ -1662,6 +1666,54 @@ int snd_hda_add_new_ctls(struct hda_codec *codec, snd_kcontrol_new_t *knew)
 }
 
 
+ /*
+ * Channel mode helper
+ */
+int snd_hda_ch_mode_info(struct hda_codec *codec, snd_ctl_elem_info_t *uinfo,
+			 const struct hda_channel_mode *chmode, int num_chmodes)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = num_chmodes;
+	if (uinfo->value.enumerated.item >= num_chmodes)
+		uinfo->value.enumerated.item = num_chmodes - 1;
+	sprintf(uinfo->value.enumerated.name, "%dch",
+		chmode[uinfo->value.enumerated.item].channels);
+	return 0;
+}
+
+int snd_hda_ch_mode_get(struct hda_codec *codec, snd_ctl_elem_value_t *ucontrol,
+			const struct hda_channel_mode *chmode, int num_chmodes,
+			int max_channels)
+{
+	int i;
+
+	for (i = 0; i < num_chmodes; i++) {
+		if (max_channels == chmode[i].channels) {
+			ucontrol->value.enumerated.item[0] = i;
+			break;
+		}
+	}
+	return 0;
+}
+
+int snd_hda_ch_mode_put(struct hda_codec *codec, snd_ctl_elem_value_t *ucontrol,
+			const struct hda_channel_mode *chmode, int num_chmodes,
+			int *max_channelsp)
+{
+	unsigned int mode;
+
+	mode = ucontrol->value.enumerated.item[0];
+	snd_assert(mode < num_chmodes, return -EINVAL);
+	if (*max_channelsp && ! codec->in_resume)
+		return 0;
+	/* change the current channel setting */
+	*max_channelsp = chmode[mode].channels;
+	if (chmode[mode].sequence)
+		snd_hda_sequence_write(codec, chmode[mode].sequence);
+	return 1;
+}
+
 /*
  * input MUX helper
  */
@@ -1837,7 +1889,6 @@ int snd_hda_parse_pin_def_config(struct hda_codec *codec, struct auto_pin_cfg *c
 		loc = get_defcfg_location(def_conf);
 		switch (get_defcfg_device(def_conf)) {
 		case AC_JACK_LINE_OUT:
-		case AC_JACK_SPEAKER:
 			seq = get_defcfg_sequence(def_conf);
 			assoc = get_defcfg_association(def_conf);
 			if (! assoc)
@@ -1851,6 +1902,9 @@ int snd_hda_parse_pin_def_config(struct hda_codec *codec, struct auto_pin_cfg *c
 			cfg->line_out_pins[cfg->line_outs] = nid;
 			sequences[cfg->line_outs] = seq;
 			cfg->line_outs++;
+			break;
+		case AC_JACK_SPEAKER:
+			cfg->speaker_pin = nid;
 			break;
 		case AC_JACK_HP_OUT:
 			cfg->hp_pin = nid;
