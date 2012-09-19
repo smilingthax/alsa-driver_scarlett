@@ -159,8 +159,7 @@ snd-emu8000-synth @if_sequencer snd-emux-synth
 |snd-rme32 snd-pcm
 |snd-rme96 snd-pcm
 |snd-sonicvibes snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
-|snd-via686 snd-pcm snd-ac97-codec snd-mpu401-uart
-|snd-via8233 snd-pcm snd-ac97-codec
+|snd-via82xx snd-pcm snd-ac97-codec snd-mpu401-uart
 
 %dir linux/sound/pci/ac97
 snd-ac97-codec snd
