@@ -1,6 +1,14 @@
---- ../alsa-kernel/core/rawmidi.c	2005-01-20 16:21:56.039226390 +0100
-+++ rawmidi.c	2005-01-20 16:59:15.565037668 +0100
-@@ -1267,12 +1267,25 @@
+--- ../alsa-kernel/core/rawmidi.c	2007-05-17 08:15:24.000000000 +0200
++++ rawmidi.c	2007-05-24 21:35:01.000000000 +0200
+@@ -23,6 +23,7 @@
+ #include <sound/core.h>
+ #include <linux/major.h>
+ #include <linux/init.h>
++#include <linux/smp_lock.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/time.h>
+@@ -1289,12 +1290,25 @@
  
  /*
   */
@@ -27,9 +35,9 @@
  /*
  
   */
-@@ -1337,14 +1350,20 @@
+@@ -1360,14 +1374,20 @@
  
- static struct file_operations snd_rawmidi_f_ops =
+ static const struct file_operations snd_rawmidi_f_ops =
  {
 +#ifndef LINUX_2_2
  	.owner =	THIS_MODULE,
@@ -47,4 +55,4 @@
 +#endif
  };
  
- static struct snd_minor snd_rawmidi_reg =
+ static int snd_rawmidi_alloc_substreams(struct snd_rawmidi *rmidi,

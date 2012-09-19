@@ -1,7 +1,15 @@
---- ../alsa-kernel/core/timer.c	2005-01-20 17:01:36.315804918 +0100
-+++ timer.c	2005-01-20 17:01:52.043871398 +0100
-@@ -995,7 +995,7 @@
- static struct _snd_timer_hardware snd_timer_system =
+--- ../alsa-kernel/core/timer.c	2007-05-17 08:15:24.000000000 +0200
++++ timer.c	2007-05-24 21:38:23.000000000 +0200
+@@ -22,6 +22,7 @@
+ #include <sound/driver.h>
+ #include <linux/delay.h>
+ #include <linux/init.h>
++#include <linux/smp_lock.h>
+ #include <linux/slab.h>
+ #include <linux/time.h>
+ #include <linux/mutex.h>
+@@ -985,7 +986,7 @@
+ static struct snd_timer_hardware snd_timer_system =
  {
  	.flags =	SNDRV_TIMER_HW_FIRST | SNDRV_TIMER_HW_TASKLET,
 -	.resolution =	1000000000L / HZ,
@@ -9,7 +17,7 @@
  	.ticks =	10000000L,
  	.start =	snd_timer_s_start,
  	.stop =		snd_timer_s_stop
-@@ -1791,21 +1791,40 @@
+@@ -1894,21 +1895,40 @@
  	return mask;
  }
  
@@ -51,11 +59,11 @@
  	.fasync = 	snd_timer_user_fasync,
  };
  
-@@ -1826,6 +1845,7 @@
+@@ -1920,6 +1940,7 @@
+ {
  	int err;
- 	struct snd_info_entry *entry;
  
 +	snd_timer_system.resolution = 1000000000L / HZ;
  #ifdef SNDRV_OSS_INFO_DEV_TIMERS
- 	snd_oss_info_register(SNDRV_OSS_INFO_DEV_TIMERS, SNDRV_CARDS - 1, "system timer");
- #endif
+ 	snd_oss_info_register(SNDRV_OSS_INFO_DEV_TIMERS, SNDRV_CARDS - 1,
+ 			      "system timer");
