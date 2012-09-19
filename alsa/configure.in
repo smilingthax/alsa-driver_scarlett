@@ -2739,19 +2739,18 @@ if test "$CONFIG_SND_MODULE" = y; then
   echo "Hacking autoconf.h..."
   rm -f include/linux/autoconf.h
   mkdir -p include/linux
-  if ! test -r  $CONFIG_SND_KERNELDIR/include/linux/autoconf.h ; then
-    if test -n "$kernelbuild" -a ! -r $kernelbuild/include/linux/autoconf.h; then
+  if test -n "$kernelbuild" -a -r $kernelbuild/include/linux/autoconf.h ; then
+    kernconf="$kernelbuild/include/linux/autoconf.h"
+  elif test -r  $CONFIG_SND_KERNELDIR/include/linux/autoconf.h ; then
+    kernconf="$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+  else
       cat << EOF
-File $CONFIG_SND_KERNELDIR/include/linux/autoconf.h does not exist.
+File include/linux/autoconf.h does not exist in kernel tree.
 Fatal error - aborting...
 EOF
       exit 1
-    else
-      grep -v CONFIG_SND_ $kernelbuild/include/linux/autoconf.h > include/linux/autoconf.h
-    fi
-  else
-    grep -v CONFIG_SND_ $CONFIG_SND_KERNELDIR/include/linux/autoconf.h > include/linux/autoconf.h
   fi
+  grep -v CONFIG_SND_ $kernconf > include/linux/autoconf.h
   cat include/autoconf-extra.h include/config1.h | grep CONFIG_SND \
     | sed -e's@/\* #undef \([A-Za-z0-9_]\+\) .*$@#undef \1@g' \
       >> include/linux/autoconf.h
