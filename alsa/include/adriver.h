@@ -962,6 +962,7 @@ typedef u32 __bitwise pm_message_t;
 #define PCI_D2     2
 #define PCI_D3hot  3
 #define PCI_D3cold 4
+#define pci_choose_state(pci,state)	((state) ? PCI_D3hot : PCI_D0)
 #endif
 #endif
 #endif
