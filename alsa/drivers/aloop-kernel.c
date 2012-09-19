@@ -65,6 +65,8 @@ MODULE_PARM_DESC(pcm_substreams, "PCM substreams # (1-8) for loopback driver.");
 module_param_array(pcm_notify, int, NULL, 0444);
 MODULE_PARM_DESC(pcm_notify, "Break capture when PCM format/rate/channels changes.");
 
+#define NO_PITCH 100000
+
 struct loopback_pcm;
 
 struct loopback_cable {
@@ -82,6 +84,7 @@ struct loopback {
 	struct loopback_cable *cables[MAX_PCM_SUBSTREAMS][2];
 	struct snd_pcm *pcm[2];
 	unsigned int notify: 1;
+	unsigned int rate_shift[MAX_PCM_SUBSTREAMS][2];
 };
 
 struct loopback_pcm {
@@ -95,6 +98,7 @@ struct loopback_pcm {
 	unsigned int pcm_period_size;
 	unsigned int pcm_bps;		/* bytes per second */
 	unsigned int pcm_salign;	/* bytes per sample * channels */
+	unsigned int pcm_rate_shift;	/* rate shift value */
 	/* flags */
 	unsigned int period_update_pending :1;
 	/* timer stuff */
@@ -108,16 +112,44 @@ static struct platform_device *devices[SNDRV_CARDS];
 
 static inline unsigned int byte_pos(struct loopback_pcm *dpcm, unsigned int x)
 {
-	x /= HZ;
+	if (dpcm->pcm_rate_shift == NO_PITCH) {
+		x /= HZ;
+	} else {
+		x = div_u64(NO_PITCH * (unsigned long long)x,
+			    HZ * (unsigned long long)dpcm->pcm_rate_shift);
+	}
 	return x - (x % dpcm->pcm_salign);
 }
 
-#define frac_pos(x)	((x) * HZ)
+static inline unsigned int frac_pos(struct loopback_pcm *dpcm, unsigned int x)
+{
+	if (dpcm->pcm_rate_shift == NO_PITCH) {	/* no pitch */
+		return x * HZ;
+	} else {
+		x = div_u64(dpcm->pcm_rate_shift * (unsigned long long)x * HZ,
+			    NO_PITCH);
+	}
+	return x;
+}
+
+static inline unsigned int get_rate_shift(struct loopback_pcm *dpcm)
+{
+	int device = dpcm->substream->pstr->pcm->device;
+	
+	if (dpcm->substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		device ^= 1;
+	return dpcm->loopback->rate_shift[dpcm->substream->number][device];
+}
 
 static void loopback_timer_start(struct loopback_pcm *dpcm)
 {
 	unsigned long tick;
+	unsigned int rate_shift = get_rate_shift(dpcm);
 
+	if (rate_shift != dpcm->pcm_rate_shift) {
+		dpcm->pcm_rate_shift = rate_shift;
+		dpcm->period_size_frac = frac_pos(dpcm, dpcm->pcm_period_size);
+	}
 	tick = dpcm->period_size_frac - dpcm->irq_pos;
 	tick = (tick + dpcm->pcm_bps - 1) / dpcm->pcm_bps;
 	dpcm->timer.expires = jiffies + tick;
@@ -171,6 +203,7 @@ static int loopback_trigger(struct snd_pcm_substream *substream, int cmd)
 		if (err < 0)
 			return err;
 		dpcm->last_jiffies = jiffies;
+		dpcm->pcm_rate_shift = 0;
 		loopback_timer_start(dpcm);
 		cable->running |= (1 << substream->stream);
 		break;
@@ -211,7 +244,6 @@ static int loopback_prepare(struct snd_pcm_substream *substream)
 	dpcm->pcm_bps = bps;
 	dpcm->pcm_salign = salign;
 	dpcm->pcm_period_size = frames_to_bytes(runtime, runtime->period_size);
-	dpcm->period_size_frac = frac_pos(dpcm->pcm_period_size);
 
 	mutex_lock(&dpcm->loopback->cable_lock);
 	if (!(cable->valid & ~(1 << substream->stream))) {
@@ -570,11 +602,84 @@ static int __devinit loopback_pcm_new(struct loopback *loopback,
 	return 0;
 }
 
+static int loopback_rate_shift_info(struct snd_kcontrol *kcontrol,   
+				    struct snd_ctl_elem_info *uinfo) 
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 80000;
+	uinfo->value.integer.max = 120000;
+	uinfo->value.integer.step = 1;
+	return 0;
+}                                  
+
+static int loopback_rate_shift_get(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	struct loopback *loopback = snd_kcontrol_chip(kcontrol);
+	
+	ucontrol->value.integer.value[0] =
+		loopback->rate_shift[kcontrol->id.subdevice]
+				    [kcontrol->id.device];
+	return 0;
+}
+
+static int loopback_rate_shift_put(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	struct loopback *loopback = snd_kcontrol_chip(kcontrol);
+	unsigned int val;
+	int change = 0;
+
+	val = ucontrol->value.integer.value[0];
+	if (val < 80000)
+		val = 80000;
+	if (val > 120000)
+		val = 120000;	
+	mutex_lock(&loopback->cable_lock);
+	if (val != loopback->rate_shift[kcontrol->id.subdevice]
+				       [kcontrol->id.device]) {
+		loopback->rate_shift[kcontrol->id.subdevice]
+				    [kcontrol->id.device] = val;
+		change = 1;
+	}
+	mutex_unlock(&loopback->cable_lock);
+	return change;
+}
+
+static struct snd_kcontrol_new loopback_rate_shift  __devinitdata =
+{
+	.iface =        SNDRV_CTL_ELEM_IFACE_PCM,
+	.name =         "PCM Rate Shift 100000",
+	.info =         loopback_rate_shift_info,
+	.get =          loopback_rate_shift_get,
+	.put =          loopback_rate_shift_put,
+};
+
 static int __devinit loopback_mixer_new(struct loopback *loopback)
 {
 	struct snd_card *card = loopback->card;
+	struct snd_pcm *pcm;
+	struct snd_kcontrol *kctl;
+	int err, dev, substr, substr_count;
 
 	strcpy(card->mixername, "Loopback Mixer");
+	for (dev = 0; dev < 2; dev++) {
+		pcm = loopback->pcm[dev];
+		substr_count =
+		    pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream_count;
+		for (substr = 0; substr < substr_count; substr++) {
+			loopback->rate_shift[substr][dev] = NO_PITCH;
+			kctl = snd_ctl_new1(&loopback_rate_shift, loopback);
+			if (!kctl)
+				return -ENOMEM;
+			kctl->id.device = dev;
+			kctl->id.subdevice = substr;
+			err = snd_ctl_add(card, kctl);
+			if (err < 0)
+				return err;
+		}
+	}
 	return 0;
 }
 
