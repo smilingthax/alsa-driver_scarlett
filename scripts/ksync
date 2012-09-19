@@ -423,6 +423,7 @@ def get_last_changeset():
 	cmd = 'bk prs -r+ ChangeSet'
 	fp = os.popen(cmd)
 	lines = fp.readlines()
+	fp.close()
 	cs = '0.0'
 	kernel = '0.0.0'
 	for line in lines:
@@ -437,6 +438,14 @@ def get_last_changeset():
 def filename(ver = 1):
 	cs, kernel = get_last_changeset()
         print 'alsa-%s-%s-linux-%s-cs%s.patch' % (time.strftime("%Y-%m-%d", time.gmtime(time.time())), ver, kernel, cs)	
+
+def kdiffs(cs = '1.532'):
+	os.chdir(get_bk_root())
+	cmd = 'sh -c \'bk rset -hr%s.. | grep -E "^(sound/|include/sound/)" | bk gnupatch -du\'' % cs
+	fp = os.popen(cmd)
+	lines = fp.readlines()
+	fp.close()
+	print_file(sys.stdout, lines)
 
 def main():
 	try:
@@ -473,6 +482,11 @@ def main():
 		if len(args) > 1:
 			ver = args[1]
 		filename(ver)
+	elif args[0] == 'kdiffs':
+		if len(args) > 1:
+			kdiffs(args[1])
+		else:
+			kdiffs()
 	else:
 		print 'Unknown command %s' % args[0]
 		sys.exit(1)

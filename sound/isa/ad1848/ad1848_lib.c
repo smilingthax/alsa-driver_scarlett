@@ -29,6 +29,7 @@
 #include <linux/ioport.h>
 #include <sound/core.h>
 #include <sound/ad1848.h>
+#include <sound/pcm_params.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Routines for control of AD1848/AD1847/CS4248");

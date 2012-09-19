@@ -1560,16 +1560,20 @@ YMFPCI_SINGLE(SNDRV_CTL_NAME_IEC958("",CAPTURE,SWITCH), 0, YDSXGR_SPDIFINCTRL),
 
 static int snd_ymfpci_get_gpio_out(ymfpci_t *chip, int pin)
 {
-	u16 reg, ctrl;
+	u16 reg, mode;
 	unsigned long flags;
 
 	reg = ~(1 << pin) & 0xff;
-	ctrl = 0xff00 | reg;
 	spin_lock_irqsave(&chip->reg_lock, flags);
-	snd_ymfpci_writew(chip, YDSXGR_GPIOFUNCENABLE, ctrl);
-	ctrl = snd_ymfpci_readw(chip, YDSXGR_GPIOINSTATUS);
+	snd_ymfpci_writew(chip, YDSXGR_GPIOFUNCENABLE, 0x00ff);
+	/* set the level mode for input line */
+	mode = snd_ymfpci_readw(chip, YDSXGR_GPIOTYPECONFIG);
+	mode &= ~(3 << (pin * 2));
+	snd_ymfpci_writew(chip, YDSXGR_GPIOTYPECONFIG, mode);
+	snd_ymfpci_writew(chip, YDSXGR_GPIOFUNCENABLE, (reg << 8) | 0x00ff);
+	mode = snd_ymfpci_readw(chip, YDSXGR_GPIOINSTATUS);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
-	return (ctrl >> pin) & 1;
+	return (mode >> pin) & 1;
 }
 
 static int snd_ymfpci_set_gpio_out(ymfpci_t *chip, int pin, int enable)
@@ -1578,12 +1582,11 @@ static int snd_ymfpci_set_gpio_out(ymfpci_t *chip, int pin, int enable)
 	unsigned long flags;
 
 	reg = ~(1 << pin) & 0xff;
-	ctrl = (reg << 8) | reg;
+	ctrl = 0x00ff & ~reg;
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	snd_ymfpci_writew(chip, YDSXGR_GPIOFUNCENABLE, ctrl);
 	snd_ymfpci_writew(chip, YDSXGR_GPIOOUTCTRL, enable << pin);
-	ctrl = 0xff00 | reg;
-	snd_ymfpci_writew(chip, YDSXGR_GPIOFUNCENABLE, ctrl);
+	snd_ymfpci_writew(chip, YDSXGR_GPIOFUNCENABLE, (reg << 8) | ctrl);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 
 	return 0;
