@@ -96,17 +96,20 @@ static void _snd_mpu401_uart_interrupt(mpu401_t *mpu)
 		if (! test_and_set_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode)) {
 			spin_lock(&mpu->input_lock);
 			snd_mpu401_uart_input_read(mpu);
-			spin_unlock(&mpu->input_lock);
 			clear_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode);
+			spin_unlock(&mpu->input_lock);
 		}
 	} else
 		snd_mpu401_uart_clear_rx(mpu);
  	/* ok. for better Tx performance try do some output when input is done */
 	if (test_bit(MPU401_MODE_BIT_OUTPUT, &mpu->mode) &&
 	    test_bit(MPU401_MODE_BIT_OUTPUT_TRIGGER, &mpu->mode)) {
-		spin_lock(&mpu->output_lock);
-		snd_mpu401_uart_output_write(mpu);
-		spin_unlock(&mpu->output_lock);
+		if (! test_and_set_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode)) {
+			spin_lock(&mpu->output_lock);
+			snd_mpu401_uart_output_write(mpu);
+			clear_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode);
+			spin_unlock(&mpu->output_lock);
+		}
 	}
 }
 
@@ -313,8 +316,8 @@ static void snd_mpu401_uart_input_trigger(snd_rawmidi_substream_t * substream, i
 		if (! test_and_set_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode)) {
 			spin_lock_irqsave(&mpu->input_lock, flags);
 			snd_mpu401_uart_input_read(mpu);
-			spin_unlock_irqrestore(&mpu->input_lock, flags);
 			clear_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode);
+			spin_unlock_irqrestore(&mpu->input_lock, flags);
 		}
 	} else {
 		if (mpu->irq < 0)
@@ -369,9 +372,10 @@ static void snd_mpu401_uart_output_write(mpu401_t * mpu)
 					break;
 				}
 			}
+			break;	/* Tx FIFO full - try again later */
 		} else {
 			snd_mpu401_uart_remove_timer (mpu, 0);
-			max = 1; /* no other data - leave the tx loop */
+			break;	/* no other data - leave the tx loop */
 		}
 	} while (--max > 0);
 }
@@ -398,8 +402,8 @@ static void snd_mpu401_uart_output_trigger(snd_rawmidi_substream_t * substream, 
 		if (! test_and_set_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode)) {
 			spin_lock_irqsave(&mpu->output_lock, flags);
 			snd_mpu401_uart_output_write(mpu);
-			spin_unlock_irqrestore(&mpu->output_lock, flags);
 			clear_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode);
+			spin_unlock_irqrestore(&mpu->output_lock, flags);
 		}
 	} else {
 		snd_mpu401_uart_remove_timer(mpu, 0);
