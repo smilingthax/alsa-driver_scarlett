@@ -583,9 +583,9 @@ Module parameters
     Module for soundcards based on ESS Maestro-1/2/2E (ES1968/ES1978) chips.
 
     snd_total_bufsize	 - total buffer size in kB (1-4096kB)
-    snd_midi_enable	 - enable MIDI support (0 = off, 1 = on)
-    snd_pcm_channels_p	 - playback channels (1-8, default=2)
-    snd_pcm_channels_c	 - capture channels (1-8, default=0)
+    snd_pcm_substreams_p - playback channels (1-8, default=2)
+    snd_pcm_substreams_c - capture channels (1-8, default=0)
+    snd_clock		 - clock (0 = auto-detection)
 
     Module supports up to 8 cards and autoprobe.
 
@@ -723,7 +723,6 @@ Module parameters
     Module for Yamaha PCI chips (YMF72x, YMF74x & YMF75x).
 
     snd_mpu_port          - 0x300,0x330,0x332,0x334, -1 (disable) by default
-    snd_mpu_irq           - 5,7,9,10,11, -1 (disable) by default
     snd_fm_port           - 0x388,0x398,0x3a0,0x3a8, -1 (disable) by default
 
     Module supports autoprobe and multiple chips (max 8).
