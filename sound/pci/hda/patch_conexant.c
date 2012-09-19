@@ -781,8 +781,9 @@ static int cxt5045_init(struct hda_codec *codec)
 
 
 enum {
-	CXT5045_LAPTOP,	 /* Laptops w/ EAPD support */
-	CXT5045_FUJITSU, /* Laptops w/ EAPD support */ 
+	CXT5045_LAPTOP_HPSENSE,
+	CXT5045_LAPTOP_MICSENSE,
+	CXT5045_LAPTOP_HPMICSENSE,
 	CXT5045_BENQ,
 #ifdef CONFIG_SND_DEBUG
 	CXT5045_TEST,
@@ -791,27 +792,34 @@ enum {
 };
 
 static const char *cxt5045_models[CXT5045_MODELS] = {
-	[CXT5045_LAPTOP]	= "laptop",
-	[CXT5045_FUJITSU]	= "fujitsu",
-	[CXT5045_BENQ]		= "benq",
+	[CXT5045_LAPTOP_HPSENSE]	= "laptop-hpsense",
+	[CXT5045_LAPTOP_MICSENSE]	= "laptop-micsense",
+	[CXT5045_LAPTOP_HPMICSENSE]	= "laptop-hpmicsense",
+	[CXT5045_BENQ]			= "benq",
 #ifdef CONFIG_SND_DEBUG
 	[CXT5045_TEST]		= "test",
 #endif
 };
 
 static struct snd_pci_quirk cxt5045_cfg_tbl[] = {
-	SND_PCI_QUIRK(0x103c, 0x30b2, "HP DV Series", CXT5045_LAPTOP),
-	SND_PCI_QUIRK(0x103c, 0x30b5, "HP DV2120", CXT5045_LAPTOP),
-	SND_PCI_QUIRK(0x103c, 0x30b7, "HP DV6000Z", CXT5045_LAPTOP),
-	SND_PCI_QUIRK(0x103c, 0x30bb, "HP DV8000", CXT5045_LAPTOP),
-	SND_PCI_QUIRK(0x103c, 0x30cd, "HP DV Series", CXT5045_LAPTOP),
-	SND_PCI_QUIRK(0x103c, 0x30d5, "HP 530", CXT5045_LAPTOP),
-	SND_PCI_QUIRK(0x103c, 0x30d9, "HP Spartan", CXT5045_LAPTOP),
+	SND_PCI_QUIRK(0x103c, 0x30a5, "HP", CXT5045_LAPTOP_HPSENSE),
+	SND_PCI_QUIRK(0x103c, 0x30b2, "HP DV Series", CXT5045_LAPTOP_HPSENSE),
+	SND_PCI_QUIRK(0x103c, 0x30b5, "HP DV2120", CXT5045_LAPTOP_HPSENSE),
+	SND_PCI_QUIRK(0x103c, 0x30b7, "HP DV6000Z", CXT5045_LAPTOP_HPSENSE),
+	SND_PCI_QUIRK(0x103c, 0x30bb, "HP DV8000", CXT5045_LAPTOP_HPSENSE),
+	SND_PCI_QUIRK(0x103c, 0x30cd, "HP DV Series", CXT5045_LAPTOP_HPSENSE),
+	SND_PCI_QUIRK(0x103c, 0x30d5, "HP 530", CXT5045_LAPTOP_HPSENSE),
+	SND_PCI_QUIRK(0x103c, 0x30d9, "HP Spartan", CXT5045_LAPTOP_HPSENSE),
 	SND_PCI_QUIRK(0x152d, 0x0753, "Benq R55E", CXT5045_BENQ),
-	SND_PCI_QUIRK(0x1734, 0x10ad, "Fujitsu Si1520", CXT5045_FUJITSU),
-	SND_PCI_QUIRK(0x1734, 0x10cb, "Fujitsu Si3515", CXT5045_LAPTOP),
-	SND_PCI_QUIRK(0x1734, 0x110e, "Fujitsu V5505", CXT5045_LAPTOP),
-	SND_PCI_QUIRK(0x8086, 0x2111, "Conexant Reference board", CXT5045_LAPTOP),
+	SND_PCI_QUIRK(0x1734, 0x10ad, "Fujitsu Si1520", CXT5045_LAPTOP_MICSENSE),
+	SND_PCI_QUIRK(0x1734, 0x10cb, "Fujitsu Si3515", CXT5045_LAPTOP_HPMICSENSE),
+	SND_PCI_QUIRK(0x1734, 0x110e, "Fujitsu V5505", CXT5045_LAPTOP_HPSENSE),
+	SND_PCI_QUIRK(0x1509, 0x1e40, "FIC", CXT5045_LAPTOP_HPMICSENSE),
+	SND_PCI_QUIRK(0x1509, 0x2f05, "FIC", CXT5045_LAPTOP_HPMICSENSE),
+	SND_PCI_QUIRK(0x1509, 0x2f06, "FIC", CXT5045_LAPTOP_HPMICSENSE),
+	SND_PCI_QUIRK(0x1631, 0xc106, "Packard Bell", CXT5045_LAPTOP_HPMICSENSE),
+	SND_PCI_QUIRK(0x1631, 0xc107, "Packard Bell", CXT5045_LAPTOP_HPMICSENSE),
+	SND_PCI_QUIRK(0x8086, 0x2111, "Conexant Reference board", CXT5045_LAPTOP_HPSENSE),
 	{}
 };
 
@@ -849,7 +857,7 @@ static int patch_cxt5045(struct hda_codec *codec)
 						  cxt5045_models,
 						  cxt5045_cfg_tbl);
 	switch (board_config) {
-	case CXT5045_LAPTOP:
+	case CXT5045_LAPTOP_HPSENSE:
 		codec->patch_ops.unsol_event = cxt5045_hp_unsol_event;
 		spec->input_mux = &cxt5045_capture_source;
 		spec->num_init_verbs = 2;
@@ -857,10 +865,20 @@ static int patch_cxt5045(struct hda_codec *codec)
 		spec->mixers[0] = cxt5045_mixers;
 		codec->patch_ops.init = cxt5045_init;
 		break;
-	case CXT5045_FUJITSU:
+	case CXT5045_LAPTOP_MICSENSE:
 		spec->input_mux = &cxt5045_capture_source;
 		spec->num_init_verbs = 2;
 		spec->init_verbs[1] = cxt5045_mic_sense_init_verbs;
+		spec->mixers[0] = cxt5045_mixers;
+		codec->patch_ops.init = cxt5045_init;
+		break;
+	default:
+	case CXT5045_LAPTOP_HPMICSENSE:
+		codec->patch_ops.unsol_event = cxt5045_hp_unsol_event;
+		spec->input_mux = &cxt5045_capture_source;
+		spec->num_init_verbs = 3;
+		spec->init_verbs[1] = cxt5045_hp_sense_init_verbs;
+		spec->init_verbs[2] = cxt5045_mic_sense_init_verbs;
 		spec->mixers[0] = cxt5045_mixers;
 		codec->patch_ops.init = cxt5045_init;
 		break;
@@ -879,6 +897,8 @@ static int patch_cxt5045(struct hda_codec *codec)
 		spec->input_mux = &cxt5045_test_capture_source;
 		spec->mixers[0] = cxt5045_test_mixer;
 		spec->init_verbs[0] = cxt5045_test_init_verbs;
+		break;
+		
 #endif	
 	}
 
@@ -1000,13 +1020,13 @@ static void cxt5047_hp2_automute(struct hda_codec *codec)
 static void cxt5047_hp_automic(struct hda_codec *codec)
 {
 	static struct hda_verb mic_jack_on[] = {
-		{0x15, AC_VERB_SET_AMP_GAIN_MUTE, 0xb080},
-		{0x17, AC_VERB_SET_AMP_GAIN_MUTE, 0xb000},
+		{0x15, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_MUTE},
+		{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE},
 		{}
 	};
 	static struct hda_verb mic_jack_off[] = {
-		{0x17, AC_VERB_SET_AMP_GAIN_MUTE, 0xb080},
-		{0x15, AC_VERB_SET_AMP_GAIN_MUTE, 0xb000},
+		{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_MUTE},
+		{0x15, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE},
 		{}
 	};
 	unsigned int present;
@@ -1023,8 +1043,7 @@ static void cxt5047_hp_automic(struct hda_codec *codec)
 static void cxt5047_hp_unsol_event(struct hda_codec *codec,
 				  unsigned int res)
 {
-	res >>= 26;
-	switch (res) {
+	switch (res >> 26) {
 	case CONEXANT_HP_EVENT:
 		cxt5047_hp_automute(codec);
 		break;
@@ -1233,6 +1252,17 @@ static struct snd_kcontrol_new cxt5047_test_mixer[] = {
 		.get = conexant_mux_enum_get,
 		.put = conexant_mux_enum_put,
 	},
+	HDA_CODEC_VOLUME("Input-1 Volume", 0x1a, 0x0, HDA_INPUT),
+	HDA_CODEC_MUTE("Input-1 Switch", 0x1a, 0x0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Input-2 Volume", 0x1a, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Input-2 Switch", 0x1a, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Input-3 Volume", 0x1a, 0x2, HDA_INPUT),
+	HDA_CODEC_MUTE("Input-3 Switch", 0x1a, 0x2, HDA_INPUT),
+	HDA_CODEC_VOLUME("Input-4 Volume", 0x1a, 0x3, HDA_INPUT),
+	HDA_CODEC_MUTE("Input-4 Switch", 0x1a, 0x3, HDA_INPUT),
+	HDA_CODEC_VOLUME("Input-5 Volume", 0x1a, 0x4, HDA_INPUT),
+	HDA_CODEC_MUTE("Input-5 Switch", 0x1a, 0x4, HDA_INPUT),
+
 	{ } /* end */
 };
 
