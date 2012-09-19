@@ -91,7 +91,7 @@ typedef struct _snd_serialmidi {
 	char *sdev;			/* serial device name (e.g. /dev/ttyS0) */
 	unsigned int speed;		/* speed in bauds */
 	unsigned int adaptor;		/* see SERIAL_ADAPTOR_ */
-	unsigned int mode;		/* see SERIAL_MODE_* */
+	unsigned long mode;		/* see SERIAL_MODE_* */
 	unsigned int outs;		/* count of outputs */
 	unsigned char prev_status[SNDRV_SERIAL_MAX_OUTS];
 	snd_rawmidi_t *rmidi;		/* rawmidi device */

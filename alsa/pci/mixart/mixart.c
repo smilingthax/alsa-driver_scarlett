@@ -263,7 +263,7 @@ mixart_pipe_t* snd_mixart_add_ref_pipe( mixart_t *chip, int pcm_number, int capt
 
 		streaming_group_req.stream_count = stream_count;
 		streaming_group_req.channel_count = 2;
-		streaming_group_req.latency = 128; /* 256; */
+		streaming_group_req.latency = 256;
 		streaming_group_req.connector = pipe->uid_left_connector;  /* the left connector */
 
 		for (i=0; i<stream_count; i++) {
