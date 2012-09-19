@@ -296,10 +296,17 @@ static int read_file_1(const char *filename, struct cond **template)
 		/* ignore some keywords */
 		if (buffer[0] == '#')
 			continue;
-		if (!strncmp(buffer, "        ", 8)) {
-			buffer[0] = '\t';
-			for (idx = 8; idx <= strlen(buffer); idx++)
-				buffer[idx-7] = buffer[idx];
+		if (buffer[0] != '\t') {
+			for (c = 0; c < 8; c++) {
+				if (buffer[c] == '\t') {
+					buffer[0] = '\t';
+					memmove(buffer + 1, buffer + c + 1,
+						strlen(buffer) - c);
+					break;
+				}
+				if (buffer[c] != ' ')
+					break;
+			}
 		}
 		if (!strncmp(buffer, "endmenu", 7) ||
 		    !strncmp(buffer, "endif", 5)) {
