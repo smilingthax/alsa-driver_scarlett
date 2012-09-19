@@ -480,8 +480,8 @@ struct _snd_ac97 {
 	snd_info_entry_t *proc_regs;
 	unsigned short subsystem_vendor;
 	unsigned short subsystem_device;
-	spinlock_t reg_lock;
-	struct semaphore mutex;	/* mutex for AD18xx multi-codecs and paging (2.3) */
+	struct semaphore reg_mutex;
+	struct semaphore page_mutex;	/* mutex for AD18xx multi-codecs and paging (2.3) */
 	unsigned short num;	/* number of codec: 0 = primary, 1 = secondary */
 	unsigned short addr;	/* physical address of codec [0-3] */
 	unsigned int id;	/* identification of codec */
@@ -554,6 +554,7 @@ enum {
 	AC97_TUNE_AD_SHARING,	/* for AD1985, turn on OMS bit and use headphone */
 	AC97_TUNE_ALC_JACK,	/* for Realtek, enable JACK detection */
 	AC97_TUNE_INV_EAPD,	/* inverted EAPD implementation */
+	AC97_TUNE_MUTE_LED,	/* EAPD bit works as mute LED */
 };
 
 struct ac97_quirk {
