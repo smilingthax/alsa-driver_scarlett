@@ -577,6 +577,12 @@ static int __init snd_card_serialmidi_probe(int dev)
 	}
 
 	sprintf(card->longname, "%s at %s", card->shortname, sdev[dev]);
+
+	if ((err = snd_card_set_generic_dev(card)) < 0) {
+		snd_card_free(card);
+		return err;
+	}
+
 	if ((err = snd_card_register(card)) < 0) {
 		snd_card_free(card);
 		return err;

@@ -1407,6 +1407,11 @@ static int __devinit snd_card_miro_probe(void)
                 return error;
 	}
 
+	if ((error = snd_card_set_generic_dev(card)) < 0) {
+		snd_card_free(card);
+		return error;
+	}
+
 	if ((error = snd_card_register(card))) {
 		snd_card_free(card);
 		return error;
