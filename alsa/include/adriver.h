@@ -97,6 +97,10 @@
 #ifndef mk_kdev
 #define mk_kdev(maj, min) MKDEV(maj, min)
 #endif
+#ifndef bitmap_member
+#define bitmap_member(name,bits) \
+	unsigned long name[((bits)+BITS_PER_LONG-1)/BITS_PER_LONG]
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 3)
 #define need_resched() (current->need_resched)

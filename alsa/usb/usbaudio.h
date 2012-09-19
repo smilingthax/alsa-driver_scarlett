@@ -27,6 +27,9 @@
 /*
  */
 
+#define USB_SUBCLASS_AUDIO_CONTROL	0x01
+#define USB_SUBCLASS_AUDIO_STREAMING	0x02
+
 #define USB_DT_CS_DEVICE                0x21
 #define USB_DT_CS_CONFIG                0x22
 #define USB_DT_CS_STRING                0x23
@@ -89,9 +92,7 @@
 #define SAMPLING_FREQ_CONTROL      0x01
 #define PITCH_CONTROL              0x02
 
-/*
- */
-
+/* Format Types */
 #define USB_FORMAT_TYPE_I	0x01
 #define USB_FORMAT_TYPE_II	0x02
 #define USB_FORMAT_TYPE_III	0x03
@@ -121,24 +122,21 @@
 
 typedef struct snd_usb_audio snd_usb_audio_t;
 
-#define snd_usb_audio_t_magic	0xa15a401	/* should be in sndmagic.h later */
+#define snd_usb_audio_t_magic	0xa15a401	/* FIXME: should be in sndmagic.h later */
 
 
 struct snd_usb_audio {
 	
+	int index;
 	struct usb_device *dev;
-	int ctrlif;
-
-	unsigned char *desc_buffer;	/* allocated descriptors */
-	int desc_buflen;		/* its length */
-
 	snd_card_t *card;
+	int num_interfaces;
 
+	struct list_head pcm_list;	/* list of pcm streams */
 	int pcm_devs;
 
-	snd_info_entry_t *proc_entry;
-
 };  
+
 
 /*
  */
@@ -149,11 +147,12 @@ struct snd_usb_audio {
 
 unsigned int snd_usb_combine_bytes(unsigned char *bytes, int size);
 
-void *snd_usb_find_desc(void *descstart, unsigned int desclen, void *after, u8 dtype, int iface, int altsetting);
-void *snd_usb_find_csint_desc(snd_usb_audio_t *chip, void *after, u8 dsubtype, int iface, int altsetting);
+void *snd_usb_find_desc(void *descstart, int desclen, void *after, u8 dtype, int iface, int altsetting);
+void *snd_usb_find_csint_desc(void *descstart, int desclen, void *after, u8 dsubtype, int iface, int altsetting);
 
-int snd_usb_create_mixer(snd_usb_audio_t *chip);
+int snd_usb_create_mixer(snd_usb_audio_t *chip, int ctrlif, unsigned char *buffer, int buflen);
 
+/* for compatibility... */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 #define do_usb_alloc_urb(n,flags) usb_alloc_urb(n)
 #define do_usb_submit_urb(p,flags) usb_submit_urb(p)
