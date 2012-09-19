@@ -11,9 +11,7 @@
 #include <sound/core.h>
 #include <sound/initval.h>
 #include <sound/pcm.h>
-
 #include <linux/input.h>
-#include <linux/delay.h>
 #include <asm/bitops.h>
 #include "pcsp_input.h"
 #include "pcsp.h"
@@ -33,7 +31,7 @@ MODULE_PARM_DESC(index, "Index value for pcsp soundcard.");
 module_param(id, charp, 0444);
 MODULE_PARM_DESC(id, "ID string for pcsp soundcard.");
 module_param(enable, bool, 0444);
-MODULE_PARM_DESC(enable, "dummy");
+MODULE_PARM_DESC(enable, "Enable PC-Speaker sound.");
 
 struct snd_pcsp pcsp_chip;
 
@@ -138,7 +136,13 @@ static int __devinit snd_card_pcsp_probe(int devnum, struct device *dev)
 
 static int __devinit alsa_card_pcsp_init(struct device *dev)
 {
-	int devnum = 0, cards = 0;
+	int err;
+
+	err = snd_card_pcsp_probe(0, dev);
+	if (err) {
+		printk(KERN_ERR "PC-Speaker initialization failed.\n");
+		return err;
+	}
 
 #ifdef CONFIG_DEBUG_PAGEALLOC
 	/* Well, CONFIG_DEBUG_PAGEALLOC makes the sound horrible. Lets alert */
@@ -149,15 +153,6 @@ static int __devinit alsa_card_pcsp_init(struct device *dev)
 	       "Unless it is disabled, enjoy the horrible, distorted "
 	       "and crackling noise.\n");
 #endif
-
-	if (enable) {
-		if (snd_card_pcsp_probe(devnum, dev) >= 0)
-			cards++;
-		if (!cards) {
-			printk(KERN_ERR "PC-Speaker initialization failed.\n");
-			return -ENODEV;
-		}
-	}
 
 	return 0;
 }
@@ -170,6 +165,7 @@ static void __devexit alsa_card_pcsp_exit(struct snd_pcsp *chip)
 static int __devinit pcsp_probe(struct platform_device *dev)
 {
 	int err;
+
 	err = pcspkr_input_init(&pcsp_chip.input_dev, &dev->dev);
 	if (err < 0)
 		return err;
@@ -229,6 +225,8 @@ static struct platform_driver pcsp_platform_driver = {
 
 static int __init pcsp_init(void)
 {
+	if (!enable)
+		return -ENODEV;
 	return platform_driver_register(&pcsp_platform_driver);
 }
 
