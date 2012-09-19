@@ -30,6 +30,9 @@
 
 // Output methods
 #define METHOD_MAKEFILE		1
+#define METHOD_ACINCLUDE	2
+#define METHOD_MAKECONF		3
+#define METHOD_INCLUDE		4
 
 // Dependency type
 typedef enum {
@@ -76,6 +79,7 @@ static void usage(char *programname);
 static void output_makefile(const char *dir, int all);
 static char *convert_to_config_uppercase(const char *pre, const char *line);
 // static char *convert_to_escape(const char *line);
+static char *get_card_name(const char *line);
 
 // Globals
 static dep *Deps = NULL;			// All other modules 
@@ -727,6 +731,156 @@ static void output_makefile(const char *dir, int all)
 	output_makefile1(dir, all);
 }
 
+// Print out ALL deps for firstdep (Cards, Deps)
+void output_card_list(dep *firstdep, int space, int size)
+{
+	dep *temp_dep=firstdep;
+	char *card_name;
+	int tmp_size = 0, first = 1, idx;
+
+	printf("  [");
+	for (idx = 0; idx < space; idx++)
+		printf(" ");
+	while(temp_dep) {
+		if (temp_dep->type == TYPE_TOPLEVEL) {
+			card_name=get_card_name(temp_dep->name);
+			if (!first) {
+				printf(", ");
+				tmp_size += 2;
+			} else {
+				first = 0;
+			}
+			if (tmp_size + strlen(card_name) + 2 > size) {
+				printf("]\n  [");
+				for (idx = 0; idx < space; idx++)
+					printf(" ");
+				tmp_size = 0;
+			}
+			printf(card_name);
+			tmp_size += strlen(card_name);
+			free(card_name);
+		}
+		temp_dep=temp_dep->link;
+	}
+}
+
+// Output in acinlude.m4
+static void output_acinclude(void)
+{
+	dep *tempdep;
+	char *text;
+	
+	printf("dnl ALSA soundcard configuration\n");
+	printf("dnl Find out which cards to compile driver for\n");
+	printf("dnl Copyright (c) by Anders Semb Hermansen <ahermans@vf.telia.no>,\n");
+	printf("dnl                  Jaroslav Kysela <perex@suse.cz>\n\n");
+
+	printf("AC_DEFUN(ALSA_TOPLEVEL_INIT, [\n");
+	for (tempdep = Deps; tempdep; tempdep = tempdep->link) {
+		if (tempdep->type != TYPE_TOPLEVEL)
+			continue;
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("\t%s=\"n\"\n", text);
+		free(text);
+	}
+	printf("])\n\n");
+
+	printf("AC_DEFUN(ALSA_TOPLEVEL_ALL, [\n");
+	for (tempdep = Deps; tempdep; tempdep = tempdep->link) {
+		if (tempdep->type != TYPE_TOPLEVEL)
+			continue;
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("\t%s=\"m\"\n", text);
+		printf("\tAC_DEFINE(%s_MODULE)\n", text);
+		free(text);
+	}
+	printf("])\n\n");
+	
+	printf("AC_DEFUN(ALSA_TOPLEVEL_SELECT, [\n");
+	printf("dnl Check for which cards to compile driver for...\n");
+	printf("AC_MSG_CHECKING(for which soundcards to compile driver for)\n");
+	printf("AC_ARG_WITH(cards,\n\
+  [  --with-cards=<list>     compile driver for cards in <list>; ]\n\
+  [                        cards may be separated with commas; ]\n\
+  [                        'all' compiles all drivers; ]\n\
+  [                        Possible cards are: ]\n");
+	output_card_list(Deps, 24, 50);
+	printf(" ],\n");
+	printf("  cards=\"$withval\", cards=\"all\")\n");
+	printf("if test \"$cards\" = \"all\"; then\n");
+	printf("  ALSA_TOPLEVEL_ALL\n");
+	printf("  AC_MSG_RESULT(all)\n");
+	printf("else\n");
+	printf("  cards=`echo $cards | sed 's/,/ /g'`\n");
+	printf("  for card in $cards\n");
+	printf("  do\n");
+	printf("    case \"$card\" in\n");
+	for (tempdep = Deps; tempdep; tempdep = tempdep->link) {
+		if (tempdep->type != TYPE_TOPLEVEL)
+			continue;
+		text = get_card_name(tempdep->name);
+		printf("\t%s)\n", text);
+		free(text);
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("\t\t%s=\"m\"\n", text);
+		printf("\t\tAC_DEFINE(%s_MODULE)\n", text);
+		printf("\t\t;;\n");
+		free(text);
+	}
+	printf("\t*)\n");
+	printf("\t\techo \"Unknown soundcard $card, exiting!\"\n");
+	printf("\t\texit 1\n");
+	printf("\t\t;;\n");
+	printf("    esac\n");
+	printf("  done\n");
+	printf("  AC_MSG_RESULT($cards)\n");
+	printf("fi\n");
+	for (tempdep = Deps; tempdep; tempdep = tempdep->link) {
+		if (tempdep->type != TYPE_TOPLEVEL)
+			continue;
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("AC_SUBST(%s)\n", text);
+		free(text);
+	}
+	printf("])\n\n");
+}
+
+// Output in toplevel.conf
+static void output_makeconf(void)
+{
+	dep *tempdep;
+	char *text;
+	
+	printf("# Soundcard configuration for ALSA driver\n");
+	printf("# Copyright (c) by Anders Semb Hermansen <ahermans@vf.telia.no>,\n");
+	printf("#                  Jaroslav Kysela <perex@suse.cz>\n\n");
+	for (tempdep = Deps; tempdep; tempdep = tempdep->link) {
+		if (tempdep->type != TYPE_TOPLEVEL)
+			continue;
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("%s=@%s@\n", text, text);
+		free(text);
+	}
+}
+
+// Output in config.h
+static void output_include(void)
+{
+	dep *tempdep;
+	char *text;
+	
+	printf("/* Soundcard configuration for ALSA driver */\n");
+	printf("/* Copyright (c) by Anders Semb Hermansen <ahermans@vf.telia.no>, */\n");
+	printf("/*                  Jaroslav Kysela <perex@suse.cz> */\n\n");
+	for (tempdep = Deps; tempdep; tempdep = tempdep->link) {
+		if (tempdep->type != TYPE_TOPLEVEL)
+			continue;
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("#undef %s_MODULE\n", text);
+		free(text);
+	}
+}
+
 // example: snd-sb16 -> CONFIG_SND_SB16
 static char *convert_to_config_uppercase(const char *pre, const char *line)
 {
@@ -783,37 +937,76 @@ static char *convert_to_escape(const char *line)
 }
 #endif
 
+// example: snd-sb16 -> sb16
+static char *remove_word(const char *remove, const char *line)
+{
+	char *holder;
+	int i;
+
+	holder=malloc(strlen(line)-strlen(remove)+1);
+	if(holder==NULL)
+	{
+		fprintf(stderr, "Not enough memory\n");
+		exit(EXIT_FAILURE);
+	}
+
+	for(i=strlen(remove);i<strlen(line);i++)
+		holder[i-strlen(remove)]=line[i];
+
+	holder[i-strlen(remove)]='\0';
+
+	return holder;
+}
+
+// example: snd-sb16 -> sb16
+static char *get_card_name(const char *line)
+{
+	if (strncmp(line, "snd-", 4)) {
+		fprintf(stderr, "Invalid card name '%s'\n", line);
+		exit(EXIT_FAILURE);
+	}
+	return remove_word("snd-", line);
+}
+
 // Main function
 int main(int argc, char *argv[])
 {
 	int method = METHOD_MAKEFILE;
 	int argidx = 1, all = 0;
-	char *filename, *dir;
+	char *filename, *dir = NULL;
 
 	// Find out which method to use
 	if (argc < 2)
 		usage(argv[0]);
 	if (strcmp(argv[argidx], "--makefile") == 0)
 		method = METHOD_MAKEFILE;
+	else if (strcmp(argv[argidx], "--acinclude") == 0)
+		method = METHOD_ACINCLUDE;
+	else if (strcmp(argv[argidx], "--makeconf") == 0)
+		method = METHOD_MAKECONF;
+	else if (strcmp(argv[argidx], "--include") == 0)
+		method = METHOD_INCLUDE;
 	else
 		usage(argv[0]);
 	argidx++;
 	
-	// Select directory
-	if (argc > argidx && strcmp(argv[argidx], "--dir") == 0) {
-		if (argc > ++argidx)
-			dir = argv[argidx++];
-		else
+	if (method == METHOD_MAKEFILE) {
+		// Select directory
+		if (argc > argidx && strcmp(argv[argidx], "--dir") == 0) {
+			if (argc > ++argidx)
+				dir = argv[argidx++];
+			else
+				dir = NULL;
+		} else
 			dir = NULL;
-	} else
-		dir = NULL;
 	
-	// Select all dependencies
-	if (argc > argidx && strcmp(argv[argidx], "--all") == 0) {
-		argidx++;
-		all = 1;
-	} else
-		all = 0;
+		// Select all dependencies
+		if (argc > argidx && strcmp(argv[argidx], "--all") == 0) {
+			argidx++;
+			all = 1;
+		} else
+			all = 0;
+	}
 
 	// Check the filename
 	if (argc > argidx)
@@ -835,6 +1028,15 @@ int main(int argc, char *argv[])
 	case METHOD_MAKEFILE:
 		output_makefile(dir, all);
 		break;
+	case METHOD_ACINCLUDE:
+		output_acinclude();
+		break;
+	case METHOD_MAKECONF:
+		output_makeconf();
+		break;
+	case METHOD_INCLUDE:
+		output_include();
+		break;
 	default:
 		fprintf(stderr, "This should not happen!\n");
 		usage(argv[0]);
@@ -851,5 +1053,7 @@ int main(int argc, char *argv[])
 static void usage(char *programname)
 {
 	fprintf(stderr, "Usage: %s --makefile --dir directory <cfgfile>\n", programname);
+	fprintf(stderr, "       %s --acinclude <cfgfile>\n", programname);
+	fprintf(stderr, "       %s --makeconf <cfgfile>\n", programname);
 	exit(EXIT_FAILURE);
 }

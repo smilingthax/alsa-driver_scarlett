@@ -3,7 +3,7 @@
 # Copyright (c) 2001 by Jaroslav Kysela <perex@suse.cz>
 #
 
-O_TARGET     := _cs4231.o
+O_TARGET     := _cs423x.o
 
 list-multi   := snd-cs4231-lib.o snd-cs4236-lib.o \
 		snd-cs4231.o snd-cs4232.o snd-cs4236.o

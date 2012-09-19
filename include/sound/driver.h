@@ -150,6 +150,9 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 	for (pos = (head)->next, n = pos->next; pos != (head); pos = n, n = pos->next)
 #endif
 #endif
+#ifndef __devexit_p
+#define __devexit_p(x) x
+#endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
 #if (defined(CONFIG_ISAPNP_KERNEL) && defined(ALSA_BUILD)) || (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 30) && !defined(ALSA_BUILD))
@@ -161,6 +164,10 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 #endif
 #undef __ISAPNP__
 #define __ISAPNP__
+#endif
+
+#if !defined(CONFIG_ISA) && defined(CONFIG_SND_ISA)
+#define CONFIG_ISA
 #endif
 
 #ifndef MODULE_LICENSE
