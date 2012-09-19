@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/sound.c	2005-10-10 12:59:52.000000000 +0200
-+++ sound.c	2005-10-10 20:08:25.000000000 +0200
+--- ../alsa-kernel/core/sound.c	2005-10-31 12:28:33.000000000 +0100
++++ sound.c	2005-10-31 12:28:52.000000000 +0100
 @@ -64,7 +64,15 @@
  
  static DECLARE_MUTEX(sound_mutex);
@@ -26,19 +26,23 @@
  	.open =		snd_open
  };
  
-@@ -231,7 +241,11 @@
+@@ -231,7 +241,15 @@
  		devfs_mk_cdev(MKDEV(major, minor), S_IFCHR | device_mode, "snd/%s", name);
  	if (card)
  		device = card->dev;
 +#ifdef CONFIG_SND_HAVE_CLASS_SIMPLE
 +	class_simple_device_add(sound_class, MKDEV(major, minor), device, name);
 +#else
- 	class_device_create(sound_class, MKDEV(major, minor), device, "%s", name);
++#ifdef CONFIG_SND_NESTED_CLASS_DEVICE
+ 	class_device_create(sound_class, NULL, MKDEV(major, minor), device, "%s", name);
++#else
++	class_device_create(sound_class, MKDEV(major, minor), device, "%s", name);
++#endif
 +#endif
  
  	up(&sound_mutex);
  	return 0;
-@@ -263,7 +277,11 @@
+@@ -263,7 +281,11 @@
  
  	if (strncmp(mptr->name, "controlC", 8) || card->number >= cards_limit) /* created in sound.c */
  		devfs_remove("snd/%s", mptr->name);
@@ -50,7 +54,7 @@
  
  	list_del(&mptr->list);
  	up(&sound_mutex);
-@@ -328,6 +346,19 @@
+@@ -328,6 +350,19 @@
   *  INIT PART
   */
  
@@ -70,7 +74,7 @@
  #ifdef CONFIG_SND_GENERIC_DRIVER
  extern struct device_driver snd_generic_driver;
  #endif
-@@ -353,17 +384,24 @@
+@@ -353,17 +388,24 @@
  	if (snd_info_init() < 0) {
  		unregister_chrdev(major, "alsa");
  		devfs_remove("snd");
@@ -95,7 +99,7 @@
  	return 0;
  }
  
-@@ -375,13 +413,20 @@
+@@ -375,13 +417,20 @@
  		devfs_remove("snd/controlC%d", controlnum);
  
  #ifdef CONFIG_SND_GENERIC_DRIVER
@@ -116,7 +120,7 @@
  }
  
  module_init(alsa_sound_init)
-@@ -483,3 +528,5 @@
+@@ -483,3 +532,5 @@
  #if defined(CONFIG_SND_DEBUG) && defined(CONFIG_SND_VERBOSE_PRINTK)
  EXPORT_SYMBOL(snd_verbose_printd);
  #endif
