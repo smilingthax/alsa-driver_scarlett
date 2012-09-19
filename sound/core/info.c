@@ -192,7 +192,7 @@ static ssize_t snd_info_entry_read(struct file *file, char *buffer,
 			return -EIO;
 		if (file->f_pos >= (long)buf->size)
 			return 0;
-		size = min(count, buf->size - file->f_pos);
+		size = min(count, (size_t)(buf->size - file->f_pos));
 		if (copy_to_user(buffer, buf->buffer + file->f_pos, size))
 			return -EFAULT;
 		file->f_pos += size;
@@ -227,7 +227,7 @@ static ssize_t snd_info_entry_write(struct file *file, const char *buffer,
 			return -EINVAL;
 		if (file->f_pos >= (long)buf->len)
 			return -ENOMEM;
-		size = min(count, buf->len - file->f_pos);
+		size = min(count, (size_t)(buf->len - file->f_pos));
 		if (copy_from_user(buf->buffer + file->f_pos, buffer, size))
 			return -EFAULT;
 		if ((long)buf->size < file->f_pos + size)
