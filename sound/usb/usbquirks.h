@@ -639,6 +639,24 @@
 	}
 },
 {
+	/*
+	 * For hardware revision 1.05; in the later revisions (1.10 and
+	 * 1.21), 0x1031 is the ID for the device without firmware.
+	 * Thanks to Olaf Giesbrecht <Olaf_Giesbrecht@yahoo.de>
+	 */
+	USB_DEVICE_VER(0x0763, 0x1031, 0x0100, 0x0109),
+	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
+		.vendor_name = "M-Audio",
+		.product_name = "MidiSport 8x8",
+		.ifnum = QUIRK_ANY_INTERFACE,
+		.type = QUIRK_MIDI_MIDIMAN,
+		.data = & (const snd_usb_midi_endpoint_info_t) {
+			.out_cables = 0x01ff,
+			.in_cables  = 0x01ff
+		}
+	}
+},
+{
 	USB_DEVICE_VENDOR_SPEC(0x0763, 0x1033),
 	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
 		.vendor_name = "M-Audio",
@@ -687,6 +705,22 @@
 		.data = & (const snd_usb_midi_endpoint_info_t) {
 			.out_cables = 0x0001,
 			.in_cables  = 0x0001
+		}
+	}
+},
+
+/* Mark of the Unicorn devices */
+{
+	/* thanks to Woodley Packard <sweaglesw@thibs.menloschool.org> */
+	USB_DEVICE(0x07fd, 0x0001),
+	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
+		.vendor_name = "MOTU",
+		.product_name = "Fastlane",
+		.ifnum = 1,
+		.type = QUIRK_MIDI_FIXED_ENDPOINT,
+		.data = & (const snd_usb_midi_endpoint_info_t) {
+			.out_cables = 0x0003,
+			.in_cables  = 0x0003
 		}
 	}
 },
