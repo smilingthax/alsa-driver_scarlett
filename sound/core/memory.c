@@ -731,7 +731,7 @@ void *snd_malloc_pci_page(struct pci_dev *pci, dma_addr_t *addrp)
 		if (((unsigned long)addr + PAGE_SIZE - 1) & rmask) {
 			/* try to reallocate with the GFP_DMA */
 			free_page((unsigned long)ptr);
-			ptr = (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
+			ptr = (void *)__get_free_page(GFP_ATOMIC | GFP_DMA);
 			if (ptr) /* ok, the address must be within lower 16MB... */
 				addr = virt_to_phys(ptr);
 			else
