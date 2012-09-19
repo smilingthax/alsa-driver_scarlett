@@ -258,6 +258,10 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 #define get_cfg_desc(cfg)	(cfg)
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 45)
+#define usb_pipe_needs_resubmit(pipe) (!usb_pipeint(pipe))
+#endif
+
 #endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
 #include "amagic.h"
