@@ -141,10 +141,6 @@ struct device;
 {       .id = snd_soc_dapm_mixer, .name = wname, .reg = wreg, .shift = wshift, \
 	.invert = winvert, .kcontrol_news = wcontrols, \
 	.num_kcontrols = wncontrols, .event = wevent, .event_flags = wflags}
-#define SND_SOC_DAPM_MICBIAS_E(wname, wreg, wshift, winvert, wevent, wflags) \
-{	.id = snd_soc_dapm_micbias, .name = wname, .reg = wreg, .shift = wshift, \
-	.invert = winvert, .kcontrol_news = NULL, .num_kcontrols = 0, \
-	.event = wevent, .event_flags = wflags}
 #define SND_SOC_DAPM_SWITCH_E(wname, wreg, wshift, winvert, wcontrols, \
 	wevent, wflags) \
 {	.id = snd_soc_dapm_switch, .name = wname, .reg = wreg, .shift = wshift, \
@@ -325,6 +321,7 @@ struct snd_soc_dapm_pin;
 struct snd_soc_dapm_route;
 struct snd_soc_dapm_context;
 struct regulator;
+struct snd_soc_dapm_widget_list;
 
 int dapm_reg_event(struct snd_soc_dapm_widget *w,
 		   struct snd_kcontrol *kcontrol, int event);
@@ -360,6 +357,10 @@ int snd_soc_dapm_new_controls(struct snd_soc_dapm_context *dapm,
 int snd_soc_dapm_new_dai_widgets(struct snd_soc_dapm_context *dapm,
 				 struct snd_soc_dai *dai);
 int snd_soc_dapm_link_dai_widgets(struct snd_soc_card *card);
+int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
+			 const struct snd_soc_pcm_stream *params,
+			 struct snd_soc_dapm_widget *source,
+			 struct snd_soc_dapm_widget *sink);
 
 /* dapm path setup */
 int snd_soc_dapm_new_widgets(struct snd_soc_dapm_context *dapm);
@@ -403,6 +404,10 @@ void snd_soc_dapm_auto_nc_codec_pins(struct snd_soc_codec *codec);
 /* Mostly internal - should not normally be used */
 void dapm_mark_dirty(struct snd_soc_dapm_widget *w, const char *reason);
 
+/* dapm path query */
+int snd_soc_dapm_dai_get_connected_widgets(struct snd_soc_dai *dai, int stream,
+	struct snd_soc_dapm_widget_list **list);
+
 /* dapm widget types */
 enum snd_soc_dapm_type {
 	snd_soc_dapm_input = 0,		/* input pin */
@@ -431,6 +436,7 @@ enum snd_soc_dapm_type {
 	snd_soc_dapm_aif_out,		/* audio interface output */
 	snd_soc_dapm_siggen,		/* signal generator */
 	snd_soc_dapm_dai,		/* link to DAI structure */
+	snd_soc_dapm_dai_link,		/* link between two DAI structures */
 };
 
 enum snd_soc_dapm_subclass {
@@ -489,9 +495,10 @@ struct snd_soc_dapm_widget {
 
 	void *priv;				/* widget specific data */
 	struct regulator *regulator;		/* attached regulator */
+	const struct snd_soc_pcm_stream *params; /* params for dai links */
 
 	/* dapm control */
-	short reg;						/* negative reg = no direct dapm */
+	int reg;				/* negative reg = no direct dapm */
 	unsigned char shift;			/* bits to shift */
 	unsigned int saved_value;		/* widget saved value */
 	unsigned int value;				/* widget current value */

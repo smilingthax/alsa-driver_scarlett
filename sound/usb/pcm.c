@@ -474,6 +474,11 @@ unlock:
 		mutex_unlock(&subs->stream->chip->shutdown_mutex);
 	}
 
+	if (ret == 0) {
+		subs->interface = fmt->iface;
+		subs->altset_idx = fmt->altset_idx;
+	}
+
 	return ret;
 }
 
@@ -782,6 +787,9 @@ static int snd_usb_pcm_check_knot(struct snd_pcm_runtime *runtime,
 	int *rate_list;
 	int count = 0, needs_knot = 0;
 	int err;
+
+	kfree(subs->rate_list.list);
+	subs->rate_list.list = NULL;
 
 	list_for_each_entry(fp, &subs->fmt_list, list) {
 		if (fp->rates & SNDRV_PCM_RATE_CONTINUOUS)
@@ -1123,13 +1131,16 @@ static int snd_usb_substream_playback_trigger(struct snd_pcm_substream *substrea
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		subs->data_endpoint->prepare_data_urb = prepare_playback_urb;
 		subs->data_endpoint->retire_data_urb = retire_playback_urb;
+		subs->running = 1;
 		return 0;
 	case SNDRV_PCM_TRIGGER_STOP:
 		stop_endpoints(subs, 0, 0, 0);
+		subs->running = 0;
 		return 0;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		subs->data_endpoint->prepare_data_urb = NULL;
 		subs->data_endpoint->retire_data_urb = NULL;
+		subs->running = 0;
 		return 0;
 	}
 
@@ -1148,15 +1159,19 @@ int snd_usb_substream_capture_trigger(struct snd_pcm_substream *substream, int c
 			return err;
 
 		subs->data_endpoint->retire_data_urb = retire_capture_urb;
+		subs->running = 1;
 		return 0;
 	case SNDRV_PCM_TRIGGER_STOP:
 		stop_endpoints(subs, 0, 0, 0);
+		subs->running = 0;
 		return 0;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		subs->data_endpoint->retire_data_urb = NULL;
+		subs->running = 0;
 		return 0;
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		subs->data_endpoint->retire_data_urb = retire_capture_urb;
+		subs->running = 1;
 		return 0;
 	}
 
