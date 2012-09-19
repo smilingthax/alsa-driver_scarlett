@@ -58,7 +58,10 @@ alsa-kernel:
 include/sound: alsa-kernel
 	ln -sf ../alsa-kernel/include include/sound
 
-include/sound/version.h: include/sound include/version.h
+include/sound/version.h: include/version.h
+	if [ ! -d include/sound ]; then \
+	  ln -sf ../alsa-kernel/include include/sound ; \
+	fi
 	cp -auv include/version.h include/sound/version.h
 
 utils/mod-deps: alsa-kernel/scripts/mod-deps.c alsa-kernel/scripts/mod-deps.h

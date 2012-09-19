@@ -237,11 +237,11 @@ $(TOPDIR)/modules/%.o: dummy
 else # !CONFIG_SND_MVERSION
 
 define update-sndvers
-# nothing
+	@echo "" > $(SNDVERSIONS)
 endef
 
 $(SNDVERSIONS):
-	@echo "" > $@
+	$(update-sndvers)
 
 endif # CONFIG_SND_MVERSION
 
