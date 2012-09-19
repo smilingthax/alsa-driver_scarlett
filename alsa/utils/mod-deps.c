@@ -457,6 +457,11 @@ static struct cond * create_cond(char *line)
 					break;
 				}
 				if (word[i] == '=') {
+					if (word[i + 1] == 'n' && !cond->not) {
+						cond->not = 1;
+						word[i] = '\0';
+						break;
+					}
 					fprintf(stderr, "can't handle word %s properly, supposing it's OK\n",
 						word);
 					word[i] = '\0';
