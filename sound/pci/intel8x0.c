@@ -869,6 +869,9 @@ static int snd_intel8x0_pcm_prepare(snd_pcm_substream_t * substream)
 		for (i = 0; i < 3; i++)
 			if (ichdev->ac97_rate_regs[i])
 				snd_ac97_set_rate(ichdev->ac97, ichdev->ac97_rate_regs[i], runtime->rate);
+		/* FIXME: hack to enable spdif support */
+		if (ichdev->ichd == ICHD_PCMOUT && chip->device_type == DEVICE_SIS)
+			snd_ac97_set_rate(ichdev->ac97, AC97_SPDIF, runtime->rate);
 	}
 	snd_intel8x0_setup_periods(chip, ichdev);
 	return 0;
@@ -883,6 +886,8 @@ static snd_pcm_uframes_t snd_intel8x0_pcm_pointer(snd_pcm_substream_t * substrea
 	ptr = ichdev->fragsize1;
 	ptr -= igetword(chip, ichdev->reg_offset + ichdev->roff_picb) << chip->pcm_pos_shift;
 	ptr += ichdev->position;
+	if (ptr >= ichdev->size)
+		return 0;
 	return bytes_to_frames(substream->runtime, ptr);
 }
 
@@ -1710,17 +1715,10 @@ static void do_ali_reset(intel8x0_t *chip)
 	iputdword(chip, ICHREG(ALI_INTERRUPTSR), 0x00000000);
 }
 
-static void do_delay(intel8x0_t *chip)
-{
-#ifdef CONFIG_PM
-	if (chip->in_suspend) {
-		mdelay((1000 + HZ - 1) / HZ);
-		return;
-	}
-#endif
-	set_current_state(TASK_UNINTERRUPTIBLE);
-	schedule_timeout(1);
-}
+#define do_delay(chip) do {\
+	set_current_state(TASK_UNINTERRUPTIBLE);\
+	schedule_timeout(1);\
+} while (0)
 
 static int snd_intel8x0_ich_chip_init(intel8x0_t *chip)
 {
@@ -1939,6 +1937,7 @@ static void intel8x0_resume(intel8x0_t *chip)
 		return;
 
 	pci_enable_device(chip->pci);
+	pci_set_master(chip->pci);
 	snd_intel8x0_chip_init(chip);
 	for (i = 0; i < 3; i++)
 		if (chip->ac97[i])
@@ -1948,7 +1947,6 @@ static void intel8x0_resume(intel8x0_t *chip)
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
 }
 
-#ifndef PCI_OLD_SUSPEND
 static int snd_intel8x0_suspend(struct pci_dev *dev, u32 state)
 {
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return -ENXIO);
@@ -1961,18 +1959,6 @@ static int snd_intel8x0_resume(struct pci_dev *dev)
 	intel8x0_resume(chip);
 	return 0;
 }
-#else
-static void snd_intel8x0_suspend(struct pci_dev *dev)
-{
-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return);
-	intel8x0_suspend(chip);
-}
-static void snd_intel8x0_resume(struct pci_dev *dev)
-{
-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return);
-	intel8x0_resume(chip);
-}
-#endif
 
 /* callback */
 static int snd_intel8x0_set_power_state(snd_card_t *card, unsigned int power_state)

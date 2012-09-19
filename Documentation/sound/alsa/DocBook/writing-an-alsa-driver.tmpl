@@ -3283,13 +3283,6 @@ struct _snd_pcm_runtime {
       <function>udelay()</function> or <function>mdelay()</function>.
       </para>
 
-      <para>
-      This atomicity problem appears also in the initialization of the
-      hardware when the power-management is supported.  The functions
-      for suspending and resuming the chip must be atomic, i.e. no
-      mutex nor sleep can be used in them.
-      </para>
-
     </section>
     <section id="pcm-interface-constraints">
       <title>Constraints</title>
@@ -4079,8 +4072,7 @@ struct _snd_pcm_runtime {
       </para>
 
       <para>
-      These callbacks are non-atomic like the callbacks of control API
-      unless they are called during suspend/resume phase.
+      These callbacks are non-atomic like the callbacks of control API.
       </para>
 
       <para>
@@ -4094,8 +4086,6 @@ struct _snd_pcm_runtime {
         The <structfield>reset</structfield> callback is used to reset
       the codec. If the chip requires a special way of reset, you can
       define this callback. 
-      This callback must be atomic when it's called in the suspend
-      mode.
       </para>
 
       <para>
@@ -5212,6 +5202,13 @@ struct _snd_pcm_runtime {
     </para>
 
     <para>
+      For keeping the readability of 2.5 source code, it's recommended to
+      separate the above ifdef condition as the patch file in alsa-driver
+      directory.
+      See <filename>alsa-driver/pci/ali5451.c</filename> for example.
+   </para>
+
+    <para>
       The scheme of the real suspend job is as following.
 
       <orderedlist>
@@ -5383,15 +5380,6 @@ struct _snd_pcm_runtime {
       </informalexample>
     </para>
 
-    <para>
-      Last but not least: Please keep in mind that you cannot call
-    <function>schedule()</function> during the suspend and the resume
-    callbacks. If any delay is necessary, you have to use
-    <function>mdelay()</function> or <function>udelay()</function>
-    instead of <function>schedule_timeout()</function>! 
-    Of course, semaphores cannot be used, too, which will invoke sleep
-    inside.
-    </para>
   </chapter>
 
 

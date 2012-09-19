@@ -3173,12 +3173,6 @@ void __devinit snd_trident_gameport(trident_t *chip)
  */
 inline static void do_delay(trident_t *chip)
 {
-#ifdef CONFIG_PM
-	if (chip->in_suspend) {
-		mdelay((1000 + HZ - 1) / HZ);
-		return;
-	}
-#endif
 	set_current_state(TASK_UNINTERRUPTIBLE);
 	schedule_timeout(1);
 }

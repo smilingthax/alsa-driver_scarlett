@@ -458,12 +458,14 @@ static int _snd_timer_stop(snd_timer_instance_t * timeri, int keep_flag, enum sn
 		return -EINVAL;
 	spin_lock_irqsave(&timer->lock, flags);
 	list_del_init(&timeri->ack_list);
+#if 0   /* FIXME: this causes dead lock with the sequencer timer */
 	/* wait until the callback is finished */
 	while (timeri->flags & SNDRV_TIMER_IFLG_CALLBACK) {
 		spin_unlock_irqrestore(&timer->lock, flags);
 		udelay(10);
 		spin_lock_irqsave(&timer->lock, flags);
 	}
+#endif
 	list_del_init(&timeri->active_list);
 	if ((timeri->flags & SNDRV_TIMER_IFLG_RUNNING) &&
 	    !(timeri->flags & SNDRV_TIMER_IFLG_SLAVE) &&
