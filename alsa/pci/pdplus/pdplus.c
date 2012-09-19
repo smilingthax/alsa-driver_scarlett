@@ -151,14 +151,16 @@
 #define PDPLUS_VERSION    "0.0.4"
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/delay.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 #include <sound/info.h>
-
-#include <linux/init.h>
+#include <sound/asoundef.h>
 
 /* ********************************************************************** */
 
@@ -247,15 +249,6 @@
 #endif
 
 /* ********************************************************************** */
-
-#if !defined(LINUX_2_3)
-#define BROKEN_PCI_SET_DRIVER_DATA 1
-        /* For ALSA 0.9.0, PCI_GET_DRIVER_DATA will always return NULL
-         * instead of the data set.  I think the 2.3.x emulation code is broken.
-         */
-#else
-#define BROKEN_PCI_SET_DRIVER_DATA 0
-#endif
 
 #define VENDOR_NAME  "SekD/Marian"
         /* Sek'd builds the card, but the vendor ID is Marian's.  So I decided
@@ -1448,60 +1441,6 @@ static snd_pcm_uframes_t pdplus_d_capt_pointer (snd_pcm_substream_t *);
 
 static BOOL pdplus_switch_circuit (pdplus_t *scard, int mode);
 static int  pdplus_set_mode (pdplus_t *scard, int mode);
-
-#if BROKEN_PCI_SET_DRIVER_DATA
-
-#define MAX_DEV 8
-
-typedef struct {
-        pci_dev_t  *pci;
-        snd_card_t *card;
-} pci_card_pair_t;
-
-static pci_card_pair_t pci2card[MAX_DEV];
-static int             pci2card_cnt = 0;
-
-static void private_set_driver_data (pci_dev_t *pci, snd_card_t *card)
-{
-        int i;
-
-        for (i = 0; i < pci2card_cnt; i++)
-                if (pci2card[i].pci == pci || pci2card[i].pci == NULL) {
-                        pci2card[i].card = card;
-                        return;
-                }
-
-        if (pci2card_cnt+1 < MAX_DEV) {
-                pci2card[pci2card_cnt].pci =  pci;
-                pci2card[pci2card_cnt].card = card;
-                pci2card_cnt++;
-                return;
-        }
-
-        printk (PDPLUS_KERN_ERR "No free slots for storing pci driver data.\n");
-}
-
-static snd_card_t *private_get_driver_data (pci_dev_t *pci)
-{
-        int i;
-
-        for (i =0; i < pci2card_cnt; i++)
-                if (pci2card[i].pci == pci)
-                        return pci2card[i].card;
-
-        printk (PDPLUS_KERN_ERR "Driver data not found.\n");
-        return NULL;
-}
-
-#define PDPLUS_SET_DRIVER_DATA(X,Y) private_set_driver_data((X),(Y))
-#define PDPLUS_GET_DRIVER_DATA(X)   private_get_driver_data(X)
-
-#else
-
-#define PDPLUS_SET_DRIVER_DATA(X,Y) PCI_SET_DRIVER_DATA((X),(void*)(Y))
-#define PDPLUS_GET_DRIVER_DATA(X)   ((snd_card_t*)PCI_GET_DRIVER_DATA(X))
-
-#endif /* BROKEN_PCI_SET_DRIVER_DATA */
 
 /* ********************************************************************** */
 
@@ -5622,7 +5561,7 @@ static void pdplus_proc_read (
         snd_iprintf (buffer,
                 "\nTicker: %lu (%lu:%02d:%02d.%02d)\n",
                 ticker,
-                ticker_100sec / (100 * 60 * 60),
+                (long)(ticker_100sec / (100 * 60 * 60)),
                 (int)((ticker_100sec / (100 * 60)) % 60),
                 (int)((ticker_100sec / 100) % 60),
                 (int)(ticker_100sec % 100));
@@ -6162,12 +6101,12 @@ static int __init pdplus_init(
                 scard->irq);
 
         if ((err = snd_card_register(card)) >= 0) {
-                PDPLUS_SET_DRIVER_DATA (pci, card);
+                pci_set_drvdata (pci, card);
 #if MANY_CHECKS
-                if (PDPLUS_GET_DRIVER_DATA (pci) != card) {
+                if (pci_get_drvdata (pci) != card) {
                         printk (KERN_ERR
-                                "PCI_GET_DRIVER_DATA(pci)=%p != card =%p\n",
-                                PDPLUS_GET_DRIVER_DATA (pci),
+                                "pci_get_drvdata(pci)=%p != card =%p\n",
+                                pci_get_drvdata (pci),
                                 card);
                         LEAVE (-EINVAL);
                 }
@@ -6273,7 +6212,7 @@ static void __exit pdplus_remove(pci_dev_t *pci)
         ENTER;
 
         Vprintk ("MMIO 0= 0x%lx\n", pci_resource_start (pci, 0));
-        card = PDPLUS_GET_DRIVER_DATA (pci);
+        card = pci_get_drvdata (pci);
 
         if (card == 0)
                 Vprintk ("Error: card == %p.\n", card);
@@ -6288,7 +6227,7 @@ static void __exit pdplus_remove(pci_dev_t *pci)
         snd_magic_kfree (card->private_data);
         card->private_data = NULL;
         snd_card_free (card);
-        PCI_SET_DRIVER_DATA (pci, NULL);
+        pci_set_drvdata (pci, NULL);
 
         LEAVE_VOID;
 }

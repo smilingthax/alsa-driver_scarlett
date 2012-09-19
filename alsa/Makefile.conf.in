@@ -8,7 +8,7 @@ LD		= @LD@
 CC		= @CC@ -DALSA_BUILD
 CPP		= @CPP@ -M -DALSA_BUILD
 AR		= @AR@
-MODFLAGS	= -DMODULE
+MODFLAGS	= -DMODULE=1
 CFLAGS_KERNEL	=
 GENKSYMS	= @GENKSYMS@
 
@@ -52,7 +52,7 @@ endif
 CONFIG_SND_RTC		= @CONFIG_SND_RTC@
 
 INCLUDE		= -I$(CONFIG_SND_KERNELDIR)/include -I$(TOPDIR)/include
-CFLAGS		= $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
+CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
 MAKE		+= $(m_opts)
 SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
 DEXPORT		= $(TOPDIR)/include/modules
