@@ -41,6 +41,7 @@ ifeq ($(CONFIG_SND),y)
 	   pci/korg1212/_korg1212.o \
 	   pci/nm256/_nm256.o \
 	   pci/rme9652/_rme9652.o \
+	   pci/rme9652/_hdsp.o \
 	   pci/trident/_trident.o \
 	   pci/ymfpci/_ymfpci.o
   obj-y += ppc/ppc.o

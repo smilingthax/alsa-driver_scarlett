@@ -306,8 +306,8 @@ static char channel_map_9636_ds[26] = {
 #define RME9652_PREALLOCATE_MEMORY	/* via module snd-rme9652_mem */
 
 #ifdef RME9652_PREALLOCATE_MEMORY
-extern void *snd_rme9652_get_buffer(int card, dma_addr_t *dmaaddr);
-extern void snd_rme9652_free_buffer(int card, void *ptr);
+extern void *snd_hammerfall_get_buffer(struct pci_dev *, dma_addr_t *dmaaddr);
+extern void snd_hammerfall_free_buffer(struct pci_dev *, void *ptr);
 #endif
 
 static struct pci_device_id snd_rme9652_ids[] __devinitdata = {
@@ -1825,7 +1825,7 @@ static void snd_rme9652_free_buffers(rme9652_t *rme9652)
 				   rme9652->capture_buffer_unaligned,
 				   rme9652->capture_buffer_addr);
 #else
-		snd_rme9652_free_buffer(rme9652->dev, rme9652->capture_buffer_unaligned);
+		snd_hammerfall_free_buffer(rme9652->pci, rme9652->capture_buffer_unaligned);
 #endif
 	}
 
@@ -1836,7 +1836,7 @@ static void snd_rme9652_free_buffers(rme9652_t *rme9652)
 				   rme9652->playback_buffer_unaligned,
 				   rme9652->playback_buffer_addr);
 #else
-		snd_rme9652_free_buffer(rme9652->dev, rme9652->playback_buffer_unaligned);
+		snd_hammerfall_free_buffer(rme9652->pci, rme9652->playback_buffer_unaligned);
 #endif
 	}
 }
@@ -1869,21 +1869,21 @@ static int __init snd_rme9652_initialize_memory(rme9652_t *rme9652)
 	cb = snd_malloc_pci_pages(rme9652->pci, RME9652_DMA_AREA_BYTES, &cb_addr);
 	pb = snd_malloc_pci_pages(rme9652->pci, RME9652_DMA_AREA_BYTES, &pb_addr);
 #else
-	cb = snd_rme9652_get_buffer(rme9652->dev, &cb_addr);
-	pb = snd_rme9652_get_buffer(rme9652->dev, &pb_addr);
+	cb = snd_hammerfall_get_buffer(rme9652->pci, &cb_addr);
+	pb = snd_hammerfall_get_buffer(rme9652->pci, &pb_addr);
 #endif
 
 	if (cb == 0 || pb == 0) {
 		if (cb) {
 #ifdef RME9652_PREALLOCATE_MEMORY
-			snd_rme9652_free_buffer(rme9652->dev, cb);
+			snd_hammerfall_free_buffer(rme9652->pci, cb);
 #else
 			snd_free_pci_pages(rme9652->pci, RME9652_DMA_AREA_BYTES, cb, cb_addr);
 #endif
 		}
 		if (pb) {
 #ifdef RME9652_PREALLOCATE_MEMORY
-			snd_rme9652_free_buffer(rme9652->dev, pb);
+			snd_hammerfall_free_buffer(rme9652->pci, pb);
 #else
 			snd_free_pci_pages(rme9652->pci, RME9652_DMA_AREA_BYTES, pb, pb_addr);
 #endif
@@ -2578,18 +2578,11 @@ static int __init snd_rme9652_create(snd_card_t *card,
 		return -EBUSY;
 	}
 	
-	rme9652->iobase = (unsigned long) ioremap_nocache(rme9652->port, RME9652_IO_EXTENT);
-	if (rme9652->iobase == 0) {
-		snd_printk("unable to remap region 0x%lx-0x%lx\n", rme9652->port, rme9652->port + RME9652_IO_EXTENT - 1);
-		return -EBUSY;
-	}
-
 	if (request_irq(pci->irq, snd_rme9652_interrupt, SA_INTERRUPT|SA_SHIRQ, "rme9652", (void *)rme9652)) {
-		snd_printk("unable to grab IRQ %d\n", pci->irq);
+		snd_printk("unable to request IRQ %d\n", pci->irq);
 		return -EBUSY;
 	}
 	rme9652->irq = pci->irq;
-
 	rme9652->precise_ptr = precise_ptr;
 
 	/* Determine the h/w rev level of the card. This seems like
