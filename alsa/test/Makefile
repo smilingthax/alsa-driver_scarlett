@@ -16,6 +16,9 @@ osspcm2: osspcm2.c
 ossdelay: ossdelay.c
 	$(CC) $(CFLAGS) -o ossdelay ossdelay.c
 
+ossoptr: ossoptr.c
+	$(CC) $(CFLAGS) -o ossoptr ossoptr.c
+
 mmap_test: mmap_test.c
 	$(CC) $(CFLAGS) -DVERBOSE -o mmap_test mmap_test.c -lm
 

@@ -52,3 +52,6 @@ EXPORT_SYMBOL(snd_compat_destroy_workqueue);
 EXPORT_SYMBOL(snd_compat_queue_work);
 EXPORT_SYMBOL(snd_compat_queue_delayed_work);
 #endif
+#ifdef CONFIG_CREATE_WORKQUEUE_FLAGS
+EXPORT_SYMBOL(snd_compat_create_workqueue2);
+#endif
