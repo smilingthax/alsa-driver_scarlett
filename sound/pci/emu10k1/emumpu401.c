@@ -27,11 +27,29 @@
 #define EMU10K1_MIDI_MODE_INPUT		(1<<0)
 #define EMU10K1_MIDI_MODE_OUTPUT	(1<<1)
 
-#define EMU_MPU401C(emu,midi) ((emu)->port + (midi)->port + 1)
-#define EMU_MPU401D(emu,midi) ((emu)->port + (midi)->port + 0)
+static inline unsigned char mpu401_read(emu10k1_t *emu, emu10k1_midi_t *mpu, int idx)
+{
+	if (emu->audigy)
+		return (unsigned char)snd_emu10k1_ptr_read(emu, mpu->port + idx, 0);
+	else
+		return inb(emu->port + mpu->port + idx);
+}
 
-#define mpu401_input_avail(emu,mpu)	(!(inb(EMU_MPU401C(emu,mpu)) & 0x80))
-#define mpu401_output_ready(emu,mpu)	(!(inb(EMU_MPU401C(emu,mpu)) & 0x40))
+static inline void mpu401_write(emu10k1_t *emu, emu10k1_midi_t *mpu, int data, int idx)
+{
+	if (emu->audigy)
+		snd_emu10k1_ptr_write(emu, mpu->port + idx, 0, data);
+	else
+		outb(data, emu->port + mpu->port + idx);
+}
+
+#define mpu401_write_data(emu, mpu, data)	mpu401_write(emu, mpu, data, 0)
+#define mpu401_write_cmd(emu, mpu, data)	mpu401_write(emu, mpu, data, 1)
+#define mpu401_read_data(emu, mpu)		mpu401_read(emu, mpu, 0)
+#define mpu401_read_stat(emu, mpu)		mpu401_read(emu, mpu, 1)
+
+#define mpu401_input_avail(emu,mpu)	(!(mpu401_read_stat(emu,mpu) & 0x80))
+#define mpu401_output_ready(emu,mpu)	(!(mpu401_read_stat(emu,mpu) & 0x40))
 
 #define MPU401_RESET		0xff
 #define MPU401_ENTER_UART	0x3f
@@ -41,10 +59,10 @@ static void mpu401_clear_rx(emu10k1_t *emu, emu10k1_midi_t *mpu)
 {
 	int timeout = 100000;
 	for (; timeout > 0 && mpu401_input_avail(emu, mpu); timeout--)
-		inb(EMU_MPU401D(emu, mpu));
+		mpu401_read_data(emu, mpu);
 #ifdef CONFIG_SND_DEBUG
 	if (timeout <= 0)
-		snd_printk("cmd: clear rx timeout (status = 0x%x)\n", inb(EMU_MPU401C(emu, mpu)));
+		snd_printk("cmd: clear rx timeout (status = 0x%x)\n", mpu401_read_stat(emu, mpu));
 #endif
 }
 
@@ -66,7 +84,7 @@ static void do_emu10k1_midi_interrupt(emu10k1_t *emu, emu10k1_midi_t *midi, unsi
 		if (!(midi->midi_mode & EMU10K1_MIDI_MODE_INPUT)) {
 			mpu401_clear_rx(emu, midi);
 		} else {
-			byte = inb(EMU_MPU401D(emu, midi));
+			byte = mpu401_read_data(emu, midi);
 			spin_unlock(&midi->input_lock);
 			if (midi->substream_input)
 				snd_rawmidi_receive(midi->substream_input, &byte, 1);
@@ -79,7 +97,7 @@ static void do_emu10k1_midi_interrupt(emu10k1_t *emu, emu10k1_midi_t *midi, unsi
 	if ((status & midi->ipr_tx) && mpu401_output_ready(emu, midi)) {
 		if (midi->substream_output &&
 		    snd_rawmidi_transmit(midi->substream_output, &byte, 1) == 1) {
-			outb(byte, EMU_MPU401D(emu, midi));
+			mpu401_write_data(emu, midi, byte);
 		} else {
 			snd_emu10k1_intr_disable(emu, midi->tx_enable);
 		}
@@ -103,27 +121,30 @@ static void snd_emu10k1_midi_cmd(emu10k1_t * emu, emu10k1_midi_t *midi, unsigned
 	int timeout, ok;
 
 	spin_lock_irqsave(&midi->input_lock, flags);
-	outb(0x00, EMU_MPU401D(emu, midi));
+	mpu401_write_data(emu, midi, 0x00);
 	/* mpu401_clear_rx(emu, midi); */
 
-	outb(cmd, EMU_MPU401C(emu, midi));
+	mpu401_write_cmd(emu, midi, cmd);
 	if (ack) {
 		ok = 0;
 		timeout = 10000;
 		while (!ok && timeout-- > 0) {
 			if (mpu401_input_avail(emu, midi)) {
-				if (inb(EMU_MPU401D(emu, midi)) == MPU401_ACK)
+				if (mpu401_read_data(emu, midi) == MPU401_ACK)
 					ok = 1;
 			}
 		}
-		if (!ok && inb(EMU_MPU401D(emu, midi)) == MPU401_ACK)
+		if (!ok && mpu401_read_data(emu, midi) == MPU401_ACK)
 			ok = 1;
 	} else {
 		ok = 1;
 	}
 	spin_unlock_irqrestore(&midi->input_lock, flags);
 	if (!ok)
-		snd_printk("midi_cmd: 0x%x failed at 0x%lx (status = 0x%x, data = 0x%x)!!!\n", cmd, emu->port, inb(EMU_MPU401C(emu, midi)), inb(EMU_MPU401D(emu, midi)));
+		snd_printk("midi_cmd: 0x%x failed at 0x%lx (status = 0x%x, data = 0x%x)!!!\n",
+			   cmd, emu->port,
+			   mpu401_read_stat(emu, midi),
+			   mpu401_read_data(emu, midi));
 }
 
 static int snd_emu10k1_midi_input_open(snd_rawmidi_substream_t * substream)
@@ -246,7 +267,7 @@ static void snd_emu10k1_midi_output_trigger(snd_rawmidi_substream_t * substream,
 					spin_unlock_irqrestore(&midi->output_lock, flags);
 					return;
 				}
-				outb(byte, EMU_MPU401D(emu, midi));
+				mpu401_write_data(emu, midi, byte);
 				max--;
 			} else {
 				break;

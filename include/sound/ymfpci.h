@@ -317,6 +317,7 @@ struct _snd_ymfpci {
 	ymfpci_voice_t voices[64];
 
 	ac97_t *ac97;
+	snd_rawmidi_t *rawmidi;
 
 	struct pci_dev *pci;
 	snd_card_t *card;

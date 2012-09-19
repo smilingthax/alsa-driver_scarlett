@@ -345,10 +345,15 @@ static int __init snd_card_cs4236_isapnp(int dev, struct snd_card_cs4236 *acard)
 			isapnp_resource_change(&pdev->irq_resource[0], snd_mpu_irq[dev], 1);
 		if (pdev->activate(pdev)<0) {
 			snd_mpu_port[dev] = SNDRV_AUTO_PORT;
+			snd_mpu_irq[dev] = SNDRV_AUTO_IRQ;
 			snd_printk(IDENT " isapnp configure failed for MPU (out of resources?)\n");
 		} else {
 			snd_mpu_port[dev] = pdev->resource[0].start;
-			snd_mpu_irq[dev] = pdev->irq_resource[0].start;
+			if (pdev->irq_resource[0].flags & IORESOURCE_IRQ) {
+				snd_mpu_irq[dev] = pdev->irq_resource[0].start;
+			} else {
+				snd_mpu_irq[dev] = -1;	/* disable interrupt */
+			}
 		}
 		snd_printdd("isapnp MPU: port=0x%lx, irq=%i\n", snd_mpu_port[dev], snd_mpu_irq[dev]);
 	}
@@ -500,7 +505,8 @@ static int __init snd_card_cs4236_probe(int dev)
 	if (snd_mpu_irq[dev] >= 0 && snd_mpu_irq[dev] != SNDRV_AUTO_IRQ) {
 		if (snd_mpu401_uart_new(card, 0, MPU401_HW_CS4232,
 					snd_mpu_port[dev], 0,
-					snd_mpu_irq[dev], SA_INTERRUPT, NULL) < 0)
+					snd_mpu_irq[dev],
+					snd_mpu_irq[dev] >= 0 ? SA_INTERRUPT : 0, NULL) < 0)
 			snd_printk(IDENT ": MPU401 not detected\n");
 	}
 	strcpy(card->driver, pcm->name);

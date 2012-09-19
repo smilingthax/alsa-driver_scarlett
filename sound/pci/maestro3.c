@@ -2489,15 +2489,28 @@ snd_m3_create(snd_card_t *card, struct pci_dev *pci,
 		break;
 	}
 
+#ifndef LINUX_2_2
+	chip->subsystem_vendor = pci->subsystem_vendor;
+	chip->subsystem_device = pci->subsystem_device;
+#else
+	pci_read_config_word(pci, PCI_SUBSYSTEM_VENDOR_ID, &chip->subsystem_vendor);
+	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &chip->subsystem_device);
+#endif
+
 	chip->card = card;
 	chip->pci = pci;
 	chip->irq = -1;
 	chip->external_amp = enable_amp;
 	if (amp_gpio >= 0 && amp_gpio <= 0x0f)
 		chip->amp_gpio = amp_gpio;
-	else if (chip->allegro_flag)
-		chip->amp_gpio = GPO_EXT_AMP_ALLEGRO;
-	else
+	else if (chip->allegro_flag) {
+		/* panasonic CF-28 "toughbook" has different GPIO connection.. */
+		if (chip->subsystem_vendor == 0x10f7 &&
+		    chip->subsystem_device == 0x833e)
+			chip->amp_gpio = 0x0d;
+		else
+			chip->amp_gpio = GPO_EXT_AMP_ALLEGRO;
+	} else
 		chip->amp_gpio = GPO_EXT_AMP_M3; /* presumably this is for all 'maestro3's.. */
 	chip->num_substreams = NR_DSPS;
 	chip->substreams = kmalloc(sizeof(m3_dma_t) * chip->num_substreams, GFP_KERNEL);
@@ -2515,14 +2528,6 @@ snd_m3_create(snd_card_t *card, struct pci_dev *pci,
 		return -EBUSY;
 	}
 	
-#ifndef LINUX_2_2
-	chip->subsystem_vendor = pci->subsystem_vendor;
-	chip->subsystem_device = pci->subsystem_device;
-#else
-	pci_read_config_word(pci, PCI_SUBSYSTEM_VENDOR_ID, &chip->subsystem_vendor);
-	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &chip->subsystem_device);
-#endif
-
 	/* just to be sure */
 	pci_set_master(pci);
 
