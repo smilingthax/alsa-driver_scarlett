@@ -58,7 +58,8 @@ ALSA_EXCLUDE_DIR = ['/scripts', '/oss', '/kbuild']
 KERNEL_EXCLUDE = ['/COPYING', '/CREDITS',
 		  '/MAINTAINERS','/Makefile','/Kbuild',
 		  '/README','/REPORTING-BUGS',
-		  '/include/sound/version.h']
+		  '/include/sound/version.h',
+		  '/.gitignore']
 KERNEL_EXCLUDE_DIR = ['/BitKeeper',
 		      '/Documentation',
 		      '/arch', '/drivers', '/crypto', '/fs',
@@ -167,7 +168,7 @@ COMMENT_MAP_DRIVER = [
 		('/include/cs46xx.h'	,'CS46xx driver'),
 		('/pci/cs46xx'		,'CS46xx driver'),
 		('/pci/als4000.c'	,'ALS4000 driver'),
-		('/pci/azt3328.c'	,'AZT3328 driver'),
+		('/pci/azt3328.[ch]'	,'AZT3328 driver'),
 		('/pci/cmipci.c' 	,'CMIPCI driver'),
 		('/pci/cs4281.c' 	,'CS4281 driver'),
 		('/pci/ens1370.c'	,'ENS1370/1+ driver'),
@@ -297,6 +298,7 @@ COMMENT_MAP_DRIVER = [
 		('/include/config.h.in' ,'ALSA Core'),
 		('/include/firmware_compat.h','ALSA Core'),
 		('/include/compat_22.h'	,'ALSA Core'),
+		('/include/linux/pci_ids.h'	,'ALSA Core'),
 		('/include/autoconf.*'	,'ALSA Core'),
 		('/core/info.*'		,'ALSA Core'),
 		('/core/control.*'	,'ALSA Core'),
@@ -373,6 +375,7 @@ COMMENT_MAP_LIB = [
 		('/src/names.*'		,'Device Name API'),
 		('/src/shmarea.*'	,'SHM helpers'),
 		('/src/Versions'	,'Core'),
+		('/modules/mixer/simple/.*', 'Simple Abstraction Mixer Modules'),
 		('/doc/.*'		,'Documentation'),
 		('/utils/.*'		,'Utils'),
 		('/test/.*'		,'Test/Example code'),
@@ -438,6 +441,8 @@ COMMENT_MAP_OSS = [
 		('/alsa/alsa-oss.c'	,'Core'),
 		('/alsa/Makefile.am'	,'Core'),
 		('/alsa/aoss.1'		,'Manual Page'),
+		('/alsa/aoss.in'	,'aoss script'),
+		('/alsa/aoss.old.in'	,'aoss script'),
 		('/configure.in'	,'Core'),
 		('/'			,'ERROR')
 	       ]
@@ -668,9 +673,13 @@ def remap_engine(dir, dict):
 	return dir
 
 def remap_alsa(dir):
+        if dir == '/MAINTAINERS':
+                return '/MAINTAINERS'
 	return remap_engine(dir, ALSA_MAP);
 
 def remap_kernel(dir):
+        if dir == '/MAINTAINERS':
+                return '/MAINTAINERS'
 	return remap_engine(dir, KERNEL_MAP);
 
 def remap_alsa_file(file):
@@ -1061,7 +1070,7 @@ def cvsps_merge_members1(file, module):
 		return file
 	return 'ERROR'
 
-def cvsps_merge_members(members, module='alsa-driver'):
+def cvsps_merge_members(members, module='alsa-driver', nice=False):
 	global GERRORS
 
 	changes = []
@@ -1099,16 +1108,24 @@ def cvsps_merge_members(members, module='alsa-driver'):
 			j += 1
 		i += 1
 	xresult = ''
+	maxc = 70
+	if nice:
+	        maxc = 61
 	for i in changes:
-		if len(i) + len(xresult) > 70:
+		if len(i) + len(xresult) > maxc:
 			result.append(xresult)
 			xresult = ''
 		if xresult == '':
 			xresult = i
-		else :
+		else:
 			xresult = xresult + ',' + i
 	if xresult != '':
 		result.append(xresult)
+        if len(result) > 1 and nice:
+                return []
+        elif len(result) > 0:
+              result[0] = "Modules: " + result[0]
+              result.append('')
 	return result
 
 def cvsps_merge1(f,t=0):
@@ -1160,7 +1177,7 @@ def cvsps_merge1(f,t=0):
 			ok = 0
 		elif line[:5] == 'Date:':
 			date = line[6:-1]
-		elif line[:7] == 'Author:':
+		elif line[:7] == 'Author:' and ok == 0:
 			author = CVS_USER[line[8:-1]]
 		elif line[:8] == 'Members:':
 			ok = 2
@@ -1205,7 +1222,7 @@ def cvsps_merge1(f,t=0):
 	nlines = lines
 	if date != '':
 		lines = lines + 'D:' + date + '\n'
-	changes = cvsps_merge_members(members)
+	changes = cvsps_merge_members(members, nice=True)
 	for i in changes:
 		lines = lines + 'C:' + i + '\n'
 	#if author != '':
@@ -1270,7 +1287,7 @@ def cvsps_merge1(f,t=0):
 		if sts == 0:
 			break
 		print 'Patch failed...'
-		os.system('cg-cancel')
+		os.system('cg-reset')
 		sys.exit(1)
 	for file in nfiles:
 		print 'Adding file %s...' % file
@@ -1293,7 +1310,7 @@ def cvsps_merge1(f,t=0):
 	cmd = 'echo -n "' + nlines + '" | cg-commit'
 	while os.system(cmd):
 		print 'cg-commit failed'
-		os.system('cg-cancel')
+		os.system('cg-reset')
 		sys.exit(1)
 	if False:
 		for file in files:
@@ -1331,6 +1348,34 @@ def cvsps_merge(start):
 		print 'Is this ok? Press Ctrl-C to abort...'
 		sys.stdin.readline()
 	del l
+
+def cvsps_merges(start):
+	fp = open(get_cvs_root() + '/scripts/changesets/asap.txt')
+	csl = fp.readlines()
+	fp.close()
+	
+	cs = []
+	for l in csl:
+		if l[:1] == "#":
+			continue
+		if int(l) < start:
+			continue
+		cs.append(int(l))
+	cs.sort()
+	del csl
+	
+	os.chdir(get_git_root())
+	for l in cs:
+		f = str(l) + '.patch'
+		cvsps_merge1(f, t=1)
+	print 'Is this ok? Press Ctrl-C to abort...'
+	sys.stdin.readline()
+	for l in cs:
+		f = str(l) + '.patch'
+		cvsps_merge1(f, t=0)
+		print 'Is this ok? Press Ctrl-C to abort...'
+		sys.stdin.readline()
+	del cs
 
 def git_version_patch():
 	get_cvs_files(get_cvs_root(), '/')
@@ -1619,6 +1664,13 @@ def main():
 		else:
 			x = int(args[1])
 		cvsps_merge(x)
+	elif args[0] == 'cvsps-merges':
+		GITROOT = '~/git/repos/stable'
+		if len(args) < 2:
+			x = 0
+		else:
+			x = int(args[1])
+		cvsps_merges(x)
 	elif args[0] == 'cvsps-changes':
 		if len(args) < 3:
 			print 'Please, give a start and end revision'
