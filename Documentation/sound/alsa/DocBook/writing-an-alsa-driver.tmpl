@@ -3659,13 +3659,8 @@
       </para>
 
       <para>
-        Note that these callbacks are atomic unlike the callbacks of
-      control API since the ac97 middle-layer routine takes a
-      spinlock before calling these callbacks.  Therefore you cannot
-      use mutex or schedule in them. However, these are never called
-      from interrupts unless you do by yourself.
-      Thus it's not necessarily protected with
-      <function>spin_lock_irqsave()</function> usually. 
+      These callbacks are non-atomic like the callbacks of control API
+      unless they are called during suspend/resume phase.
       </para>
 
       <para>
@@ -3679,22 +3674,22 @@
         The <structfield>reset</structfield> callback is used to reset
       the codec. If the chip requires a special way of reset, you can
       define this callback. 
-      This callback is atomic, since it can be called in the suspend
-      phase, too.
+      This callback must be atomic when it's called in the suspend
+      mode.
       </para>
 
       <para>
         The <structfield>wait</structfield> callback is used for a
       certain wait at the standard initialization of the codec. If the
       chip requires the extra wait-time, define this callback. 
-      This callback is non-atomic.
+      This callback is always non-atomic, because it's never called
+      in the resume mode.
       </para>
 
       <para>
         The <structfield>init</structfield> callback is used for
       additional initialization of the codec.  This callback is called
-      after the reset phase, and should be atomic, since it's called
-      from the resume handler, too.
+      after the reset, and should be atomic in the resume mode.
       </para>
     </section>
 

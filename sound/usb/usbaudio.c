@@ -36,7 +36,7 @@
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/pcm.h>
-#include <sound/seq_device.h>
+#include <sound/pcm_params.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 
@@ -86,6 +86,12 @@ MODULE_PARM_SYNTAX(pid, SNDRV_ENABLED ",allows:{{-1,0xffff}},base:16");
 #else
 #define UNLINK_FLAGS	0
 #endif
+
+
+/*
+ * debug the h/w constraints
+ */
+/* #define HW_CONST_DEBUG */
 
 
 /*
@@ -1161,12 +1167,237 @@ static snd_pcm_hardware_t snd_usb_capture =
 };
 
 /*
+ * h/w constraints
+ */
+
+#ifdef HW_CONST_DEBUG
+#define hwc_debug(fmt, args...) printk(KERN_DEBUG fmt, ##args)
+#else
+#define hwc_debug(fmt, args...) /**/
+#endif
+
+static int hw_check_valid_format(snd_pcm_hw_params_t *params, struct audioformat *fp)
+{
+	snd_interval_t *it = hw_param_interval(params, SNDRV_PCM_HW_PARAM_RATE);
+	snd_interval_t *ct = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
+	snd_mask_t *fmts = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
+
+	/* check the format */
+	if (! snd_mask_test(fmts, fp->format)) {
+		printk(KERN_DEBUG "   > check: no supported format %d\n", fp->format);
+		return 0;
+	}
+	/* check the channels */
+	if (fp->channels < ct->min || fp->channels > ct->max) {
+		hwc_debug("   > check: no valid channels %d (%d/%d)\n", fp->channels, ct->min, ct->max);
+		return 0;
+	}
+	/* check the rate is within the range */
+	if (fp->rate_min > it->max || (fp->rate_min == it->max && it->openmax)) {
+		hwc_debug("   > check: rate_min %d > max %d\n", fp->rate_min, it->max);
+		return 0;
+	}
+	if (fp->rate_max < it->min || (fp->rate_max == it->min && it->openmin)) {
+		hwc_debug("   > check: rate_max %d < min %d\n", fp->rate_max, it->min);
+		return 0;
+	}
+	return 1;
+}
+
+static int hw_rule_rate(snd_pcm_hw_params_t *params,
+			snd_pcm_hw_rule_t *rule)
+{
+	snd_usb_substream_t *subs = rule->private;
+	struct list_head *p;
+	snd_interval_t *it = hw_param_interval(params, SNDRV_PCM_HW_PARAM_RATE);
+	int rmin, rmax, changed;
+	
+	hwc_debug("hw_rule_rate: (%d,%d)\n", it->min, it->max);
+	changed = 0;
+	rmin = rmax = 0;
+	list_for_each(p, &subs->fmt_list) {
+		struct audioformat *fp;
+		fp = list_entry(p, struct audioformat, list);
+		if (! hw_check_valid_format(params, fp))
+			continue;
+		if (changed++) {
+			if (rmin > fp->rate_min)
+				rmin = fp->rate_min;
+			if (rmax < fp->rate_max)
+				rmax = fp->rate_max;
+		} else {
+			rmin = fp->rate_min;
+			rmax = fp->rate_max;
+		}
+	}
+
+	if (! changed) {
+		hwc_debug("  --> get empty\n");
+		it->empty = 1;
+		return -EINVAL;
+	}
+
+	changed = 0;
+	if (it->min < rmin) {
+		it->min = rmin;
+		it->openmin = 0;
+		changed = 1;
+	}
+	if (it->max > rmax) {
+		it->max = rmax;
+		it->openmax = 0;
+		changed = 1;
+	}
+	if (snd_interval_checkempty(it)) {
+		it->empty = 1;
+		return -EINVAL;
+	}
+	hwc_debug("  --> (%d, %d) (changed = %d)\n", it->min, it->max, changed);
+	return changed;
+}
+
+
+static int hw_rule_channels(snd_pcm_hw_params_t *params,
+			    snd_pcm_hw_rule_t *rule)
+{
+	snd_usb_substream_t *subs = rule->private;
+	struct list_head *p;
+	snd_interval_t *it = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
+	int rmin, rmax, changed;
+	
+	hwc_debug("hw_rule_channels: (%d,%d)\n", it->min, it->max);
+	changed = 0;
+	rmin = rmax = 0;
+	list_for_each(p, &subs->fmt_list) {
+		struct audioformat *fp;
+		fp = list_entry(p, struct audioformat, list);
+		if (! hw_check_valid_format(params, fp))
+			continue;
+		if (changed++) {
+			if (rmin > fp->channels)
+				rmin = fp->channels;
+			if (rmax < fp->channels)
+				rmax = fp->channels;
+		} else {
+			rmin = fp->channels;
+			rmax = fp->channels;
+		}
+	}
+
+	if (! changed) {
+		hwc_debug("  --> get empty\n");
+		it->empty = 1;
+		return -EINVAL;
+	}
+
+	changed = 0;
+	if (it->min < rmin) {
+		it->min = rmin;
+		it->openmin = 0;
+		changed = 1;
+	}
+	if (it->max > rmax) {
+		it->max = rmax;
+		it->openmax = 0;
+		changed = 1;
+	}
+	if (snd_interval_checkempty(it)) {
+		it->empty = 1;
+		return -EINVAL;
+	}
+	hwc_debug("  --> (%d, %d) (changed = %d)\n", it->min, it->max, changed);
+	return changed;
+}
+
+static int hw_rule_format(snd_pcm_hw_params_t *params,
+			  snd_pcm_hw_rule_t *rule)
+{
+	snd_usb_substream_t *subs = rule->private;
+	struct list_head *p;
+	snd_mask_t *fmt = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
+	u64 fbits;
+	u32 oldbits[2];
+	int changed;
+	
+	hwc_debug("hw_rule_format: %x:%x\n", fmt->bits[0], fmt->bits[1]);
+	fbits = 0;
+	list_for_each(p, &subs->fmt_list) {
+		struct audioformat *fp;
+		fp = list_entry(p, struct audioformat, list);
+		if (! hw_check_valid_format(params, fp))
+			continue;
+		fbits |= (1UL << fp->format);
+	}
+
+	oldbits[0] = fmt->bits[0];
+	oldbits[1] = fmt->bits[1];
+	fmt->bits[0] &= (u32)fbits;
+	fmt->bits[1] &= (u32)(fbits >> 32);
+	if (! fmt->bits[0] && ! fmt->bits[1]) {
+		hwc_debug("  --> get empty\n");
+		return -EINVAL;
+	}
+	changed = (oldbits[0] != fmt->bits[0] || oldbits[1] != fmt->bits[1]);
+	hwc_debug("  --> %x:%x (changed = %d)\n", fmt->bits[0], fmt->bits[1], changed);
+	return changed;
+}
+
+/*
+ * check whether the registered audio formats need special hw-constraints
+ */
+static int check_hw_params_convention(snd_usb_substream_t *subs)
+{
+	int i;
+	u32 channels[64];
+	u32 rates[64];
+	u32 cmaster, rmaster;
+	struct list_head *p;
+
+	memset(channels, 0, sizeof(channels));
+	memset(rates, 0, sizeof(rates));
+
+	list_for_each(p, &subs->fmt_list) {
+		struct audioformat *f;
+		f = list_entry(p, struct audioformat, list);
+		/* unconventional channels? */
+		if (f->channels > 32)
+			return 1;
+		/* combination of continuous rates and fixed rates? */
+		if (rates[f->format] & SNDRV_PCM_RATE_CONTINUOUS) {
+			if (f->rates != rates[f->format])
+				return 1;
+		}
+		if (f->rates & SNDRV_PCM_RATE_CONTINUOUS) {
+			if (rates[f->format] && rates[f->format] != f->rates)
+				return 1;
+		}
+		channels[f->format] |= (1 << f->channels);
+		rates[f->format] |= f->rates;
+	}
+	/* check whether channels and rates match for all formats */
+	cmaster = rmaster = 0;
+	for (i = 0; i < 64; i++) {
+		if (cmaster != channels[i] && cmaster && channels[i])
+			return 1;
+		if (rmaster != rates[i] && rmaster && rates[i])
+			return 1;
+		if (channels[i])
+			cmaster = channels[i];
+		if (rates[i])
+			rmaster = rates[i];
+	}
+	return 0;
+}
+
+
+/*
  * set up the runtime hardware information.
  */
 
-static void setup_hw_info(snd_pcm_runtime_t *runtime, snd_usb_substream_t *subs)
+static int setup_hw_info(snd_pcm_runtime_t *runtime, snd_usb_substream_t *subs)
 {
 	struct list_head *p;
+	int err;
 
 	runtime->hw.formats = subs->formats;
 
@@ -1195,9 +1426,28 @@ static void setup_hw_info(snd_pcm_runtime_t *runtime, snd_usb_substream_t *subs)
 				     1000 * MIN_PACKS_URB,
 				     /*(NRPACKS * MAX_URBS) * 1000*/ UINT_MAX);
 
-	/* FIXME: we need more constraints to restrict the format type,
-	 * channels and rates according to the audioformat list!
-	 */
+	if (check_hw_params_convention(subs)) {
+		hwc_debug("setting extra hw constraints...\n");
+		if ((err = snd_pcm_hw_rule_add(runtime, 0, SNDRV_PCM_HW_PARAM_RATE, 
+					       hw_rule_rate, subs,
+					       SNDRV_PCM_HW_PARAM_FORMAT,
+					       SNDRV_PCM_HW_PARAM_CHANNELS,
+					       -1)) < 0)
+			return err;
+		if ((err = snd_pcm_hw_rule_add(runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS, 
+					       hw_rule_channels, subs,
+					       SNDRV_PCM_HW_PARAM_FORMAT,
+					       SNDRV_PCM_HW_PARAM_RATE,
+					       -1)) < 0)
+			return err;
+		if ((err = snd_pcm_hw_rule_add(runtime, 0, SNDRV_PCM_HW_PARAM_FORMAT,
+					       hw_rule_format, subs,
+					       SNDRV_PCM_HW_PARAM_RATE,
+					       SNDRV_PCM_HW_PARAM_CHANNELS,
+					       -1)) < 0)
+			return err;
+	}
+	return 0;
 }
 
 static int snd_usb_pcm_open(snd_pcm_substream_t *substream, int direction,
@@ -1212,8 +1462,7 @@ static int snd_usb_pcm_open(snd_pcm_substream_t *substream, int direction,
 	runtime->hw = *hw;
 	runtime->private_data = subs;
 	subs->pcm_substream = substream;
-	setup_hw_info(runtime, subs);
-	return 0;
+	return setup_hw_info(runtime, subs);
 }
 
 static int snd_usb_pcm_close(snd_pcm_substream_t *substream, int direction)
@@ -1823,7 +2072,7 @@ static int parse_audio_endpoints(snd_usb_audio_t *chip, unsigned char *buffer, i
 				}
 #if 0 // FIXME - we need to define constraint
 				if (c >= 13)
-					fp->rates |= SNDRV_PCM_KNOT; /* unconventional rate */
+					fp->rates |= SNDRV_PCM_RATE_KNOT; /* unconventional rate */
 #endif
 			}
 
