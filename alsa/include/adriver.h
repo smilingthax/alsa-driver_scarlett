@@ -750,6 +750,7 @@ static inline void snd_compat_vprintk(const char *fmt, va_list args)
 #include <linux/gameport.h>
 #undef wait_ms
 #ifndef to_gameport_driver
+#include <linux/slab.h>
 /* old gameport interface */
 struct snd_gameport {
 	struct gameport gp;

@@ -1746,6 +1746,8 @@ static int snd_echo_free(echoaudio_t *chip)
 	}
 	DE_INIT(("MMIO freed.\n"));
 
+	pci_disable_device(chip->pci);
+
 	/* release chip data */
 	kfree(chip);
 	DE_INIT(("Chip freed.\n"));
@@ -1784,8 +1786,10 @@ static __devinit int snd_echo_create(snd_card_t *card, struct pci_dev *pci, echo
 
 	/* allocate a chip-specific data */
 	chip = kcalloc(1, sizeof(echoaudio_t), GFP_KERNEL);
-	if (!chip)
+	if (!chip) {
+		pci_disable_device(pci);
 		return -ENOMEM;
+	}
 	DE_INIT(("chip=%p\n", chip));
 
 	spin_lock_init(&chip->lock);
