@@ -1455,7 +1455,7 @@ static inline unsigned char snd_pci_revision(struct pci_dev *pci)
 #endif
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 3)
+#ifndef CONFIG_HAVE_FFS
 #if defined(__i386__)
 static inline unsigned long __ffs(unsigned long word)
 {

@@ -189,7 +189,7 @@
  
  
  #ifdef CONFIG_PROC_FS
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
  /*
   * proc file interface
   */
@@ -205,7 +205,7 @@
  static int __init snd_mem_init(void)
  {
  #ifdef CONFIG_PROC_FS
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
  	snd_mem_proc = create_proc_entry(SND_MEM_PROC_FILE, 0644, NULL);
  	if (snd_mem_proc)
  		snd_mem_proc->proc_fops = &snd_mem_proc_fops;
@@ -216,7 +216,7 @@
  
  static void __exit snd_mem_exit(void)
  {
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
  	remove_proc_entry(SND_MEM_PROC_FILE, NULL);
 +#endif
  	free_all_reserved_pages();

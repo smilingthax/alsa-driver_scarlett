@@ -2597,6 +2597,37 @@ if test "$CONFIG_HAVE_INIT_UTSNAME" = "1"; then
   AC_DEFINE(CONFIG_HAVE_INIT_UTSNAME)
 fi
 
+dnl __ffs support?
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  CONFIG_HAVE_FFS=1
+else
+  AC_MSG_CHECKING(for __ffs)
+  init_utsname="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/bitops.h>
+],[
+  unsigned long (*x)(unsigned long);
+  x = __ffs;
+],
+    AC_MSG_RESULT(yes);have_ffs="1",
+    AC_MSG_RESULT(no);have_ffs="0",
+    AC_MSG_RESULT(unknown);have_ffs="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_HAVE_FFS=$have_ffs
+fi
+dnl AC_SUBST(CONFIG_HAVE_FFS)
+if test "$CONFIG_HAVE_FFS" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_FFS)
+fi
+
 dnl PnP supports suspend/resume?
 if test "$CONFIG_PNP_KERNEL" = "y"; then
   AC_MSG_CHECKING(for PnP suspend/resume)
