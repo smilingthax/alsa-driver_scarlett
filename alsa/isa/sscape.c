@@ -28,7 +28,11 @@
 #include <sound/driver.h>
 #include <linux/init.h>
 #include <linux/delay.h>
+#ifndef LINUX_ISAPNP_H
 #include <linux/isapnp.h>
+#define isapnp_card pci_bus
+#define isapnp_dev pci_dev
+#endif
 #include <linux/spinlock.h>
 #include <asm/dma.h>
 #include <sound/core.h>
@@ -465,7 +469,9 @@ static int upload_dma_data(struct soundscape *s,
 	 * board through the DMA channel ...
 	 */
 	while (size != 0) {
-		register unsigned long len = min(size, dma.size);
+		unsigned long len;
+
+		len = size < dma.size ? size : dma.size;
 
 		/*
 		 * Remember that the data that we want to DMA
@@ -1239,9 +1245,9 @@ static int __init create_sscape(unsigned port, int irq, int mpu_irq, int dma1, i
 
 
 #ifdef MODULE
-static int __init sscape_module_probe(struct pci_bus *card, const struct isapnp_card_id *id)
+static int __init sscape_module_probe(struct isapnp_card *card, const struct isapnp_card_id *id)
 {
-	struct pci_dev *dev;
+	struct isapnp_dev *dev;
 	int ret = -ENODEV;
 
 	/*

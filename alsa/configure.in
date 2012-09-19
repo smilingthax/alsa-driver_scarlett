@@ -167,6 +167,23 @@ else
   fi
 fi
 
+dnl Check for linux/spinlock.h...
+AC_MSG_CHECKING(for kernel linux/spinlock.h)
+if test -f $CONFIG_SND_KERNELDIR/include/linux/spinlock.h; then
+  AC_MSG_RESULT("yes")
+  if test -f include/linux/spinlock.h; then
+    echo "Removing a dummy linux/spinlock.h."
+    rm -f include/linux/pm.h
+  fi
+else
+  AC_MSG_RESULT("no")
+  if test ! -f include/linux/spinlock.h; then
+    echo "Creating a dummy <linux/spinlock.h>..."
+    mkdir -p include/linux
+    touch include/linux/spinlock.h
+  fi
+fi
+
 dnl Check for modversions...
 AC_MSG_CHECKING(for kernel module symbol versions)
 modversion=n
