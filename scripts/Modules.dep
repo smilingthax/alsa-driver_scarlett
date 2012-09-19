@@ -65,7 +65,7 @@ snd-emux-synth @if_sequencer snd-seq-device snd-seq-midi-emul \
 %dir linux/sound/drivers
 |snd-dummy snd-pcm
 |snd-virmidi snd-seq-virmidi
-|snd-serial-u16550 
+|snd-serial-u16550 snd-seq-midi 
 |snd-mtpav snd-seq-midi
 
 %dir linux/sound/drivers/mpu401

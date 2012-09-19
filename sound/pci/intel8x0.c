@@ -51,7 +51,9 @@ MODULE_DEVICES("{{Intel,82801AA},"
 		"{Intel,ICH3},"
 		"{Intel,MX440},"
 		"{SiS,SI7012},"
-		"{NVidia,NForce Audio}}");
+		"{NVidia,NForce Audio},"
+		"{AMD,AMD768},"
+		"{AMD,AMD8111}}");
 
 #define SUPPORT_JOYSTICK 1
 #define SUPPORT_MIDI 1
@@ -285,7 +287,8 @@ static struct pci_device_id snd_intel8x0_ids[] __devinitdata = {
 	{ 0x8086, 0x7195, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* 440MX */
 	{ 0x1039, 0x7012, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_SIS },	/* SI7012 */
 	{ 0x10de, 0x01b1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* NFORCE */
-	{ 0x764d, 0x1022, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* AMD8111 */
+	{ 0x1022, 0x764d, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* AMD8111 */
+	{ 0x1022, 0x7445, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* AMD768 */
 	{ 0, }
 };
 
@@ -1253,15 +1256,17 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	else
 		t += stop_time.tv_usec - start_time.tv_usec;
 	if (t == 0) {
-		snd_printk("?? calculation error..\n");
+		snd_printk(KERN_ERR "?? calculation error..\n");
 		return;
 	}
 	pos = (pos / 4) * 1000;
 	pos = (pos / t) * 1000 + ((pos % t) * 1000) / t;
 	if ((pos > 40000 && pos < 47500) ||
-	    (pos > 48500 && pos < 50000)) {
+	    (pos > 48500 && pos < 60000)) {
 		chip->ac97->clock = (chip->ac97->clock * 48000) / pos;
-		printk(KERN_INFO "intel8x0: clocking to %d\n", chip->ac97->clock);
+		snd_printk(KERN_INFO "intel8x0: clocking to %d\n", chip->ac97->clock);
+	} else {
+		snd_printk(KERN_INFO "intel8x0: measured clock %d rejected\n", pos);
 	}
 }
 
@@ -1392,14 +1397,15 @@ static struct shortname_table {
 	{ PCI_DEVICE_ID_INTEL_ICH3, "Intel ICH3" },
 	{ PCI_DEVICE_ID_SI_7012, "SiS SI7012" },
 	{ PCI_DEVICE_ID_NVIDIA_MCP_AUDIO, "NVidia NForce" },
-	{ 0x1022, "AMD-8111" },
+	{ 0x764d, "AMD AMD8111" },
+	{ 0x7445, "AMD AMD768" },
 	{ 0, 0 },
 };
 
 static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 					const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	snd_card_t *card;
 	intel8x0_t *chip;
 	int pcm_dev = 0, err;
@@ -1498,7 +1504,7 @@ static struct pci_driver driver = {
 static int __devinit snd_intel8x0_joystick_probe(struct pci_dev *pci,
 						 const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;
 	if (!snd_enable[dev]) {

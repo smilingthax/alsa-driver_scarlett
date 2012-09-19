@@ -1290,11 +1290,23 @@ static void snd_ensoniq_mixer_free_ac97(ac97_t *ac97)
 	ensoniq->u.es1371.ac97 = NULL;
 }
 
+static struct {
+	unsigned short vid;		/* vendor ID */
+	unsigned short did;		/* device ID */
+	unsigned char rev;		/* revision */
+} es1371_spdif_present[] = {
+	{ vid: PCI_VENDOR_ID_ENSONIQ, did: PCI_DEVICE_ID_ENSONIQ_CT5880, rev: CT5880REV_CT5880_C },
+	{ vid: PCI_VENDOR_ID_ENSONIQ, did: PCI_DEVICE_ID_ENSONIQ_CT5880, rev: CT5880REV_CT5880_D },
+	{ vid: PCI_VENDOR_ID_ENSONIQ, did: PCI_DEVICE_ID_ENSONIQ_CT5880, rev: CT5880REV_CT5880_E },
+	{ vid: PCI_VENDOR_ID_ENSONIQ, did: PCI_DEVICE_ID_ENSONIQ_ES1371, rev: ES1371REV_CT5880_A },
+	{ vid: PCI_ANY_ID, did: PCI_ANY_ID, rev: 0 }
+};
+
 static int snd_ensoniq_1371_mixer(ensoniq_t * ensoniq)
 {
 	snd_card_t *card = ensoniq->card;
 	ac97_t ac97;
-	int err;
+	int err, idx;
 
 	memset(&ac97, 0, sizeof(ac97));
 	ac97.write = snd_es1371_codec_write;
@@ -1303,8 +1315,13 @@ static int snd_ensoniq_1371_mixer(ensoniq_t * ensoniq)
 	ac97.private_free = snd_ensoniq_mixer_free_ac97;
 	if ((err = snd_ac97_mixer(card, &ac97, &ensoniq->u.es1371.ac97)) < 0)
 		return err;
-	if (ensoniq->rev >= ES1371REV_ES1373_A)
-		snd_ctl_add(card, snd_ctl_new1(&snd_es1371_mixer_spdif, ensoniq));
+	for (idx = 0; es1371_spdif_present[idx].vid != (unsigned short)PCI_ANY_ID; idx++)
+		if (ensoniq->pci->vendor == es1371_spdif_present[idx].vid &&
+		    ensoniq->pci->device == es1371_spdif_present[idx].did &&
+		    ensoniq->rev == es1371_spdif_present[idx].rev) {
+			snd_ctl_add(card, snd_ctl_new1(&snd_es1371_mixer_spdif, ensoniq));
+			break;
+		}
 	return 0;
 }
 
@@ -1961,7 +1978,7 @@ static void snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 static int __devinit snd_audiopci_probe(struct pci_dev *pci,
 					const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	snd_card_t *card;
 	ensoniq_t *ensoniq;
 	int err, pcm_devs[2];

@@ -66,7 +66,7 @@ KERNEL_EXCLUDE_DIR = ['/BitKeeper',
 ALSA_FORCE = ['/oss/Makefile']
 ALSA_FORCE_DIR = ['/']
 KERNEL_FORCE = ['/sound/oss/Makefile']
-KERNEL_FORCE_DIR = ['/include/sound']
+KERNEL_FORCE_DIR = ['/Documentation/sound/alsa', '/include/sound']
 
 # Directory mapping
 ALSA_MAP = {'/':'/sound',
@@ -263,15 +263,19 @@ def remap_kernel_file(file):
 	return path + comp[-1]
 
 def do_alsa_kernel_diff(alsa, kernel):
-	nflag = 0
+	ncvsflag = 0
+	nbkflag = 0
 	afile = get_cvs_root() + alsa;
 	kfile = get_bk_root() + kernel;
 	if not os.path.exists(afile):
-		update_cvs_file(afile)
+		update_cvs_file(alsa)
+		if not os.path.exists(afile):
+			ncvsflag = 1
+			os.system('touch %s' % afile)
 	if not os.path.exists(kfile):
 		update_bk_file(kfile)
 		if not os.path.exists(kfile):
-			nflag = 1
+			nbkflag = 1
 			os.system('touch %s' % kfile)
 	cmd = 'diff -uN %s %s' % (kfile, afile)
 	fp = os.popen(cmd)
@@ -279,14 +283,16 @@ def do_alsa_kernel_diff(alsa, kernel):
 	fp.close()
 	lines = change_diff_lines(lines, "linux" + kernel)
 	print_file(sys.stdout, lines)
-	if nflag:
+	if ncvsflag:
+		os.remove(afile)
+	if nbkflag:
 		os.remove(kfile)
 
 def do_kernel_alsa_diff(kernel, alsa):
 	afile = get_cvs_root() + alsa;
 	kfile = get_bk_root() + kernel;
 	if not os.path.exists(afile):
-		update_cvs_file(afile)
+		update_cvs_file(alsa)
 	if not os.path.exists(kfile):
 		update_bk_file(kfile)
 	cmd = 'diff -uN %s %s' % (afile, kfile)

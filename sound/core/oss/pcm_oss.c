@@ -39,7 +39,7 @@
 
 static int snd_dsp_map[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 0};
 static int snd_adsp_map[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 1};
-static int snd_nonblock_open = 0;
+static int snd_nonblock_open;
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>, Abramo Bagnara <abramo@alsa-project.org>");
 MODULE_DESCRIPTION("PCM OSS emulation for ALSA.");
@@ -1567,16 +1567,14 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
 			nonblock = 1;
 		else if (psetup->block)
 			nonblock = 0;
-		else if (!nonblock)
-			nonblock = snd_nonblock_open;
 	} else if (csetup && !csetup->disable) {
 		if (csetup->nonblock)
 			nonblock = 1;
 		else if (csetup->block)
 			nonblock = 0;
-		else if (!nonblock)
-			nonblock = snd_nonblock_open;
 	}
+	if (!nonblock)
+		nonblock = snd_nonblock_open;
 
 	init_waitqueue_entry(&wait, current);
 	add_wait_queue(&pcm->open_wait, &wait);
@@ -1650,7 +1648,8 @@ static int snd_pcm_oss_ioctl(struct inode *inode, struct file *file,
 	pcm_oss_file = snd_magic_cast(snd_pcm_oss_file_t, file->private_data, return -ENXIO);
 	if (cmd == OSS_GETVERSION)
 		return put_user(SNDRV_OSS_VERSION, (int *)arg) ? -EFAULT : 0;
-	if (((cmd >> 8) & 0xff) == 'M')	{	/* mixer ioctl - for OSS (grrr) compatibility */
+#if defined(CONFIG_SND_MIXER_OSS) || (defined(MODULE) && defined(CONFIG_SND_MIXER_OSS_MODULE))
+	if (((cmd >> 8) & 0xff) == 'M')	{	/* mixer ioctl - for OSS compatibility */
 		snd_pcm_substream_t *substream;
 		int idx;
 		for (idx = 0; idx < 2; ++idx) {
@@ -1661,6 +1660,7 @@ static int snd_pcm_oss_ioctl(struct inode *inode, struct file *file,
 		snd_assert(substream != NULL, return -ENXIO);
 		return snd_mixer_oss_ioctl_card(substream->pcm->card, cmd, arg);
 	}
+#endif
 	if (((cmd >> 8) & 0xff) != 'P')
 		return -EINVAL;
 	switch (cmd) {
