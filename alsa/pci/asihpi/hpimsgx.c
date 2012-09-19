@@ -21,7 +21,8 @@ Extended Message Function With Response Cacheing
 (C) Copyright AudioScience Inc. 2002
 *****************************************************************************/
 #define SOURCEFILE_NAME "hpimsgx.c"
-#include "hpi.h"
+#include "hpi_internal.h"
+#include "hpimsginit.h"
 #include "hpimsgx.h"
 #include "hpidebug.h"
 

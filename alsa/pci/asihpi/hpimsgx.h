@@ -24,7 +24,7 @@
 #ifndef _HPIMSGX_H_
 #define _HPIMSGX_H_
 
-#include "hpi.h"
+#include "hpi_internal.h"
 
 #ifdef __cplusplus
 /* *INDENT-OFF* */

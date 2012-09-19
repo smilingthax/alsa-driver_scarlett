@@ -22,7 +22,7 @@
 *******************************************************************************/
 #define SOURCEFILE_NAME "hpicmn.c"
 
-#include "hpi.h"
+#include "hpi_internal.h"
 #include "hpidebug.h"
 #include "hpicmn.h"
 
@@ -282,6 +282,23 @@ short HpiCheckBufferMapping(
 	return 0;
 }
 
+/* allow unified treatment of several string fields within struct */
+#define HPICMN_PAD_OFS_AND_SIZE(m)  {\
+	offsetof(struct hpi_control_cache_pad, m), \
+	sizeof(((struct hpi_control_cache_pad *)(NULL))->m) }
+
+struct pad_ofs_size {
+	size_t offset;
+	size_t field_size;
+};
+
+static struct pad_ofs_size aPadDesc[] = {
+	HPICMN_PAD_OFS_AND_SIZE(cChannel),	/* HPI_PAD_CHANNEL_NAME */
+	HPICMN_PAD_OFS_AND_SIZE(cArtist),	/* HPI_PAD_ARTIST */
+	HPICMN_PAD_OFS_AND_SIZE(cTitle),	/* HPI_PAD_TITLE */
+	HPICMN_PAD_OFS_AND_SIZE(cComment),	/* HPI_PAD_COMMENT */
+};
+
 /** CheckControlCache checks the cache and fills the struct hpi_response
  * accordingly. It returns one if a cache hit occurred, zero otherwise.
  */
@@ -295,6 +312,7 @@ short HpiCheckControlCache(
 	u16 wControlIndex;
 	struct hpi_control_cache_info *pI;
 	struct hpi_control_cache_single *pC;
+	struct hpi_control_cache_pad *pPad;
 
 	if (!FindControl(phm, pCache, &pI, &wControlIndex))
 		return 0;
@@ -304,10 +322,11 @@ short HpiCheckControlCache(
 		sizeof(struct hpi_control_res);
 	phr->wError = 0;
 
-	/* pC is the default cached control strucure.
-	   May be cast to something else in the following switch statement.
+	/* pC is the default cached control strucure. May be cast to
+	   something else in the following switch statement.
 	 */
 	pC = (struct hpi_control_cache_single *)pI;
+	pPad = (struct hpi_control_cache_pad *)pI;
 
 	switch (pI->ControlType) {
 
@@ -406,94 +425,62 @@ short HpiCheckControlCache(
 		else
 			found = 0;
 		break;
-#ifndef HPI_OS_WIN16	/* SGT - below does not compile in Borland C */
 	case HPI_CONTROL_PAD:
-		{
-			struct hpi_control_cache_pad *pPad =
-				(struct hpi_control_cache_pad *)pC;
 
-			if (!(pPad->dwFieldValidFlags &
-					(1 << HPI_CTL_ATTR_INDEX(phm->u.c.
-							wAttribute)))) {
-				/* attribute not supported */
+		if (!(pPad->dwFieldValidFlags &
+				(1 << HPI_CTL_ATTR_INDEX(phm->u.c.
+						wAttribute)))) {
+			phr->wError = HPI_ERROR_INVALID_CONTROL_ATTRIBUTE;
+			break;
+		}
+
+		if (phm->u.c.wAttribute == HPI_PAD_PROGRAM_ID)
+			phr->u.c.dwParam1 = pPad->dwPI;
+		else if (phm->u.c.wAttribute == HPI_PAD_PROGRAM_TYPE)
+			phr->u.c.dwParam1 = pPad->dwPTY;
+		else {
+			unsigned int index =
+				HPI_CTL_ATTR_INDEX(phm->u.c.wAttribute) - 1;
+			size_t offset = phm->u.c.dwParam1;
+			size_t pad_string_len, field_size;
+			char *pad_string;
+			size_t tocopy;
+
+			HPI_DEBUG_LOG(VERBOSE,
+				"PADS HPI_PADS_ %d\n", phm->u.c.wAttribute);
+
+			if (index > ARRAY_SIZE(aPadDesc) - 1) {
 				phr->wError =
 					HPI_ERROR_INVALID_CONTROL_ATTRIBUTE;
 				break;
 			}
 
-			if (phm->u.c.wAttribute == HPI_PAD_PROGRAM_ID)
-				phr->u.c.dwParam1 = pPad->dwPI;
-			else if (phm->u.c.wAttribute == HPI_PAD_PROGRAM_TYPE)
-				phr->u.c.dwParam1 = pPad->dwPTY;
-			else {
-				struct attribs {
-					u8 *pData;
-					unsigned int nSize;
-				};
-				struct attribs aDesc[] = {
-					{NULL, 0},
-					/* HPI_PAD_CHANNEL_NAME */
-					{pPad->cChannel, sizeof(pPad->
-								cChannel)}
-					,
-					/* HPI_PAD_ARTIST */
-					{pPad->cArtist, sizeof(pPad->cArtist)}
-					,
-					/* HPI_PAD_TITLE */
-					{pPad->cTitle, sizeof(pPad->cTitle)}
-					,
-					/* HPI_PAD_COMMENT */
-					{pPad->cComment, sizeof(pPad->
-								cComment)}
-					,
-				};
+			pad_string = ((char *)pPad) + aPadDesc[index].offset;
+			field_size = aPadDesc[index].field_size;
+			/* Ensure null terminator */
+			pad_string[field_size - 1] = 0;
 
-				const u32 dwAttribute = phm->u.c.wAttribute;
-				const u32 dwIndex =
-					HPI_CTL_ATTR_INDEX(dwAttribute);
-				const u32 dwOffset = phm->u.c.dwParam1;
-				int nStringLength = 0;
-				int nRemainingChars = 0;
+			pad_string_len = strlen(pad_string) + 1;
 
-				HPI_DEBUG_LOG(VERBOSE, "PADS control\n");
-
-				/* check the field type */
-				HPI_DEBUG_LOG(VERBOSE,
-					"PADS HPI_PADS_ %d\n", dwAttribute);
-
-				switch (dwAttribute) {
-				case HPI_PAD_CHANNEL_NAME:
-				case HPI_PAD_ARTIST:
-				case HPI_PAD_TITLE:
-				case HPI_PAD_COMMENT:
-					break;
-				default:
-					phr->wError = HPI_ERROR_INVALID_FUNC;
-				}
-				if (phr->wError)
-					break;
-
-				nStringLength = strlen(aDesc[dwIndex].pData);
-				if (dwOffset > (unsigned)nStringLength) {
-					phr->wError =
-						HPI_ERROR_INVALID_CONTROL_VALUE;
-					break;
-				}
-				HPI_DEBUG_LOG(VERBOSE,
-					"PADS memcpy (%d), offset %d \n",
-					8, dwOffset);
-				memcpy(&phr->u.cu.chars8.szData[0],
-					&aDesc[dwIndex].pData[dwOffset], 8);
-				nRemainingChars =
-					nStringLength - dwOffset - 8;
-				if (nRemainingChars < 0)
-					nRemainingChars = 0;
-				phr->u.cu.chars8.dwRemainingChars =
-					nRemainingChars;
+			if (offset > pad_string_len) {
+				phr->wError = HPI_ERROR_INVALID_CONTROL_VALUE;
+				break;
 			}
+
+			tocopy = pad_string_len - offset;
+			if (tocopy > sizeof(phr->u.cu.chars8.szData))
+				tocopy = sizeof(phr->u.cu.chars8.szData);
+
+			HPI_DEBUG_LOG(VERBOSE,
+				"PADS memcpy(%zd), offset %zd \n", tocopy,
+				offset);
+			memcpy(phr->u.cu.chars8.szData, &pad_string[offset],
+				tocopy);
+
+			phr->u.cu.chars8.dwRemainingChars =
+				pad_string_len - offset - tocopy;
 		}
 		break;
-#endif
 	default:
 		found = 0;
 		break;
@@ -540,6 +527,8 @@ void HpiSyncControlCache(
 		break;
 	case HPI_CONTROL_MULTIPLEXER:
 		/* mux does not return its setting on Set command. */
+		if (phr->wError)
+			return;
 		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
 			pC->u.x.wSourceNodeType = (u16)phm->u.c.dwParam1;
 			pC->u.x.wSourceNodeIndex = (u16)phm->u.c.dwParam2;
@@ -547,6 +536,8 @@ void HpiSyncControlCache(
 		break;
 	case HPI_CONTROL_CHANNEL_MODE:
 		/* mode does not return its setting on Set command. */
+		if (phr->wError)
+			return;
 		if (phm->u.c.wAttribute == HPI_CHANNEL_MODE_MODE)
 			pC->u.m.wMode = (u16)phm->u.c.dwParam1;
 		break;
@@ -557,14 +548,20 @@ void HpiSyncControlCache(
 		}
 		break;
 	case HPI_CONTROL_AESEBU_TRANSMITTER:
+		if (phr->wError)
+			return;
 		if (phm->u.c.wAttribute == HPI_AESEBUTX_FORMAT)
 			pC->u.aes3tx.dwFormat = phm->u.c.dwParam1;
 		break;
 	case HPI_CONTROL_AESEBU_RECEIVER:
+		if (phr->wError)
+			return;
 		if (phm->u.c.wAttribute == HPI_AESEBURX_FORMAT)
 			pC->u.aes3rx.dwSource = phm->u.c.dwParam1;
 		break;
 	case HPI_CONTROL_SAMPLECLOCK:
+		if (phr->wError)
+			return;
 		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
 			pC->u.clk.wSource = (u16)phm->u.c.dwParam1;
 		else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {

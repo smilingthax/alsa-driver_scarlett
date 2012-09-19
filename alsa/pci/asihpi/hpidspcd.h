@@ -28,11 +28,10 @@ and the appropriate hzz?????.c or hex?????.c linked in
 If USE_ZLIB is defined, hpizlib.c must also be linked
 */
 /***********************************************************************/
-#ifndef _HPIDSPLD_H_
-#define _HPIDSPLD_H_
+#ifndef _HPIDSPCD_H_
+#define _HPIDSPCD_H_
 
-/*#include <stdio.h> */
-#include "hpi.h"
+#include "hpi_internal.h"
 
 #ifndef DISABLE_PRAGMA_PACK1
 #pragma pack(push, 1)

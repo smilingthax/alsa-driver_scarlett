@@ -33,10 +33,10 @@ HPI Operating System Specific macros for Linux
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/version.h>
+#include <linux/device.h>
 #include <linux/firmware.h>
 #include <linux/interrupt.h>
 #include <linux/pci.h>
-#include <linux/device.h>
 
 #define INLINE inline
 
@@ -183,6 +183,7 @@ struct hpi_adapter {
 	void *snd_card_asihpi;
 
 	char *pBuffer;
+	size_t buffer_size;
 	struct pci_dev *pci;
 	void __iomem *apRemappedMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
 };

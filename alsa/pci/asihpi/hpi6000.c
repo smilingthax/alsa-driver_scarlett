@@ -30,7 +30,8 @@
 *******************************************************************************/
 #define SOURCEFILE_NAME "hpi6000.c"
 
-#include "hpi.h"
+#include "hpi_internal.h"
+#include "hpimsginit.h"
 #include "hpidebug.h"
 #include "hpi6000.h"
 #include "hpidspcd.h"
@@ -152,10 +153,6 @@ struct hpi_hw_obj {
 	u32 dwMessageBufferAddressOnDSP;
 	u32 dwResponseBufferAddressOnDSP;
 	u32 dwPCI2040HPIErrorCount;
-
-	/* counts consecutive communications errors reported from DSP  */
-	u16 wNumErrors;
-	u16 wDspCrashed;	/* when '1' DSP has crashed/died/OTL */
 
 	struct hpi_control_cache_single aControlCache[HPI_NMIXER_CONTROLS];
 	struct hpi_control_cache *pCache;
@@ -443,7 +440,7 @@ void HPI_6000(
 			return;
 		}
 
-		if (pao->wDspCrashed) {
+		if (pao->wDspCrashed >= 10) {
 			HPI_InitResponse(phr, phm->wObject, phm->wFunction,
 				HPI_ERROR_DSP_HARDWARE);
 			HPI_DEBUG_LOG(DEBUG, " %d,%d dsp crashed.\n",
@@ -603,7 +600,6 @@ static short CreateAdapterObj(
 	struct hpi_hw_obj *phw = (struct hpi_hw_obj *)pao->priv;
 
 	/* init error reporting */
-	phw->wNumErrors = 0;
 	pao->wDspCrashed = 0;
 
 	/* The PCI2040 has the following address map */
@@ -1318,20 +1314,19 @@ static void HpiWriteBlock(
 	u32 dwLength
 )
 {
+	u16 wLength = dwLength - 1;
+
 	if (dwLength == 0)
 		return;
 
 	if (HpiSetAddress(pdo, dwAddress))
 		return;
 
-	{
-		u16 wLength = dwLength - 1;
-		iowrite32_rep(pdo->prHPIDataAutoInc, pdwData, wLength);
+	iowrite32_rep(pdo->prHPIDataAutoInc, pdwData, wLength);
 
-		/* take care of errata in revB DSP (2.0.1) */
-		/* must end with non auto-inc */
-		iowrite32(*(pdwData + dwLength - 1), pdo->prHPIData);
-	}
+	/* take care of errata in revB DSP (2.0.1) */
+	/* must end with non auto-inc */
+	iowrite32(*(pdwData + dwLength - 1), pdo->prHPIData);
 }
 
 /** read a block of 32bit words from the DSP HPI port using auto-inc mode
@@ -1343,20 +1338,19 @@ static void HpiReadBlock(
 	u32 dwLength
 )
 {
+	u16 wLength = dwLength - 1;
+
 	if (dwLength == 0)
 		return;
 
 	if (HpiSetAddress(pdo, dwAddress))
 		return;
 
-	{
-		u16 wLength = dwLength - 1;
-		ioread32_rep(pdo->prHPIDataAutoInc, pdwData, wLength);
+	ioread32_rep(pdo->prHPIDataAutoInc, pdwData, wLength);
 
-		/* take care of errata in revB DSP (2.0.1) */
-		/* must end with non auto-inc */
-		*(pdwData + dwLength - 1) = ioread32(pdo->prHPIData);
-	}
+	/* take care of errata in revB DSP (2.0.1) */
+	/* must end with non auto-inc */
+	*(pdwData + dwLength - 1) = ioread32(pdo->prHPIData);
 }
 
 static u16 Hpi6000_DspBlockWrite32(
@@ -1470,12 +1464,10 @@ static short Hpi6000_MessageResponseSequence(
 
 	wAck = Hpi6000_WaitDspAck(pao, wDspIndex, HPI_HIF_IDLE);
 	if (wAck & HPI_HIF_ERROR_MASK) {
-		phw->wNumErrors++;
-		if (phw->wNumErrors == 10)
-			pao->wDspCrashed = 1;
+		pao->wDspCrashed++;
 		return HPI6000_ERROR_MSG_RESP_IDLE_TIMEOUT;
 	}
-	phw->wNumErrors = 0;
+	pao->wDspCrashed = 0;
 
 	/* send the message */
 

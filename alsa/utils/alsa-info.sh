@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.49
+SCRIPT_VERSION=0.4.51
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -104,6 +104,7 @@ withamixer() {
 	CARD_NAME=`grep "^ *$i " /tmp/alsainfo/alsacards.tmp|awk {'print $2'}`
 	echo "!!-------Mixer controls for card $i $CARD_NAME]" >> $FILE
 	echo "" >>$FILE
+	amixer -c$i info>> $FILE 2>&1
 	amixer -c$i>> $FILE 2>&1
         echo "" >> $FILE
 	done
@@ -434,6 +435,14 @@ then
 	do
 	case "$1" in
 		--pastebin)
+		        update
+        		withdevices
+        		withconfigs
+        		withaplay
+        		withamixer
+        		withalsactl
+        		withlsmod
+        		pbcheck
 			;;
 		--update)
 			update
