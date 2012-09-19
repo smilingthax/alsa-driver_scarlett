@@ -20,26 +20,6 @@
 #define SGBUF_TBL_ALIGN		32
 #define sgbuf_align_table(tbl)	((((tbl) + SGBUF_TBL_ALIGN - 1) / SGBUF_TBL_ALIGN) * SGBUF_TBL_ALIGN)
 
-struct snd_sg_buf *snd_pcm_sgbuf_new(struct pci_dev *pci)
-{
-	struct snd_sg_buf *sgbuf;
-
-	sgbuf = snd_magic_kcalloc(snd_pcm_sgbuf_t, 0, GFP_KERNEL);
-	if (! sgbuf)
-		return NULL;
-	sgbuf->pci = pci;
-	sgbuf->pages = 0;
-	sgbuf->tblsize = 0;
-
-	return sgbuf;
-}
-
-void snd_pcm_sgbuf_delete(struct snd_sg_buf *sgbuf)
-{
-	snd_pcm_sgbuf_free_pages(sgbuf, NULL);
-	snd_magic_kfree(sgbuf);
-}
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
 /* get the virtual address of the given vmalloc'ed pointer */
 static void *get_vmalloc_addr(void *pageptr)
@@ -71,6 +51,7 @@ static int store_page_tables(struct snd_sg_buf *sgbuf, void *vmaddr, unsigned in
 		rmask = ~0xffffffUL;
 #endif
 
+	sgbuf->pages = 0;
 	for (i = 0; i < pages; i++) {
 		struct page *page;
 		void *ptr;
@@ -110,16 +91,22 @@ static void release_vm_buffer(struct snd_sg_buf *sgbuf, void *vmaddr)
 			sgbuf->page_table[i] = NULL;
 		}
 	sgbuf->pages = 0;
-	vfree_nocheck(vmaddr); /* don't use wrapper */
+	if (vmaddr)
+		vfree_nocheck(vmaddr); /* don't use wrapper */
 }
 
-void *snd_pcm_sgbuf_alloc_pages(struct snd_sg_buf *sgbuf, size_t size)
+void *snd_pcm_sgbuf_alloc_pages(struct pci_dev *pci, size_t size, struct snd_pcm_dma_buffer *dmab)
 {
+	struct snd_sg_buf *sgbuf;
 	unsigned int pages;
-	void *vmaddr = NULL;
 
+	dmab->area = NULL;
+	dmab->addr = 0;
+	dmab->private_data = sgbuf = snd_magic_kcalloc(snd_pcm_sgbuf_t, 0, GFP_KERNEL);
+	if (! sgbuf)
+		return NULL;
+	sgbuf->pci = pci;
 	pages = snd_pcm_sgbuf_pages(size);
-	sgbuf->pages = 0;
 	sgbuf->tblsize = sgbuf_align_table(pages);
 	sgbuf->table = snd_kcalloc(sizeof(*sgbuf->table) * sgbuf->tblsize, GFP_KERNEL);
 	if (! sgbuf->table)
@@ -129,50 +116,49 @@ void *snd_pcm_sgbuf_alloc_pages(struct snd_sg_buf *sgbuf, size_t size)
 		goto _failed;
 
 	sgbuf->size = size;
-	vmaddr = vmalloc_32(pages << PAGE_SHIFT);
-	if (! vmaddr)
-		goto _failed;
-
-	if (store_page_tables(sgbuf, vmaddr, pages) < 0) {
+	dmab->area = vmalloc_32(pages << PAGE_SHIFT);
+	if (! dmab->area || store_page_tables(sgbuf, dmab->area, pages) < 0) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 		/* reallocate with DMA flag */
-		release_vm_buffer(sgbuf, vmaddr);
-		vmaddr = vmalloc_dma(pages << PAGE_SHIFT);
-		if (! vmaddr)
+		release_vm_buffer(sgbuf, dmab->area);
+		dmab->area = vmalloc_dma(pages << PAGE_SHIFT);
+		if (! dmab->area || store_page_tables(sgbuf, dmab->area, pages) < 0)
 			goto _failed;
-		store_page_tables(sgbuf, vmaddr, pages);
+		
 #else
 		goto _failed;
 #endif
 	}
 
-	memset(vmaddr, 0, size);
-	return vmaddr;
+	memset(dmab->area, 0, size);
+	return dmab->area;
 
  _failed:
-	snd_pcm_sgbuf_free_pages(sgbuf, vmaddr); /* free the table */
+	snd_pcm_sgbuf_free_pages(dmab); /* free the table */
 	return NULL;
 }
 
-int snd_pcm_sgbuf_free_pages(struct snd_sg_buf *sgbuf, void *vmaddr)
+int snd_pcm_sgbuf_free_pages(struct snd_pcm_dma_buffer *dmab)
 {
-	if (vmaddr)
-		release_vm_buffer(sgbuf, vmaddr);
+	struct snd_sg_buf *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t, dmab->private_data, return -EINVAL);
+
+	if (dmab->area)
+		release_vm_buffer(sgbuf, dmab->area);
+	dmab->area = NULL;
 	if (sgbuf->table)
 		kfree(sgbuf->table);
 	sgbuf->table = NULL;
 	if (sgbuf->page_table)
 		kfree(sgbuf->page_table);
-	sgbuf->page_table = NULL;
-	sgbuf->tblsize = 0;
-	sgbuf->size = 0;
+	snd_magic_kfree(sgbuf);
+	dmab->private_data = NULL;
 	
 	return 0;
 }
 
 struct page *snd_pcm_sgbuf_ops_page(snd_pcm_substream_t *substream, unsigned long offset)
 {
-	struct snd_sg_buf *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t, substream->dma_private, return NULL);
+	struct snd_sg_buf *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t, _snd_pcm_substream_sgbuf(substream), return NULL);
 
 	unsigned int idx = offset >> PAGE_SHIFT;
 	if (idx >= (unsigned int)sgbuf->pages)
@@ -180,33 +166,6 @@ struct page *snd_pcm_sgbuf_ops_page(snd_pcm_substream_t *substream, unsigned lon
 	return sgbuf->page_table[idx];
 }
 
-
-int snd_pcm_lib_preallocate_sg_pages(struct pci_dev *pci,
-				     snd_pcm_substream_t *substream)
-{
-	if ((substream->dma_private = snd_pcm_sgbuf_new(pci)) == NULL)
-		return -ENOMEM;
-	substream->dma_type = SNDRV_PCM_DMA_TYPE_PCI_SG;
-	substream->dma_area = 0;
-	substream->dma_addr = 0;
-	substream->dma_bytes = 0;
-	substream->buffer_bytes_max = UINT_MAX;
-	substream->dma_max = 0;
-	return 0;
-}
-
-int snd_pcm_lib_preallocate_sg_pages_for_all(struct pci_dev *pci,
-					     snd_pcm_t *pcm)
-{
-	snd_pcm_substream_t *substream;
-	int stream, err;
-
-	for (stream = 0; stream < 2; stream++)
-		for (substream = pcm->streams[stream].substream; substream; substream = substream->next)
-			if ((err = snd_pcm_lib_preallocate_sg_pages(pci, substream)) < 0)
-				return err;
-	return 0;
-}
 
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_sg_pages);
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_sg_pages_for_all);
