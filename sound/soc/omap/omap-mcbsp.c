@@ -36,9 +36,7 @@
 #include "omap-mcbsp.h"
 #include "omap-pcm.h"
 
-#define OMAP_MCBSP_RATES	(SNDRV_PCM_RATE_44100 | \
-				 SNDRV_PCM_RATE_48000 | \
-				 SNDRV_PCM_RATE_KNOT)
+#define OMAP_MCBSP_RATES	(SNDRV_PCM_RATE_8000_96000)
 
 struct omap_mcbsp_data {
 	unsigned int			bus_id;
@@ -140,7 +138,8 @@ static const unsigned long omap34xx_mcbsp_port[][2] = {
 static const unsigned long omap34xx_mcbsp_port[][2] = {};
 #endif
 
-static int omap_mcbsp_dai_startup(struct snd_pcm_substream *substream)
+static int omap_mcbsp_dai_startup(struct snd_pcm_substream *substream,
+				  struct snd_soc_dai *dai)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
@@ -153,7 +152,8 @@ static int omap_mcbsp_dai_startup(struct snd_pcm_substream *substream)
 	return err;
 }
 
-static void omap_mcbsp_dai_shutdown(struct snd_pcm_substream *substream)
+static void omap_mcbsp_dai_shutdown(struct snd_pcm_substream *substream,
+				    struct snd_soc_dai *dai)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
@@ -165,7 +165,8 @@ static void omap_mcbsp_dai_shutdown(struct snd_pcm_substream *substream)
 	}
 }
 
-static int omap_mcbsp_dai_trigger(struct snd_pcm_substream *substream, int cmd)
+static int omap_mcbsp_dai_trigger(struct snd_pcm_substream *substream, int cmd,
+				  struct snd_soc_dai *dai)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
@@ -194,7 +195,8 @@ static int omap_mcbsp_dai_trigger(struct snd_pcm_substream *substream, int cmd)
 }
 
 static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
-				    struct snd_pcm_hw_params *params)
+				    struct snd_pcm_hw_params *params,
+				    struct snd_soc_dai *dai)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
@@ -452,7 +454,7 @@ static int omap_mcbsp_dai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
 
 #define OMAP_MCBSP_DAI_BUILDER(link_id)				\
 {								\
-	.name = "omap-mcbsp-dai-(link_id)",			\
+	.name = "omap-mcbsp-dai-"#link_id,			\
 	.id = (link_id),					\
 	.type = SND_SOC_DAI_I2S,				\
 	.playback = {						\
@@ -472,8 +474,6 @@ static int omap_mcbsp_dai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
 		.shutdown = omap_mcbsp_dai_shutdown,		\
 		.trigger = omap_mcbsp_dai_trigger,		\
 		.hw_params = omap_mcbsp_dai_hw_params,		\
-	},							\
-	.dai_ops = {						\
 		.set_fmt = omap_mcbsp_dai_set_dai_fmt,		\
 		.set_clkdiv = omap_mcbsp_dai_set_clkdiv,	\
 		.set_sysclk = omap_mcbsp_dai_set_dai_sysclk,	\

@@ -192,10 +192,10 @@ static void twl4030_init_chip(struct snd_soc_codec *codec)
 static const struct snd_kcontrol_new twl4030_snd_controls[] = {
 	SOC_DOUBLE_R("Master Playback Volume",
 		 TWL4030_REG_ARXL2PGA, TWL4030_REG_ARXR2PGA,
-		0, 127, 0),
+		0, 0x3f, 0),
 	SOC_DOUBLE_R("Capture Volume",
 		 TWL4030_REG_ATXL1PGA, TWL4030_REG_ATXR1PGA,
-		0, 127, 0),
+		0, 0x1f, 0),
 };
 
 /* add non dapm controls */
@@ -343,7 +343,8 @@ static int twl4030_set_bias_level(struct snd_soc_codec *codec,
 }
 
 static int twl4030_hw_params(struct snd_pcm_substream *substream,
-			   struct snd_pcm_hw_params *params)
+			   struct snd_pcm_hw_params *params,
+			   struct snd_soc_dai *dai)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_device *socdev = rtd->socdev;
@@ -504,7 +505,7 @@ static int twl4030_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	return 0;
 }
 
-#define TWL4030_RATES	 (SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000)
+#define TWL4030_RATES	 (SNDRV_PCM_RATE_8000_48000)
 #define TWL4030_FORMATS	 (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FORMAT_S24_LE)
 
 struct snd_soc_dai twl4030_dai = {
@@ -523,8 +524,6 @@ struct snd_soc_dai twl4030_dai = {
 		.formats = TWL4030_FORMATS,},
 	.ops = {
 		.hw_params = twl4030_hw_params,
-	},
-	.dai_ops = {
 		.set_sysclk = twl4030_set_dai_sysclk,
 		.set_fmt = twl4030_set_dai_fmt,
 	}
