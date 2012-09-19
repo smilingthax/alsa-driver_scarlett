@@ -32,6 +32,7 @@
 #include <sound/asoundef.h>
 #include "hda_codec.h"
 #include "hda_local.h"
+#include "hda_patch.h"
 
 #define NUM_CONTROL_ALLOC	32
 #define STAC_PWR_EVENT		0x20
@@ -525,6 +526,24 @@ static struct hda_verb stac92hd73xx_6ch_core_init[] = {
 	{ 0x0f, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
 	{ 0x10, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
 	{ 0x11, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
+	/* setup import muxs */
+	{ 0x28, AC_VERB_SET_CONNECT_SEL, 0x01},
+	{ 0x29, AC_VERB_SET_CONNECT_SEL, 0x01},
+	{ 0x2a, AC_VERB_SET_CONNECT_SEL, 0x01},
+	{ 0x2b, AC_VERB_SET_CONNECT_SEL, 0x00},
+	{}
+};
+
+static struct hda_verb dell_m6_core_init[] = {
+	/* set master volume and direct control */
+	{ 0x1f, AC_VERB_SET_VOLUME_KNOB_CONTROL, 0xff},
+	/* setup audio connections */
+	{ 0x0a, AC_VERB_SET_CONNECT_SEL, 0x00},
+	{ 0x0d, AC_VERB_SET_CONNECT_SEL, 0x01},
+	{ 0x0f, AC_VERB_SET_CONNECT_SEL, 0x02},
+	/* setup adcs to point to mixer */
+	{ 0x20, AC_VERB_SET_CONNECT_SEL, 0x0b},
+	{ 0x21, AC_VERB_SET_CONNECT_SEL, 0x0b},
 	/* setup import muxs */
 	{ 0x28, AC_VERB_SET_CONNECT_SEL, 0x01},
 	{ 0x29, AC_VERB_SET_CONNECT_SEL, 0x01},
@@ -2344,7 +2363,7 @@ static int stac92xx_auto_create_multi_out_ctls(struct hda_codec *codec,
 	unsigned int wid_caps, pincap;
 
 
-	for (i = 0; i < cfg->line_outs; i++) {
+	for (i = 0; i < cfg->line_outs && i < spec->multiout.num_dacs; i++) {
 		if (!spec->multiout.dac_nids[i])
 			continue;
 
@@ -2838,7 +2857,7 @@ static int stac9200_auto_create_lfe_ctls(struct hda_codec *codec,
 	 */
 	for (i = 0; i < spec->autocfg.speaker_outs && lfe_pin == 0x0; i++) {
 		hda_nid_t pin = spec->autocfg.speaker_pins[i];
-		unsigned long wcaps = get_wcaps(codec, pin);
+		unsigned int wcaps = get_wcaps(codec, pin);
 		wcaps &= (AC_WCAP_STEREO | AC_WCAP_OUT_AMP);
 		if (wcaps == AC_WCAP_OUT_AMP)
 			/* found a mono speaker with an amp, must be lfe */
@@ -2849,12 +2868,12 @@ static int stac9200_auto_create_lfe_ctls(struct hda_codec *codec,
 	if (lfe_pin == 0 && spec->autocfg.speaker_outs == 0) {
 		for (i = 0; i < spec->autocfg.line_outs && lfe_pin == 0x0; i++) {
 			hda_nid_t pin = spec->autocfg.line_out_pins[i];
-			unsigned long cfg;
-			cfg = snd_hda_codec_read(codec, pin, 0,
+			unsigned int defcfg;
+			defcfg = snd_hda_codec_read(codec, pin, 0,
 						 AC_VERB_GET_CONFIG_DEFAULT,
 						 0x00);
-			if (get_defcfg_device(cfg) == AC_JACK_SPEAKER) {
-				unsigned long wcaps = get_wcaps(codec, pin);
+			if (get_defcfg_device(defcfg) == AC_JACK_SPEAKER) {
+				unsigned int wcaps = get_wcaps(codec, pin);
 				wcaps &= (AC_WCAP_STEREO | AC_WCAP_OUT_AMP);
 				if (wcaps == AC_WCAP_OUT_AMP)
 					/* found a mono speaker with an amp,
@@ -3015,11 +3034,15 @@ static int stac92xx_init(struct hda_codec *codec)
 					? STAC_HP_EVENT : STAC_PWR_EVENT;
 		int pinctl = snd_hda_codec_read(codec, spec->pwr_nids[i],
 					0, AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
+		int def_conf = snd_hda_codec_read(codec, spec->pwr_nids[i],
+					0, AC_VERB_GET_CONFIG_DEFAULT, 0);
 		/* outputs are only ports capable of power management
 		 * any attempts on powering down a input port cause the
 		 * referenced VREF to act quirky.
 		 */
 		if (pinctl & AC_PINCTL_IN_EN)
+			continue;
+		if (get_defcfg_connect(def_conf) != AC_JACK_PORT_FIXED)
 			continue;
 		enable_pin_detect(codec, spec->pwr_nids[i], event | i);
 		codec->patch_ops.unsol_event(codec, (event | i) << 26);
@@ -3437,6 +3460,7 @@ again:
 
 	switch (spec->board_config) {
 	case STAC_DELL_M6:
+		spec->init = dell_m6_core_init;
 		switch (codec->subsystem_id) {
 		case 0x1028025e: /* Analog Mics */
 		case 0x1028025f:
