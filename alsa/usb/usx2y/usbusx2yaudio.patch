@@ -1,5 +1,5 @@
 --- ../../alsa-kernel/usb/usx2y/usbusx2yaudio.c	2009-11-16 13:18:14.000000000 +0100
-+++ usbusx2yaudio.c	2009-11-24 08:23:19.000000000 +0100
++++ usbusx2yaudio.c	2009-12-16 19:58:57.000000000 +0100
 @@ -1,3 +1,5 @@
 +#include "adriver.h"
 +#include "../usbcompat.h"
@@ -21,7 +21,7 @@
  static int usX2Y_urb_capt_retire(struct snd_usX2Y_substream *subs)
  {
  	struct urb	*urb = subs->completed_urb;
-@@ -306,7 +316,11 @@ static void usX2Y_error_sequence(struct
+@@ -306,7 +316,11 @@
  	usX2Y_clients_stop(usX2Y);
  }
  
@@ -33,7 +33,7 @@
  {
  	struct snd_usX2Y_substream *subs = urb->context;
  	struct usX2Ydev *usX2Y = subs->usX2Y;
-@@ -335,9 +349,15 @@ static void i_usX2Y_urb_complete(struct
+@@ -335,9 +349,15 @@
  		    atomic_read(&capsubs->state) >= state_PREPARED &&
  		    (playbacksubs->completed_urb ||
  		     atomic_read(&playbacksubs->state) < state_PREPARED)) {
@@ -52,7 +52,7 @@
  				snd_printdd("\n");
  				usX2Y_clients_stop(usX2Y);
  			}
-@@ -345,8 +365,13 @@ static void i_usX2Y_urb_complete(struct
+@@ -345,8 +365,13 @@
  	}
  }
  
@@ -66,7 +66,7 @@
  {
  	int s, u;
  	for (s = 0; s < 4; s++) {
-@@ -366,7 +391,11 @@ static void usX2Y_subs_startup_finish(st
+@@ -366,7 +391,11 @@
  	usX2Y->prepare_subs = NULL;
  }
  
@@ -78,7 +78,7 @@
  {
  	struct snd_usX2Y_substream *subs = urb->context;
  	struct usX2Ydev *usX2Y = subs->usX2Y;
-@@ -378,7 +407,11 @@ static void i_usX2Y_subs_startup(struct
+@@ -378,7 +407,11 @@
  			wake_up(&usX2Y->prepare_wait_queue);
  		}
  
@@ -90,7 +90,7 @@
  }
  
  static void usX2Y_subs_prepare(struct snd_usX2Y_substream *subs)
-@@ -491,7 +524,9 @@ static int usX2Y_urbs_start(struct snd_u
+@@ -491,7 +524,9 @@
  		if (subs != NULL && atomic_read(&subs->state) >= state_PREPARED)
  			goto start;
  	}
@@ -101,7 +101,7 @@
   start:
  	usX2Y_subs_startup(subs);
  	for (i = 0; i < NRURBS; i++) {
-@@ -512,7 +547,11 @@ static int usX2Y_urbs_start(struct snd_u
+@@ -512,7 +547,11 @@
  				err = -EPIPE;
  				goto cleanup;
  			} else
@@ -113,7 +113,7 @@
  					usX2Y->wait_iso_frame = urb->start_frame;
  			urb->transfer_flags = 0;
  		} else {
-@@ -657,7 +696,11 @@ static struct s_c2 SetRate48000[] =
+@@ -657,7 +696,11 @@
  };
  #define NOOF_SETRATE_URBS ARRAY_SIZE(SetRate48000)
  
@@ -125,21 +125,21 @@
  {
  	struct usX2Ydev *usX2Y = urb->context;
  	
-@@ -1017,10 +1060,18 @@ int usX2Y_audio_create(struct snd_card *
+@@ -1017,10 +1060,18 @@
  
  	if (0 > (err = usX2Y_audio_stream_new(card, 0xA, 0x8)))
  		return err;
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
  	if (le16_to_cpu(usX2Y(card)->dev->descriptor.idProduct) == USB_ID_US428)
 +#else
-+	if (usX2Y(card)->chip.dev->descriptor.idProduct == USB_ID_US428)
++	if (usX2Y(card)->dev->descriptor.idProduct == USB_ID_US428)
 +#endif
  	     if (0 > (err = usX2Y_audio_stream_new(card, 0, 0xA)))
  		     return err;
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
  	if (le16_to_cpu(usX2Y(card)->dev->descriptor.idProduct) != USB_ID_US122)
 +#else
-+	if (usX2Y(card)->chip.dev->descriptor.idProduct != USB_ID_US122)
++	if (usX2Y(card)->dev->descriptor.idProduct != USB_ID_US122)
 +#endif
  		err = usX2Y_rate_set(usX2Y(card), 44100);	// Lets us428 recognize output-volume settings, disturbs us122.
  	return err;

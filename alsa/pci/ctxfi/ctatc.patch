@@ -1,13 +1,13 @@
---- ../../alsa-kernel/pci/ctxfi/ctatc.c	2009-06-08 18:07:22.000000000 +0200
-+++ ctatc.c	2009-06-08 18:15:00.000000000 +0200
+--- ../../alsa-kernel/pci/ctxfi/ctatc.c	2009-10-30 12:28:01.000000000 +0100
++++ ctatc.c	2009-12-15 22:17:51.000000000 +0100
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /**
   * Copyright (C) 2008, Creative Technology Ltd. All Rights Reserved.
   *
-@@ -1239,10 +1240,12 @@
- 		return -ENOENT;
- 	atc->model = p->value;
+@@ -1259,10 +1260,12 @@
+ 			atc->model = CT20K2_UNKNOWN;
+ 	}
  	atc->model_name = ct_subsys_name[atc->model];
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
  	snd_printd("ctxfi: chip %s model %s (%04x:%04x) is found\n",

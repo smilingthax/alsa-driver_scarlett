@@ -1,11 +1,11 @@
---- ../alsa-kernel/core/pcm.c	2007-12-20 10:20:09.000000000 +0100
-+++ pcm.c	2007-12-20 10:47:12.000000000 +0100
+--- ../alsa-kernel/core/pcm.c	2009-11-10 18:21:52.000000000 +0100
++++ pcm.c	2009-12-15 22:17:50.000000000 +0100
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
   *  Digital Audio (PCM) abstract layer
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -909,8 +910,12 @@
+@@ -928,8 +929,12 @@
  	substream->pstr->substream_opened--;
  }
  
@@ -18,7 +18,7 @@
  {
  	struct snd_pcm *pcm;
  	const char *str;
-@@ -921,7 +926,11 @@
+@@ -940,7 +945,11 @@
  		[SNDRV_PCM_CLASS_DIGITIZER] = "digitizer",
  	};
  
@@ -30,7 +30,7 @@
  	    pcm->dev_class > SNDRV_PCM_CLASS_LAST)
  		str = "none";
  	else
-@@ -929,7 +938,11 @@
+@@ -948,7 +957,11 @@
          return snprintf(buf, PAGE_SIZE, "%s\n", str);
  }
  
@@ -42,7 +42,7 @@
  	__ATTR(pcm_class, S_IRUGO, show_pcm_class, NULL);
  
  static int snd_pcm_dev_register(struct snd_device *device)
-@@ -979,7 +992,7 @@
+@@ -1000,7 +1013,7 @@
  			return err;
  		}
  		snd_add_device_sysfs_file(devtype, pcm->card, pcm->device,

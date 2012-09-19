@@ -5,7 +5,7 @@ dnl Copyright (c) by Jaroslav Kysela <perex@perex.cz>
 AC_PREREQ(2.59)
 AC_INIT(acore/sound.patch)
 AC_PREFIX_DEFAULT(/usr)
-CONFIG_SND_VERSION="1.0.21"
+CONFIG_SND_VERSION="1.0.22"
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -1475,6 +1475,7 @@ CHECK_KERNEL_HEADER(linux/regulator/consumer.h, [#include \"regulator_consumer_c
 CHECK_KERNEL_HEADER(linux/dmi.h, [#include \"dmi_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/bitrev.h)
+CHECK_KERNEL_HEADER(linux/hrtimer.h)
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then

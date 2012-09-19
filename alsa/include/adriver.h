@@ -1866,4 +1866,23 @@ static inline pid_t pid_vnr(struct pid *pid)
 #define pci_clear_master(x)
 #endif
 
+/* some new macros */
+#ifndef FIELD_SIZEOF
+#define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
+#endif
+#ifndef DIV_ROUND_UP
+#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+#endif
+#ifndef roundup
+#define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
+#endif
+#ifndef DIV_ROUND_CLOSEST
+#define DIV_ROUND_CLOSEST(x, divisor)(			\
+{							\
+	typeof(divisor) __divisor = divisor;		\
+	(((x) + ((__divisor) / 2)) / (__divisor));	\
+}							\
+)
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
