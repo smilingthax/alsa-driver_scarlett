@@ -330,7 +330,7 @@ void snd_ac97_suspend(ac97_t *ac97);
 void snd_ac97_resume(ac97_t *ac97);
 #endif
 
-enum { AC97_TUNE_HP_ONLY, AC97_TUNE_SWAP_HP };
+enum { AC97_TUNE_HP_ONLY, AC97_TUNE_SWAP_HP, AC97_TUNE_SWAP_SURROUND };
 
 struct ac97_quirk {
 	unsigned short vendor;

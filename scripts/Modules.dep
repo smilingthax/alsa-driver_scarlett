@@ -89,6 +89,7 @@ snd-opl3-synth @if_sequencer snd-opl3-lib snd-seq-device \
 |snd-es18xx snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-opl3sa2 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-sgalaxy snd-ad1848-lib
+|snd-sscape snd-hwdep snd-mpu401-uart snd-cs4231-lib
 
 %dir linux/sound/isa/ad1816a
 snd-ad1816a-lib snd-pcm snd-timer
