@@ -1455,9 +1455,6 @@ static snd_kcontrol_new_t snd_echo_clock_source_switch __devinitdata = {
 /******************* Phantom power switch *******************/
 static int snd_echo_phantom_power_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
 {
-	echoaudio_t *chip;
-
-	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
 	uinfo->count = 1;
 	uinfo->value.integer.min = 0;
@@ -1468,22 +1465,23 @@ static int snd_echo_phantom_power_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_in
 static int snd_echo_phantom_power_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	echoaudio_t *chip = snd_kcontrol_chip(kcontrol);
+
 	ucontrol->value.integer.value[0] = chip->phantom_power;
 	return 0;
 }
 
 static int snd_echo_phantom_power_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	echoaudio_t *chip;
-	int changed = 0;
+	echoaudio_t *chip = snd_kcontrol_chip(kcontrol);
+	int power, changed = 0;
 
-	chip = snd_kcontrol_chip(kcontrol);
-	if (chip->phantom_power != !!ucontrol->value.integer.value[0]) {
+	power = !!ucontrol->value.integer.value[0];
+	if (chip->phantom_power != power) {
 		spin_lock_irq(&chip->lock);
-		changed = set_phantom_power(chip, ucontrol->value.integer.value[0]);
+		changed = set_phantom_power(chip, power);
+		spin_unlock_irq(&chip->lock);
 		if (changed == 0)
 			changed = 1;	/* no errors */
-		spin_unlock_irq(&chip->lock);
 	}
 	return changed;
 }
@@ -1497,6 +1495,54 @@ static snd_kcontrol_new_t snd_echo_phantom_power_switch __devinitdata = {
 };
 
 #endif /* ECHOCARD_HAS_PHANTOM_POWER */
+
+
+
+#ifdef ECHOCARD_HAS_DIGITAL_IN_AUTOMUTE
+
+/******************* Digital input automute switch *******************/
+static int snd_echo_automute_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
+	return 0;
+}
+
+static int snd_echo_automute_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	echoaudio_t *chip = snd_kcontrol_chip(kcontrol);
+
+	ucontrol->value.integer.value[0] = chip->digital_in_automute;
+	return 0;
+}
+
+static int snd_echo_automute_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	echoaudio_t *chip = snd_kcontrol_chip(kcontrol);
+	int automute, changed = 0;
+
+	automute = !!ucontrol->value.integer.value[0];
+	if (chip->digital_in_automute != automute) {
+		spin_lock_irq(&chip->lock);
+		changed = set_input_auto_mute(chip, automute);
+		spin_unlock_irq(&chip->lock);
+		if (changed == 0)
+			changed = 1;	/* no errors */
+	}
+	return changed;
+}
+
+static snd_kcontrol_new_t snd_echo_automute_switch __devinitdata = {
+	.name = "Digital Capture Switch (automute)",
+	.iface = SNDRV_CTL_ELEM_IFACE_CARD,
+	.info = snd_echo_automute_info,
+	.get = snd_echo_automute_get,
+	.put = snd_echo_automute_put,
+};
+
+#endif /* ECHOCARD_HAS_DIGITAL_IN_AUTOMUTE */
 
 
 
@@ -1884,7 +1930,8 @@ static int __devinit snd_echo_probe(struct pci_dev *pci, const struct pci_device
 #endif
 
 #ifdef ECHOCARD_HAS_DIGITAL_IN_AUTOMUTE
-	set_input_auto_mute(chip, 1);	/* Enable automute if supported */
+	if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_echo_automute_switch, chip))) < 0)
+		goto ctl_error;
 #endif
 
 	if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_echo_channels_info, chip))) < 0)

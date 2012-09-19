@@ -673,6 +673,7 @@ unsigned long snd_compat_msleep_interruptible(unsigned int msecs);
 #define dump_stack()
 #endif
 
+#ifdef CONFIG_PCI
 #ifndef CONFIG_HAVE_PCI_DEV_PRESENT
 #include <linux/pci.h>
 #ifndef PCI_DEVICE
@@ -682,6 +683,7 @@ unsigned long snd_compat_msleep_interruptible(unsigned int msecs);
 #endif
 int snd_pci_dev_present(const struct pci_device_id *ids);
 #define pci_dev_present(x) snd_pci_dev_present(x)
+#endif
 #endif
 
 /* power management compatibility layer */

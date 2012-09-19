@@ -106,7 +106,7 @@ static int set_phantom_power(echoaudio_t *chip, char on)
 	else
 		control_reg &= ~E3G_PHANTOM_POWER;
 
-	chip->phantom_power = !!on;
+	chip->phantom_power = on;
 	return write_control_reg(chip, control_reg, le32_to_cpu(chip->comm_page->e3g_frq_register), 0);
 }
 

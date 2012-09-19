@@ -66,13 +66,13 @@ sends the new control register value to the DSP.
 */
 static int write_control_reg(echoaudio_t *chip, u32 value, char force)
 {
-	DE_ACT(("write_control_reg: 0x%x\n", value));
-
 	/* Handle the digital input auto-mute */
 	if (chip->digital_in_automute)
 		value |= GML_DIGITAL_IN_AUTO_MUTE;
 	else
 		value &= ~GML_DIGITAL_IN_AUTO_MUTE;
+
+	DE_ACT(("write_control_reg: 0x%x\n", value));
 
 	/* Write the control register */
 	value = cpu_to_le32(value);
