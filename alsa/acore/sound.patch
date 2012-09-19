@@ -26,18 +26,14 @@
  	.open =		snd_open
  };
  
-@@ -231,7 +241,15 @@
+@@ -231,7 +241,11 @@
  		devfs_mk_cdev(MKDEV(major, minor), S_IFCHR | device_mode, "snd/%s", name);
  	if (card)
  		device = card->dev;
 +#ifdef CONFIG_SND_HAVE_CLASS_SIMPLE
 +	class_simple_device_add(sound_class, MKDEV(major, minor), device, name);
 +#else
-+#ifdef CONFIG_SND_NESTED_CLASS_DEVICE
  	class_device_create(sound_class, NULL, MKDEV(major, minor), device, "%s", name);
-+#else
-+	class_device_create(sound_class, MKDEV(major, minor), device, "%s", name);
-+#endif
 +#endif
  
  	up(&sound_mutex);

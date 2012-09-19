@@ -642,8 +642,13 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 /* sysfs */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 2)
 struct class;
-static inline void class_device_create(struct class *class, int devnum, ...) { return; }
+static inline void class_device_create(struct class *class, struct class *parent, int devnum, ...) { return; }
 static inline void class_device_destroy(struct class *class, int devnum) { return; }
+#else /* >= 2.6.2 */
+#ifndef CONFIG_SND_NESTED_CLASS_DEVICE
+#include <linux/device.h>
+#define class_device_create(cls,prt,devnum,args...) class_device_create(cls,devnum,##args)
+#endif
 #endif
 
 /* msleep */

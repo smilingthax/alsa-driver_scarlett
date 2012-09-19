@@ -6197,7 +6197,6 @@ static struct pci_device_id pdplus_ids[] = {
 
 static struct pci_driver driver = {
 	.name =     FULL_NAME,
-	.owner =    THIS_MODULE,
 	.id_table = pdplus_ids,
 	.probe =    pdplus_probe,
 	.remove =   __devexit_p(pdplus_remove),
