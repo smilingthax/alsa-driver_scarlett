@@ -150,39 +150,28 @@ AC_SUBST(ksublevel)
 AC_SUBST(kextraversion)
 AC_MSG_RESULT($kaversion)
 
-dnl Check for linux/pm.h...
-AC_MSG_CHECKING(for kernel linux/pm.h)
-if test -f $CONFIG_SND_KERNELDIR/include/linux/pm.h; then
-  AC_MSG_RESULT("yes")
-  if test -f include/linux/pm.h; then
-    echo "Removing a dummy linux/pm.h."
-    rm -f include/linux/pm.h
+AC_DEFUN(CHECK_KERNEL_HEADER, [
+  AC_MSG_CHECKING(for kenrel $1)
+  if test -f "$CONFIG_SND_KERNELDIR/include/$1"; then
+    AC_MSG_RESULT("yes")
+    if test -f include/$1; then
+      echo "Removing a dummy $1."
+      rm -f include/$1
+    fi
+  else
+    AC_MSG_RESULT("no")
+    if test ! -f include/$1; then
+      echo "Creating a dummy <$1>..."
+      mkdir -p include/linux
+      touch include/$1
+    fi
   fi
-else
-  AC_MSG_RESULT("no")
-  if test ! -f include/linux/pm.h; then
-    echo "Creating a dummy <linux/pm.h>..."
-    mkdir -p include/linux
-    touch include/linux/pm.h
-  fi
-fi
+])
 
-dnl Check for linux/spinlock.h...
-AC_MSG_CHECKING(for kernel linux/spinlock.h)
-if test -f $CONFIG_SND_KERNELDIR/include/linux/spinlock.h; then
-  AC_MSG_RESULT("yes")
-  if test -f include/linux/spinlock.h; then
-    echo "Removing a dummy linux/spinlock.h."
-    rm -f include/linux/pm.h
-  fi
-else
-  AC_MSG_RESULT("no")
-  if test ! -f include/linux/spinlock.h; then
-    echo "Creating a dummy <linux/spinlock.h>..."
-    mkdir -p include/linux
-    touch include/linux/spinlock.h
-  fi
-fi
+dnl Check kernel headers for 2.2
+CHECK_KERNEL_HEADER(linux/pm.h)
+CHECK_KERNEL_HEADER(linux/spinlock.h)
+CHECK_KERNEL_HEADER(linux/irq.h)
 
 dnl Check for modversions...
 AC_MSG_CHECKING(for kernel module symbol versions)
