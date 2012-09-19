@@ -26,13 +26,15 @@
 #include <linux/interrupt.h>
 #include <sound/pcm.h>
 
-#define PCXHR_DRIVER_VERSION		0x000100	/* 0.1.0 */
+#define PCXHR_DRIVER_VERSION		0x000804	/* 0.8.4 */
+#define PCXHR_DRIVER_VERSION_STRING	"0.8.4"		/* 0.8.4 */
+
 
 #define PCXHR_MAX_CARDS			6
 #define PCXHR_PLAYBACK_STREAMS		4
 
 #define PCXHR_GRANULARITY		96	/* transfer granularity (should be min 96 and multiple of 48) */
-
+#define PCXHR_GRANULARITY_MIN		96	/* transfer granularity of pipes and the dsp time (MBOX4) */
 
 typedef struct snd_pcxhr pcxhr_t;
 typedef struct snd_pcxhr_mgr pcxhr_mgr_t;
@@ -91,14 +93,17 @@ struct snd_pcxhr_mgr {
 	enum pcxhr_clock_type cur_clock_type;	/* current clock type synced */
 	int sample_rate;
 	int ref_count_rate;
-
 	int timer_toggle;		/* timer interrupt toggles between the two values 0x200 and 0x300 */
-	int timer_err;			/* timer interrupt toggle errors */
+	int dsp_time_last;		/* the last dsp time (read by interrupt) */
+	int dsp_time_err;		/* dsp time errors */
 	unsigned int src_it_dsp;	/* dsp interrupt source */
 	unsigned int io_num_reg_cont;	/* backup of IO_NUM_REG_CONT */
 	unsigned int codec_speed;	/* speed mode of the codecs */
 	unsigned int sample_rate_real;	/* current real sample rate */
 	int last_reg_stat;
+	int async_err_stream_xrun;
+	int async_err_pipe_xrun;
+	int async_err_other_last;
 };
 
 
@@ -106,6 +111,7 @@ enum pcxhr_stream_status {
 	PCXHR_STREAM_STATUS_FREE,
 	PCXHR_STREAM_STATUS_OPEN,
 	PCXHR_STREAM_STATUS_SCHEDULE_RUN,
+	PCXHR_STREAM_STATUS_STARTED,
 	PCXHR_STREAM_STATUS_RUNNING,
 	PCXHR_STREAM_STATUS_SCHEDULE_STOP,
 	PCXHR_STREAM_STATUS_STOPPED,
@@ -119,9 +125,10 @@ struct snd_pcxhr_stream {
 
 	enum pcxhr_stream_status status;	/* free, open, running, draining, pause */
 
-	int timer_elapsed;			/* timer: samples elapsed since last call to snd_pcm_period_elapsed() */
-	snd_pcm_uframes_t timer_abs_samples;	/* timer: samples elapsed since TRIGGER_START */
-	int timer_abs_adjusted;
+	u_int64_t timer_abs_periods;	/* timer: samples elapsed since TRIGGER_START (multiple of period_size) */
+	u_int32_t timer_period_frag;	/* timer: samples elapsed since last call to snd_pcm_period_elapsed (0..period_size) */
+	u_int32_t timer_buf_periods;	/* nb of periods in the buffer that have already elapsed */
+	int timer_is_synced;		/* if(0) : timer needs to be resynced with real hardware pointer */
 
 	int channels;
 };
@@ -129,9 +136,7 @@ struct snd_pcxhr_stream {
 
 enum pcxhr_pipe_status {
 	PCXHR_PIPE_UNDEFINED,
-	PCXHR_PIPE_STOPPED,
-	PCXHR_PIPE_TOGGLE,
-	PCXHR_PIPE_RUNNING
+	PCXHR_PIPE_DEFINED
 };
 
 struct snd_pcxhr_pipe {

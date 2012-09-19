@@ -194,10 +194,6 @@ static int pcxhr_update_playback_stream_level(pcxhr_t* chip, int idx)
 	pcxhr_pipe_t *pipe = &chip->playback_pipe;
 	int left, right;
 
-	/* do only when pipe exists ! */
-	if(pipe->status == PCXHR_PIPE_UNDEFINED)
-		return 0;
-
 	if(chip->digital_playback_active[idx][0])	left = chip->digital_playback_volume[idx][0];
 	else						left = PCXHR_DIGITAL_LEVEL_MIN;
 	if(chip->digital_playback_active[idx][1])	right = chip->digital_playback_volume[idx][1];
@@ -236,9 +232,6 @@ static int pcxhr_update_audio_pipe_level(pcxhr_t* chip, int capture, int channel
 
 	if(capture)	pipe = &chip->capture_pipe[0];
 	else		pipe = &chip->playback_pipe;
-	/* only when pipe exists ! */
-	if(pipe->status == PCXHR_PIPE_UNDEFINED)
-		return 0;
 
 	pcxhr_init_rmh(&rmh, CMD_AUDIO_LEVEL_ADJUST);
 	pcxhr_set_pipe_cmd_params(&rmh, capture, 0, 0, 1 << (channel + pipe->first_audio));	/* add channel mask */
@@ -465,14 +458,14 @@ static snd_kcontrol_new_t pcxhr_control_monitor_sw = {
 #define PCXHR_SOURCE_AUDIO01_SYNC	0x000200
 #define PCXHR_SOURCE_AUDIO23_UER	0x000400
 #define PCXHR_SOURCE_AUDIO45_UER	0x001000
-#define PCXHR_SOURCE_AUDIO67_UER	0x004000
+#define PCXHR_SOURCE_AUDIO67_UER	0x040000
 
 static int pcxhr_set_audio_source(pcxhr_t* chip)
 {
 	pcxhr_rmh_t rmh;
 	unsigned int mask, reg;
 	unsigned int codec;
-	int err, use_src;
+	int err, use_src, changed;
 
 	switch(chip->chip_idx) {
 	case 0 : mask = PCXHR_SOURCE_AUDIO01_UER; codec = CS8420_01_CS; break;
@@ -488,8 +481,15 @@ static int pcxhr_set_audio_source(pcxhr_t* chip)
 		reg = mask;	/* audio source from digital plug */
 		if(chip->audio_capture_source == 2) use_src = 1;
 	}
-	pcxhr_write_io_num_reg_cont(chip->mgr, mask, reg, NULL);
-
+	/* set the input source */
+	pcxhr_write_io_num_reg_cont(chip->mgr, mask, reg, &changed);
+	/* resync them (otherwise channel inversion possible) */
+	if(changed) {
+		pcxhr_init_rmh(&rmh, CMD_RESYNC_AUDIO_INPUTS);
+		rmh.cmd[0] |= (1 << chip->chip_idx);
+		err = pcxhr_send_msg(chip->mgr, &rmh);
+		if(err) return err;
+	}
 	pcxhr_init_rmh(&rmh, CMD_ACCESS_IO_WRITE);	/* set codec SRC on off */
 	rmh.cmd_len = 3;
 	rmh.cmd[0] |= IO_NUM_UER_CHIP_REG;
@@ -728,13 +728,13 @@ static int pcxhr_iec958_mask_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t
 
 static int pcxhr_iec958_update_byte(pcxhr_t *chip, int aes_idx, unsigned char aes_bits)
 {
-	int i, err;
+	int i, err, cmd;
 	unsigned char new_bits = aes_bits;
 	unsigned char old_bits = chip->aes_bits[aes_idx];
+	pcxhr_rmh_t rmh;
 	for(i=0; i<8; i++) {
 		if((old_bits & 0x01) != (new_bits & 0x01)) {
-			pcxhr_rmh_t rmh;
-			unsigned int cmd = chip->chip_idx & 0x03;	/* chip index 0..3 */
+			cmd = chip->chip_idx & 0x03;			/* chip index 0..3 */
 			if(chip->chip_idx > 3)	cmd |= 1 << 22;		/* new bit used if chip_idx>3 (PCX1222HR) */
 			cmd |= ((aes_idx << 3) + i) << 2;		/* add bit offset */
 			cmd |= (new_bits & 0x01) << 23;			/* add bit value */
