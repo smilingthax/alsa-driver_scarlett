@@ -1,11 +1,11 @@
---- memalloc.c	2004-04-16 10:55:50.373199180 +0200
-+++ memalloc.c	2004-04-16 10:57:22.365350732 +0200
+--- ../alsa-kernel/core/memalloc.c	2004-12-01 12:16:27.000000000 +0100
++++ memalloc.c	2004-12-21 15:15:36.751832286 +0100
 @@ -1,3 +1,4 @@
 +#include "memalloc.inc"
  /*
   *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
   *                   Takashi Iwai <tiwai@suse.de>
-@@ -91,7 +92,43 @@
+@@ -93,7 +94,50 @@
   *  Hacks
   */
  
@@ -38,8 +38,15 @@
 +#else
 +
 +/* for 2.2/2.4 kernels */
++#if defined(CONFIG_PCI) || defined(CONFIG_ISA) || defined(__i386__)
 +#define dma_alloc_coherent(dev,size,addr,flags) pci_alloc_consistent((struct pci_dev *)(dev),size,addr)
 +#define dma_free_coherent(dev,size,ptr,addr) pci_free_consistent((struct pci_dev *)(dev),size,ptr,addr)
++#elif CONFIG_SBUS
++#define dma_alloc_coherent(dev,size,addr,flags) sbus_alloc_consistent((struct sbus_dev *)(dev),size,addr)
++#define dma_free_coherent(dev,size,ptr,addr) sbus_free_consistent((struct sbus_dev *)(dev),size,ptr,addr)
++#else
++#error "Need a bus for dma_alloc_coherent()"
++#endif
 +
 +#endif /* >= 2.6.0 */
 +
@@ -49,7 +56,7 @@
  /*
   * A hack to allocate large buffers via dma_alloc_coherent()
   *
-@@ -108,21 +145,45 @@
+@@ -110,21 +154,45 @@
   * so dma_mask doesn't have to be messed with.
   */
  
@@ -102,16 +109,16 @@
  	if (ret) {
  		/* obtained address is out of range? */
  		if (((unsigned long)*dma_handle + size - 1) & ~dma_mask) {
-@@ -147,6 +208,8 @@
+@@ -149,6 +217,8 @@
  #define dma_alloc_coherent snd_dma_hack_alloc_coherent
  
  #endif /* arch */
 +#endif /* >= 2.4.0 */
 +
  
- /*
-  *
-@@ -840,3 +903,5 @@
+ #if ! defined(__arm__)
+ #define NEED_RESERVE_PAGES
+@@ -661,3 +731,5 @@
  
  EXPORT_SYMBOL(snd_malloc_pages);
  EXPORT_SYMBOL(snd_free_pages);
