@@ -173,7 +173,7 @@ void snd_us428_In04Int(urb_t* urb)
 					if (0 == us428->AS04.urb[j]->status) {
 						us428_p4out_t *p4out = us428ctls->p4out + send;	// FIXME if more then 1 p4out is new, 1 gets lost.
 						usb_fill_bulk_urb(us428->AS04.urb[j], us428->chip.dev,
-								  usb_sndbulkpipe(us428->chip.dev, 0x04), &p4out->vol, 
+								  usb_sndbulkpipe(us428->chip.dev, 0x04), &p4out->val.vol, 
 								  p4out->type == eLT_Light ? sizeof(us428_lights_t) : 5,
 								  snd_us428_Out04Int, us428);
 #ifdef OLD_USB

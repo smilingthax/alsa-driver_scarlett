@@ -118,7 +118,7 @@ typedef struct {
 	union {
 		usX2Y_volume_t	vol;
 		us428_lights_t  lights;
-	};
+	} val;
 } us428_p4out_t;
 
 #define N_us428_ctl_BUFS 16
