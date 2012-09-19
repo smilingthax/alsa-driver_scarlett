@@ -20,5 +20,16 @@ config SND_ASIHPI
 	help
 	  Say 'Y' or 'M' to include support for AudioScience ASIxxxx soundcards.
 
+config SND_CMI8788
+	tristate "CMI8788 PCI sound card"
+	depends on SND
+	select SND_PCM
+	help
+	  Say Y here to include support fot sound cards based on the
+	  CMI8788 chip.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-cmi8788.
+
 endmenu
 
