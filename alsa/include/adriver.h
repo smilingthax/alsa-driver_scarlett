@@ -139,6 +139,11 @@ typedef __u32 __be32;
              pos = list_entry(pos->member.next, typeof(*pos), member),  \
                      prefetch(pos->member.next))
 #endif
+#ifndef list_for_each_prev
+#define list_for_each_prev(pos, head) \
+	for (pos = (head)->prev; prefetch(pos->prev), pos != (head); \
+        	pos = pos->prev)
+#endif
 #ifndef might_sleep
 static inline int might_sleep(void)	{ return 0; }
 #endif
