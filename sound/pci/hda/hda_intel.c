@@ -1550,7 +1550,8 @@ static int azx_suspend(struct pci_dev *pci, pm_message_t state)
 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
 	for (i = 0; i < chip->pcm_devs; i++)
 		snd_pcm_suspend_all(chip->pcm[i]);
-	snd_hda_suspend(chip->bus, state);
+	if (chip->initialized)
+		snd_hda_suspend(chip->bus, state);
 	azx_stop_chip(chip);
 	if (chip->irq >= 0) {
 		synchronize_irq(chip->irq);
@@ -1641,6 +1642,7 @@ static int azx_dev_free(struct snd_device *device)
  */
 static struct snd_pci_quirk position_fix_list[] __devinitdata = {
 	SND_PCI_QUIRK(0x1028, 0x01cc, "Dell D820", POS_FIX_NONE),
+	SND_PCI_QUIRK(0x1028, 0x01de, "Dell Precision 390", POS_FIX_NONE),
 	{}
 };
 
@@ -1651,7 +1653,7 @@ static int __devinit check_position_fix(struct azx *chip, int fix)
 	if (fix == POS_FIX_AUTO) {
 		q = snd_pci_quirk_lookup(chip->pci, position_fix_list);
 		if (q) {
-			snd_printdd(KERN_INFO
+			printk(KERN_INFO
 				    "hda_intel: position_fix set to %d "
 				    "for device %04x:%04x\n",
 				    q->value, q->subvendor, q->subdevice);
@@ -1660,6 +1662,36 @@ static int __devinit check_position_fix(struct azx *chip, int fix)
 	}
 	return fix;
 }
+
+/*
+ * black-lists for probe_mask
+ */
+static struct snd_pci_quirk probe_mask_list[] __devinitdata = {
+	/* Thinkpad often breaks the controller communication when accessing
+	 * to the non-working (or non-existing) modem codec slot.
+	 */
+	SND_PCI_QUIRK(0x1014, 0x05b7, "Thinkpad Z60", 0x01),
+	SND_PCI_QUIRK(0x17aa, 0x2010, "Thinkpad X/T/R60", 0x01),
+	SND_PCI_QUIRK(0x17aa, 0x20ac, "Thinkpad X/T/R61", 0x01),
+	{}
+};
+
+static void __devinit check_probe_mask(struct azx *chip)
+{
+	const struct snd_pci_quirk *q;
+
+	if (probe_mask == -1) {
+		q = snd_pci_quirk_lookup(chip->pci, probe_mask_list);
+		if (q) {
+			printk(KERN_INFO
+			       "hda_intel: probe_mask set to 0x%x "
+			       "for device %04x:%04x\n",
+			       q->value, q->subvendor, q->subdevice);
+			probe_mask = q->value;
+		}
+	}
+}
+
 
 /*
  * constructor
@@ -1696,6 +1728,7 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 	chip->msi = enable_msi;
 
 	chip->position_fix = check_position_fix(chip, position_fix);
+	check_probe_mask(chip);
 
 	chip->single_cmd = single_cmd;
 

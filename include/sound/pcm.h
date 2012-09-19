@@ -922,7 +922,10 @@ snd_pcm_sframes_t snd_pcm_lib_writev(struct snd_pcm_substream *substream,
 snd_pcm_sframes_t snd_pcm_lib_readv(struct snd_pcm_substream *substream,
 				    void __user **bufs, snd_pcm_uframes_t frames);
 
+extern const struct snd_pcm_hw_constraint_list snd_pcm_known_rates;
+
 int snd_pcm_limit_hw_rates(struct snd_pcm_runtime *runtime);
+unsigned int snd_pcm_rate_to_rate_bit(unsigned int rate);
 
 static inline void snd_pcm_set_runtime_buffer(struct snd_pcm_substream *substream,
 					      struct snd_dma_buffer *bufp)

@@ -525,6 +525,7 @@ static void snd_hda_codec_free(struct hda_codec *codec)
 		return;
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	cancel_delayed_work(&codec->power_work);
+	flush_scheduled_work();
 #endif
 	list_del(&codec->list);
 	codec->bus->caddr_tbl[codec->addr] = NULL;
@@ -1663,6 +1664,7 @@ static void hda_call_codec_suspend(struct hda_codec *codec)
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	cancel_delayed_work(&codec->power_work);
 	codec->power_on = 0;
+	codec->power_transition = 0;
 #endif
 }
 
@@ -1677,7 +1679,8 @@ static void hda_call_codec_resume(struct hda_codec *codec)
 	if (codec->patch_ops.resume)
 		codec->patch_ops.resume(codec);
 	else {
-		codec->patch_ops.init(codec);
+		if (codec->patch_ops.init)
+			codec->patch_ops.init(codec);
 		snd_hda_codec_resume_amp(codec);
 		snd_hda_codec_resume_cache(codec);
 	}
@@ -2209,7 +2212,7 @@ static void hda_keep_power_on(struct hda_codec *codec)
 void snd_hda_power_up(struct hda_codec *codec)
 {
 	codec->power_count++;
-	if (codec->power_on)
+	if (codec->power_on || codec->power_transition)
 		return;
 
 	codec->power_on = 1;
@@ -2217,16 +2220,19 @@ void snd_hda_power_up(struct hda_codec *codec)
 		codec->bus->ops.pm_notify(codec);
 	hda_call_codec_resume(codec);
 	cancel_delayed_work(&codec->power_work);
+	codec->power_transition = 0;
 }
 
 void snd_hda_power_down(struct hda_codec *codec)
 {
 	--codec->power_count;
-	if (!codec->power_on)
+	if (!codec->power_on || codec->power_count || codec->power_transition)
 		return;
-	if (power_save)
+	if (power_save) {
+		codec->power_transition = 1; /* avoid reentrance */
 		schedule_delayed_work(&codec->power_work,
 				      msecs_to_jiffies(power_save * 1000));
+	}
 }
 
 int snd_hda_check_amp_list_power(struct hda_codec *codec,
@@ -2770,6 +2776,10 @@ int snd_hda_suspend(struct hda_bus *bus, pm_message_t state)
 	struct hda_codec *codec;
 
 	list_for_each_entry(codec, &bus->codec_list, list) {
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+		if (!codec->power_on)
+			continue;
+#endif
 		hda_call_codec_suspend(codec);
 	}
 	return 0;
