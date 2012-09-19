@@ -319,7 +319,7 @@ AC_DEFUN(CHECK_KERNEL_HEADER, [
 
 AC_DEFUN(MODIFY_KERNEL_HEADER, [
   AC_MSG_CHECKING(to modify of kernel $1)
-  if grep $2 "$CONFIG_SND_KERNELDIR/include/$1" > /dev/null; then
+  if grep $2 "$CONFIG_SND_KERNELDIR/include/$1" > /dev/null 2>&1; then
     AC_MSG_RESULT("no")
     if test -f include/$1; then
       echo "Removing a dummy $1."
@@ -327,6 +327,8 @@ AC_DEFUN(MODIFY_KERNEL_HEADER, [
     fi
   else
     AC_MSG_RESULT("yes")
+    mkdir -p include/linux
+    mkdir -p include/asm
     echo "#ifndef $2" > include/$1
     echo "#define $2" >> include/$1
     cat "$CONFIG_SND_KERNELDIR/include/$1" >> include/$1
