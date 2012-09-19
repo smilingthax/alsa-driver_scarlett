@@ -75,7 +75,6 @@
  * BUGS (These are TODOs, too!):
  *
  * TODO (prio in parens):
- *     (8) use snd_magic_cast
  *     (6) Make volume linear.
  *     (6) Introduce de-emphasis mixer control (multiple choice)
  *         This is hard: pre_effect is neither implemented in mid-level, nor in
@@ -147,8 +146,20 @@
  *         PLX 9050 PCI bridge.
  *
  */
+/*
+ * Changes:
+ *
+ * Ver.0.0.5	Takashi Iwai <tiwai@suse.de>
+ *	- Rewritten the old PCM ioctl callbacks with h/w constraints.
+ *	- Rewritten the SPDIF status setting with the standard controls.
+ *	- Fixed __init and __exit prefixes.
+ *	- Replaced __inline__ with inline.
+ *	- Fixed the struct initialization in C99 style.
+ *	- Fixed compile warnings.
+ */
 
-#define PDPLUS_VERSION    "0.0.4"
+
+#define PDPLUS_VERSION    "0.0.5"
 
 #include <sound/driver.h>
 #include <asm/io.h>
@@ -158,6 +169,7 @@
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
+#include <sound/pcm_params.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 #include <sound/info.h>
@@ -384,7 +396,7 @@ MODULE_PARM_SYNTAX(debug_level, "global");
  * General macros for IO */
 #if REG_DEBUG
 
-static __inline__ u32 readl_trace (u_long addr)
+inline static u32 readl_trace (u_long addr)
 {
         u32 result;
         result = readl (addr);
@@ -392,13 +404,13 @@ static __inline__ u32 readl_trace (u_long addr)
         return result;
 }
 
-static __inline__ void writel_trace (u32 val, u_long addr)
+inline static void writel_trace (u32 val, u_long addr)
 {
         DL(9, "writel(0x%x,0x%lx)", val,addr);
         writel (val, addr);
 }
 
-static __inline__ u32 inl_trace (u_long addr)
+inline static u32 inl_trace (u_long addr)
 {
         u32 result;
 
@@ -1307,13 +1319,7 @@ typedef struct pdplus_ring_ptr_stru {
 
 /*
  * The private control structure of the driver */
-#ifndef pdplus_t_magic
-#define pdplus_t_magic 0xa15a2d01
-#endif
 typedef struct pdplus_stru {
-#if DEBUG
-        u32 magic;
-#endif
         /* Parents */
         pci_dev_t   *pci;
         snd_card_t  *card;
@@ -1370,9 +1376,6 @@ typedef struct pdplus_stru {
          * Mixer */
         snd_kmixer_t *mixer;
 
-        /* Entry in /proc directory */
-        snd_info_entry_t   *proc_entry;
-
         /* Values of registers */
         u32 PLX_CTRL_val;
         u32 PLX_INTCSR_val;
@@ -1421,12 +1424,10 @@ typedef struct pdplus_stru {
 
 static void  pdplus_sweep (snd_card_t *) __exit;
 
-static int   pdplus_a_ioctl        (snd_pcm_substream_t *, u_int, void *);
 static int   pdplus_a_play_prepare (snd_pcm_substream_t *);
 static int   pdplus_a_play_trigger (snd_pcm_substream_t *, int);
 static snd_pcm_uframes_t pdplus_a_play_pointer (snd_pcm_substream_t *);
 
-static int   pdplus_d_play_ioctl   (snd_pcm_substream_t *, u_int, void *);
 static int   pdplus_d_play_prepare (snd_pcm_substream_t *);
 static int   pdplus_d_play_trigger (snd_pcm_substream_t *, int);
 static snd_pcm_uframes_t pdplus_d_play_pointer (snd_pcm_substream_t *);
@@ -1435,7 +1436,6 @@ static int   pdplus_a_capt_prepare (snd_pcm_substream_t *);
 static int   pdplus_a_capt_trigger (snd_pcm_substream_t *, int);
 static snd_pcm_uframes_t pdplus_a_capt_pointer (snd_pcm_substream_t *);
 
-static int   pdplus_d_capt_ioctl   (snd_pcm_substream_t *, u_int, void *);
 static int   pdplus_d_capt_prepare (snd_pcm_substream_t *);
 static int   pdplus_d_capt_trigger (snd_pcm_substream_t *, int);
 static snd_pcm_uframes_t pdplus_d_capt_pointer (snd_pcm_substream_t *);
@@ -1534,8 +1534,7 @@ static void pdplus_disable_interrupts_ll (pdplus_t *scard)
 
 /*
  * Program PLX to allow interrupts */
-static __inline__ /* only used once */
-void pdplus_enable_interrupts_ll (pdplus_t *scard)
+static void pdplus_enable_interrupts_ll (pdplus_t *scard)
 {
         PDPLUS_LOCAL_VADDR (scard);
 
@@ -1549,8 +1548,7 @@ void pdplus_enable_interrupts_ll (pdplus_t *scard)
 
 /*
  * Read the contents of some PLX registers into the cache */
-static __inline__ /* only used once */
-void pdplus_read_initial_values_ll (pdplus_t *scard)
+static void pdplus_read_initial_values_ll (pdplus_t *scard)
 {
         PDPLUS_LOCAL_VADDR (scard);
 
@@ -1576,8 +1574,7 @@ static void pdplus_local_reset_ll (pdplus_t *scard)
 
 /*
  * **** ADC/DAC **** */
-static __inline__ /* without debug, this is very short */
-void pdplus_adda_write_ll (pdplus_t *scard, u_int reg, u_int value)
+static void pdplus_adda_write_ll (pdplus_t *scard, u_int reg, u_int value)
 {
         u_int regval;
         PDPLUS_LOCAL_VADDR (scard);
@@ -1595,7 +1592,7 @@ void pdplus_adda_write_ll (pdplus_t *scard, u_int reg, u_int value)
  * **** FPGA **** */
 /*
  * Clear interrupt status of cards */
-static __inline__ /* very short, should be fast */
+inline static /* very short, should be fast */
 void pdplus_clear_interrupt_ll (pdplus_t *scard)
 {
         PDPLUS_LOCAL_VADDR (scard);
@@ -1983,6 +1980,7 @@ void pdplus_copy_from_user_ll (
                         case 1:
                                 ONE_CYCLE;
                         case 0:
+				;
                         } while (cycle_count);
                 }
         }
@@ -1993,8 +1991,7 @@ void pdplus_copy_from_user_ll (
 
 /*
  * Write zero data into the card. */
-static __inline__ /* only used twice */
-void pdplus_write_silence_ll (
+static void pdplus_write_silence_ll (
         vm_offset_t dst,
         size_t byte_count)
 
@@ -2027,6 +2024,7 @@ void pdplus_write_silence_ll (
                 case 1:
                         ONE_CYCLE;
                 case 0:
+			;
                 } while (cycle_count);
         }
         return;
@@ -2248,7 +2246,7 @@ static void pdplus_stop_device_ll (
 
 /*
  * Stop analog play */
-static __inline__
+inline static 
 void pdplus_a_play_stop_ll (pdplus_t *scard)
 {
         /* Stop playing */
@@ -2261,7 +2259,7 @@ void pdplus_a_play_stop_ll (pdplus_t *scard)
 
 /*
  * Stop analog capture */
-static __inline__
+inline static 
 void pdplus_a_capt_stop_ll (pdplus_t *scard)
 {
         /* Stop playing */
@@ -2274,7 +2272,7 @@ void pdplus_a_capt_stop_ll (pdplus_t *scard)
 
 /*
  * Stop digital play */
-static __inline__
+inline static 
 void pdplus_d_play_stop_ll (pdplus_t *scard)
 {
         /* Stop playing */
@@ -2287,7 +2285,7 @@ void pdplus_d_play_stop_ll (pdplus_t *scard)
 
 /*
  * Stop digital capture */
-static __inline__
+inline static 
 void pdplus_d_capt_stop_ll (pdplus_t *scard)
 {
         /* Stop playing */
@@ -2300,7 +2298,7 @@ void pdplus_d_capt_stop_ll (pdplus_t *scard)
 
 /*
  * If ADAT monitoring is running, disable it. */
-static __inline__ /* very short */
+inline static 
 u_int pdplus_adat_mon_disable_ll (pdplus_t *scard)
 {
         PDPLUS_LOCAL_VADDR (scard);
@@ -2314,7 +2312,7 @@ u_int pdplus_adat_mon_disable_ll (pdplus_t *scard)
 
 /*
  * Set the flags to run adat monitoring. */
-static __inline__ /* very short */
+inline static 
 void pdplus_adat_mon_enable_ll (pdplus_t *scard)
 {
         PDPLUS_LOCAL_VADDR (scard);
@@ -2346,7 +2344,7 @@ static int __attribute__((__unused__)) pdplus_dco_sync_to_adat_ll (pdplus_t *sca
  * I'm not sure yet, whether this will be needed.  Why should one detach again?
  * This is simply re-programming of the DCO, so simply keep it synched is ok?  Is it?
  */
-static __inline__ /* very short */
+inline static 
 void __attribute__((__unused__)) pdplus_dco_detach_from_adat_ll (pdplus_t *scard)
 {
         PDPLUS_LOCAL_VADDR (scard);
@@ -2369,7 +2367,7 @@ static int pdplus_get_a_route_llr (pdplus_t *scard)
  * The following function starts ADAT monitoring (full procedure).
  * To restore ADAT monitoring that once worked, use
  * pdplus_adat_mon_enable_ll*/
-static __inline__ /* very short */
+inline static 
 int pdplus_adat_mon_start_ll (pdplus_t *scard)
 {
         int err;
@@ -2384,7 +2382,7 @@ int pdplus_adat_mon_start_ll (pdplus_t *scard)
 
 /*
  * Stop adat monitoring (includes check for right mode) */
-static __inline__ /* very short */
+inline static 
 void pdplus_adat_mon_stop_ll (pdplus_t *scard)
 {
         PDPLUS_LOCAL_VADDR (scard);
@@ -2523,7 +2521,7 @@ static int pdplus_lookup_clock_llr (pdplus_t *scard, int clk_sel)
 
 /*
  * Look up the analog clock rate from the registers of the card. */
-static __inline__
+inline static 
 int pdplus_a_clock_rate_llr (pdplus_t *scard)
 {
         return pdplus_lookup_clock_llr (
@@ -2533,7 +2531,7 @@ int pdplus_a_clock_rate_llr (pdplus_t *scard)
 
 /*
  * Look up the digital clock rate from the registers of the card. */
-static __inline__
+inline static 
 int pdplus_d_clock_rate_llr (pdplus_t *scard)
 {
         return pdplus_lookup_clock_llr (
@@ -2544,7 +2542,7 @@ int pdplus_d_clock_rate_llr (pdplus_t *scard)
 
 /*
  * Switch back the digital output to normal mode */
-static __inline__ /* very short, only used twice */
+inline static 
 void pdplus_reset_d_route_ll (pdplus_t *scard)
 {
         PDPLUS_LOCAL_VADDR (scard);
@@ -2560,7 +2558,7 @@ void pdplus_reset_d_route_ll (pdplus_t *scard)
 
 /*
  * Switch back the analog output to normal mode */
-static __inline__ /* very short */
+inline static 
 void pdplus_reset_a_route_ll (pdplus_t *scard)
 {
         PDPLUS_LOCAL_VADDR (scard);
@@ -2645,7 +2643,7 @@ static void pdplus_check_a_clock_ll (pdplus_t *scard)
 /*
  * Check that neither the analog nor the digital device are malclocked.
  * D_ROUTE must be safely set to D_PLAY and A_ROUTE to A_PLAY. */
-static __inline__ /* very short */
+inline static 
 void pdplus_check_clocks_ll (pdplus_t *scard)
 {
         pdplus_check_d_clock_ll (scard);
@@ -2893,7 +2891,7 @@ static void pdplus_routes_set_ll (pdplus_t *card)
 
 /* ********************************************************************** */
 
-static __inline__
+inline static 
 void pdplus_next_ring_ptr (pdplus_ring_ptr_t *ring_ptr)
 {
         ring_ptr->playing = (ring_ptr->playing + 1) & ring_ptr->mask;
@@ -3027,217 +3025,69 @@ static void pdplus_interrupt (
 /* ********************************************************************** */
 
 /*
- * Prepare mode for playback (set period sizes, queuesizes, etc.) */
-#if 1
-#warning "This driver need to be ported to new hw_info"
-#else
-static int pdplus_set_up_mode (snd_pcm_substream_t *substream, BOOL is_adat,
-			       snd_pcm_hw_params_t *info)
+ * Hardware constraints for period size
+ */
+static int pdplus_hw_rule_period_size(snd_pcm_hw_params_t *hw,
+				      snd_pcm_hw_rule_t *rule)
 {
-	int changed = 0, err;
-	size_t tmp;
+	snd_interval_t *psize, *rate;
+	snd_interval_t newi;
 
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
+	psize = hw_param_interval(hw, SNDRV_PCM_HW_PARAM_PERIOD_SIZE);
+	rate = hw_param_interval(hw, SNDRV_PCM_HW_PARAM_RATE);
+	snd_interval_any(&newi);
 
-        /* Tell mid-level about period_size we want */
-	tmp = pdplus_fit_period_size (
-                        info->period_size_min,
-                        is_adat,
-                        info->rate_min);
-	if (info->period_size_min != tmp) {
-		changed++;
-		info->period_size_min = tmp;
-	}
-	tmp = pdplus_fit_period_size (
-                        info->period_size_max,
-                        is_adat,
-                        info->rate_max);
-	if (info->period_size_max == tmp) {
-		changed++;
-		info->period_size_max = tmp;
-	}
+	newi.min = pdplus_fit_period_size (psize->min, is_adat, rate->min);
+	newi.max = pdplus_fit_period_size (psize->max, is_adat, rate->max);
 
-        /* Have the structure filled in */
-	err = snd_pcm_hw_info_buffer_size_max (info,
-                PDPLUS_FRAMES_FROM_BYTES(
-                        PDPLUS_BUFFER_SIZE,
-                        is_adat));
-	if (err < 0)
-		return err;
-	changed += err;
-
-	return changed;
+	return snd_interval_refine(psize, &newi);
 }
-#endif
+
 
 /*
- * Ioctl functions */
-static int pdplus_a_ioctl (snd_pcm_substream_t *substream, u_int cmd, void *arg)
+ * hw constraint for rate on the digital playback
+ */
+static int pdplus_d_play_hw_rule_rate(snd_pcm_hw_params_t *hw,
+				      snd_pcm_hw_rule_t *rule)
 {
- 	snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
-
-#if 1
-#warning "This driver need to be ported to new hw_info"
-#else
-	if (cmd == SNDRV_PCM_IOCTL1_HW_INFO) {
-		snd_pcm_hw_params_t *info = arg;
-		int changed = 0, err;
-		
-		if ((err = pdplus_set_up_mode (substream, is_adat, info)) < 0)
-			return err;
-		changed += err;
-		if ((err = snd_pcm_hw_info_generic(info, substream)) < 0)
-			return err;
-		changed += err;
-		return changed;
-	}
-#endif
-	return snd_pcm_lib_ioctl (substream, cmd, arg);
-}
-
-
-static int pdplus_d_play_ioctl (snd_pcm_substream_t *substream, u_int cmd, void *arg)
-{
- 	snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
-
-#if 1
-#warning "This driver need to be ported to new hw_info"
-#else
-	if (cmd == SNDRV_PCM_IOCTL1_HW_INFO) {
-		snd_pcm_hw_params_t *info = arg;
-		int changed = 0, err;		
 #if IEC958_ALLOW_HIGH_FREQ
-	        int const profi = 1;
+	int const profi = 1;
 #else
-	        pdplus_t *scard = snd_pcm_substream_chip(substream);
-	        int profi = (scard->profi_mode || scard->auto_profi_mode);
-	        if (!always_profi) {
-			u_char *cs = pdplus_get_channel_status (scard);
-			if (cs != NULL)
-				profi = cs[0] & IEC958_AES0_PROFESSIONAL;
-		}
-#endif
-		if ((err = snd_pcm_hw_info_rate_list(info, profi ? 5 : 3, d_rate_llr)) < 0)
-			return err;
-		changed += err;
-		if ((err = pdplus_set_up_mode (substream, is_adat, info)) < 0)
-			return err;
-		changed += err;
-		if ((err = snd_pcm_hw_info_generic(info, substream)) < 0)
-			return err;
-		changed += err;
-		return changed;
-	} else
-#endif
-#if 1
-#warning "The S/PDIF setup code needs to be rewritten."
-#else
-	if (cmd == SNDRV_PCM_IOCTL1_DIG_INFO) {
-	        pdplus_t *scard = snd_pcm_substream_chip(substream);
-		snd_pcm_dig_info_t *info = arg;
-		if (info->group != 0) {
-			info->fail_mask = 1 << SNDRV_PCM_DIG_PARAM_GROUP;
-			return -EINVAL;
-		}
-	        info->type_mask = SNDRV_PCM_DIG_AES_IEC958C |
-	        		  SNDRV_PCM_DIG_AES_IEC958P;
-		if (info->type == SNDRV_PCM_DIG_NONE)
-			return 0;
-		info->mask.aes.status[0] = IEC958_AES0_PROFESSIONAL |
-					   IEC958_AES0_NONAUDIO;
-		if (info->type == SNDRV_PCM_DIG_AES_IEC958C) {
-			info->mask.aes.status[0] |=
-					IEC958_AES0_CON_NOT_COPYRIGHT |
-			                IEC958_AES0_CON_EMPHASIS;
-			info->mask.aes.status[1] =
-					IEC958_AES1_CON_CATEGORY;
-		        info->mask.aes.status[3] =
-					IEC958_AES3_CON_FS;
-			if (!(scard->dig_setup.aes.status[0] & IEC958_AES0_PROFESSIONAL))
-				info->val = scard->dig_setup;
-		} else if (info->type == SNDRV_PCM_DIG_AES_IEC958P) {
-			info->mask.aes.status[0] |= 
-			                IEC958_AES0_PRO_FS |
-			                IEC958_AES0_PRO_EMPHASIS;
-			if (scard->dig_setup.aes.status[0] & IEC958_AES0_PROFESSIONAL)
-				info->val = scard->dig_setup;
-			else
-				info->val.aes.status[0] |= IEC958_AES0_PROFESSIONAL;
-		} else {
-			info->fail_mask = 1 << SNDRV_PCM_DIG_PARAM_TYPE;
-			return -EINVAL;
-		}
-		return 0;
-	} else if (cmd == SNDRV_PCM_IOCTL1_DIG_PARAMS) {
-	        pdplus_t *scard = snd_pcm_substream_chip(substream);
-		snd_pcm_dig_params_t *params = arg;
-		if (params->group != 0) {
-			params->fail_mask = 1 << SNDRV_PCM_DIG_PARAM_GROUP;
-			return -EINVAL;
-		}
-		if (params->type == SNDRV_PCM_DIG_AES_IEC958C) {
-			if (params->val.aes.status[0] & IEC958_AES0_PROFESSIONAL) {
-				params->fail_mask = 1 << SNDRV_PCM_DIG_PARAM_VALUE;
-				return -EINVAL;
-			}
-			scard->dig_setup = params->val;
-		} else if (params->type == SNDRV_PCM_DIG_AES_IEC958P) {
-			if (!(params->val.aes.status[0] & IEC958_AES0_PROFESSIONAL)) {
-				params->fail_mask = 1 << SNDRV_PCM_DIG_PARAM_VALUE;
-				return -EINVAL;
-			}
-			scard->dig_setup = params->val;
-		} else {
-			params->fail_mask = 1 << SNDRV_PCM_DIG_PARAM_TYPE;
-			return -EINVAL;
-		}
-		/* FIXME: digital parameters should be updated only here */
-		return 0;
+	pdplus_t *scard = snd_magic_cast(pdplus_t, rule->private, return -EINVAL);
+	int profi = (scard->profi_mode || scard->auto_profi_mode);
+	if (!always_profi) {
+		u_char *cs = pdplus_get_channel_status (scard);
+		if (cs != NULL)
+			profi = cs[0] & IEC958_AES0_PROFESSIONAL;
 	}
 #endif
-	return snd_pcm_lib_ioctl (substream, cmd, arg);
+	return snd_interval_list(hw_param_interval(hw, SNDRV_PCM_HW_PARAM_RATE),
+				 profi ? 5 : 3, d_rate_llr, 0);
 }
 
-static int pdplus_d_capt_ioctl (snd_pcm_substream_t *substream, u_int cmd, void *arg)
+/*
+ * hw constraint for rate on the digital capture
+ */
+static int pdplus_d_capt_hw_rule_rate(snd_pcm_hw_params_t *hw,
+				      snd_pcm_hw_rule_t *rule)
 {
-        pdplus_t *scard = snd_pcm_substream_chip(substream);
+	pdplus_t *scard = snd_magic_cast(pdplus_t, rule->private, return -EINVAL);
+	int rate;
+	unsigned long flags;
+	snd_interval_t newi;
 
- 	snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
+	/* Force synchronised rate */
+	read_lock_irqsave (&scard->lock, flags);
+	rate = pdplus_d_capt_rate_llr (scard);
+	read_unlock_irqrestore (&scard->lock, flags);
+	if (rate <= 0)
+		return 0; /* FIXME: should return the error? */
+	snd_interval_any(&newi);
+	newi.min = newi.max = rate;
 
-#if 1
-#warning "This driver need to be ported to new hw_info"
-#else
-	if (cmd == SNDRV_PCM_IOCTL1_HW_INFO) {
-		snd_pcm_hw_params_t *info = arg;
-		int changed = 0, err, rate;
-		unsigned long flags;
-		
-                /* Force synchronised rate */
-                read_lock_irqsave (&scard->lock, flags);
-                rate = pdplus_d_capt_rate_llr (scard);
-                read_unlock_irqrestore (&scard->lock, flags);
-                if (rate <= 0)
-			LEAVE (-EIO); /* FIXME:CHECK: is this the correct error code? */
-		if (rate != info->rate_min)
-			changed++;
-		if (rate != info->rate_max)
-			changed++;
-                info->rate_min = info->rate_max = rate;
-		if ((err = pdplus_set_up_mode (substream, is_adat, info)) < 0)
-			return err;
-		changed += err;
-		if ((err = snd_pcm_hw_info_generic(info, substream)) < 0)
-			return err;
-		changed += err;
-		return changed;
-	}
-#endif
-	return snd_pcm_lib_ioctl (substream, cmd, arg);
+	return snd_interval_refine(hw_param_interval(hw, SNDRV_PCM_HW_PARAM_PERIOD_SIZE), &newi);
 }
+
 
 /*
  * Get the buffer pointer for analog playback */
@@ -3912,16 +3762,16 @@ static int pdplus_d_capt_prepare (snd_pcm_substream_t *substream)
 
 static snd_pcm_hardware_t pdplus_a_play_info =
 {
-        info:
+        .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
                 SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_BLOCK_TRANSFER |
 		SNDRV_PCM_INFO_SYNC_START,
-                /* SNDRV_PCM_INFO_BLOCK_TRANSFER |    FIXME: what is this? */
 
-        formats:
+        .formats =
                 SNDRV_PCM_FMTBIT_S24_LE,
 
-        rates:  /* DCO Frequency Generator: */
+        .rates =  /* DCO Frequency Generator: */
                 SNDRV_PCM_RATE_CONTINUOUS |
                 /* Fixed Frequency Generator: */
                 SNDRV_PCM_RATE_48000 |
@@ -3930,36 +3780,36 @@ static snd_pcm_hardware_t pdplus_a_play_info =
                 SNDRV_PCM_RATE_22050 |
                 SNDRV_PCM_RATE_11025,
 
-        rate_min:   11025,  /* min: FFG only, DCO starts at 29000, ADC/DAC could do 4kHz */
-        rate_max:   50000,  /* max: 50kHz for ADC/DAC according to CS4222 specification. */
+        .rate_min =   11025,  /* min: FFG only, DCO starts at 29000, ADC/DAC could do 4kHz */
+        .rate_max =   50000,  /* max: 50kHz for ADC/DAC according to CS4222 specification. */
+	
+        .channels_min = 2,
+        .channels_max = 2,
 
-        channels_min: 2,
-        channels_max: 2,
+	.buffer_bytes_max =   PDPLUS_BUFFER_SIZE,
 
-	buffer_bytes_max:   PDPLUS_BUFFER_SIZE,
+        .period_bytes_min =   PDPLUS_SMALL_BLOCK, /* this depends on the sampling rate. */
+        .period_bytes_max =   PDPLUS_LARGE_BLOCK,
 
-        period_bytes_min:   PDPLUS_SMALL_BLOCK, /* this depends on the sampling rate. */
-        period_bytes_max:   PDPLUS_LARGE_BLOCK,
-
-	periods_min:	1,
-	periods_max:	1024,
-        fifo_size:      0,
+	.periods_min =	1,
+	.periods_max =	1024,
+        .fifo_size =      0,
 };
 
 /* ********************************************************************** */
 
 static snd_pcm_hardware_t pdplus_a_capt_info =
 {
-        info:
+        .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
                 SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_BLOCK_TRANSFER |
 		SNDRV_PCM_INFO_SYNC_START,
-                /* SNDRV_PCM_INFO_BLOCK_TRANSFER |    FIXME: what is this? */
 
-        formats:
+        .formats =
                 SNDRV_PCM_FMTBIT_S24_LE,
 
-        rates:  /* DCO Frequency Generator: */
+        .rates =  /* DCO Frequency Generator: */
                 SNDRV_PCM_RATE_CONTINUOUS |
                 /* Fixed Frequency Generator: */
                 SNDRV_PCM_RATE_48000 |
@@ -3968,72 +3818,72 @@ static snd_pcm_hardware_t pdplus_a_capt_info =
                 SNDRV_PCM_RATE_22050 |
                 SNDRV_PCM_RATE_11025,
 
-        rate_min:   11025,  /* min: FFG only, DCO starts at 29000, ADC/DAC could do 4kHz */
-        rate_max:   50000,  /* max: 50kHz for ADC/DAC according to CS4222 specification. */
+        .rate_min =   11025,  /* min: FFG only, DCO starts at 29000, ADC/DAC could do 4kHz */
+        .rate_max =   50000,  /* max: 50kHz for ADC/DAC according to CS4222 specification. */
+	
+        .channels_min = 2,
+        .channels_max = 2,
 
-        channels_min: 2,
-        channels_max: 2,
+	.buffer_bytes_max =   PDPLUS_BUFFER_SIZE,
 
-	buffer_bytes_max:   PDPLUS_BUFFER_SIZE,
+        .period_bytes_min =   PDPLUS_SMALL_BLOCK, /* this depends on the sampling rate. */
+        .period_bytes_max =   PDPLUS_LARGE_BLOCK,
 
-        period_bytes_min:   PDPLUS_SMALL_BLOCK, /* this depends on the sampling rate. */
-        period_bytes_max:   PDPLUS_LARGE_BLOCK,
-
-	periods_min:	1,
-	periods_max:	1024,
-        fifo_size:      0,
+	.periods_min =	1,
+	.periods_max =	1024,
+        .fifo_size =      0,
 };
 
 /* ********************************************************************** */
 
 static snd_pcm_hardware_t pdplus_d_play_info =
 {
-        info:
+        .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
                 SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_BLOCK_TRANSFER |
 		SNDRV_PCM_INFO_SYNC_START,
-                /* SNDRV_PCM_INFO_BLOCK_TRANSFER |    FIXME: what is this? */
 
-        formats:
+        .formats =
                 SNDRV_PCM_FMTBIT_S24_LE,
 
-        rates:  /* Fixed Frequency Generator: */
+        .rates =  /* Fixed Frequency Generator: */
                 SNDRV_PCM_RATE_96000 |
                 SNDRV_PCM_RATE_88200 |
                 SNDRV_PCM_RATE_48000 |
                 SNDRV_PCM_RATE_44100 |
                 SNDRV_PCM_RATE_32000,
 
-        rate_min:   32000,
-        rate_max:   96000,
+        .rate_min =   32000,
+        .rate_max =   96000,
 
-        channels_min: 2,
-        channels_max: 2,
+        .channels_min = 2,
+        .channels_max = 2,
 
-	buffer_bytes_max:   PDPLUS_BUFFER_SIZE,
+	.buffer_bytes_max =   PDPLUS_BUFFER_SIZE,
 
-        period_bytes_min:   PDPLUS_SMALL_BLOCK, /* this depends on the sampling rate. */
-        period_bytes_max:   PDPLUS_LARGE_BLOCK,
+        .period_bytes_min =   PDPLUS_SMALL_BLOCK, /* this depends on the sampling rate. */
+        .period_bytes_max =   PDPLUS_LARGE_BLOCK,
 
-	periods_min:	1,
-	periods_max:	1024,
-        fifo_size:      0,
+	.periods_min =	1,
+	.periods_max =	1024,
+        .fifo_size =      0,
 };
 
 /* ********************************************************************** */
 
 static snd_pcm_hardware_t pdplus_d_capt_info =
 {
-        info:
+        .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
                 SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_BLOCK_TRANSFER |
 		SNDRV_PCM_INFO_SYNC_START,
-                /* SNDRV_PCM_INFO_BLOCK_TRANSFER |    FIXME: what is this? */
 
-        formats:
+        .formats =
                 SNDRV_PCM_FMTBIT_S24_LE,
 
-        rates:
+        .rates =
                 /* This can synchronise to those frequencies (this cannot be
                  * set, though): */
                 SNDRV_PCM_RATE_96000 |
@@ -4042,20 +3892,20 @@ static snd_pcm_hardware_t pdplus_d_capt_info =
                 SNDRV_PCM_RATE_44100 |
                 SNDRV_PCM_RATE_32000,
 
-        rate_min:   32000,
-        rate_max:   96000,
+        .rate_min =   32000,
+        .rate_max =   96000,
 
-        channels_min: 2,
-        channels_max: 2,
+        .channels_min = 2,
+        .channels_max = 2,
 
-	buffer_bytes_max:   PDPLUS_BUFFER_SIZE,
+	.buffer_bytes_max =   PDPLUS_BUFFER_SIZE,
 
-        period_bytes_min:   PDPLUS_SMALL_BLOCK, /* this depends on the sampling rate. */
-        period_bytes_max:   PDPLUS_LARGE_BLOCK,
+        .period_bytes_min =   PDPLUS_SMALL_BLOCK, /* this depends on the sampling rate. */
+        .period_bytes_max =   PDPLUS_LARGE_BLOCK,
 
-	periods_min:	1,
-	periods_max:	1024,
-        fifo_size:      0,
+	.periods_min =	1,
+	.periods_max =	1024,
+        .fifo_size =      0,
 };
 
 /* ********************************************************************** */
@@ -4065,17 +3915,28 @@ static snd_pcm_hardware_t pdplus_d_capt_info =
 static int pdplus_a_play_open (snd_pcm_substream_t *substream)
 {
         u_long flags;
+	int err;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         ENTER;
         snd_assert (substream != NULL, return -ENXIO);
         snd_assert (substream->runtime != NULL, return -ENXIO);
 
+        substream->runtime->hw = pdplus_a_play_info;
+	err = snd_pcm_hw_rule_add(substream->runtime, 0,
+				  SNDRV_PCM_HW_PARAM_PERIOD_SIZE,
+				  pdplus_hw_rule_period_size, scard,
+				  SNDRV_PCM_HW_PARAM_RATE, -1);
+	if (err < 0)
+		return err;
+	err = snd_pcm_hw_constraint_integer(substream->runtime,
+					    SNDRV_PCM_HW_PARAM_PERIODS);
+	if (err < 0)
+		return err;
         snd_pcm_set_sync (substream);
 
         write_lock_irqsave (&scard->lock, flags);
 
         scard->a_play = substream;
-        substream->runtime->hw = pdplus_a_play_info;
 
         write_unlock_irqrestore (&scard->lock, flags);
 
@@ -4111,17 +3972,28 @@ static int pdplus_a_play_close (snd_pcm_substream_t *substream)
 static int pdplus_a_capt_open (snd_pcm_substream_t *substream)
 {
         u_long flags;
+	int err;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         ENTER;
         snd_assert (substream != NULL, return -ENXIO);
         snd_assert (substream->runtime != NULL, return -ENXIO);
 
+        substream->runtime->hw = pdplus_a_capt_info;
+	err = snd_pcm_hw_rule_add(substream->runtime, 0,
+				  SNDRV_PCM_HW_PARAM_PERIOD_SIZE,
+				  pdplus_hw_rule_period_size, scard,
+				  SNDRV_PCM_HW_PARAM_RATE, -1);
+	if (err < 0)
+		return err;
+	err = snd_pcm_hw_constraint_integer(substream->runtime,
+					    SNDRV_PCM_HW_PARAM_PERIODS);
+	if (err < 0)
+		return err;
         snd_pcm_set_sync (substream);
 
         write_lock_irqsave (&scard->lock, flags);
 
         scard->a_capt = substream;
-        substream->runtime->hw = pdplus_a_capt_info;
 
         write_unlock_irqrestore (&scard->lock, flags);
 
@@ -4187,13 +4059,29 @@ static int pdplus_d_play_open (snd_pcm_substream_t *substream)
         if ((err = pdplus_set_mode (scard, PDPLUS_MODE_DIGITAL)))
                 LEAVE (err);
 
+	substream->runtime->hw = pdplus_d_play_info;
+	err = snd_pcm_hw_rule_add(substream->runtime, 0,
+				  SNDRV_PCM_HW_PARAM_RATE,
+				  pdplus_d_play_hw_rule_rate, scard,
+				  SNDRV_PCM_HW_PARAM_RATE, -1);
+	if (err < 0)
+		return err;
+	err = snd_pcm_hw_rule_add(substream->runtime, 0,
+				  SNDRV_PCM_HW_PARAM_PERIOD_SIZE,
+				  pdplus_hw_rule_period_size, scard,
+				  SNDRV_PCM_HW_PARAM_RATE, -1);
+	if (err < 0)
+		return err;
+	err = snd_pcm_hw_constraint_integer(substream->runtime,
+					    SNDRV_PCM_HW_PARAM_PERIODS);
+	if (err < 0)
+		return err;
+
         snd_pcm_set_sync (substream);
 
         write_lock_irqsave (&scard->lock, flags);
 
         scard->d_play = substream;
-
-	substream->runtime->hw = pdplus_d_play_info;
 
         write_unlock_irqrestore (&scard->lock, flags);
 
@@ -4234,12 +4122,29 @@ static int pdplus_d_capt_open (snd_pcm_substream_t *substream)
         if ((err = pdplus_set_mode (scard, PDPLUS_MODE_DIGITAL)))
                 LEAVE (err);
 
+        substream->runtime->hw = pdplus_d_capt_info;
+	err = snd_pcm_hw_rule_add(substream->runtime, 0,
+				  SNDRV_PCM_HW_PARAM_RATE,
+				  pdplus_d_capt_hw_rule_rate, scard,
+				  SNDRV_PCM_HW_PARAM_RATE, -1);
+	if (err < 0)
+		return err;
+	err = snd_pcm_hw_rule_add(substream->runtime, 0,
+				  SNDRV_PCM_HW_PARAM_PERIOD_SIZE,
+				  pdplus_hw_rule_period_size, scard,
+				  SNDRV_PCM_HW_PARAM_RATE, -1);
+	if (err < 0)
+		return err;
+	err = snd_pcm_hw_constraint_integer(substream->runtime,
+					    SNDRV_PCM_HW_PARAM_PERIODS);
+	if (err < 0)
+		return err;
+
         snd_pcm_set_sync (substream);
 
         write_lock_irqsave (&scard->lock, flags);
 
         scard->d_capt = substream;
-        substream->runtime->hw = pdplus_d_capt_info;
 
         write_unlock_irqrestore (&scard->lock, flags);
 
@@ -4269,45 +4174,45 @@ static int pdplus_d_capt_close (snd_pcm_substream_t *substream)
 /* ********************************************************************** */
 
 static snd_pcm_ops_t pdplus_a_play_ops = {
-	open:	  pdplus_a_play_open,
-	close:    pdplus_a_play_close,
-        ioctl:    pdplus_a_ioctl,
-        prepare:  pdplus_a_play_prepare,
-        trigger:  pdplus_a_play_trigger,
-        pointer:  pdplus_a_play_pointer,
-	copy:	  pdplus_a_play_copy_ll,
-	silence:  pdplus_a_play_silence_ll,
+	.open =	   pdplus_a_play_open,
+	.close =   pdplus_a_play_close,
+        .ioctl =   snd_pcm_lib_ioctl,
+        .prepare = pdplus_a_play_prepare,
+        .trigger = pdplus_a_play_trigger,
+        .pointer = pdplus_a_play_pointer,
+	.copy =	   pdplus_a_play_copy_ll,
+	.silence = pdplus_a_play_silence_ll,
 };
 
 static snd_pcm_ops_t pdplus_a_capt_ops = {
-	open:	  pdplus_a_capt_open,
-	close:	  pdplus_a_capt_close,
-        ioctl:    pdplus_a_ioctl,
-        prepare:  pdplus_a_capt_prepare,
-        trigger:  pdplus_a_capt_trigger,
-        pointer:  pdplus_a_capt_pointer,
-	copy:	  pdplus_a_capt_copy_ll,
+	.open =	   pdplus_a_capt_open,
+	.close =   pdplus_a_capt_close,
+        .ioctl =   snd_pcm_lib_ioctl,
+        .prepare = pdplus_a_capt_prepare,
+        .trigger = pdplus_a_capt_trigger,
+        .pointer = pdplus_a_capt_pointer,
+	.copy =    pdplus_a_capt_copy_ll,
 };
 
 static snd_pcm_ops_t pdplus_d_play_ops = {
-	open:     pdplus_d_play_open,
-	close:    pdplus_d_play_close,
-        ioctl:    pdplus_d_play_ioctl,
-        prepare:  pdplus_d_play_prepare,
-        trigger:  pdplus_d_play_trigger,
-        pointer:  pdplus_d_play_pointer,
-	copy:	  pdplus_d_play_copy_ll,
-	silence:  pdplus_d_play_silence_ll,
+	.open =    pdplus_d_play_open,
+	.close =   pdplus_d_play_close,
+        .ioctl =   snd_pcm_lib_ioctl,
+        .prepare = pdplus_d_play_prepare,
+        .trigger = pdplus_d_play_trigger,
+        .pointer = pdplus_d_play_pointer,
+	.copy =    pdplus_d_play_copy_ll,
+	.silence = pdplus_d_play_silence_ll,
 };
 
 static snd_pcm_ops_t pdplus_d_capt_ops = {
-	open:	  pdplus_d_capt_open,
-	close:	  pdplus_d_capt_close,
-        ioctl:    pdplus_d_capt_ioctl,
-        prepare:  pdplus_d_capt_prepare,
-        trigger:  pdplus_d_capt_trigger,
-        pointer:  pdplus_d_capt_pointer,
-	copy:	  pdplus_d_capt_copy_ll,
+	.open =    pdplus_d_capt_open,
+	.close =   pdplus_d_capt_close,
+        .ioctl =   snd_pcm_lib_ioctl,
+        .prepare = pdplus_d_capt_prepare,
+        .trigger = pdplus_d_capt_trigger,
+        .pointer = pdplus_d_capt_pointer,
+	.copy =    pdplus_d_capt_copy_ll,
 };
 
 /* ********************************************************************** */
@@ -4326,7 +4231,7 @@ static void pdplus_d_pcm_free (snd_pcm_t *pcm)
 
 /* ********************************************************************** */
 
-static __init int pdplus_a_pcm_new (
+static __devinit int pdplus_a_pcm_new (
         snd_card_t *card,
         pdplus_t *scard,
         int device)
@@ -4359,7 +4264,7 @@ static __init int pdplus_a_pcm_new (
         LEAVE (0);
 }
 
-static __init int pdplus_d_pcm_new (
+static __devinit int pdplus_d_pcm_new (
         snd_card_t *card,
         pdplus_t *scard,
         int device)
@@ -4394,22 +4299,22 @@ static __init int pdplus_d_pcm_new (
 /* ********************************************************************** */
 /* Mixer functions */
 
-static __inline__ int pdplus_adda_get_volume_left_llr (pdplus_t *scard)
+inline static int pdplus_adda_get_volume_left_llr (pdplus_t *scard)
 {
         return PDPLUS_CS4222_ATTEN_MAX - PDPLUS_READ_CACHE (scard, CS4222, ATT_LEFT);
 }
 
-static __inline__ int pdplus_adda_get_volume_right_llr (pdplus_t *scard)
+inline static int pdplus_adda_get_volume_right_llr (pdplus_t *scard)
 {
         return PDPLUS_CS4222_ATTEN_MAX - PDPLUS_READ_CACHE (scard, CS4222, ATT_RIGHT);
 }
 
-static __inline__ void pdplus_adda_set_volume_left_ll (pdplus_t *scard, int value)
+inline static void pdplus_adda_set_volume_left_ll (pdplus_t *scard, int value)
 {
         PDPLUS_WRITE (scard, CS4222, ATT_LEFT, PDPLUS_CS4222_ATTEN_MAX - value);
 }
 
-static __inline__ void pdplus_adda_set_volume_right_ll (pdplus_t *scard, int value)
+inline static void pdplus_adda_set_volume_right_ll (pdplus_t *scard, int value)
 {
         PDPLUS_WRITE (scard, CS4222, ATT_RIGHT, PDPLUS_CS4222_ATTEN_MAX - value);
 }
@@ -4423,12 +4328,12 @@ static __inline__ void pdplus_adda_set_volume_right_ll (pdplus_t *scard, int val
  */
 #define PDPLUS_CONTROL_DAC_VOLUME               \
         {                                       \
-                iface: SNDRV_CTL_ELEM_IFACE_MIXER, \
-                name:  "PCM Playback Volume",   \
-                index: 0,                       \
-                info:  pdplus_dac_volume_info,  \
-                get:   pdplus_dac_volume_get,   \
-                put:   pdplus_dac_volume_set    \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER, \
+                .name =  "PCM Playback Volume",   \
+                .index = 0,                       \
+                .info =  pdplus_dac_volume_info,  \
+                .get =   pdplus_dac_volume_get,   \
+                .put =   pdplus_dac_volume_set    \
         }
 
 static int pdplus_dac_volume_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo)
@@ -4478,12 +4383,12 @@ static int pdplus_dac_volume_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
 
 #define PDPLUS_CONTROL_DAC_SWITCH               \
         {                                       \
-                iface: SNDRV_CTL_ELEM_IFACE_MIXER, \
-                name:  "PCM Playback Switch",   \
-                index: 0,                       \
-                info:  pdplus_boolean2_info,    \
-                get:   pdplus_dac_switch_get,   \
-                put:   pdplus_dac_switch_set    \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER, \
+                .name =  "PCM Playback Switch",   \
+                .index = 0,                       \
+                .info =  pdplus_boolean2_info,    \
+                .get =   pdplus_dac_switch_get,   \
+                .put =   pdplus_dac_switch_set    \
         }
 
 static int pdplus_dac_switch_get (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
@@ -4528,12 +4433,12 @@ static int pdplus_dac_switch_set (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
 
 #define PDPLUS_CONTROL_ADC_SWITCH               \
         {                                       \
-                iface: SNDRV_CTL_ELEM_IFACE_MIXER, \
-                name:  "Analog Capture Switch", \
-                index: 0,                       \
-                info:  pdplus_boolean2_info,    \
-                get:   pdplus_adc_switch_get,   \
-                put:   pdplus_adc_switch_set    \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER, \
+                .name =  "Analog Capture Switch", \
+                .index = 0,                       \
+                .info =  pdplus_boolean2_info,    \
+                .get =   pdplus_adc_switch_get,   \
+                .put =   pdplus_adc_switch_set    \
         }
 
 static int pdplus_adc_switch_get (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
@@ -4578,12 +4483,12 @@ static int pdplus_adc_switch_set (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
 
 #define PDPLUS_CONTROL_ADC_HIGH_PASS                      \
         {                                                 \
-                iface: SNDRV_CTL_ELEM_IFACE_MIXER,           \
-                name:  "Analog Capture High Pass Filter", \
-                index: 0,                                 \
-                info:  pdplus_boolean2_info,              \
-                get:   pdplus_adc_high_pass_get,          \
-                put:   pdplus_adc_high_pass_set           \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER,           \
+                .name =  "Analog Capture High Pass Filter", \
+                .index = 0,                                 \
+                .info =  pdplus_boolean2_info,              \
+                .get =   pdplus_adc_high_pass_get,          \
+                .put =   pdplus_adc_high_pass_set           \
         }
 
 static int pdplus_boolean2_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo)
@@ -4637,12 +4542,12 @@ static int pdplus_adc_high_pass_set (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u
 
 #define PDPLUS_CONTROL_DAC_AUTO_MUTE_512             \
         {                                            \
-                iface: SNDRV_CTL_ELEM_IFACE_MIXER,      \
-                name:  "PCM Playback Auto Mute 512", \
-                index: 0,                            \
-                info:  pdplus_boolean1_info,         \
-                get:   pdplus_dac_auto_mute_512_get, \
-                put:   pdplus_dac_auto_mute_512_set  \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER,      \
+                .name =  "PCM Playback Auto Mute 512", \
+                .index = 0,                            \
+                .info =  pdplus_boolean1_info,         \
+                .get =   pdplus_dac_auto_mute_512_get, \
+                .put =   pdplus_dac_auto_mute_512_set  \
         }
 
 static int pdplus_boolean1_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo)
@@ -4688,12 +4593,12 @@ static int pdplus_dac_auto_mute_512_set (snd_kcontrol_t *k, snd_ctl_elem_value_t
 
 #define PDPLUS_CONTROL_A_OUT_MUX                \
         {                                       \
-                iface: SNDRV_CTL_ELEM_IFACE_MIXER, \
-                name:  "Analog Output Select",  \
-                index: 0,                       \
-                info:  pdplus_out_mux_info,     \
-                get:   pdplus_a_out_mux_get,    \
-                put:   pdplus_a_out_mux_set     \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER, \
+                .name =  "Analog Output Select",  \
+                .index = 0,                       \
+                .info =  pdplus_out_mux_info,     \
+                .get =   pdplus_a_out_mux_get,    \
+                .put =   pdplus_a_out_mux_set     \
         }
 
 static void pdplus_info_enumerated (
@@ -4763,12 +4668,12 @@ static int pdplus_a_out_mux_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
 
 #define PDPLUS_CONTROL_D_OUT_MUX                \
         {                                       \
-                iface: SNDRV_CTL_ELEM_IFACE_MIXER, \
-                name:  "Digital Output Select", \
-                index: 0,                       \
-                info:  pdplus_out_mux_info,     \
-                get:   pdplus_d_out_mux_get,    \
-                put:   pdplus_d_out_mux_set     \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER, \
+                .name =  "Digital Output Select", \
+                .index = 0,                       \
+                .info =  pdplus_out_mux_info,     \
+                .get =   pdplus_d_out_mux_get,    \
+                .put =   pdplus_d_out_mux_set     \
         }
 
 static int pdplus_d_out_mux_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
@@ -4804,12 +4709,12 @@ static int pdplus_d_out_mux_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
 
 #define PDPLUS_CONTROL_D_IN_MUX                 \
         {                                       \
-                iface: SNDRV_CTL_ELEM_IFACE_MIXER, \
-                name:  "Digital Input Select",  \
-                index: 0,                       \
-                info:  pdplus_in_mux_info,      \
-                get:   pdplus_d_in_mux_get,     \
-                put:   pdplus_d_in_mux_set      \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER, \
+                .name =  "Digital Input Select",  \
+                .index = 0,                       \
+                .info =  pdplus_in_mux_info,      \
+                .get =   pdplus_d_in_mux_get,     \
+                .put =   pdplus_d_in_mux_set      \
         }
 
 static char const *pdplus_in_mux_text[3]= {
@@ -4859,12 +4764,12 @@ static int pdplus_d_in_mux_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
 
 #define PDPLUS_CONTROL_DE_EMPH                    \
         {                                         \
-                iface: SNDRV_CTL_ELEM_IFACE_PCM,     \
-                name:  "Codec De-Emphasis 50/15", \
-                index: 0,                         \
-                info:  pdplus_de_emph_info,       \
-                get:   pdplus_de_emph_get,        \
-                put:   pdplus_de_emph_set         \
+                .iface = SNDRV_CTL_ELEM_IFACE_PCM,     \
+                .name=  "Codec De-Emphasis 50/15", \
+                .index = 0,                         \
+                .info =  pdplus_de_emph_info,       \
+                .get =   pdplus_de_emph_get,        \
+                .put =   pdplus_de_emph_set         \
         }
 
 static char const *pdplus_de_emph_text[4]= {
@@ -4917,12 +4822,12 @@ static int pdplus_de_emph_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
 
 #define PDPLUS_CONTROL_DAC_SOFT_RAMP                       \
         {                                                  \
-                iface: SNDRV_CTL_ELEM_IFACE_MIXER,            \
-                name:  "PCM Playback Volume Soft Ramping", \
-                index: 0,                                  \
-                info:  pdplus_soft_ramp_info,              \
-                get:   pdplus_soft_ramp_get,               \
-                put:   pdplus_soft_ramp_set                \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER,            \
+                .name =  "PCM Playback Volume Soft Ramping", \
+                .index = 0,                                  \
+                .info =  pdplus_soft_ramp_info,              \
+                .get =   pdplus_soft_ramp_get,               \
+                .put =   pdplus_soft_ramp_set                \
         }
 
 #define PDPLUS_SOFT_RAMP_OFF 4
@@ -4991,10 +4896,10 @@ static int pdplus_soft_ramp_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
 
 #define PDPLUS_CONTROL_D_CAPT_RATE              \
         {                                       \
-                iface: SNDRV_CTL_ELEM_IFACE_HWDEP, \
-                name:  "Digital Input Clock",   \
-                index: 0,                       \
-                access: SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE, \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER, \
+                .name =  "Digital Input Clock",   \
+                .index = 0,                       \
+                .access = SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE, \
                 info:  pdplus_d_capt_rate_info, \
                 get:   pdplus_d_capt_rate_get,  \
                 put:   NULL                     \
@@ -5023,12 +4928,12 @@ static int pdplus_d_capt_rate_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
 
 #define PDPLUS_CONTROL_DEF_PROFI_MODE              \
         {                                          \
-                iface: SNDRV_CTL_ELEM_IFACE_CARD,     \
-                name:  "Default Digital Format",   \
-                index: 0,                          \
-                info:  pdplus_def_profi_mode_info, \
-                get:   pdplus_def_profi_mode_get,  \
-                put:   pdplus_def_profi_mode_set,  \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER,     \
+                .name =  "Default Digital Format",   \
+                .index = 0,                          \
+                .info =  pdplus_def_profi_mode_info, \
+                .get =   pdplus_def_profi_mode_get,  \
+                .put =   pdplus_def_profi_mode_set,  \
         }
 
 static int pdplus_def_profi_mode_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *u)
@@ -5100,12 +5005,12 @@ static int pdplus_def_profi_mode_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u
 
 #define PDPLUS_CONTROL_DEF_COPY_INHIBIT             \
         {                                           \
-                iface: SNDRV_CTL_ELEM_IFACE_CARD,      \
-                name:  "Default Copy Inhibit",      \
-                index: 0,                           \
-                info:  pdplus_boolean1_info,        \
-                get:   pdplus_def_copy_inhibit_get, \
-                put:   pdplus_def_copy_inhibit_set  \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER,      \
+                .name =  "Default Copy Inhibit",      \
+                .index = 0,                           \
+                .info =  pdplus_boolean1_info,        \
+                .get =   pdplus_def_copy_inhibit_get, \
+                .put =   pdplus_def_copy_inhibit_set  \
         }
 
 static int pdplus_def_copy_inhibit_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
@@ -5136,12 +5041,12 @@ static int pdplus_def_copy_inhibit_set (snd_kcontrol_t *k, snd_ctl_elem_value_t 
 
 #define PDPLUS_CONTROL_DEF_NON_AUDIO             \
         {                                        \
-                iface: SNDRV_CTL_ELEM_IFACE_CARD,   \
-                name:  "Default Non-Audio Bit",  \
-                index: 0,                        \
-                info:  pdplus_boolean1_info,     \
-                get:   pdplus_def_non_audio_get, \
-                put:   pdplus_def_non_audio_set  \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER,   \
+                .name =  "Default Non-Audio Bit",  \
+                .index = 0,                        \
+                .info =  pdplus_boolean1_info,     \
+                .get =   pdplus_def_non_audio_get, \
+                .put =   pdplus_def_non_audio_set  \
         }
 
 static int pdplus_def_non_audio_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
@@ -5172,12 +5077,12 @@ static int pdplus_def_non_audio_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
 
 #define PDPLUS_CONTROL_DEF_PRE_EMPHASIS             \
         {                                           \
-                iface: SNDRV_CTL_ELEM_IFACE_CARD,      \
-                name:  "Default Pre-Emphasis",      \
-                index: 0,                           \
-                info:  pdplus_boolean1_info,        \
-                get:   pdplus_def_pre_emphasis_get, \
-                put:   pdplus_def_pre_emphasis_set  \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER,      \
+                .name =  "Default Pre-Emphasis",      \
+                .index = 0,                           \
+                .info =  pdplus_boolean1_info,        \
+                .get =   pdplus_def_pre_emphasis_get, \
+                .put =   pdplus_def_pre_emphasis_set  \
         }
 
 static int pdplus_def_pre_emphasis_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
@@ -5208,12 +5113,12 @@ static int pdplus_def_pre_emphasis_set (snd_kcontrol_t *k, snd_ctl_elem_value_t 
 
 #define PDPLUS_CONTROL_DEF_AUTO_CD_MODE             \
         {                                           \
-                iface: SNDRV_CTL_ELEM_IFACE_CARD,      \
-                name:  "Default Auto CD Mode",      \
-                index: 0,                           \
-                info:  pdplus_boolean1_info,        \
-                get:   pdplus_def_auto_cd_mode_get, \
-                put:   pdplus_def_auto_cd_mode_set  \
+                .iface = SNDRV_CTL_ELEM_IFACE_MIXER,      \
+                .name =  "Default Auto CD Mode",      \
+                .index = 0,                           \
+                .info =  pdplus_boolean1_info,        \
+                .get =   pdplus_def_auto_cd_mode_get, \
+                .put =   pdplus_def_auto_cd_mode_set  \
         }
 
 static int pdplus_def_auto_cd_mode_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
@@ -5242,7 +5147,68 @@ static int pdplus_def_auto_cd_mode_set (snd_kcontrol_t *k, snd_ctl_elem_value_t 
         return result;
 }
 
-static snd_kcontrol_new_t pdplus_control[]= {
+/*
+ * S/PDIF set up
+ */
+static int pdplus_spdif_mask_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_IEC958;
+	uinfo->count = 1;
+	return 0;
+}
+                        
+static int pdplus_spdif_cmask_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	ucontrol->value.iec958.status[0] = IEC958_AES0_PROFESSIONAL |
+		IEC958_AES0_NONAUDIO |
+		IEC958_AES0_CON_NOT_COPYRIGHT |
+		IEC958_AES0_CON_EMPHASIS;
+	ucontrol->value.iec958.status[1] = IEC958_AES1_CON_CATEGORY;
+	ucontrol->value.iec958.status[3] = IEC958_AES3_CON_FS;
+	return 0;
+}
+                        
+static int pdplus_spdif_pmask_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	ucontrol->value.iec958.status[0] = IEC958_AES0_PROFESSIONAL |
+		IEC958_AES0_NONAUDIO |
+		IEC958_AES0_PRO_FS |
+		IEC958_AES0_PRO_EMPHASIS;
+	return 0;
+}
+
+static int pdplus_spdif_default_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	pdplus_t *scard = snd_kcontrol_chip(kcontrol);
+	unsigned long flags;
+
+	read_lock_irqsave(&scard->lock, flags);
+	ucontrol->value.iec958 = scard->dig_setup;
+	read_unlock_irqrestore(&scard->lock, flags);
+	return 0;
+}
+                        
+static int pdplus_spdif_default_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	pdplus_t *scard = snd_kcontrol_chip(kcontrol);
+	unsigned long flags;
+	int change;
+
+	write_lock_irqsave(&scard->lock, flags);
+	if (memcmp(&ucontrol->value.iec958, &scard->dig_setup, sizeof(scard->dig_setup)) == 0)
+		change = 0;
+	else {
+		scard->dig_setup = ucontrol->value.iec958;
+		change = 1;
+	}
+	write_unlock_irqrestore(&scard->lock, flags);
+	return change;
+}
+
+/*
+ * entries
+ */
+static snd_kcontrol_new_t pdplus_control[] __devinitdata = {
         PDPLUS_CONTROL_DAC_VOLUME,
         PDPLUS_CONTROL_DAC_SWITCH,
         PDPLUS_CONTROL_DAC_AUTO_MUTE_512,
@@ -5259,13 +5225,35 @@ static snd_kcontrol_new_t pdplus_control[]= {
         PDPLUS_CONTROL_DEF_COPY_INHIBIT,
         PDPLUS_CONTROL_DEF_NON_AUDIO,
         PDPLUS_CONTROL_DEF_AUTO_CD_MODE,
-        PDPLUS_CONTROL_DEF_PRE_EMPHASIS
+        PDPLUS_CONTROL_DEF_PRE_EMPHASIS,
+
+	{
+		.access = SNDRV_CTL_ELEM_ACCESS_READ,
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = SNDRV_CTL_NAME_IEC958("",PLAYBACK,CON_MASK),
+		.info = pdplus_spdif_mask_info,
+		.get = pdplus_spdif_cmask_get,
+	},
+	{
+		.access = SNDRV_CTL_ELEM_ACCESS_READ,
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = SNDRV_CTL_NAME_IEC958("",PLAYBACK,PRO_MASK),
+		.info = pdplus_spdif_mask_info,
+		.get = pdplus_spdif_pmask_get,
+	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = SNDRV_CTL_NAME_IEC958("",PLAYBACK,DEFAULT),
+		.info = pdplus_spdif_mask_info,
+		.get = pdplus_spdif_default_get,
+		.put = pdplus_spdif_default_put,
+	},
 };
 
-#define PDPLUS_CONTROL_CNT (sizeof (pdplus_control) / sizeof(pdplus_control[0]))
+#define PDPLUS_CONTROL_CNT ARRAY_SIZE(pdplus_control)
 
 /* New mixer */
-static int __init pdplus_mixer_new (pdplus_t *scard)
+static int __devinit pdplus_mixer_new (pdplus_t *scard)
 {
         snd_card_t *card;
         snd_kcontrol_t *k;
@@ -5797,51 +5785,22 @@ static void pdplus_proc_read (
 
 /*
  * Register the /proc entry */
-static void __init pdplus_register_proc (pdplus_t *scard)
+static void __devinit pdplus_register_proc (pdplus_t *scard)
 {
         snd_info_entry_t *entry;
 
         snd_assert (scard != NULL, return);
         snd_assert (scard->card != NULL, return);
 
-        if ((entry = snd_info_create_card_entry (scard->card, "prodif_plus", scard->card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-                entry->private_data = (void*)scard;
-                entry->mode =  S_IFREG | S_IRUGO | S_IWUSR;
-#if DEBUG
-                entry->c.text.read_size = 65536;
-#else
-                entry->c.text.read_size = 1024;
-#endif
-                entry->c.text.read = pdplus_proc_read;
-                if (snd_info_register (entry) < 0) {
-                        snd_info_free_entry (entry);
-                        entry = NULL;
-                        return;
-                }
-        }
-
-        scard->proc_entry = entry;
-}
-
-
-/*
- * Unregister the /proc entry */
-static void __exit pdplus_unregister_proc (pdplus_t *scard)
-{
-        snd_assert (scard != NULL, return);
-
-        if (scard->proc_entry) {
-                snd_info_unregister (scard->proc_entry);
-                scard->proc_entry = NULL;
-        }
+        if (! snd_card_proc_new (scard->card, "prodif_plus", &entry))
+		snd_info_set_text_ops(entry, scard, pdplus_proc_read);
 }
 
 
 /*
  * Check that the resource queries of the card are sane */
 #if MANY_CHECKS
-static int __init pdplus_check_resources (pci_dev_t *pci)
+static int __devinit pdplus_check_resources (pci_dev_t *pci)
 {
         u_long x;
 
@@ -5901,7 +5860,7 @@ static int __init pdplus_check_resources (pci_dev_t *pci)
 
 /*
  * Register memory area */
-static int __init pdplus_register_iomem (
+static int __devinit pdplus_register_iomem (
         snd_card_t *card,
         pci_dev_t *pci,
         int num,
@@ -5938,7 +5897,7 @@ static int __init pdplus_register_iomem (
 #if CHECK
 /*
  * Check consistency of some aspects of the card. */
-static int __init pdplus_check_consistency_ll (pdplus_t *scard)
+static int __devinit pdplus_check_consistency_ll (pdplus_t *scard)
 {
         u32 x, y;
         PDPLUS_LOCAL_VADDR (scard);
@@ -5981,7 +5940,7 @@ static int __init pdplus_check_consistency_ll (pdplus_t *scard)
  *       are not easy to have here.  Furthermore, check that all called functions
  *       only use the vaddrs known at the time of calling!! (ht)
  */
-static int __init pdplus_init(
+static int __devinit pdplus_init(
         pci_dev_t  *pci,
         snd_card_t *card)
 {
@@ -5995,9 +5954,6 @@ static int __init pdplus_init(
         if (scard == NULL)
                 LEAVE (-ENOMEM);
 
-#if DEBUG
-        scard->magic = pdplus_t_magic;
-#endif
         scard->pci = pci;
         scard->card = card;
 
@@ -6005,7 +5961,7 @@ static int __init pdplus_init(
         /* *INIT* */
         scard->a_out_route =     PDPLUS_ROUTE_A_PLAY;
         scard->d_out_route =     PDPLUS_ROUTE_D_PLAY;
-        scard->lock =            RW_LOCK_UNLOCKED;
+        rwlock_init(&scard->lock);
         scard->auto_cd_mode =    1;
         scard->auto_profi_mode = 1;
 
@@ -6123,7 +6079,7 @@ static int __init pdplus_init(
 
 /*
  * Try to grab the PCI device */
-static int __init pdplus_probe(
+static int __devinit pdplus_probe(
         pci_dev_t *pci,
         pci_device_id_t const *pci_id)
 {
@@ -6140,10 +6096,15 @@ static int __init pdplus_probe(
                 LEAVE (-ENOENT);
         }
 
-        card = snd_card_new (index[dev], id[dev], THIS_MODULE, sizeof(pdplus_t));
+        card = snd_card_new (index[dev], id[dev], THIS_MODULE, 0);
         if (card == NULL)
                 LEAVE (-ENOMEM);
 
+	card->private_data = snd_magic_kcalloc(pdplus_t, 0, GFP_KERNEL);
+	if (card->private_data == NULL) {
+		snd_card_free(card);
+                LEAVE (-ENOMEM);
+	}
 	card->private_free = pdplus_sweep;
 
         err = pdplus_init (pci, card);
@@ -6157,8 +6118,7 @@ static int __init pdplus_probe(
         LEAVE (0);
 }
 
-static void __exit pdplus_unregister_iomem (
-        snd_iomem_t *iomem)
+static void pdplus_unregister_iomem(snd_iomem_t *iomem)
 {
         ENTER;
 
@@ -6168,7 +6128,7 @@ static void __exit pdplus_unregister_iomem (
 
 /*
  * Release resources */
-static void __exit pdplus_sweep(snd_card_t *card)
+static void pdplus_sweep(snd_card_t *card)
 {
         pdplus_t *scard;
         u_long flags;
@@ -6188,8 +6148,6 @@ static void __exit pdplus_sweep(snd_card_t *card)
 
         write_unlock_irqrestore (&scard->lock, flags);
 
-        pdplus_unregister_proc (scard);
-
         pdplus_unregister_iomem (&scard->PLX_iomem);
         pdplus_unregister_iomem (&scard->MEM_iomem);
         pdplus_unregister_iomem (&scard->FPGA_iomem);
@@ -6200,16 +6158,16 @@ static void __exit pdplus_sweep(snd_card_t *card)
 	if (scard->irq >= 0)
 		free_irq(scard->irq, (void *)scard);
 
+	snd_magic_kfree(scard);
         LEAVE_VOID;
 }
 
 
 /*
  * Release the PCI device */
-static void __exit pdplus_remove(pci_dev_t *pci)
+static void __devexit pdplus_remove(pci_dev_t *pci)
 {
         snd_card_t *card;
-        pdplus_t *scard;
         ENTER;
 
         Vprintk ("MMIO 0= 0x%lx\n", pci_resource_start (pci, 0));
@@ -6217,17 +6175,8 @@ static void __exit pdplus_remove(pci_dev_t *pci)
 
         if (card == 0)
                 Vprintk ("Error: card == %p.\n", card);
-        else {
-                scard = (pdplus_t *)card->private_data;
-                if (scard == NULL)
-                        Vprintk ("Error: scard == %p.\n", scard);
-                else
-                        pdplus_sweep (card);
-        }
-
-        snd_magic_kfree (card->private_data);
-        card->private_data = NULL;
-        snd_card_free (card);
+        else
+		snd_card_free (card);
         pci_set_drvdata (pci, NULL);
 
         LEAVE_VOID;
@@ -6246,10 +6195,10 @@ static struct pci_device_id pdplus_ids[] __devinitdata = {
 /* ********************************************************************** */
 
 static struct pci_driver driver = {
-        name:     FULL_NAME,
-        id_table: pdplus_ids,
-        probe:    pdplus_probe,
-        remove:   pdplus_remove,
+	.name =     FULL_NAME,
+	.id_table = pdplus_ids,
+	.probe =    pdplus_probe,
+	.remove =   __devexit_p(pdplus_remove),
 };
 
 static int __init alsa_card_pdplus_init(void)
