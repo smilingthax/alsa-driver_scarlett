@@ -103,6 +103,24 @@
 	.private_value = (unsigned long)&xenum }
 
 /*
+ * Bias levels
+ *
+ * @ON:      Bias is fully on for audio playback and capture operations.
+ * @PREPARE: Prepare for audio operations. Called before DAPM switching for
+ *           stream start and stop operations.
+ * @STANDBY: Low power standby state when no playback/capture operations are
+ *           in progress. NOTE: The transition time between STANDBY and ON
+ *           should be as fast as possible and no longer than 10ms.
+ * @OFF:     Power Off. No restrictions on transition times.
+ */
+enum snd_soc_bias_level {
+	SND_SOC_BIAS_ON,
+	SND_SOC_BIAS_PREPARE,
+	SND_SOC_BIAS_STANDBY,
+	SND_SOC_BIAS_OFF,
+};
+
+/*
  * Digital Audio Interface (DAI) types
  */
 #define SND_SOC_DAI_AC97	0x1
@@ -272,9 +290,9 @@ struct snd_soc_ops {
 	int (*trigger)(struct snd_pcm_substream *, int);
 };
 
-/* ASoC codec DAI ops */
-struct snd_soc_codec_ops {
-	/* codec DAI clocking configuration */
+/* ASoC DAI ops */
+struct snd_soc_dai_ops {
+	/* DAI clocking configuration */
 	int (*set_sysclk)(struct snd_soc_codec_dai *codec_dai,
 		int clk_id, unsigned int freq, int dir);
 	int (*set_pll)(struct snd_soc_codec_dai *codec_dai,
@@ -282,7 +300,7 @@ struct snd_soc_codec_ops {
 	int (*set_clkdiv)(struct snd_soc_codec_dai *codec_dai,
 		int div_id, int div);
 
-	/* CPU DAI format configuration */
+	/* DAI format configuration */
 	int (*set_fmt)(struct snd_soc_codec_dai *codec_dai,
 		unsigned int fmt);
 	int (*set_tdm_slot)(struct snd_soc_codec_dai *codec_dai,
@@ -291,24 +309,6 @@ struct snd_soc_codec_ops {
 
 	/* digital mute */
 	int (*digital_mute)(struct snd_soc_codec_dai *, int mute);
-};
-
-/* ASoC cpu DAI ops */
-struct snd_soc_cpu_ops {
-	/* CPU DAI clocking configuration */
-	int (*set_sysclk)(struct snd_soc_cpu_dai *cpu_dai,
-		int clk_id, unsigned int freq, int dir);
-	int (*set_clkdiv)(struct snd_soc_cpu_dai *cpu_dai,
-		int div_id, int div);
-	int (*set_pll)(struct snd_soc_cpu_dai *cpu_dai,
-		int pll_id, unsigned int freq_in, unsigned int freq_out);
-
-	/* CPU DAI format configuration */
-	int (*set_fmt)(struct snd_soc_cpu_dai *cpu_dai,
-		unsigned int fmt);
-	int (*set_tdm_slot)(struct snd_soc_cpu_dai *cpu_dai,
-		unsigned int mask, int slots);
-	int (*set_tristate)(struct snd_soc_cpu_dai *, int tristate);
 };
 
 /* SoC Codec DAI */
@@ -328,7 +328,7 @@ struct snd_soc_codec_dai {
 
 	/* ops */
 	struct snd_soc_ops ops;
-	struct snd_soc_codec_ops dai_ops;
+	struct snd_soc_dai_ops dai_ops;
 
 	/* DAI private data */
 	void *private_data;
@@ -352,7 +352,7 @@ struct snd_soc_cpu_dai {
 
 	/* ops */
 	struct snd_soc_ops ops;
-	struct snd_soc_cpu_ops dai_ops;
+	struct snd_soc_dai_ops dai_ops;
 
 	/* DAI capabilities */
 	struct snd_soc_pcm_stream capture;
@@ -374,7 +374,8 @@ struct snd_soc_codec {
 	struct mutex mutex;
 
 	/* callbacks */
-	int (*dapm_event)(struct snd_soc_codec *codec, int event);
+	int (*set_bias_level)(struct snd_soc_codec *,
+			      enum snd_soc_bias_level level);
 
 	/* runtime */
 	struct snd_card *card;
@@ -396,8 +397,8 @@ struct snd_soc_codec {
 	/* dapm */
 	struct list_head dapm_widgets;
 	struct list_head dapm_paths;
-	unsigned int dapm_state;
-	unsigned int suspend_dapm_state;
+	enum snd_soc_bias_level bias_level;
+	enum snd_soc_bias_level suspend_bias_level;
 	struct delayed_work delayed_work;
 
 	/* codec DAI's */
@@ -467,7 +468,8 @@ struct snd_soc_machine {
 	int (*resume_post)(struct platform_device *pdev);
 
 	/* callbacks */
-	int (*dapm_event)(struct snd_soc_machine *, int event);
+	int (*set_bias_level)(struct snd_soc_machine *,
+			      enum snd_soc_bias_level level);
 
 	/* CPU <--> Codec DAI links  */
 	struct snd_soc_dai_link *dai_link;

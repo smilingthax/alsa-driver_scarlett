@@ -10,11 +10,6 @@
  *  Free Software Foundation;  either version 2 of the  License, or (at your
  *  option) any later version.
  *
- *  Revision history
- *    12th Aug 2005   Initial version.
- *    25th Oct 2005   Implemented path power domain.
- *    18th Dec 2005   Implemented machine and stream level power domain.
- *
  *  Features:
  *    o Changes power status of internal codec blocks depending on the
  *      dynamic configuration of codec internal audio paths and active
@@ -768,21 +763,18 @@ static ssize_t dapm_widget_show(struct device *dev,
 		}
 	}
 
-	switch(codec->dapm_state){
-	case SNDRV_CTL_POWER_D0:
-		state = "D0";
+	switch (codec->bias_level) {
+	case SND_SOC_BIAS_ON:
+		state = "On";
 		break;
-	case SNDRV_CTL_POWER_D1:
-		state = "D1";
+	case SND_SOC_BIAS_PREPARE:
+		state = "Prepare";
 		break;
-	case SNDRV_CTL_POWER_D2:
-		state = "D2";
+	case SND_SOC_BIAS_STANDBY:
+		state = "Standby";
 		break;
-	case SNDRV_CTL_POWER_D3hot:
-		state = "D3hot";
-		break;
-	case SNDRV_CTL_POWER_D3cold:
-		state = "D3cold";
+	case SND_SOC_BIAS_OFF:
+		state = "Off";
 		break;
 	}
 	count += sprintf(buf + count, "PM State: %s\n", state);
@@ -1363,27 +1355,28 @@ int snd_soc_dapm_stream_event(struct snd_soc_codec *codec,
 EXPORT_SYMBOL_GPL(snd_soc_dapm_stream_event);
 
 /**
- * snd_soc_dapm_device_event - send a device event to the dapm core
+ * snd_soc_dapm_set_bias_level - set the bias level for the system
  * @socdev: audio device
- * @event: device event
+ * @level: level to configure
  *
- * Sends a device event to the dapm core. The core then makes any
- * necessary machine or codec power changes..
+ * Configure the bias (power) levels for the SoC audio device.
  *
  * Returns 0 for success else error.
  */
-int snd_soc_dapm_device_event(struct snd_soc_device *socdev, int event)
+int snd_soc_dapm_set_bias_level(struct snd_soc_device *socdev,
+				enum snd_soc_bias_level level)
 {
 	struct snd_soc_codec *codec = socdev->codec;
 	struct snd_soc_machine *machine = socdev->machine;
+	int ret = 0;
 
-	if (machine->dapm_event)
-		machine->dapm_event(machine, event);
-	if (codec->dapm_event)
-		codec->dapm_event(codec, event);
-	return 0;
+	if (machine->set_bias_level)
+		ret = machine->set_bias_level(machine, level);
+	if (ret == 0 && codec->set_bias_level)
+		ret = codec->set_bias_level(codec, level);
+
+	return ret;
 }
-EXPORT_SYMBOL_GPL(snd_soc_dapm_device_event);
 
 /**
  * snd_soc_dapm_set_endpoint - set audio endpoint status
