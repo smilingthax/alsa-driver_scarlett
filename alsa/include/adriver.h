@@ -705,6 +705,13 @@ struct workqueue_struct *snd_compat_create_workqueue2(const char *name);
 #define create_workqueue(name) snd_compat_create_workqueue2(name)
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)
+#include <linux/workqueue.h>
+#ifndef create_singlethread_workqueue
+#define create_singlethread_workqueue(name) create_workqueue(name)
+#endif
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
 #include <linux/workqueue.h>
 /* redefine INIT_WORK() */
