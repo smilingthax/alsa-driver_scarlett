@@ -175,6 +175,7 @@ CHECK_KERNEL_HEADER(linux/irq.h)
 CHECK_KERNEL_HEADER(linux/threads.h)
 CHECK_KERNEL_HEADER(linux/rwsem.h)
 CHECK_KERNEL_HEADER(linux/gameport.h)
+CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
 
 CHECK_KERNEL_HEADER(linux/workqueue.h)
 
