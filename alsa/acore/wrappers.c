@@ -4,6 +4,7 @@
 #include <linux/version.h>
 #include <linux/config.h>
 #include <linux/string.h>
+#include <linux/sched.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
