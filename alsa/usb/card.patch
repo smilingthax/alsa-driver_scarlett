@@ -1,25 +1,25 @@
---- ../alsa-kernel/usb/card.c	2011-03-11 15:00:47.607195676 +0100
-+++ card.c	2011-03-11 15:17:53.470906409 +0100
+--- ../alsa-kernel/usb/card.c	2011-12-19 10:35:45.000000000 +0100
++++ card.c	2011-12-20 07:38:56.000000000 +0100
 @@ -1,3 +1,4 @@
 +#include "card.inc"
  /*
   *   (Tentative) USB Audio Driver for ALSA
   *
-@@ -80,7 +81,12 @@
+@@ -83,7 +84,12 @@
  static int vid[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = -1 };
  static int pid[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = -1 };
  static int nrpacks = 8;		/* max. number of packets per urb */
--static int async_unlink = 1;
-+static int async_unlink =
+-static bool async_unlink = 1;
++static bool async_unlink =
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
-+1;
++true;
 +#else
-+0; /* disabled as default for buggy async-unlink handling */
++false; /* disabled as default for buggy async-unlink handling */
 +#endif
  static int device_setup[SNDRV_CARDS]; /* device parameter for this card */
- static int ignore_ctl_error;
+ static bool ignore_ctl_error;
  
-@@ -243,19 +249,25 @@
+@@ -246,19 +252,25 @@
  
  	case UAC_VERSION_2: {
  		struct usb_interface_assoc_descriptor *assoc =
@@ -45,7 +45,7 @@
  
  		break;
  	}
-@@ -333,8 +345,13 @@
+@@ -345,8 +357,13 @@
  	chip->async_unlink = async_unlink;
  	chip->probing = 1;
  
@@ -59,7 +59,7 @@
  	INIT_LIST_HEAD(&chip->pcm_list);
  	INIT_LIST_HEAD(&chip->midi_list);
  	INIT_LIST_HEAD(&chip->mixer_list);
-@@ -431,8 +448,12 @@
+@@ -448,8 +465,12 @@
  
  	alts = &intf->altsetting[0];
  	ifnum = get_iface_desc(alts)->bInterfaceNumber;
@@ -72,7 +72,7 @@
  	if (quirk && quirk->ifnum >= 0 && ifnum != quirk->ifnum)
  		goto __err_val;
  
-@@ -564,6 +585,7 @@
+@@ -583,6 +604,7 @@
  	}
  }
  
@@ -80,7 +80,7 @@
  /*
   * new 2.5 USB kernel API
   */
-@@ -667,6 +689,7 @@
+@@ -686,6 +708,7 @@
  #define usb_audio_suspend	NULL
  #define usb_audio_resume	NULL
  #endif		/* CONFIG_PM */
@@ -88,7 +88,7 @@
  
  static struct usb_device_id usb_audio_ids [] = {
  #include "quirks-table.h"
-@@ -683,13 +706,23 @@
+@@ -702,13 +725,23 @@
   */
  
  static struct usb_driver usb_audio_driver = {
@@ -112,7 +112,7 @@
  };
  
  static int __init snd_usb_audio_init(void)
-@@ -708,3 +741,5 @@
+@@ -727,3 +760,5 @@
  
  module_init(snd_usb_audio_init);
  module_exit(snd_usb_audio_cleanup);
