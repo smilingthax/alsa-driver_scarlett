@@ -6,6 +6,8 @@
 #
 
 %makefile group @if_sequencer
+%makefile ignore_in linux/sound/core/seq
+%makefile ignore_in linux/sound/core/seq/instr
 %makefile header
 %makefile line ifeq ($(subst m,y,$(CONFIG_SND_SEQUENCER)),y)
 %makefile endheader
@@ -76,17 +78,17 @@ snd-opl3-synth @if_sequencer snd-opl3-lib snd-seq-device \
 	       snd-seq-midi-emul snd-ainstr-fm
 
 %dir linux/sound/isa
-|snd-als100 snd-sb16-dsp snd-mpu401-uart snd-opl3-synth
-|snd-azt2320 snd-cs4231-lib snd-mpu401-uart snd-opl3-synth
+|snd-als100 snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-azt2320 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-cmi8330 snd-ad1848-lib snd-sb16-dsp
-|snd-dt0197h snd-sb16-dsp snd-mpu401-uart snd-opl3-synth
-|snd-es18xx snd-pcm snd-mpu401-uart snd-opl3-synth
-|snd-opl3sa2 snd-cs4231-lib snd-mpu401-uart snd-opl3-synth
+|snd-dt0197h snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-es18xx snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-opl3sa2 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-sgalaxy snd-ad1848-lib
 
 %dir linux/sound/isa/ad1816a
 snd-ad1816a-lib snd-pcm snd-timer
-|snd-ad1816a snd-ad1816a-lib snd-mpu401-uart snd-opl3-synth
+|snd-ad1816a snd-ad1816a-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 
 %dir linux/sound/isa/ad1848
 snd-ad1848-lib snd-pcm
@@ -96,12 +98,12 @@ snd-ad1848-lib snd-pcm
 snd-cs4231-lib snd-pcm snd-timer
 |snd-cs4231 snd-cs4231-lib snd-mpu401-uart
 snd-cs4236-lib snd-cs4231-lib
-|snd-cs4232 snd-cs4231-lib snd-mpu401-uart snd-opl3-synth
-|snd-cs4236 snd-cs4236-lib snd-mpu401-uart snd-opl3-synth
+|snd-cs4232 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-cs4236 snd-cs4236-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 
 %dir linux/sound/isa/es1688
 snd-es1688-lib snd-pcm
-|snd-es1688 snd-es1688-lib snd-mpu401-uart snd-opl3-synth
+|snd-es1688 snd-es1688-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 
 %dir linux/sound/isa/gus
 snd-gus-lib snd-pcm snd-timer snd-seq-midi snd-seq-device
@@ -110,49 +112,49 @@ snd-gus-synth @if_sequencer snd-gus-lib snd-seq-midi-emul \
 |snd-gusclassic snd-gus-lib snd-gus-synth
 |snd-gusmax snd-gus-lib snd-gus-synth snd-cs4231-lib
 |snd-gusextreme snd-gus-lib snd-gus-synth snd-es1688-lib \
-	        snd-mpu401-uart snd-opl3-synth
+	        snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-interwave snd-gus-lib snd-gus-synth snd-cs4231-lib
 |snd-interwave-stb snd-gus-lib snd-gus-synth snd-cs4231-lib snd-tea6330t
 
 %dir linux/sound/isa/opti9xx
-|snd-opti92x-ad1848 snd-ad1848-lib snd-mpu401-uart snd-opl3-synth
-|snd-opti92x-cs4231 snd-cs4231-lib snd-mpu401-uart snd-opl3-synth
-|snd-opti93x snd-pcm snd-mpu401-uart snd-opl3-synth
+|snd-opti92x-ad1848 snd-ad1848-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-opti92x-cs4231 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-opti93x snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 
 %dir linux/sound/isa/sb
 snd-sb-common
 snd-sb8-dsp snd-sb-common snd-pcm snd-seq-midi
-|snd-sb8 snd-sb8-dsp snd-opl3-synth
+|snd-sb8 snd-sb8-dsp snd-opl3-lib snd-opl3-synth
 snd-sb16-dsp snd-sb-common snd-pcm
 snd-sb16-csp @if_sb16_csp snd-sb-common snd-hwdep
-|snd-sb16 snd-sb16-dsp snd-sb16-csp snd-mpu401-uart snd-opl3-synth
+|snd-sb16 snd-sb16-dsp snd-sb16-csp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 snd-emu8000-synth @if_sequencer snd-emux-synth
 |snd-sbawe snd-sb16-dsp snd-sb16-csp snd-mpu401-uart \
-	   snd-opl3-synth snd-emu8000-synth
+	   snd-opl3-lib snd-opl3-synth snd-emu8000-synth
 |snd-es968 snd-sb8-dsp
 
 %dir linux/sound/isa/wavefront
 #snd-wavefront-fx snd-hwdep
 #snd-wavefront-synth snd-hwdep snd-seq-midi
-#|snd-wavefront snd-cs4231-lib snd-mpu401-uart snd-opl3-synth \
+#|snd-wavefront snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth \
 #	       snd-wavefront-synth snd-wavefront-fx
-|snd-wavefront snd-cs4231-lib snd-mpu401-uart snd-opl3-synth \
+|snd-wavefront snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth \
 	       snd-hwdep snd-seq-midi
 
 %dir linux/sound/pci
-|snd-als4000 snd-sb-common snd-pcm snd-mpu401-uart snd-opl3-synth
-|snd-cmipci snd-pcm snd-mpu401-uart snd-opl3-synth
-|snd-cs4281 snd-pcm snd-ac97-codec snd-seq-midi snd-opl3-synth
+|snd-als4000 snd-sb-common snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-cmipci snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-cs4281 snd-pcm snd-ac97-codec snd-seq-midi snd-opl3-lib snd-opl3-synth
 |snd-ens1370 snd-pcm snd-ak4531-codec snd-seq-midi
 |snd-ens1371 snd-pcm snd-ac97-codec snd-seq-midi
-|snd-es1938 snd-pcm snd-opl3-synth snd-mpu401-uart
+|snd-es1938 snd-pcm snd-opl3-lib snd-opl3-synth snd-mpu401-uart
 |snd-es1968 snd-pcm snd-ac97-codec snd-mpu401-uart
-|snd-fm801 snd-pcm snd-ac97-codec snd-mpu401-uart snd-opl3-synth
+|snd-fm801 snd-pcm snd-ac97-codec snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-ice1712 snd-pcm snd-cs8427 snd-ac97-codec snd-mpu401-uart
 |snd-intel8x0 snd-pcm snd-ac97-codec snd-mpu401-uart
 |snd-maestro3 snd-pcm snd-ac97-codec
 |snd-rme96 snd-pcm
-|snd-sonicvibes snd-pcm snd-mpu401-uart snd-opl3-synth
+|snd-sonicvibes snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-via686 snd-pcm snd-ac97-codec snd-mpu401-uart
 |snd-via8233 snd-pcm snd-ac97-codec
 
@@ -186,7 +188,7 @@ snd-trident-synth @if_sequencer snd-seq-midi-emul snd-ainstr-simple
 |snd-trident snd-pcm snd-ac97-codec snd-mpu401-uart snd-util-mem snd-trident-synth
 
 %dir linux/sound/pci/ymfpci
-|snd-ymfpci snd-pcm snd-ac97-codec snd-mpu401-uart snd-opl3-synth
+|snd-ymfpci snd-pcm snd-ac97-codec snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 
 %dir linux/sound/ppc
 |snd-powermac snd-pcm

@@ -40,21 +40,30 @@ typedef enum {
 	TYPE_LIBRARY = 2
 } Type;
 
-typedef struct depStruct {
+typedef struct depStruct dep;
+
+typedef struct subdepStruct {
+	int nummacros;
+	char **macronames;
+	dep *dep;
+} subdep;
+
+struct depStruct {
 	Type type;
 	char *dir;
 	char *name;
 	int numdeps;
 	char **depnames;
-	struct depStruct **deps;
+	dep **deps;
 	struct depStruct *link;
 	int nummacros;
 	char **macronames;
 	int hitflag;
 	int printflag;
-} dep;
+};
 
 typedef struct makefileMacroStruct {
+	char *ignore_in;
 	char *name;
 	char *header;
 	char *footer;
@@ -71,7 +80,7 @@ static void parse_makefile_outdesc(char *line);
 static dep *alloc_mem_for_dep(Type type);
 static char *get_word(char *line, char *word);
 static dep *find_dep(char *parent, char *depname);
-static int make_list_of_deps_for_dep(dep * dependency, dep **list[]);
+static int make_list_of_deps_for_dep(dep * dependency, subdep **list);
 static void del_all_from_list(void);
 
 int main(int argc, char *argv[]);
@@ -209,7 +218,7 @@ static void add_dep(char *line, const char *dir, short type)
 			continue;
 		}
 		new_dep->depnames = realloc(new_dep->depnames, sizeof(char *) * (numdeps + 1));
-		new_dep->deps = realloc(new_dep->deps, sizeof(new_dep) * (numdeps + 1));
+		new_dep->deps = realloc(new_dep->deps, sizeof(dep *) * (numdeps + 1));
 		if (new_dep->depnames == NULL || new_dep->deps == NULL) {
 			fprintf(stderr, "No enough memory\n");
 			exit(EXIT_FAILURE);
@@ -219,8 +228,7 @@ static void add_dep(char *line, const char *dir, short type)
 			fprintf(stderr, "No enough memory\n");
 			exit(EXIT_FAILURE);
 		}
-		new_dep->deps[numdeps] = NULL;
-		numdeps++;
+		new_dep->deps[numdeps++] = NULL;
 	}
 	new_dep->numdeps = numdeps;
 	free(word);
@@ -310,6 +318,9 @@ static void parse_makefile_outdesc(char *line)
 		} else if (!strcmp(word, "indent")) {
 			get_word(line, word);
 			macro->indent = atoi(word);
+		} else if (!strcmp(word, "ignore_in")) {
+			get_word(line, word);
+			add_makefile_text(&macro->ignore_in, word);
 		} else {
 			fprintf(stderr, "unknown command %s (none scope)\n", word);
 			exit(EXIT_FAILURE);
@@ -455,35 +466,64 @@ static void resolve_dep(dep * parent)
 	}
 }
 
+// add a new macro to subdep
+static void add_macro_to_subdep(subdep *subdep, const char *macroname)
+{
+	char *str;
+	int i;
+
+	for (i = 0; i < subdep->nummacros; i++)
+		if (!strcmp(subdep->macronames[i], macroname))
+			return;
+	subdep->macronames = realloc(subdep->macronames, sizeof(char *) * (subdep->nummacros + 1));
+	str = strdup(macroname);
+	if (subdep->macronames == NULL || str == NULL) {
+		fprintf(stderr, "No enough memory\n");
+		exit(EXIT_FAILURE);
+	}
+	subdep->macronames[subdep->nummacros++] = str;
+}
+
 // Fill list[] with all deps for dependency
-static int make_list_of_deps_for_dep1(dep * parent, dep * dependency, dep **list[], int num)
+static int make_list_of_deps_for_dep1(dep * parent, dep * dependency, subdep **list, int num)
 {
 	int i, j;
 	int add;
+	dep *dep;
+	subdep *new_dep;
 
 	if (dependency->hitflag) {
 		fprintf(stderr, "endless dependency for %s parent %s\n", dependency->name, parent ? parent->name : "(none)");
 		exit(EXIT_FAILURE);
 	}
 	dependency->hitflag = 1;
-	for (i = 0; i < dependency->numdeps; i++)
-		if (dependency->deps[i]) {
+	for (i = 0; i < dependency->numdeps; i++) {
+		dep = dependency->deps[i];
+		if (dep) {
 			add = 1;
 			for (j = 0; j < num; j++)
-				if (!strcmp((*list)[j]->name, dependency->deps[i]->name)) {
+				if (!strcmp((*list)[j].dep->name, dep->name)) {
 					add = 0;
 					break;
 				}
 			if (add) {
-				*list = realloc(*list, sizeof(dep *) * (num + 1));
+				*list = realloc(*list, sizeof(subdep) * (num + 1));
 				if (*list == NULL) {
 					fprintf(stderr, "No enough memory\n");
 					exit(EXIT_FAILURE);
 				}
-				(*list)[num++] = dependency->deps[i];
-				num = make_list_of_deps_for_dep1(dependency, dependency->deps[i], list, num);
+				new_dep = &((*list)[num++]);
+				new_dep->dep = dep;
+				new_dep->nummacros = 0;
+				new_dep->macronames = NULL;
+				for (j = 0; j < dependency->nummacros; j++)
+					add_macro_to_subdep(new_dep, dependency->macronames[j]);
+				for (j = 0; j < dep->nummacros; j++)
+					add_macro_to_subdep(new_dep, dep->macronames[j]);
+				num = make_list_of_deps_for_dep1(dependency, dep, list, num);
 			}
 		}
+	}
 	return num;
 }
 
@@ -499,7 +539,7 @@ static void clear_printflags(void)
 }
 
 // Fill list[] with all deps for dependency
-static int make_list_of_deps_for_dep(dep * dependency, dep **list[])
+static int make_list_of_deps_for_dep(dep * dependency, subdep **list)
 {
 	dep * temp_dep = Deps;
 
@@ -540,6 +580,27 @@ static void del_all_from_list(void)
 	}
 }
 
+// Free subdep list memory
+static void free_subdep_list(subdep *list, int num)
+{
+	int idx;
+	
+	if (list == NULL)
+		return;
+	for (idx = 0; idx < num; idx++) {
+		int mac;
+		subdep *sdep = &list[idx];
+
+		if (sdep->macronames) {
+			for (mac = 0; mac < sdep->nummacros; mac++)
+				if (sdep->macronames[mac])
+					free(sdep->macronames[mac]);
+			free(sdep->macronames);
+		}
+	}
+	free(list);
+}
+
 // Print spaces
 static void print_indent(int indent)
 {
@@ -551,10 +612,29 @@ static void print_indent(int indent)
 		printf(" ");
 }
 
+// Check ignore_in
+static int check_ignore_in(makefileMacro *macro, const char *dir)
+{
+	char *str = macro->ignore_in;
+	
+	while (str) {
+		if (strlen(str) < strlen(dir))
+			return 0;
+		if (!strncmp(str, dir, strlen(dir)) && (str[strlen(dir)] == '\0' || str[strlen(dir)] == '\n'))
+			return 1;
+		while (*str && *str != '\n')
+			str++;
+		if (*str == '\n')
+			str++;
+	}
+	return 0;
+}
+
 // Output in Makefile.in format
 static void output_makefile1(const char *dir, int all)
 {
-	dep *tempdep, **list;
+	dep *tempdep;
+	subdep *list;
 	char *text;
 	int num, idx, midx, vidx, lidx, first, mfirst, macroloop, indent;
 	int nummacros = 0, indir = 0;
@@ -568,6 +648,8 @@ static void output_makefile1(const char *dir, int all)
 		indir = !dir || !strcmp(dir, tempdep->dir);
 		for (midx = 0; midx < tempdep->nummacros; midx++) {
 			makefileMacro *macro = find_makefileMacro(tempdep->macronames[midx++]);
+			if (check_ignore_in(macro, dir))
+				continue;
 			for (vidx = 0; vidx < nummacros; vidx++) {
 				if (macros[vidx] == macro)
 					break;
@@ -586,11 +668,14 @@ static void output_makefile1(const char *dir, int all)
 		first = 1;
 		num = make_list_of_deps_for_dep(tempdep, &list);
 		for (idx = 0; idx < num; idx++) {
-			dep *ldep = list[idx];
-			if (dir && strcmp(dir, ldep->dir))
+			subdep *ldep = &list[idx];
+			if (dir && strcmp(dir, ldep->dep->dir))
 				continue;
 			for (midx = 0; midx < ldep->nummacros; midx++) {
-				makefileMacro *macro = find_makefileMacro(ldep->macronames[midx++]);
+				makefileMacro *macro;
+				macro = find_makefileMacro(ldep->macronames[midx++]);
+				if (check_ignore_in(macro, dir))
+					continue;
 				for (vidx = 0; vidx < nummacros; vidx++) {
 					if (macros[vidx] == macro)
 						break;
@@ -615,10 +700,10 @@ static void output_makefile1(const char *dir, int all)
 				if (indir)
 					printf(" %s.o", tempdep->name);
 			}
-			printf(" %s.o", ldep->name);
+			printf(" %s.o", ldep->dep->name);
 		      __out1:
 		}
-		free(list);
+		free_subdep_list(list, num);
 		if (!first)
 			printf("\n");
 		if (first && indir) {
@@ -658,10 +743,10 @@ static void output_makefile1(const char *dir, int all)
 		      __ok2_2:
 			num = make_list_of_deps_for_dep(tempdep, &list);
 			for (idx = 0; idx < num; idx++) {
-				dep *ldep = list[idx];
+				subdep *ldep = &list[idx];
 				if (!ldep->nummacros)
 					continue;
-				if (dir && strcmp(dir, ldep->dir))
+				if (dir && strcmp(dir, ldep->dep->dir))
 					continue;
 				for (midx = 0; midx < ldep->nummacros; midx++) {
 					makefileMacro *macro = find_makefileMacro(ldep->macronames[midx]);
@@ -699,10 +784,10 @@ static void output_makefile1(const char *dir, int all)
 					if (!tempdep->printflag && indir)
 						printf(" %s.o", tempdep->name);
 				}
-				printf(" %s.o", ldep->name);
+				printf(" %s.o", ldep->dep->name);
 			      __out2:
 			}
-			free(list);
+			free_subdep_list(list, num);
 			if (!first)
 				printf("\n");
 		      __out2_2:
@@ -726,7 +811,7 @@ static void output_makefile1(const char *dir, int all)
 // Output in Makefile.in format
 static void output_makefile(const char *dir, int all)
 {
-	printf("# Module Dependency\n");
+	printf("# Toplevel Module Dependency\n");
 	clear_printflags();
 	output_makefile1(dir, all);
 }
