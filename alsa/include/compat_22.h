@@ -6,6 +6,7 @@
 #include <linux/list.h>
 #include <linux/pagemap.h>
 #include <linux/ioport.h>
+#include <asm/byteorder.h>
 
 #ifndef likely
 #if __GNUC__ == 2 && __GNUC_MINOR__ < 96
@@ -130,6 +131,7 @@ static inline void list_move_tail(struct list_head *list,
 	do { __save_flags(flags); __cli(); } while (0)
 #define local_irq_restore(flags) \
 	do { __restore_flags(flags); } while (0)
+#define local_irq_enable() __sti()
 
 /* Some distributions use modified kill_fasync */
 #ifdef CONFIG_OLD_KILL_FASYNC
@@ -631,5 +633,18 @@ static inline int abs(int val)
 #endif
 
 #define might_sleep() do { } while (0)
+
+#ifndef __constant_cpu_to_le32
+#ifdef __LITTLE_ENDIAN
+#define __constant_cpu_to_le32(x) (x)
+#else
+#define __constant_cpu_to_le32(x) \
+	((__u32)( \
+		(((__u32)(x) & (__u32)0x000000ffUL) << 24) | \
+		(((__u32)(x) & (__u32)0x0000ff00UL) <<  8) | \
+		(((__u32)(x) & (__u32)0x00ff0000UL) >>  8) | \
+		(((__u32)(x) & (__u32)0xff000000UL) >> 24) ))
+#endif
+#endif
 
 #endif /* <2.3.0 */

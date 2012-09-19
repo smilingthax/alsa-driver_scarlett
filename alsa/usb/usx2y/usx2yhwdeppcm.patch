@@ -1,6 +1,6 @@
---- ../../../alsa-kernel/usb/usx2y/usx2yhwdeppcm.c	2006-10-03 15:27:18.000000000 +0200
-+++ usx2yhwdeppcm.c	2006-10-03 15:48:04.000000000 +0200
-@@ -1,3 +1,16 @@
+--- ../../alsa-kernel/usb/usx2y/usx2yhwdeppcm.c	2006-10-05 21:38:13.000000000 +0200
++++ usx2yhwdeppcm.c	2006-10-07 22:59:08.000000000 +0200
+@@ -1,3 +1,21 @@
 +#include <linux/config.h>
 +#include <linux/version.h>
 +
@@ -13,11 +13,16 @@
 +#endif
 +
 +#define USB_2_6_18 (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 18))
++#if USB_2_6_18
++#define USX2Y_URB_FRAME_MASK -1
++#else
++#define USX2Y_URB_FRAME_MASK 0xffff
++#endif
 +
  /*
   *   This program is free software; you can redistribute it and/or modify
   *   it under the terms of the GNU General Public License as published by
-@@ -150,7 +163,11 @@
+@@ -150,7 +168,11 @@
  {
  	int pack;
  	for (pack = 0; pack < nr_of_packs(); ++pack) {
@@ -29,7 +34,7 @@
  		if (NULL != subs) {
  			struct snd_usX2Y_hwdep_pcm_shm *shm = subs->usX2Y->hwdep_pcm_shm;
  			int head = shm->captured_iso_head + 1;
-@@ -226,7 +243,11 @@
+@@ -226,7 +248,11 @@
  }
  
  
@@ -41,20 +46,16 @@
  {
  	struct snd_usX2Y_substream *subs = urb->context;
  	struct usX2Ydev *usX2Y = subs->usX2Y;
-@@ -243,7 +264,11 @@
+@@ -243,7 +269,7 @@
  		usX2Y_error_urb_status(usX2Y, subs, urb);
  		return;
  	}
 -	if (likely(urb->start_frame == usX2Y->wait_iso_frame))
-+	if (likely((
-+#if !USB_2_6_18
-+			   0xFFFF &
-+#endif
-+			   urb->start_frame) == usX2Y->wait_iso_frame))
++	if (likely((urb->start_frame & USX2Y_URB_FRAME_MASK) == usX2Y->wait_iso_frame))
  		subs->completed_urb = urb;
  	else {
  		usX2Y_error_sequence(usX2Y, subs, urb);
-@@ -256,9 +281,15 @@
+@@ -256,9 +282,15 @@
  	if (capsubs->completed_urb && atomic_read(&capsubs->state) >= state_PREPARED &&
  	    (NULL == capsubs2 || capsubs2->completed_urb) &&
  	    (playbacksubs->completed_urb || atomic_read(&playbacksubs->state) < state_PREPARED)) {
@@ -73,7 +74,7 @@
  			snd_printdd("\n");
  			usX2Y_clients_stop(usX2Y);
  		}
-@@ -290,7 +321,11 @@
+@@ -290,7 +322,11 @@
  	usX2Y->prepare_subs = NULL;
  }
  
@@ -85,7 +86,7 @@
  {
  	struct snd_usX2Y_substream *subs = urb->context;
  	struct usX2Ydev *usX2Y = subs->usX2Y;
-@@ -307,7 +342,11 @@
+@@ -307,7 +343,11 @@
  		wake_up(&usX2Y->prepare_wait_queue);
  	}
  
@@ -97,7 +98,7 @@
  }
  
  /*
-@@ -429,6 +468,9 @@
+@@ -429,6 +469,9 @@
  		if (subs != NULL && atomic_read(&subs->state) >= state_PREPARED)
  			goto start;
  	}
@@ -107,7 +108,7 @@
  
   start:
  	usX2Y_usbpcm_subs_startup(subs);
-@@ -454,7 +496,11 @@
+@@ -454,7 +497,11 @@
  						goto cleanup;
  					}  else {
  						snd_printdd("%i\n", urb->start_frame);
@@ -119,7 +120,7 @@
  							usX2Y->wait_iso_frame = urb->start_frame;
  					}
  					urb->transfer_flags = 0;
-@@ -683,23 +729,43 @@
+@@ -683,23 +730,43 @@
  }
  
  
@@ -164,7 +165,7 @@
  }
  
  
-@@ -728,8 +794,14 @@
+@@ -728,8 +795,14 @@
  		return -ENODEV;
  	}
  	area->vm_ops = &snd_usX2Y_hwdep_pcm_vm_ops;

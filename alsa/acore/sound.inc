@@ -93,3 +93,10 @@ EXPORT_SYMBOL(snd_hidden_kcalloc);
 EXPORT_SYMBOL(snd_hidden_kfree);
 EXPORT_SYMBOL(snd_hidden_kstrdup);
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#include <linux/firmware.h>
+#ifdef NEEDS_COMPAT_FW_LOADER
+EXPORT_SYMBOL(snd_compat_request_firmware);
+EXPORT_SYMBOL(snd_compat_release_firmware);
+#endif
+#endif
