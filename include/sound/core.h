@@ -212,6 +212,7 @@ struct _snd_minor {
 	int device;			/* device number */
 	const char *comment;		/* for /proc/asound/devices */
 	struct file_operations *f_ops;	/* file operations */
+	char name[0];			/* device name (keep at the end of structure) */
 };
 
 typedef struct _snd_minor snd_minor_t;
