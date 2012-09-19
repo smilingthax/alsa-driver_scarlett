@@ -6,7 +6,7 @@
 ifneq ($(KERNELRELEASE),)
 # call from 2.6 kernel build system
 
-obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ pcmcia/
+obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ pcmcia/ aoa/
 
 else
 
@@ -64,7 +64,7 @@ endif
 export KBUILD_VERBOSE KBUILD_CHECKSRC
 endif
 
-SUBDIRS  = acore i2c drivers isa synth pci
+SUBDIRS  = acore i2c drivers isa synth pci aoa
 CSUBDIRS =
 
 ifndef NEW_KBUILD
