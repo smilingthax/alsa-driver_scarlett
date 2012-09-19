@@ -8,27 +8,10 @@ MODCURDIR = $(subst $(MAINSRCDIR)/,,$(shell /bin/pwd))
 
 ifdef NEW_KBUILD
 
+ifdef KBUILD_MODULES
+
 # clean obsolete definitions
 export-objs :=
-
-%.c: %.patch
-	@$(SND_TOPDIR)/utils/patch-alsa $@
-
-# apply patches beforehand
-.PHONY: prepare
-prepare: $(clean-files)
-	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
-	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
-	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d prepare; fi; \
-	done
-
-.PHONY: clean1
-clean1:
-	rm -f *.[oas] *.ko .*.cmd .*.d .*.tmp *.mod.c *.isapnp $(clean-files)
-
-.PHONY: mrproper
-mrproper: $(patsubst %,_sfmrproper_%,$(ALL_SUB_DIRS)) clean1
-	rm -f *~ out.txt *.orig *.rej .#* .gdb_history
 
 ALL_MOBJS := $(filter-out $(obj-y), $(obj-m))
 ALL_MOBJS := $(filter-out %/, $(ALL_MOBJS))
@@ -51,6 +34,29 @@ cleanup:
 	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d cleanup; fi; \
 	done
 
+else # ! KBUILD_MODULES
+
+first_rule: modules
+
+include $(MAINSRCDIR)/Rules.make1
+
+%.c: %.patch
+	@SND_TOPDIR="$(MAINSRCDIR)" $(SND_TOPDIR)/utils/patch-alsa $@
+
+# apply patches beforehand
+.PHONY: prepare
+prepare: $(clean-files)
+	@for d in $(ALL_SUB_DIRS) DUMMY; do \
+	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d prepare; fi; \
+	done
+
+modules:
+	$(MAKE) prepare
+	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR) $(MAKE_ADDS) SND_TOPDIR=$(MAINSRCDIR) modules
+	$(SND_TOPDIR)/utils/link-modules $(MODCURDIR)
+
+endif # KBUILD_MODULES
+
 else # ! NEW_KBUILD
 
 TOPDIR = $(MAINSRCDIR)
@@ -67,48 +73,13 @@ comma = ,
 #
 first_rule: modules
 
-#
-# Parse directories
-#
-
-__subdir-y      := $(patsubst %/,%,$(filter %/, $(obj-y)))
-subdir-y        += $(__subdir-y)
-__subdir-m      := $(patsubst %/,%,$(filter %/, $(obj-m)))
-subdir-m        += $(__subdir-m) $(__subdir-y)
-__subdir-n      := $(patsubst %/,%,$(filter %/, $(obj-n)))
-subdir-n        += $(__subdir-n)
-__subdir-       := $(patsubst %/,%,$(filter %/, $(obj-)))
-subdir-         += $(__subdir-)
-obj-y           := $(patsubst %/, %/built-in.o, $(obj-y))
-obj-m           := $(filter-out %/, $(obj-m))
+include $(TOPDIR)/Rules.make1
 
 ifndef O_TARGET
 ifndef L_TARGET
 O_TARGET	:= built-in.o
 endif
 endif
-
-#
-# ALSA hacks for extra code
-#
-
-subdir-y	+= $(extra-subdir-y)
-subdir-m	+= $(extra-subdir-m)
-subdir-n	+= $(extra-subdir-n)
-
-obj-y		+= $(extra-obj-y)
-obj-m		+= $(extra-obj-m)
-obj-n		+= $(extra-obj-n)
-
-#
-#
-#
-
-both-m          := $(filter $(mod-subdirs), $(subdir-y))
-SUB_DIRS	:= $(subdir-y)
-MOD_SUB_DIRS	:= $(sort $(subdir-m) $(both-m))
-ALL_SUB_DIRS	:= $(sort $(subdir-y) $(subdir-m) $(subdir-n) $(subdir-))
-
 
 #
 # Common rules
@@ -251,17 +222,6 @@ modules_install: _modinst__ \
 	 $(patsubst %,_modinst_%,$(MOD_DIRS))
 
 #
-# A rule to do nothing
-#
-dummy:
-
-#
-# This is useful for testing
-#
-script:
-	$(SCRIPT)
-
-#
 # This sets version suffixes on exported symbols
 # Separate the object into "normal" objects and "exporting" objects
 # Exporting objects are: all objects that define symbol tables
@@ -364,27 +324,6 @@ endif
 endif
 
 endif # CONFIG_MODULES
-
-.PHONY: clean1
-clean1:
-	rm -f .depend *.o *.isapnp $(clean-files)
-
-.PHONY: clean
-clean: $(patsubst %,_sfclean_%,$(ALL_SUB_DIRS)) clean1
-
-.PHONY: mrproper
-mrproper: $(patsubst %,_sfmrproper_%,$(ALL_SUB_DIRS)) clean1
-	rm -f *~ out.txt *.orig *.rej .#* .gdb_history
-
-ifneq "$(strip $(ALL_SUB_DIRS))" ""
-$(patsubst %,_sfclean_%,$(ALL_SUB_DIRS)):
-	$(MAKE) -C $(patsubst _sfclean_%,%,$@) clean
-endif
-
-ifneq "$(strip $(ALL_SUB_DIRS))" ""
-$(patsubst %,_sfmrproper_%,$(ALL_SUB_DIRS)):
-	$(MAKE) -C $(patsubst _sfmrproper_%,%,$@) mrproper
-endif
 
 #
 # include dependency files if they exist
