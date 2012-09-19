@@ -1230,8 +1230,8 @@ static int snd_ali_trigger(snd_pcm_substream_t *substream,
 	}
 
 	what = whati = capture_flag = 0;
-	snd_pcm_for_each_streams(pos, substream) {
-		s = snd_pcm_for_each_streams_entry(pos);
+	snd_pcm_group_for_each(pos, substream) {
+		s = snd_pcm_group_substream_entry(pos);
 		if ((ali_t *) _snd_pcm_chip(s->pcm) == codec) {
 			pvoice = (snd_ali_voice_t *) s->runtime->private_data;
 			evoice = pvoice->extra;

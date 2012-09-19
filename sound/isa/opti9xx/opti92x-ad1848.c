@@ -971,8 +971,8 @@ static int snd_opti93x_trigger(snd_pcm_substream_t *substream,
 		unsigned int what = 0;
 		struct list_head *pos;
 		snd_pcm_substream_t *s;
-		snd_pcm_for_each_streams(pos, substream) {
-			s = snd_pcm_for_each_streams_entry(pos);
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
 			if (s == chip->playback_substream) {
 				what |= OPTi93X_PLAYBACK_ENABLE;
 				snd_pcm_trigger_done(s, substream);

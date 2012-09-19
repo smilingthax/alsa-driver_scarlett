@@ -903,10 +903,12 @@ static int __devinit snd_ice1712_ews_add_controls(ice1712_t *ice)
 	unsigned int idx;
 	int err;
 	
-	/* all terratec cards have spdif */
-	err = snd_ice1712_spdif_build_controls(ice);
-	if (err < 0)
-		return err;
+	/* all terratec cards have spdif, but cs8427 module builds it's own controls */
+	if (ice->cs8427 == NULL) {
+		err = snd_ice1712_spdif_build_controls(ice);
+		if (err < 0)
+			return err;
+	}
 
 	/* ak4524 controls */
 	switch (ice->eeprom.subvendor) {

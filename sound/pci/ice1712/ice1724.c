@@ -297,8 +297,8 @@ static int snd_vt1724_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		what = 0;
-		snd_pcm_for_each_streams(pos, substream) {
-			s = snd_pcm_for_each_streams_entry(pos);
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
 			if (s == ice->playback_pro_substream)
 				what |= VT1724_PDMA0_PAUSE;
 			else if (s == ice->capture_pro_substream)
@@ -322,8 +322,8 @@ static int snd_vt1724_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 	case SNDRV_PCM_TRIGGER_STOP:
 		what = 0;
 		s = substream;
-		snd_pcm_for_each_streams(pos, substream) {
-			s = snd_pcm_for_each_streams_entry(pos);
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
 			if (s == ice->playback_pro_substream) {
 				what |= VT1724_PDMA0_START;
 				snd_pcm_trigger_done(s, substream);

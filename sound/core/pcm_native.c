@@ -602,54 +602,53 @@ static void snd_pcm_trigger_tstamp(snd_pcm_substream_t *substream)
 	runtime->trigger_master = NULL;
 }
 
-#define ACTION_CHECK_MASTER	 (1<<0)
-
 struct action_ops {
 	int (*pre_action)(snd_pcm_substream_t *substream, int state);
 	int (*do_action)(snd_pcm_substream_t *substream, int state);
 	void (*post_action)(snd_pcm_substream_t *substream, int state);
 };
 
-static int snd_pcm_action_main(struct action_ops *ops,
-			       snd_pcm_substream_t *substream,
-			       int state,
-			       unsigned int flags)
+/*
+ *  this functions is core for handling of linked stream
+ *  Note: the stream state might be changed also on failure
+ *  Note2: call with calling stream lock + link lock
+ */
+static int snd_pcm_action_group(struct action_ops *ops,
+				snd_pcm_substream_t *substream,
+				int state)
 {
 	struct list_head *pos;
 	snd_pcm_substream_t *s = NULL;
 	int err, res = 0;
 
-	list_for_each(pos, &substream->link->substreams) {
-		s = list_entry(pos, snd_pcm_substream_t, link_list);
-		if (substream->link != &substream->local_link && s != substream)
-			spin_lock(&s->local_link.lock);
+	snd_pcm_group_for_each(pos, substream) {
+		s = snd_pcm_group_substream_entry(pos);
+		if (s != substream)
+			spin_lock(&s->self_group.lock);
 		res = ops->pre_action(s, state);
 		if (res < 0)
 			break;
 	}
 	if (res >= 0) {
-		list_for_each(pos, &substream->link->substreams) {
-			s = list_entry(pos, snd_pcm_substream_t, link_list);
-			if ((flags & ACTION_CHECK_MASTER) && s->runtime->trigger_master != s)
-				goto _action_done;
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
 			err = ops->do_action(s, state);
 			if (err < 0) {
 				if (res == 0)
 					res = err;
 			} else {
-			       _action_done:
 				ops->post_action(s, state);
 			}
-			if (substream->link != &substream->local_link && s != substream)
-				spin_unlock(&s->local_link.lock);
+			if (s != substream)
+				spin_unlock(&s->self_group.lock);
 		}
-	} else if (res < 0 && substream->link != &substream->local_link) {
+	} else {
 		snd_pcm_substream_t *s1;
 		/* unlock all streams */
-		list_for_each(pos, &substream->link->substreams) {
-			s1 = list_entry(pos, snd_pcm_substream_t, link_list);
+		snd_pcm_group_for_each(pos, substream) {
+			s1 = snd_pcm_group_substream_entry(pos);
 			if (s1 != substream)
-				spin_unlock(&s->local_link.lock);
+				spin_unlock(&s->self_group.lock);
 			if (s1 == s)	/* end */
 				break;
 		}
@@ -657,41 +656,67 @@ static int snd_pcm_action_main(struct action_ops *ops,
 	return res;
 }
 
-static int snd_pcm_action(struct action_ops *ops,
-			  snd_pcm_substream_t *substream,
-			  int state,
-			  unsigned int flags)
+/*
+ *  Note: call with stream lock
+ */
+static int snd_pcm_action_single(struct action_ops *ops,
+				 snd_pcm_substream_t *substream,
+				 int state)
 {
-	int res;
-
-	if (substream->link != &substream->local_link) {
-		if (!spin_trylock(&substream->link->lock)) {
-			spin_unlock(&substream->local_link.lock);
-			spin_lock(&substream->link->lock);
-			spin_lock(&substream->local_link.lock);
-		}
+	int res = ops->pre_action(substream, state);
+	if (res < 0)
+		return res;
+	res = ops->do_action(substream, state);
+	if (res == 0) {
+		ops->post_action(substream, state);
 	}
-	res = snd_pcm_action_main(ops, substream, state, flags);
-	if (substream->link != &substream->local_link)
-		spin_unlock(&substream->link->lock);
 	return res;
 }
 
+/*
+ *  Note: call with stream lock
+ */
+static int snd_pcm_action(struct action_ops *ops,
+			  snd_pcm_substream_t *substream,
+			  int state)
+{
+	int res;
+
+	if (snd_pcm_stream_linked(substream)) {
+		if (!spin_trylock(&substream->group->lock)) {
+			spin_unlock(&substream->self_group.lock);
+			spin_lock(&substream->group->lock);
+			spin_lock(&substream->self_group.lock);
+		}
+		res = snd_pcm_action_group(ops, substream, state);
+		spin_unlock(&substream->group->lock);
+	} else {
+		res = snd_pcm_action_single(ops, substream, state);
+	}
+	return res;
+}
+
+/*
+ *  Note: don't use any locks before
+ */
 static int snd_pcm_action_lock_irq(struct action_ops *ops,
 				   snd_pcm_substream_t *substream,
-				   int state,
-				   unsigned int flags)
+				   int state)
 {
 	int res;
 
 	read_lock_irq(&snd_pcm_link_rwlock);
-	if (substream->link != &substream->local_link)
-		spin_lock(&substream->link->lock);
-	spin_lock(&substream->local_link.lock);
-	res = snd_pcm_action_main(ops, substream, state, flags);
-	spin_unlock(&substream->local_link.lock);
-	if (substream->link != &substream->local_link)
-		spin_unlock(&substream->link->lock);
+	if (snd_pcm_stream_linked(substream)) {
+		spin_lock(&substream->group->lock);
+		spin_lock(&substream->self_group.lock);
+		res = snd_pcm_action_group(ops, substream, state);
+		spin_unlock(&substream->self_group.lock);
+		spin_unlock(&substream->group->lock);
+	} else {
+		spin_lock(&substream->self_group.lock);
+		res = snd_pcm_action_single(ops, substream, state);
+		spin_unlock(&substream->self_group.lock);
+	}
 	read_unlock_irq(&snd_pcm_link_rwlock);
 	return res;
 }
@@ -710,6 +735,8 @@ static int snd_pcm_pre_start(snd_pcm_substream_t *substream, int state)
 
 static int snd_pcm_do_start(snd_pcm_substream_t *substream, int state)
 {
+	if (substream->runtime->trigger_master != substream)
+		return 0;
         return substream->ops->trigger(substream, SNDRV_PCM_TRIGGER_START);
 }
 
@@ -738,7 +765,7 @@ static struct action_ops snd_pcm_action_start = {
  */
 int snd_pcm_start(snd_pcm_substream_t *substream)
 {
-	return snd_pcm_action(&snd_pcm_action_start, substream, 0, ACTION_CHECK_MASTER);
+	return snd_pcm_action(&snd_pcm_action_start, substream, 0);
 }
 
 static int snd_pcm_pre_stop(snd_pcm_substream_t *substream, int state)
@@ -753,6 +780,8 @@ static int snd_pcm_pre_stop(snd_pcm_substream_t *substream, int state)
 
 static int snd_pcm_do_stop(snd_pcm_substream_t *substream, int state)
 {
+	if (substream->runtime->trigger_master != substream)
+		return 0;
 	return substream->ops->trigger(substream, SNDRV_PCM_TRIGGER_STOP);
 }
 
@@ -778,7 +807,7 @@ static struct action_ops snd_pcm_action_stop = {
  */
 int snd_pcm_stop(snd_pcm_substream_t *substream, int state)
 {
-	return snd_pcm_action(&snd_pcm_action_stop, substream, 0, ACTION_CHECK_MASTER);
+	return snd_pcm_action(&snd_pcm_action_stop, substream, 0);
 }
 
 static int snd_pcm_pre_pause(snd_pcm_substream_t *substream, int push)
@@ -797,6 +826,8 @@ static int snd_pcm_pre_pause(snd_pcm_substream_t *substream, int push)
 
 static int snd_pcm_do_pause(snd_pcm_substream_t *substream, int push)
 {
+	if (substream->runtime->trigger_master != substream)
+		return 0;
 	return substream->ops->trigger(substream,
 				       push ? SNDRV_PCM_TRIGGER_PAUSE_PUSH :
 					      SNDRV_PCM_TRIGGER_PAUSE_RELEASE);
@@ -829,7 +860,7 @@ static struct action_ops snd_pcm_action_pause = {
 
 static int snd_pcm_pause(snd_pcm_substream_t *substream, int push)
 {
-	return snd_pcm_action(&snd_pcm_action_pause, substream, 0, ACTION_CHECK_MASTER);
+	return snd_pcm_action(&snd_pcm_action_pause, substream, 0);
 }
 
 #ifdef CONFIG_PM
@@ -848,6 +879,8 @@ static int snd_pcm_pre_suspend(snd_pcm_substream_t *substream, int state)
 static int snd_pcm_do_suspend(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
+	if (runtime->trigger_master != substream)
+		return 0;
 	if (runtime->status->suspended_state != SNDRV_PCM_STATE_RUNNING)
 		return 0;
 	return substream->ops->trigger(substream, SNDRV_PCM_TRIGGER_SUSPEND);
@@ -875,7 +908,7 @@ static struct action_ops snd_pcm_action_suspend = {
  */
 int snd_pcm_suspend(snd_pcm_substream_t *substream)
 {
-	return snd_pcm_action(&snd_pcm_action_suspend, substream, 0, ACTION_CHECK_MASTER);
+	return snd_pcm_action(&snd_pcm_action_suspend, substream, 0);
 }
 
 /**
@@ -920,6 +953,8 @@ static int snd_pcm_pre_resume(snd_pcm_substream_t *substream, int state)
 static int snd_pcm_do_resume(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
+	if (runtime->trigger_master != substream)
+		return 0;
 	if (runtime->status->suspended_state != SNDRV_PCM_STATE_RUNNING)
 		return 0;
 	return substream->ops->trigger(substream, SNDRV_PCM_TRIGGER_RESUME);
@@ -949,7 +984,7 @@ static int snd_pcm_resume(snd_pcm_substream_t *substream)
 
 	snd_power_lock(card);
 	if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) >= 0)
-		return snd_pcm_action_lock_irq(&snd_pcm_action_resume, substream, 0, ACTION_CHECK_MASTER);
+		return snd_pcm_action_lock_irq(&snd_pcm_action_resume, substream, 0);
 	snd_power_unlock(card);
 	return res;
 }
@@ -1038,7 +1073,7 @@ static struct action_ops snd_pcm_action_reset = {
 
 static int snd_pcm_reset(snd_pcm_substream_t *substream)
 {
-	return snd_pcm_action_lock_irq(&snd_pcm_action_reset, substream, 0, 0);
+	return snd_pcm_action_lock_irq(&snd_pcm_action_reset, substream, 0);
 }
 
 static int snd_pcm_pre_prepare(snd_pcm_substream_t * substream, int state)
@@ -1086,7 +1121,7 @@ int snd_pcm_prepare(snd_pcm_substream_t *substream)
 
 	snd_power_lock(card);
 	if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) >= 0)
-		res = snd_pcm_action_lock_irq(&snd_pcm_action_prepare, substream, 0, 0);
+		res = snd_pcm_action_lock_irq(&snd_pcm_action_prepare, substream, 0);
 	snd_power_unlock(card);
 	return res;
 }
@@ -1096,9 +1131,29 @@ static void snd_pcm_change_state(snd_pcm_substream_t *substream, int state)
 	struct list_head *pos;
 	snd_pcm_substream_t *s;
 
-	list_for_each(pos, &substream->link->substreams) {
-		s = list_entry(pos, snd_pcm_substream_t, link_list);
-		s->runtime->status->state = state;
+	if (snd_pcm_stream_linked(substream)) {
+		if (!spin_trylock(&substream->group->lock)) {
+			spin_unlock(&substream->self_group.lock);
+			spin_lock(&substream->group->lock);
+			spin_lock(&substream->self_group.lock);
+		}
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
+			if (s != substream)
+				spin_lock(&substream->self_group.lock);
+		}
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
+			s->runtime->status->state = state;
+		}
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
+			if (s != substream)
+				spin_unlock(&substream->self_group.lock);
+		}
+		spin_unlock(&substream->group->lock);
+	} else {
+		substream->runtime->status->state = state;
 	}
 }
 
@@ -1401,22 +1456,22 @@ static int snd_pcm_link(snd_pcm_substream_t *substream, int fd)
 		res = -EBADFD;
 		goto _end;
 	}
-	if (substream1->link != &substream1->local_link) {
+	if (snd_pcm_stream_linked(substream1)) {
 		res = -EALREADY;
 		goto _end;
 	}
-	if (substream->link == &substream->local_link) {
-		substream->link = kmalloc(sizeof(snd_pcm_link_t), GFP_ATOMIC);
-		if (substream->link == NULL) {
+	if (!snd_pcm_stream_linked(substream)) {
+		substream->group = kmalloc(sizeof(snd_pcm_group_t), GFP_ATOMIC);
+		if (substream->group == NULL) {
 			res = -ENOMEM;
 			goto _end;
 		}
-		spin_lock_init(&substream->link->lock);
-		INIT_LIST_HEAD(&substream->link->substreams);
-		list_add_tail(&substream->link_list, &substream->link->substreams);
+		spin_lock_init(&substream->group->lock);
+		INIT_LIST_HEAD(&substream->group->substreams);
+		list_add_tail(&substream->link_list, &substream->group->substreams);
 	}
-	list_add_tail(&substream1->link_list, &substream->link->substreams);
-	substream1->link = substream->link;
+	list_add_tail(&substream1->link_list, &substream->group->substreams);
+	substream1->group = substream->group;
  _end:
 	write_unlock_irq(&snd_pcm_link_rwlock);
 	fput(file);
@@ -1425,9 +1480,9 @@ static int snd_pcm_link(snd_pcm_substream_t *substream, int fd)
 
 static void relink_to_local(snd_pcm_substream_t *substream)
 {
-	substream->link = &substream->local_link;
-	INIT_LIST_HEAD(&substream->local_link.substreams);
-	list_add_tail(&substream->link_list, &substream->local_link.substreams);
+	substream->group = &substream->self_group;
+	INIT_LIST_HEAD(&substream->self_group.substreams);
+	list_add_tail(&substream->link_list, &substream->self_group.substreams);
 }
 
 static int snd_pcm_unlink(snd_pcm_substream_t *substream)
@@ -1436,21 +1491,21 @@ static int snd_pcm_unlink(snd_pcm_substream_t *substream)
 	int res = 0, count = 0;
 
 	write_lock_irq(&snd_pcm_link_rwlock);
-	if (substream->link == &substream->local_link) {
+	if (!snd_pcm_stream_linked(substream)) {
 		res = -EINVAL;
 		goto _end;
 	}
 	list_del(&substream->link_list);
-	list_for_each(pos, &substream->link->substreams) {
+	snd_pcm_group_for_each(pos, substream) {
 		if (++count > 1)
 			break;
 	}
 	if (count == 1) {	/* detach the last stream, too */
-		list_for_each(pos, &substream->link->substreams) {
-			relink_to_local(list_entry(pos, snd_pcm_substream_t, link_list));
+		snd_pcm_group_for_each(pos, substream) {
+			relink_to_local(snd_pcm_group_substream_entry(pos));
 			break;
 		}
-		kfree(substream->link);
+		kfree(substream->group);
 	}
 	relink_to_local(substream);
        _end:
@@ -2264,7 +2319,7 @@ static int snd_pcm_common_ioctl1(snd_pcm_substream_t *substream,
 	case SNDRV_PCM_IOCTL_RESET:
 		return snd_pcm_reset(substream);
 	case SNDRV_PCM_IOCTL_START:
-		return snd_pcm_action(&snd_pcm_action_start, substream, 0, ACTION_CHECK_MASTER);
+		return snd_pcm_action(&snd_pcm_action_start, substream, 0);
 	case SNDRV_PCM_IOCTL_LINK:
 		return snd_pcm_link(substream, (long) arg);
 	case SNDRV_PCM_IOCTL_UNLINK:

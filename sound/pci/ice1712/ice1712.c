@@ -974,8 +974,8 @@ static int snd_ice1712_pro_trigger(snd_pcm_substream_t *substream,
 		struct list_head *pos;
 		snd_pcm_substream_t *s;
 
-		snd_pcm_for_each_streams(pos, substream) {
-			s = snd_pcm_for_each_streams_entry(pos);
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
 			if (s == ice->playback_pro_substream) {
 				what |= ICE1712_PLAYBACK_START;
 				snd_pcm_trigger_done(s, substream);
