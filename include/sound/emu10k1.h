@@ -234,6 +234,8 @@
 #define A_GPINPUT_MASK		0xff00
 #define A_GPOUTPUT_MASK		0x00ff
 #define A_IOCFG_GPOUT0		0x0044		/* analog/digital? */
+#define A_IOCFG_GPOUT1		0x0002		/* IR */
+#define A_IOCFG_GPOUT2		0x0001		/* IR */
 
 #define TIMER			0x1a		/* Timer terminal count register		*/
 						/* NOTE: After the rate is changed, a maximum	*/

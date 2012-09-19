@@ -1197,7 +1197,7 @@ static int hw_check_valid_format(snd_pcm_hw_params_t *params, struct audioformat
 
 	/* check the format */
 	if (! snd_mask_test(fmts, fp->format)) {
-		printk(KERN_DEBUG "   > check: no supported format %d\n", fp->format);
+		hwc_debug("   > check: no supported format %d\n", fp->format);
 		return 0;
 	}
 	/* check the channels */
