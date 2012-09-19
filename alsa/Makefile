@@ -68,8 +68,10 @@ CSUBDIRS += include test utils
 .PHONY: all
 all: compile
 
-alsa-kernel/Config.in:
+alsa-kernel/sound_core.c:
 	ln -sf $(ALSAKERNELDIR) alsa-kernel
+	ln -sf $(ALSAKERNELDIR) sound
+	ln -sf $(ALSAKERNELDIR)/scripts scripts
 
 include/sound/version.h: include/version.h
 	if [ ! -d include/sound -a ! -L include/sound ]; then \
@@ -80,13 +82,13 @@ include/sound/version.h: include/version.h
 utils/mod-deps: alsa-kernel/scripts/mod-deps.c alsa-kernel/scripts/mod-deps.h
 	gcc -Ialsa-kernel/scripts alsa-kernel/scripts/mod-deps.c -o utils/mod-deps
 
-toplevel.config.in: alsa-kernel/Config.in utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
+toplevel.config.in: alsa-kernel/sound_core.c utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
 	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --makeconf > toplevel.config.in
 
-acinclude.m4: alsa-kernel/Config.in utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
+acinclude.m4: alsa-kernel/sound_core.c utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
 	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --acinclude > acinclude.m4
 
-include/config1.h.in: alsa-kernel/Config.in utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
+include/config1.h.in: alsa-kernel/sound_core.c utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
 	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --include > include/config1.h.in
 
 all-deps: toplevel.config.in acinclude.m4 include/config1.h.in
@@ -189,8 +191,9 @@ mrproper: clean
 .PHONY: cvsclean
 cvsclean: mrproper
 	rm -f configure snddevices aclocal.m4 acinclude.m4 include/config.h include/config1.h \
-	include/config1.h.in toplevel.config toplevel.config.in alsa-kernel include/sound
-	rm -f include/linux
+	include/config1.h.in toplevel.config toplevel.config.in \
+	alsa-kernel sound scripts include/sound
+	rm -rf include/linux
 
 .PHONY: pack
 pack: mrproper
