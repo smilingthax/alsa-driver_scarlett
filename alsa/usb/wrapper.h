@@ -10,6 +10,8 @@ inline static int usb_submit_urb_wrapper(urb_t* urb, int flags)
 {
 	return usb_submit_urb(urb);
 }
+#undef usb_alloc_urb
+#undef usb_submit_urb
 #define usb_alloc_urb(n,flags) usb_alloc_urb_wrapper(n,flags)
 #define usb_submit_urb(p,flags) usb_submit_urb_wrapper(p,flags)
 #endif /* LINUX_VERSION_CODE < 2.5.0 */
@@ -82,6 +84,7 @@ static int hack_usb_set_interface(struct usb_device *dev, int interface, int alt
 	return 0;
 }
 
+#undef usb_set_interface
 #define usb_set_interface(dev,iface,alt) hack_usb_set_interface(dev,iface,alt)
 
 #endif /* LINUX_VERSION < 2.5.24 */
