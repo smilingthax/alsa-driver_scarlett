@@ -1464,9 +1464,9 @@ static int snd_hdsp_put_spdif_in(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t
 }
 
 #define HDSP_SPDIF_OUT(xname, xindex) \
-{ .iface = SNDRV_CTL_ELEM_IFACE_HWDEP, name: xname, index: xindex, \
+{ .iface = SNDRV_CTL_ELEM_IFACE_HWDEP, .name = xname, .index = xindex, \
   .info = snd_hdsp_info_spdif_bits, \
-  .get = snd_hdsp_get_spdif_out, put: snd_hdsp_put_spdif_out }
+  .get = snd_hdsp_get_spdif_out, .put = snd_hdsp_put_spdif_out }
 
 static int hdsp_spdif_out(hdsp_t *hdsp)
 {
@@ -1519,9 +1519,9 @@ static int snd_hdsp_put_spdif_out(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_
 }
 
 #define HDSP_SPDIF_PROFESSIONAL(xname, xindex) \
-{ .iface = SNDRV_CTL_ELEM_IFACE_HWDEP, name: xname, index: xindex, \
+{ .iface = SNDRV_CTL_ELEM_IFACE_HWDEP, .name = xname, .index = xindex, \
   .info = snd_hdsp_info_spdif_bits, \
-  .get = snd_hdsp_get_spdif_professional, put: snd_hdsp_put_spdif_professional }
+  .get = snd_hdsp_get_spdif_professional, .put = snd_hdsp_put_spdif_professional }
 
 static int hdsp_spdif_professional(hdsp_t *hdsp)
 {
@@ -1565,9 +1565,9 @@ static int snd_hdsp_put_spdif_professional(snd_kcontrol_t * kcontrol, snd_ctl_el
 }
 
 #define HDSP_SPDIF_EMPHASIS(xname, xindex) \
-{ .iface = SNDRV_CTL_ELEM_IFACE_HWDEP, name: xname, index: xindex, \
+{ .iface = SNDRV_CTL_ELEM_IFACE_HWDEP, .name = xname, .index = xindex, \
   .info = snd_hdsp_info_spdif_bits, \
-  .get = snd_hdsp_get_spdif_emphasis, put: snd_hdsp_put_spdif_emphasis }
+  .get = snd_hdsp_get_spdif_emphasis, .put = snd_hdsp_put_spdif_emphasis }
 
 static int hdsp_spdif_emphasis(hdsp_t *hdsp)
 {
@@ -1611,9 +1611,9 @@ static int snd_hdsp_put_spdif_emphasis(snd_kcontrol_t * kcontrol, snd_ctl_elem_v
 }
 
 #define HDSP_SPDIF_NON_AUDIO(xname, xindex) \
-{ .iface = SNDRV_CTL_ELEM_IFACE_HWDEP, name: xname, index: xindex, \
+{ .iface = SNDRV_CTL_ELEM_IFACE_HWDEP, .name = xname, .index = xindex, \
   .info = snd_hdsp_info_spdif_bits, \
-  .get = snd_hdsp_get_spdif_nonaudio, put: snd_hdsp_put_spdif_nonaudio }
+  .get = snd_hdsp_get_spdif_nonaudio, .put = snd_hdsp_put_spdif_nonaudio }
 
 static int hdsp_spdif_nonaudio(hdsp_t *hdsp)
 {
@@ -4114,6 +4114,10 @@ static int __devinit snd_hdsp_create(snd_card_t *card,
 			hdsp->io_type = Multiface;
 		} else {
 			hdsp->io_type = Digiface;
+		}
+		
+		if ((err = snd_hdsp_create_hwdep(card, hdsp)) < 0) {
+			return err;
 		}
 		
 		snd_hdsp_initialize_channels(hdsp);
