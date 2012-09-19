@@ -37,15 +37,6 @@ enum CTALSADEVS {		/* Types of alsa devices */
 	NUM_CTALSADEVS		/* This should always be the last */
 };
 
-enum CTCARDS {
-	CTSB0760,
-	CTHENDRIX,
-	CTSB08801,
-	CTSB08802,
-	CTSB08803,
-	NUM_CTCARDS		/* This should always be the last */
-};
-
 struct ct_atc_chip_sub_details {
 	u16 subsys;
 	const char *nm_model;
@@ -59,16 +50,15 @@ struct ct_atc_chip_details {
 };
 
 struct ct_atc;
+struct ct_timer;
+struct ct_timer_instance;
 
 /* alsa pcm stream descriptor */
 struct ct_atc_pcm {
 	struct snd_pcm_substream *substream;
 	void (*interrupt)(struct ct_atc_pcm *apcm);
+	struct ct_timer_instance *timer;
 	unsigned int started:1;
-	unsigned int stop_timer:1;
-	struct timer_list timer;
-	spinlock_t timer_lock;
-	unsigned int position;
 
 	/* Only mono and interleaved modes are supported now. */
 	struct ct_vm_block *vm_block;
@@ -90,10 +80,10 @@ struct ct_atc {
 	unsigned int msr; /* master sample rate in rsr */
 	unsigned int pll_rate; /* current rate of Phase Lock Loop */
 
-	const struct ct_atc_chip_details *chip_details;
-	enum CTCARDS model;
-	/* Create all alsa devices */
-	int (*create_alsa_devs)(struct ct_atc *atc);
+	int chip_type;
+	int model;
+	const char *chip_name;
+	const char *model_name;
 
 	struct ct_vm *vm; /* device virtual memory manager for this card */
 	int (*map_audio_buffer)(struct ct_atc *atc, struct ct_atc_pcm *apcm);
@@ -144,11 +134,14 @@ struct ct_atc {
 	unsigned char n_src;
 	unsigned char n_srcimp;
 	unsigned char n_pcm;
+
+	struct ct_timer *timer;
 };
 
 
 int __devinit ct_atc_create(struct snd_card *card, struct pci_dev *pci,
-			    unsigned int rsr, unsigned int msr,
+			    unsigned int rsr, unsigned int msr, int chip_type,
 			    struct ct_atc **ratc);
+int __devinit ct_atc_create_alsa_devs(struct ct_atc *atc);
 
 #endif /* CTATC_H */

@@ -15,8 +15,6 @@
  *
  */
 
-#include "cthw20k1.h"
-#include "ct20k1reg.h"
 #include <linux/types.h>
 #include <linux/slab.h>
 #include <linux/pci.h>
@@ -26,8 +24,14 @@
 #include <linux/kernel.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
+#include "cthw20k1.h"
+#include "ct20k1reg.h"
 
-#define CT_XFI_DMA_MASK		DMA_BIT_MASK(32) /* 32 bits */
+#if BITS_PER_LONG == 32
+#define CT_XFI_DMA_MASK		DMA_BIT_MASK(32) /* 32 bit PTE */
+#else
+#define CT_XFI_DMA_MASK		DMA_BIT_MASK(64) /* 64 bit PTE */
+#endif
 
 struct hw20k1 {
 	struct hw hw;
@@ -365,7 +369,7 @@ static unsigned int src_param_pitch_mixer(unsigned int src_idx)
 static int src_commit_write(struct hw *hw, unsigned int idx, void *blk)
 {
 	struct src_rsc_ctrl_blk *ctl = blk;
-	int i = 0;
+	int i;
 
 	if (ctl->dirty.bf.czbfs) {
 		/* Clear Z-Buffer registers */
@@ -464,8 +468,8 @@ static int src_mgr_dsb_src(void *blk, unsigned int idx)
 static int src_mgr_commit_write(struct hw *hw, void *blk)
 {
 	struct src_mgr_ctrl_blk *ctl = blk;
-	int i = 0;
-	unsigned int ret = 0;
+	int i;
+	unsigned int ret;
 
 	if (ctl->dirty.bf.enbsa) {
 		do {
@@ -1104,7 +1108,7 @@ static int daio_mgr_set_imapaddr(void *blk, unsigned int addr)
 static int daio_mgr_commit_write(struct hw *hw, void *blk)
 {
 	struct daio_mgr_ctrl_blk *ctl = blk;
-	int i = 0;
+	int i;
 
 	if (ctl->dirty.bf.i2sictl || ctl->dirty.bf.i2soctl) {
 		for (i = 0; i < 4; i++) {
@@ -1167,6 +1171,26 @@ static int daio_mgr_put_ctrl_blk(void *blk)
 	return 0;
 }
 
+/* Timer interrupt */
+static int set_timer_irq(struct hw *hw, int enable)
+{
+	hw_write_20kx(hw, GIE, enable ? IT_INT : 0);
+	return 0;
+}
+
+static int set_timer_tick(struct hw *hw, unsigned int ticks)
+{
+	if (ticks)
+		ticks |= TIMR_IE | TIMR_IP;
+	hw_write_20kx(hw, TIMR, ticks);
+	return 0;
+}
+
+static unsigned int get_wc(struct hw *hw)
+{
+	return hw_read_20kx(hw, WC);
+}
+
 /* Card hardware initialization block */
 struct dac_conf {
 	unsigned int msr; /* master sample rate in rsrs */
@@ -1188,8 +1212,8 @@ struct trn_conf {
 
 static int hw_daio_init(struct hw *hw, const struct daio_conf *info)
 {
-	u32 i2sorg = 0;
-	u32 spdorg = 0;
+	u32 i2sorg;
+	u32 spdorg;
 
 	/* Read I2S CTL.  Keep original value. */
 	/*i2sorg = hw_read_20kx(hw, I2SCTL);*/
@@ -1239,8 +1263,8 @@ static int hw_daio_init(struct hw *hw, const struct daio_conf *info)
 /* TRANSPORT operations */
 static int hw_trn_init(struct hw *hw, const struct trn_conf *info)
 {
-	u32 trnctl = 0;
-	unsigned long ptp_phys_low = 0, ptp_phys_high = 0;
+	u32 trnctl;
+	u32 ptp_phys_low, ptp_phys_high;
 
 	/* Set up device page table */
 	if ((~0UL) == info->vm_pgt_phys) {
@@ -1292,7 +1316,7 @@ static int hw_trn_init(struct hw *hw, const struct trn_conf *info)
 static int hw_pll_init(struct hw *hw, unsigned int rsr)
 {
 	unsigned int pllctl;
-	int i = 0;
+	int i;
 
 	pllctl = (48000 == rsr) ? 0x1480a001 : 0x1480a731;
 	for (i = 0; i < 3; i++) {
@@ -1360,7 +1384,7 @@ static void i2c_lock(struct hw *hw)
 
 static void i2c_write(struct hw *hw, u32 device, u32 addr, u32 data)
 {
-	unsigned int ret = 0;
+	unsigned int ret;
 
 	do {
 		ret = hw_read_pci(hw, 0xEC);
@@ -1373,9 +1397,9 @@ static void i2c_write(struct hw *hw, u32 device, u32 addr, u32 data)
 
 static int hw_reset_dac(struct hw *hw)
 {
-	u32 i = 0;
-	u16 gpioorg = 0;
-	unsigned int ret = 0;
+	u32 i;
+	u16 gpioorg;
+	unsigned int ret;
 
 	if (i2c_unlock(hw))
 		return -1;
@@ -1406,13 +1430,11 @@ static int hw_reset_dac(struct hw *hw)
 
 static int hw_dac_init(struct hw *hw, const struct dac_conf *info)
 {
-	u32 data = 0;
-	u16 gpioorg = 0;
-	u16 subsys_id = 0;
-	unsigned int ret = 0;
+	u32 data;
+	u16 gpioorg;
+	unsigned int ret;
 
-	pci_read_config_word(hw->pci, PCI_SUBSYSTEM_ID, &subsys_id);
-	if ((subsys_id == 0x0022) || (subsys_id == 0x002F)) {
+	if (hw->model == CTSB055X) {
 		/* SB055x, unmute outputs */
 		gpioorg = (u16)hw_read_20kx(hw, GPIO);
 		gpioorg &= 0xffbf;	/* set GPIO6 to low */
@@ -1470,13 +1492,12 @@ static int hw_dac_init(struct hw *hw, const struct dac_conf *info)
 
 static int is_adc_input_selected_SB055x(struct hw *hw, enum ADCSRC type)
 {
-	u32 data = 0;
-	return data;
+	return 0;
 }
 
 static int is_adc_input_selected_SBx(struct hw *hw, enum ADCSRC type)
 {
-	u32 data = 0;
+	u32 data;
 
 	data = hw_read_20kx(hw, GPIO);
 	switch (type) {
@@ -1497,7 +1518,7 @@ static int is_adc_input_selected_SBx(struct hw *hw, enum ADCSRC type)
 
 static int is_adc_input_selected_hendrix(struct hw *hw, enum ADCSRC type)
 {
-	u32 data = 0;
+	u32 data;
 
 	data = hw_read_20kx(hw, GPIO);
 	switch (type) {
@@ -1515,19 +1536,14 @@ static int is_adc_input_selected_hendrix(struct hw *hw, enum ADCSRC type)
 
 static int hw_is_adc_input_selected(struct hw *hw, enum ADCSRC type)
 {
-	u16 subsys_id = 0;
-
-	pci_read_config_word(hw->pci, PCI_SUBSYSTEM_ID, &subsys_id);
-	if ((subsys_id == 0x0022) || (subsys_id == 0x002F)) {
-		/* SB055x cards */
+	switch (hw->model) {
+	case CTSB055X:
 		return is_adc_input_selected_SB055x(hw, type);
-	} else if ((subsys_id == 0x0029) || (subsys_id == 0x0031)) {
-		/* SB073x cards */
+	case CTSB073X:
 		return is_adc_input_selected_hendrix(hw, type);
-	} else if ((subsys_id & 0xf000) == 0x6000) {
-		/* Vista compatible cards */
+	case CTHENDRIX:
 		return is_adc_input_selected_hendrix(hw, type);
-	} else {
+	default:
 		return is_adc_input_selected_SBx(hw, type);
 	}
 }
@@ -1535,7 +1551,7 @@ static int hw_is_adc_input_selected(struct hw *hw, enum ADCSRC type)
 static int
 adc_input_select_SB055x(struct hw *hw, enum ADCSRC type, unsigned char boost)
 {
-	u32 data = 0;
+	u32 data;
 
 	/*
 	 * check and set the following GPIO bits accordingly
@@ -1575,9 +1591,9 @@ adc_input_select_SB055x(struct hw *hw, enum ADCSRC type, unsigned char boost)
 static int
 adc_input_select_SBx(struct hw *hw, enum ADCSRC type, unsigned char boost)
 {
-	u32 data = 0;
-	u32 i2c_data = 0;
-	unsigned int ret = 0;
+	u32 data;
+	u32 i2c_data;
+	unsigned int ret;
 
 	if (i2c_unlock(hw))
 		return -1;
@@ -1625,9 +1641,9 @@ adc_input_select_SBx(struct hw *hw, enum ADCSRC type, unsigned char boost)
 static int
 adc_input_select_hendrix(struct hw *hw, enum ADCSRC type, unsigned char boost)
 {
-	u32 data = 0;
-	u32 i2c_data = 0;
-	unsigned int ret = 0;
+	u32 data;
+	u32 i2c_data;
+	unsigned int ret;
 
 	if (i2c_unlock(hw))
 		return -1;
@@ -1669,20 +1685,17 @@ adc_input_select_hendrix(struct hw *hw, enum ADCSRC type, unsigned char boost)
 
 static int hw_adc_input_select(struct hw *hw, enum ADCSRC type)
 {
-	u16 subsys_id = 0;
+	int state = type == ADC_MICIN;
 
-	pci_read_config_word(hw->pci, PCI_SUBSYSTEM_ID, &subsys_id);
-	if ((subsys_id == 0x0022) || (subsys_id == 0x002F)) {
-		/* SB055x cards */
-		return adc_input_select_SB055x(hw, type, (ADC_MICIN == type));
-	} else if ((subsys_id == 0x0029) || (subsys_id == 0x0031)) {
-		/* SB073x cards */
-		return adc_input_select_hendrix(hw, type, (ADC_MICIN == type));
-	} else if ((subsys_id & 0xf000) == 0x6000) {
-		/* Vista compatible cards */
-		return adc_input_select_hendrix(hw, type, (ADC_MICIN == type));
-	} else {
-		return adc_input_select_SBx(hw, type, (ADC_MICIN == type));
+	switch (hw->model) {
+	case CTSB055X:
+		return adc_input_select_SB055x(hw, type, state);
+	case CTSB073X:
+		return adc_input_select_hendrix(hw, type, state);
+	case CTHENDRIX:
+		return adc_input_select_hendrix(hw, type, state);
+	default:
+		return adc_input_select_SBx(hw, type, state);
 	}
 }
 
@@ -1695,8 +1708,8 @@ static int adc_init_SBx(struct hw *hw, int input, int mic20db)
 {
 	u16 gpioorg;
 	u16 input_source;
-	u32 adcdata = 0;
-	unsigned int ret = 0;
+	u32 adcdata;
+	unsigned int ret;
 
 	input_source = 0x100;  /* default to analog */
 	switch (input) {
@@ -1718,6 +1731,7 @@ static int adc_init_SBx(struct hw *hw, int input, int mic20db)
 		input_source = 0x0;  /* set to Digital */
 		break;
 	default:
+		adcdata = 0x0;
 		break;
 	}
 
@@ -1757,29 +1771,19 @@ static int adc_init_SBx(struct hw *hw, int input, int mic20db)
 
 static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
 {
-	int err = 0;
-	u16 subsys_id = 0;
-
-	pci_read_config_word(hw->pci, PCI_SUBSYSTEM_ID, &subsys_id);
-	if ((subsys_id == 0x0022) || (subsys_id == 0x002F)) {
-		/* Sb055x card */
-		err = adc_init_SB055x(hw, info->input, info->mic20db);
-	} else {
-		err = adc_init_SBx(hw, info->input, info->mic20db);
-	}
-
-	return err;
+	if (hw->model == CTSB055X)
+		return adc_init_SB055x(hw, info->input, info->mic20db);
+	else
+		return adc_init_SBx(hw, info->input, info->mic20db);
 }
 
 static int hw_have_digit_io_switch(struct hw *hw)
 {
-	u16 subsys_id = 0;
-
-	pci_read_config_word(hw->pci, PCI_SUBSYSTEM_ID, &subsys_id);
 	/* SB073x and Vista compatible cards have no digit IO switch */
-	return !((subsys_id == 0x0029) || (subsys_id == 0x0031)
-				|| ((subsys_id & 0xf000) == 0x6000));
+	return !(hw->model == CTSB073X || hw->model == CTHENDRIX);
 }
+
+#define CTLBITS(a, b, c, d)	(((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 
 #define UAA_CFG_PWRSTATUS	0x44
 #define UAA_CFG_SPACE_FLAG	0xA0
@@ -1788,26 +1792,24 @@ static int uaa_to_xfi(struct pci_dev *pci)
 {
 	unsigned int bar0, bar1, bar2, bar3, bar4, bar5;
 	unsigned int cmd, irq, cl_size, l_timer, pwr;
-	unsigned int CTLA, CTLZ, CTLL, CTLX, CTL_, CTLF, CTLi;
-	unsigned int is_uaa = 0;
+	unsigned int is_uaa;
 	unsigned int data[4] = {0};
 	unsigned int io_base;
 	void *mem_base;
-	int i = 0;
+	int i;
+	const u32 CTLX = CTLBITS('C', 'T', 'L', 'X');
+	const u32 CTL_ = CTLBITS('C', 'T', 'L', '-');
+	const u32 CTLF = CTLBITS('C', 'T', 'L', 'F');
+	const u32 CTLi = CTLBITS('C', 'T', 'L', 'i');
+	const u32 CTLA = CTLBITS('C', 'T', 'L', 'A');
+	const u32 CTLZ = CTLBITS('C', 'T', 'L', 'Z');
+	const u32 CTLL = CTLBITS('C', 'T', 'L', 'L');
 
 	/* By default, Hendrix card UAA Bar0 should be using memory... */
 	io_base = pci_resource_start(pci, 0);
 	mem_base = ioremap(io_base, pci_resource_len(pci, 0));
 	if (NULL == mem_base)
 		return -ENOENT;
-
-	CTLX = ___constant_swab32(*((unsigned int *)"CTLX"));
-	CTL_ = ___constant_swab32(*((unsigned int *)"CTL-"));
-	CTLF = ___constant_swab32(*((unsigned int *)"CTLF"));
-	CTLi = ___constant_swab32(*((unsigned int *)"CTLi"));
-	CTLA = ___constant_swab32(*((unsigned int *)"CTLA"));
-	CTLZ = ___constant_swab32(*((unsigned int *)"CTLZ"));
-	CTLL = ___constant_swab32(*((unsigned int *)"CTLL"));
 
 	/* Read current mode from Mode Change Register */
 	for (i = 0; i < 4; i++)
@@ -1874,23 +1876,37 @@ static int uaa_to_xfi(struct pci_dev *pci)
 	return 0;
 }
 
+static irqreturn_t ct_20k1_interrupt(int irq, void *dev_id)
+{
+	struct hw *hw = dev_id;
+	unsigned int status;
+
+	status = hw_read_20kx(hw, GIP);
+	if (!status)
+		return IRQ_NONE;
+
+	if (hw->irq_callback)
+		hw->irq_callback(hw->irq_callback_data, status);
+
+	hw_write_20kx(hw, GIP, status);
+	return IRQ_HANDLED;
+}
+
 static int hw_card_start(struct hw *hw)
 {
-	int err = 0;
+	int err;
 	struct pci_dev *pci = hw->pci;
-	u16 subsys_id = 0;
-	unsigned int dma_mask = 0;
 
 	err = pci_enable_device(pci);
 	if (err < 0)
 		return err;
 
 	/* Set DMA transfer mask */
-	dma_mask = CT_XFI_DMA_MASK;
-	if (pci_set_dma_mask(pci, dma_mask) < 0 ||
-	    pci_set_consistent_dma_mask(pci, dma_mask) < 0) {
+	if (pci_set_dma_mask(pci, CT_XFI_DMA_MASK) < 0 ||
+	    pci_set_consistent_dma_mask(pci, CT_XFI_DMA_MASK) < 0) {
 		printk(KERN_ERR "architecture does not support PCI "
-				"busmaster DMA with mask 0x%x\n", dma_mask);
+				"busmaster DMA with mask 0x%llx\n",
+		       CT_XFI_DMA_MASK);
 		err = -ENXIO;
 		goto error1;
 	}
@@ -1900,8 +1916,7 @@ static int hw_card_start(struct hw *hw)
 		goto error1;
 
 	/* Switch to X-Fi mode from UAA mode if neeeded */
-	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &subsys_id);
-	if ((0x5 == pci->device) && (0x6000 == (subsys_id & 0x6000))) {
+	if (hw->model == CTHENDRIX) {
 		err = uaa_to_xfi(pci);
 		if (err)
 			goto error2;
@@ -1911,12 +1926,13 @@ static int hw_card_start(struct hw *hw)
 		hw->io_base = pci_resource_start(pci, 0);
 	}
 
-	/*if ((err = request_irq(pci->irq, ct_atc_interrupt, IRQF_SHARED,
-				atc->chip_details->nm_card, hw))) {
+	err = request_irq(pci->irq, ct_20k1_interrupt, IRQF_SHARED,
+			  "ctxfi", hw);
+	if (err < 0) {
+		printk(KERN_ERR "XFi: Cannot get irq %d\n", pci->irq);
 		goto error2;
 	}
 	hw->irq = pci->irq;
-	*/
 
 	pci_set_master(pci);
 
@@ -1933,6 +1949,8 @@ error1:
 static int hw_card_stop(struct hw *hw)
 {
 	/* TODO: Disable interrupt and so on... */
+	if (hw->irq >= 0)
+		synchronize_irq(hw->irq);
 	return 0;
 }
 
@@ -1962,8 +1980,7 @@ static int hw_card_init(struct hw *hw, struct card_conf *info)
 {
 	int err;
 	unsigned int gctl;
-	u16 subsys_id = 0;
-	u32 data = 0;
+	u32 data;
 	struct dac_conf dac_info = {0};
 	struct adc_conf adc_info = {0};
 	struct daio_conf daio_info = {0};
@@ -2002,19 +2019,20 @@ static int hw_card_init(struct hw *hw, struct card_conf *info)
 	hw_write_20kx(hw, SRCIP, 0);
 	mdelay(30);
 
-	pci_read_config_word(hw->pci, PCI_SUBSYSTEM_ID, &subsys_id);
 	/* Detect the card ID and configure GPIO accordingly. */
-	if ((subsys_id == 0x0022) || (subsys_id == 0x002F)) {
-		/* SB055x cards */
+	switch (hw->model) {
+	case CTSB055X:
 		hw_write_20kx(hw, GPIOCTL, 0x13fe);
-	} else if ((subsys_id == 0x0029) || (subsys_id == 0x0031)) {
-		/* SB073x cards */
+		break;
+	case CTSB073X:
 		hw_write_20kx(hw, GPIOCTL, 0x00e6);
-	} else if ((subsys_id & 0xf000) == 0x6000) {
-		/* Vista compatible cards */
+		break;
+	case CTHENDRIX: /* Vista compatible cards */
 		hw_write_20kx(hw, GPIOCTL, 0x00c2);
-	} else {
+		break;
+	default:
 		hw_write_20kx(hw, GPIOCTL, 0x01e6);
+		break;
 	}
 
 	trn_info.vm_pgt_phys = info->vm_pgt_phys;
@@ -2101,9 +2119,108 @@ static void hw_write_pci(struct hw *hw, u32 reg, u32 data)
 		&container_of(hw, struct hw20k1, hw)->reg_pci_lock, flags);
 }
 
-int create_20k1_hw_obj(struct hw **rhw)
+static struct hw ct20k1_preset __devinitdata = {
+	.irq = -1,
+
+	.card_init = hw_card_init,
+	.card_stop = hw_card_stop,
+	.pll_init = hw_pll_init,
+	.is_adc_source_selected = hw_is_adc_input_selected,
+	.select_adc_source = hw_adc_input_select,
+	.have_digit_io_switch = hw_have_digit_io_switch,
+
+	.src_rsc_get_ctrl_blk = src_get_rsc_ctrl_blk,
+	.src_rsc_put_ctrl_blk = src_put_rsc_ctrl_blk,
+	.src_mgr_get_ctrl_blk = src_mgr_get_ctrl_blk,
+	.src_mgr_put_ctrl_blk = src_mgr_put_ctrl_blk,
+	.src_set_state = src_set_state,
+	.src_set_bm = src_set_bm,
+	.src_set_rsr = src_set_rsr,
+	.src_set_sf = src_set_sf,
+	.src_set_wr = src_set_wr,
+	.src_set_pm = src_set_pm,
+	.src_set_rom = src_set_rom,
+	.src_set_vo = src_set_vo,
+	.src_set_st = src_set_st,
+	.src_set_ie = src_set_ie,
+	.src_set_ilsz = src_set_ilsz,
+	.src_set_bp = src_set_bp,
+	.src_set_cisz = src_set_cisz,
+	.src_set_ca = src_set_ca,
+	.src_set_sa = src_set_sa,
+	.src_set_la = src_set_la,
+	.src_set_pitch = src_set_pitch,
+	.src_set_dirty = src_set_dirty,
+	.src_set_clear_zbufs = src_set_clear_zbufs,
+	.src_set_dirty_all = src_set_dirty_all,
+	.src_commit_write = src_commit_write,
+	.src_get_ca = src_get_ca,
+	.src_get_dirty = src_get_dirty,
+	.src_dirty_conj_mask = src_dirty_conj_mask,
+	.src_mgr_enbs_src = src_mgr_enbs_src,
+	.src_mgr_enb_src = src_mgr_enb_src,
+	.src_mgr_dsb_src = src_mgr_dsb_src,
+	.src_mgr_commit_write = src_mgr_commit_write,
+
+	.srcimp_mgr_get_ctrl_blk = srcimp_mgr_get_ctrl_blk,
+	.srcimp_mgr_put_ctrl_blk = srcimp_mgr_put_ctrl_blk,
+	.srcimp_mgr_set_imaparc = srcimp_mgr_set_imaparc,
+	.srcimp_mgr_set_imapuser = srcimp_mgr_set_imapuser,
+	.srcimp_mgr_set_imapnxt = srcimp_mgr_set_imapnxt,
+	.srcimp_mgr_set_imapaddr = srcimp_mgr_set_imapaddr,
+	.srcimp_mgr_commit_write = srcimp_mgr_commit_write,
+
+	.amixer_rsc_get_ctrl_blk = amixer_rsc_get_ctrl_blk,
+	.amixer_rsc_put_ctrl_blk = amixer_rsc_put_ctrl_blk,
+	.amixer_mgr_get_ctrl_blk = amixer_mgr_get_ctrl_blk,
+	.amixer_mgr_put_ctrl_blk = amixer_mgr_put_ctrl_blk,
+	.amixer_set_mode = amixer_set_mode,
+	.amixer_set_iv = amixer_set_iv,
+	.amixer_set_x = amixer_set_x,
+	.amixer_set_y = amixer_set_y,
+	.amixer_set_sadr = amixer_set_sadr,
+	.amixer_set_se = amixer_set_se,
+	.amixer_set_dirty = amixer_set_dirty,
+	.amixer_set_dirty_all = amixer_set_dirty_all,
+	.amixer_commit_write = amixer_commit_write,
+	.amixer_get_y = amixer_get_y,
+	.amixer_get_dirty = amixer_get_dirty,
+
+	.dai_get_ctrl_blk = dai_get_ctrl_blk,
+	.dai_put_ctrl_blk = dai_put_ctrl_blk,
+	.dai_srt_set_srco = dai_srt_set_srcr,
+	.dai_srt_set_srcm = dai_srt_set_srcl,
+	.dai_srt_set_rsr = dai_srt_set_rsr,
+	.dai_srt_set_drat = dai_srt_set_drat,
+	.dai_srt_set_ec = dai_srt_set_ec,
+	.dai_srt_set_et = dai_srt_set_et,
+	.dai_commit_write = dai_commit_write,
+
+	.dao_get_ctrl_blk = dao_get_ctrl_blk,
+	.dao_put_ctrl_blk = dao_put_ctrl_blk,
+	.dao_set_spos = dao_set_spos,
+	.dao_commit_write = dao_commit_write,
+	.dao_get_spos = dao_get_spos,
+
+	.daio_mgr_get_ctrl_blk = daio_mgr_get_ctrl_blk,
+	.daio_mgr_put_ctrl_blk = daio_mgr_put_ctrl_blk,
+	.daio_mgr_enb_dai = daio_mgr_enb_dai,
+	.daio_mgr_dsb_dai = daio_mgr_dsb_dai,
+	.daio_mgr_enb_dao = daio_mgr_enb_dao,
+	.daio_mgr_dsb_dao = daio_mgr_dsb_dao,
+	.daio_mgr_dao_init = daio_mgr_dao_init,
+	.daio_mgr_set_imaparc = daio_mgr_set_imaparc,
+	.daio_mgr_set_imapnxt = daio_mgr_set_imapnxt,
+	.daio_mgr_set_imapaddr = daio_mgr_set_imapaddr,
+	.daio_mgr_commit_write = daio_mgr_commit_write,
+
+	.set_timer_irq = set_timer_irq,
+	.set_timer_tick = set_timer_tick,
+	.get_wc = get_wc,
+};
+
+int __devinit create_20k1_hw_obj(struct hw **rhw)
 {
-	struct hw *hw;
 	struct hw20k1 *hw20k1;
 
 	*rhw = NULL;
@@ -2114,105 +2231,9 @@ int create_20k1_hw_obj(struct hw **rhw)
 	spin_lock_init(&hw20k1->reg_20k1_lock);
 	spin_lock_init(&hw20k1->reg_pci_lock);
 
-	hw = &hw20k1->hw;
+	hw20k1->hw = ct20k1_preset;
 
-	hw->io_base = 0;
-	hw->mem_base = (unsigned long)NULL;
-	hw->irq = -1;
-
-	hw->card_init = hw_card_init;
-	hw->card_stop = hw_card_stop;
-	hw->pll_init = hw_pll_init;
-	hw->is_adc_source_selected = hw_is_adc_input_selected;
-	hw->select_adc_source = hw_adc_input_select;
-	hw->have_digit_io_switch = hw_have_digit_io_switch;
-
-	hw->src_rsc_get_ctrl_blk = src_get_rsc_ctrl_blk;
-	hw->src_rsc_put_ctrl_blk = src_put_rsc_ctrl_blk;
-	hw->src_mgr_get_ctrl_blk = src_mgr_get_ctrl_blk;
-	hw->src_mgr_put_ctrl_blk = src_mgr_put_ctrl_blk;
-	hw->src_set_state = src_set_state;
-	hw->src_set_bm = src_set_bm;
-	hw->src_set_rsr = src_set_rsr;
-	hw->src_set_sf = src_set_sf;
-	hw->src_set_wr = src_set_wr;
-	hw->src_set_pm = src_set_pm;
-	hw->src_set_rom = src_set_rom;
-	hw->src_set_vo = src_set_vo;
-	hw->src_set_st = src_set_st;
-	hw->src_set_ie = src_set_ie;
-	hw->src_set_ilsz = src_set_ilsz;
-	hw->src_set_bp = src_set_bp;
-	hw->src_set_cisz = src_set_cisz;
-	hw->src_set_ca = src_set_ca;
-	hw->src_set_sa = src_set_sa;
-	hw->src_set_la = src_set_la;
-	hw->src_set_pitch = src_set_pitch;
-	hw->src_set_dirty = src_set_dirty;
-	hw->src_set_clear_zbufs = src_set_clear_zbufs;
-	hw->src_set_dirty_all = src_set_dirty_all;
-	hw->src_commit_write = src_commit_write;
-	hw->src_get_ca = src_get_ca;
-	hw->src_get_dirty = src_get_dirty;
-	hw->src_dirty_conj_mask = src_dirty_conj_mask;
-	hw->src_mgr_enbs_src = src_mgr_enbs_src;
-	hw->src_mgr_enb_src = src_mgr_enb_src;
-	hw->src_mgr_dsb_src = src_mgr_dsb_src;
-	hw->src_mgr_commit_write = src_mgr_commit_write;
-
-	hw->srcimp_mgr_get_ctrl_blk = srcimp_mgr_get_ctrl_blk;
-	hw->srcimp_mgr_put_ctrl_blk = srcimp_mgr_put_ctrl_blk;
-	hw->srcimp_mgr_set_imaparc = srcimp_mgr_set_imaparc;
-	hw->srcimp_mgr_set_imapuser = srcimp_mgr_set_imapuser;
-	hw->srcimp_mgr_set_imapnxt = srcimp_mgr_set_imapnxt;
-	hw->srcimp_mgr_set_imapaddr = srcimp_mgr_set_imapaddr;
-	hw->srcimp_mgr_commit_write = srcimp_mgr_commit_write;
-
-	hw->amixer_rsc_get_ctrl_blk = amixer_rsc_get_ctrl_blk;
-	hw->amixer_rsc_put_ctrl_blk = amixer_rsc_put_ctrl_blk;
-	hw->amixer_mgr_get_ctrl_blk = amixer_mgr_get_ctrl_blk;
-	hw->amixer_mgr_put_ctrl_blk = amixer_mgr_put_ctrl_blk;
-	hw->amixer_set_mode = amixer_set_mode;
-	hw->amixer_set_iv = amixer_set_iv;
-	hw->amixer_set_x = amixer_set_x;
-	hw->amixer_set_y = amixer_set_y;
-	hw->amixer_set_sadr = amixer_set_sadr;
-	hw->amixer_set_se = amixer_set_se;
-	hw->amixer_set_dirty = amixer_set_dirty;
-	hw->amixer_set_dirty_all = amixer_set_dirty_all;
-	hw->amixer_commit_write = amixer_commit_write;
-	hw->amixer_get_y = amixer_get_y;
-	hw->amixer_get_dirty = amixer_get_dirty;
-
-	hw->dai_get_ctrl_blk = dai_get_ctrl_blk;
-	hw->dai_put_ctrl_blk = dai_put_ctrl_blk;
-	hw->dai_srt_set_srco = dai_srt_set_srcr;
-	hw->dai_srt_set_srcm = dai_srt_set_srcl;
-	hw->dai_srt_set_rsr = dai_srt_set_rsr;
-	hw->dai_srt_set_drat = dai_srt_set_drat;
-	hw->dai_srt_set_ec = dai_srt_set_ec;
-	hw->dai_srt_set_et = dai_srt_set_et;
-	hw->dai_commit_write = dai_commit_write;
-
-	hw->dao_get_ctrl_blk = dao_get_ctrl_blk;
-	hw->dao_put_ctrl_blk = dao_put_ctrl_blk;
-	hw->dao_set_spos = dao_set_spos;
-	hw->dao_commit_write = dao_commit_write;
-	hw->dao_get_spos = dao_get_spos;
-
-	hw->daio_mgr_get_ctrl_blk = daio_mgr_get_ctrl_blk;
-	hw->daio_mgr_put_ctrl_blk = daio_mgr_put_ctrl_blk;
-	hw->daio_mgr_enb_dai = daio_mgr_enb_dai;
-	hw->daio_mgr_dsb_dai = daio_mgr_dsb_dai;
-	hw->daio_mgr_enb_dao = daio_mgr_enb_dao;
-	hw->daio_mgr_dsb_dao = daio_mgr_dsb_dao;
-	hw->daio_mgr_dao_init = daio_mgr_dao_init;
-	hw->daio_mgr_set_imaparc = daio_mgr_set_imaparc;
-	hw->daio_mgr_set_imapnxt = daio_mgr_set_imapnxt;
-	hw->daio_mgr_set_imapaddr = daio_mgr_set_imapaddr;
-	hw->daio_mgr_commit_write = daio_mgr_commit_write;
-
-	*rhw = hw;
+	*rhw = &hw20k1->hw;
 
 	return 0;
 }

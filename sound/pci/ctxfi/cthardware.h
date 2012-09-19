@@ -27,6 +27,19 @@ enum CHIPTYP {
 	ATCNONE
 };
 
+enum CTCARDS {
+	/* 20k1 models */
+	CTSB055X,
+	CTSB073X,
+	CTUAA,
+	CT20K1_UNKNOWN,
+	/* 20k2 models */
+	CTSB0760,
+	CTHENDRIX,
+	CTSB0880,
+	NUM_CTCARDS		/* This should always be the last */
+};
+
 /* Type of input source for ADC */
 enum ADCSRC{
 	ADC_MICIN,
@@ -48,7 +61,6 @@ struct hw {
 	int (*card_init)(struct hw *hw, struct card_conf *info);
 	int (*card_stop)(struct hw *hw);
 	int (*pll_init)(struct hw *hw, unsigned int rsr);
-	enum CHIPTYP (*get_chip_type)(struct hw *hw);
 	int (*is_adc_source_selected)(struct hw *hw, enum ADCSRC source);
 	int (*select_adc_source)(struct hw *hw, enum ADCSRC source);
 	int (*have_digit_io_switch)(struct hw *hw);
@@ -145,16 +157,40 @@ struct hw {
 	int (*daio_mgr_set_imapaddr)(void *blk, unsigned int addr);
 	int (*daio_mgr_commit_write)(struct hw *hw, void *blk);
 
+	int (*set_timer_irq)(struct hw *hw, int enable);
+	int (*set_timer_tick)(struct hw *hw, unsigned int tick);
+	unsigned int (*get_wc)(struct hw *hw);
+
+	void (*irq_callback)(void *data, unsigned int bit);
+	void *irq_callback_data;
+
 	struct pci_dev *pci;	/* the pci kernel structure of this card */
 	int irq;
 	unsigned long io_base;
 	unsigned long mem_base;
+
+	enum CHIPTYP chip_type;
+	enum CTCARDS model;
 };
 
-int create_hw_obj(struct pci_dev *pci, struct hw **rhw);
+int create_hw_obj(struct pci_dev *pci, enum CHIPTYP chip_type,
+		  enum CTCARDS model, struct hw **rhw);
 int destroy_hw_obj(struct hw *hw);
 
 unsigned int get_field(unsigned int data, unsigned int field);
 void set_field(unsigned int *data, unsigned int field, unsigned int value);
+
+/* IRQ bits */
+#define	PLL_INT		(1 << 10) /* PLL input-clock out-of-range */
+#define FI_INT		(1 << 9)  /* forced interrupt */
+#define IT_INT		(1 << 8)  /* timer interrupt */
+#define PCI_INT		(1 << 7)  /* PCI bus error pending */
+#define URT_INT		(1 << 6)  /* UART Tx/Rx */
+#define GPI_INT		(1 << 5)  /* GPI pin */
+#define MIX_INT		(1 << 4)  /* mixer parameter segment FIFO channels */
+#define DAI_INT		(1 << 3)  /* DAI (SR-tracker or SPDIF-receiver) */
+#define TP_INT		(1 << 2)  /* transport priority queue */
+#define DSP_INT		(1 << 1)  /* DSP */
+#define SRC_INT		(1 << 0)  /* SRC channels */
 
 #endif /* CTHARDWARE_H */

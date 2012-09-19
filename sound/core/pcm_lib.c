@@ -22,6 +22,7 @@
 
 #include <linux/slab.h>
 #include <linux/time.h>
+#include <linux/math64.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/info.h>
@@ -136,6 +137,16 @@ void snd_pcm_playback_silence(struct snd_pcm_substream *substream, snd_pcm_ufram
 			dump_stack();			\
 	} while (0)
 
+static void pcm_debug_name(struct snd_pcm_substream *substream,
+			   char *name, size_t len)
+{
+	snprintf(name, len, "pcmC%dD%d%c:%d",
+		 substream->pcm->card->number,
+		 substream->pcm->device,
+		 substream->stream ? 'c' : 'p',
+		 substream->number);
+}
+
 static void xrun(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -144,10 +155,9 @@ static void xrun(struct snd_pcm_substream *substream)
 		snd_pcm_gettime(runtime, (struct timespec *)&runtime->status->tstamp);
 	snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
 	if (xrun_debug(substream, 1)) {
-		snd_printd(KERN_DEBUG "XRUN: pcmC%dD%d%c\n",
-			   substream->pcm->card->number,
-			   substream->pcm->device,
-			   substream->stream ? 'c' : 'p');
+		char name[16];
+		pcm_debug_name(substream, name, sizeof(name));
+		snd_printd(KERN_DEBUG "XRUN: %s\n", name);
 		dump_stack_on_xrun(substream);
 	}
 }
@@ -163,9 +173,11 @@ snd_pcm_update_hw_ptr_pos(struct snd_pcm_substream *substream,
 		return pos; /* XRUN */
 	if (pos >= runtime->buffer_size) {
 		if (printk_ratelimit()) {
-			snd_printd(KERN_ERR  "BUG: stream = %i, pos = 0x%lx, "
+			char name[16];
+			pcm_debug_name(substream, name, sizeof(name));
+			snd_printd(KERN_ERR  "BUG: %s, pos = 0x%lx, "
 				   "buffer size = 0x%lx, period size = 0x%lx\n",
-				   substream->stream, pos, runtime->buffer_size,
+				   name, pos, runtime->buffer_size,
 				   runtime->period_size);
 		}
 		pos = 0;
@@ -299,6 +311,8 @@ static int snd_pcm_update_hw_ptr_interrupt(struct snd_pcm_substream *substream)
 		hw_ptr_interrupt =
 			new_hw_ptr - new_hw_ptr % runtime->period_size;
 	}
+	runtime->hw_ptr_interrupt = hw_ptr_interrupt;
+
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
 	    runtime->silence_size > 0)
 		snd_pcm_playback_silence(substream, new_hw_ptr);
@@ -309,7 +323,6 @@ static int snd_pcm_update_hw_ptr_interrupt(struct snd_pcm_substream *substream)
 	runtime->hw_ptr_base = hw_base;
 	runtime->status->hw_ptr = new_hw_ptr;
 	runtime->hw_ptr_jiffies = jiffies;
-	runtime->hw_ptr_interrupt = hw_ptr_interrupt;
 	if (runtime->tstamp_mode == SNDRV_PCM_TSTAMP_ENABLE)
 		snd_pcm_gettime(runtime, (struct timespec *)&runtime->status->tstamp);
 
@@ -371,7 +384,7 @@ int snd_pcm_update_hw_ptr(struct snd_pcm_substream *substream)
 	    runtime->silence_size > 0)
 		snd_pcm_playback_silence(substream, new_hw_ptr);
 
-	if (runtime->status->hw_ptr != new_hw_ptr)
+	if (runtime->status->hw_ptr == new_hw_ptr)
 		return 0;
 
 	runtime->hw_ptr_base = hw_base;
@@ -472,7 +485,7 @@ static inline unsigned int muldiv32(unsigned int a, unsigned int b,
 		*r = 0;
 		return UINT_MAX;
 	}
-	div64_32(&n, c, r);
+	n = div_u64_rem(n, c, r);
 	if (n >= UINT_MAX) {
 		*r = 0;
 		return UINT_MAX;

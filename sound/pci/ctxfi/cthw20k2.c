@@ -15,8 +15,6 @@
  *
  */
 
-#include "cthw20k2.h"
-#include "ct20k2reg.h"
 #include <linux/types.h>
 #include <linux/slab.h>
 #include <linux/pci.h>
@@ -25,8 +23,22 @@
 #include <linux/kernel.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
+#include "cthw20k2.h"
+#include "ct20k2reg.h"
 
-#define CT_XFI_DMA_MASK		DMA_BIT_MASK(32) /* 32 bits */
+#if BITS_PER_LONG == 32
+#define CT_XFI_DMA_MASK		DMA_BIT_MASK(32) /* 32 bit PTE */
+#else
+#define CT_XFI_DMA_MASK		DMA_BIT_MASK(64) /* 64 bit PTE */
+#endif
+
+struct hw20k2 {
+	struct hw hw;
+	/* for i2c */
+	unsigned char dev_id;
+	unsigned char addr_size;
+	unsigned char data_size;
+};
 
 static u32 hw_read_20kx(struct hw *hw, u32 reg);
 static void hw_write_20kx(struct hw *hw, u32 reg, u32 data);
@@ -164,7 +176,7 @@ static int src_get_rsc_ctrl_blk(void **rblk)
 
 static int src_put_rsc_ctrl_blk(void *blk)
 {
-	kfree((struct src_rsc_ctrl_blk *)blk);
+	kfree(blk);
 
 	return 0;
 }
@@ -355,7 +367,7 @@ static unsigned int src_param_pitch_mixer(unsigned int src_idx)
 static int src_commit_write(struct hw *hw, unsigned int idx, void *blk)
 {
 	struct src_rsc_ctrl_blk *ctl = blk;
-	int i = 0;
+	int i;
 
 	if (ctl->dirty.bf.czbfs) {
 		/* Clear Z-Buffer registers */
@@ -454,8 +466,8 @@ static int src_mgr_dsb_src(void *blk, unsigned int idx)
 static int src_mgr_commit_write(struct hw *hw, void *blk)
 {
 	struct src_mgr_ctrl_blk *ctl = blk;
-	int i = 0;
-	unsigned int ret = 0;
+	int i;
+	unsigned int ret;
 
 	if (ctl->dirty.bf.enbsa) {
 		do {
@@ -490,7 +502,7 @@ static int src_mgr_get_ctrl_blk(void **rblk)
 
 static int src_mgr_put_ctrl_blk(void *blk)
 {
-	kfree((struct src_mgr_ctrl_blk *)blk);
+	kfree(blk);
 
 	return 0;
 }
@@ -511,7 +523,7 @@ static int srcimp_mgr_get_ctrl_blk(void **rblk)
 
 static int srcimp_mgr_put_ctrl_blk(void *blk)
 {
-	kfree((struct srcimp_mgr_ctrl_blk *)blk);
+	kfree(blk);
 
 	return 0;
 }
@@ -700,7 +712,7 @@ static int amixer_rsc_get_ctrl_blk(void **rblk)
 
 static int amixer_rsc_put_ctrl_blk(void *blk)
 {
-	kfree((struct amixer_rsc_ctrl_blk *)blk);
+	kfree(blk);
 
 	return 0;
 }
@@ -889,7 +901,7 @@ static int dai_get_ctrl_blk(void **rblk)
 
 static int dai_put_ctrl_blk(void *blk)
 {
-	kfree((struct dai_ctrl_blk *)blk);
+	kfree(blk);
 
 	return 0;
 }
@@ -939,7 +951,7 @@ static int dao_get_ctrl_blk(void **rblk)
 
 static int dao_put_ctrl_blk(void *blk)
 {
-	kfree((struct dao_ctrl_blk *)blk);
+	kfree(blk);
 
 	return 0;
 }
@@ -1047,8 +1059,8 @@ static int daio_mgr_set_imapaddr(void *blk, unsigned int addr)
 static int daio_mgr_commit_write(struct hw *hw, void *blk)
 {
 	struct daio_mgr_ctrl_blk *ctl = blk;
-	unsigned int data = 0;
-	int i = 0;
+	unsigned int data;
+	int i;
 
 	for (i = 0; i < 8; i++) {
 		if ((ctl->dirty.bf.atxctl & (0x1 << i))) {
@@ -1076,7 +1088,7 @@ static int daio_mgr_commit_write(struct hw *hw, void *blk)
 static int daio_mgr_get_ctrl_blk(struct hw *hw, void **rblk)
 {
 	struct daio_mgr_ctrl_blk *blk;
-	int i = 0;
+	int i;
 
 	*rblk = NULL;
 	blk = kzalloc(sizeof(*blk), GFP_KERNEL);
@@ -1095,7 +1107,7 @@ static int daio_mgr_get_ctrl_blk(struct hw *hw, void **rblk)
 
 static int daio_mgr_put_ctrl_blk(void *blk)
 {
-	kfree((struct daio_mgr_ctrl_blk *)blk);
+	kfree(blk);
 
 	return 0;
 }
@@ -1121,7 +1133,7 @@ struct trn_conf {
 
 static int hw_daio_init(struct hw *hw, const struct daio_conf *info)
 {
-	u32 dwData = 0;
+	u32 data;
 	int i;
 
 	/* Program I2S with proper sample rate and enable the correct I2S
@@ -1152,12 +1164,12 @@ static int hw_daio_init(struct hw *hw, const struct daio_conf *info)
 		if (i <= 3) {
 			/* 1st 3 channels are SPDIFs (SB0960) */
 			if (i == 3)
-				dwData = 0x1001001;
+				data = 0x1001001;
 			else
-				dwData = 0x1000001;
+				data = 0x1000001;
 
-			hw_write_20kx(hw, (AUDIO_IO_TX_CTL+(0x40*i)), dwData);
-			hw_write_20kx(hw, (AUDIO_IO_RX_CTL+(0x40*i)), dwData);
+			hw_write_20kx(hw, (AUDIO_IO_TX_CTL+(0x40*i)), data);
+			hw_write_20kx(hw, (AUDIO_IO_RX_CTL+(0x40*i)), data);
 
 			/* Initialize the SPDIF Out Channel status registers.
 			 * The value specified here is based on the typical
@@ -1175,13 +1187,13 @@ static int hw_daio_init(struct hw *hw, const struct daio_conf *info)
 			hw_write_20kx(hw, AUDIO_IO_TX_CSTAT_H+(0x40*i), 0x0B);
 		} else {
 			/* Next 5 channels are I2S (SB0960) */
-			dwData = 0x11;
-			hw_write_20kx(hw, AUDIO_IO_RX_CTL+(0x40*i), dwData);
+			data = 0x11;
+			hw_write_20kx(hw, AUDIO_IO_RX_CTL+(0x40*i), data);
 			if (2 == info->msr) {
 				/* Four channels per sample period */
-				dwData |= 0x1000;
+				data |= 0x1000;
 			}
-			hw_write_20kx(hw, AUDIO_IO_TX_CTL+(0x40*i), dwData);
+			hw_write_20kx(hw, AUDIO_IO_TX_CTL+(0x40*i), data);
 		}
 	}
 
@@ -1191,9 +1203,9 @@ static int hw_daio_init(struct hw *hw, const struct daio_conf *info)
 /* TRANSPORT operations */
 static int hw_trn_init(struct hw *hw, const struct trn_conf *info)
 {
-	u32 vmctl = 0, data = 0;
-	unsigned long ptp_phys_low = 0, ptp_phys_high = 0;
-	int i = 0;
+	u32 vmctl, data;
+	u32 ptp_phys_low, ptp_phys_high;
+	int i;
 
 	/* Set up device page table */
 	if ((~0UL) == info->vm_pgt_phys) {
@@ -1373,34 +1385,32 @@ static int hw_auto_init(struct hw *hw)
 #define I2C_ADDRESS_PTAD	0x0000FFFF
 #define I2C_ADDRESS_SLAD	0x007F0000
 
-struct REGS_CS4382 {
-	u32 dwModeControl_1;
-	u32 dwModeControl_2;
-	u32 dwModeControl_3;
+struct regs_cs4382 {
+	u32 mode_control_1;
+	u32 mode_control_2;
+	u32 mode_control_3;
 
-	u32 dwFilterControl;
-	u32 dwInvertControl;
+	u32 filter_control;
+	u32 invert_control;
 
-	u32 dwMixControl_P1;
-	u32 dwVolControl_A1;
-	u32 dwVolControl_B1;
+	u32 mix_control_P1;
+	u32 vol_control_A1;
+	u32 vol_control_B1;
 
-	u32 dwMixControl_P2;
-	u32 dwVolControl_A2;
-	u32 dwVolControl_B2;
+	u32 mix_control_P2;
+	u32 vol_control_A2;
+	u32 vol_control_B2;
 
-	u32 dwMixControl_P3;
-	u32 dwVolControl_A3;
-	u32 dwVolControl_B3;
+	u32 mix_control_P3;
+	u32 vol_control_A3;
+	u32 vol_control_B3;
 
-	u32 dwMixControl_P4;
-	u32 dwVolControl_A4;
-	u32 dwVolControl_B4;
+	u32 mix_control_P4;
+	u32 vol_control_A4;
+	u32 vol_control_B4;
 };
 
-static u8 m_bAddressSize, m_bDataSize, m_bDeviceID;
-
-static int I2CUnlockFullAccess(struct hw *hw)
+static int hw20k2_i2c_unlock_full_access(struct hw *hw)
 {
 	u8 UnlockKeySequence_FLASH_FULLACCESS_MODE[2] =  {0xB3, 0xD4};
 
@@ -1416,7 +1426,7 @@ static int I2CUnlockFullAccess(struct hw *hw)
 	return -1;
 }
 
-static int I2CLockChip(struct hw *hw)
+static int hw20k2_i2c_lock_chip(struct hw *hw)
 {
 	/* Write twice */
 	hw_write_20kx(hw, I2C_IF_WLOCK, STATE_LOCKED);
@@ -1427,57 +1437,58 @@ static int I2CLockChip(struct hw *hw)
 	return -1;
 }
 
-static int I2CInit(struct hw *hw, u8 bDeviceID, u8 bAddressSize, u8 bDataSize)
+static int hw20k2_i2c_init(struct hw *hw, u8 dev_id, u8 addr_size, u8 data_size)
 {
-	int err = 0;
-	unsigned int RegI2CStatus;
-	unsigned int RegI2CAddress;
+	struct hw20k2 *hw20k2 = (struct hw20k2 *)hw;
+	int err;
+	unsigned int i2c_status;
+	unsigned int i2c_addr;
 
-	err = I2CUnlockFullAccess(hw);
+	err = hw20k2_i2c_unlock_full_access(hw);
 	if (err < 0)
 		return err;
 
-	m_bAddressSize = bAddressSize;
-	m_bDataSize = bDataSize;
-	m_bDeviceID = bDeviceID;
+	hw20k2->addr_size = addr_size;
+	hw20k2->data_size = data_size;
+	hw20k2->dev_id = dev_id;
 
-	RegI2CAddress = 0;
-	set_field(&RegI2CAddress, I2C_ADDRESS_SLAD, bDeviceID);
+	i2c_addr = 0;
+	set_field(&i2c_addr, I2C_ADDRESS_SLAD, dev_id);
 
-	hw_write_20kx(hw, I2C_IF_ADDRESS, RegI2CAddress);
+	hw_write_20kx(hw, I2C_IF_ADDRESS, i2c_addr);
 
-	RegI2CStatus = hw_read_20kx(hw, I2C_IF_STATUS);
+	i2c_status = hw_read_20kx(hw, I2C_IF_STATUS);
 
-	set_field(&RegI2CStatus, I2C_STATUS_DCM, 1); /* Direct control mode */
+	set_field(&i2c_status, I2C_STATUS_DCM, 1); /* Direct control mode */
 
-	hw_write_20kx(hw, I2C_IF_STATUS, RegI2CStatus);
+	hw_write_20kx(hw, I2C_IF_STATUS, i2c_status);
 
 	return 0;
 }
 
-static int I2CUninit(struct hw *hw)
+static int hw20k2_i2c_uninit(struct hw *hw)
 {
-	unsigned int RegI2CStatus;
-	unsigned int RegI2CAddress;
+	unsigned int i2c_status;
+	unsigned int i2c_addr;
 
-	RegI2CAddress = 0;
-	set_field(&RegI2CAddress, I2C_ADDRESS_SLAD, 0x57); /* I2C id */
+	i2c_addr = 0;
+	set_field(&i2c_addr, I2C_ADDRESS_SLAD, 0x57); /* I2C id */
 
-	hw_write_20kx(hw, I2C_IF_ADDRESS, RegI2CAddress);
+	hw_write_20kx(hw, I2C_IF_ADDRESS, i2c_addr);
 
-	RegI2CStatus = hw_read_20kx(hw, I2C_IF_STATUS);
+	i2c_status = hw_read_20kx(hw, I2C_IF_STATUS);
 
-	set_field(&RegI2CStatus, I2C_STATUS_DCM, 0); /* I2C mode */
+	set_field(&i2c_status, I2C_STATUS_DCM, 0); /* I2C mode */
 
-	hw_write_20kx(hw, I2C_IF_STATUS, RegI2CStatus);
+	hw_write_20kx(hw, I2C_IF_STATUS, i2c_status);
 
-	return I2CLockChip(hw);
+	return hw20k2_i2c_lock_chip(hw);
 }
 
-static int I2CWaitDataReady(struct hw *hw)
+static int hw20k2_i2c_wait_data_ready(struct hw *hw)
 {
 	int i = 0x400000;
-	unsigned int ret = 0;
+	unsigned int ret;
 
 	do {
 		ret = hw_read_20kx(hw, I2C_IF_STATUS);
@@ -1486,62 +1497,64 @@ static int I2CWaitDataReady(struct hw *hw)
 	return i;
 }
 
-static int I2CRead(struct hw *hw, u16 wAddress, u32 *pdwData)
+static int hw20k2_i2c_read(struct hw *hw, u16 addr, u32 *datap)
 {
-	unsigned int RegI2CStatus;
+	struct hw20k2 *hw20k2 = (struct hw20k2 *)hw;
+	unsigned int i2c_status;
 
-	RegI2CStatus = hw_read_20kx(hw, I2C_IF_STATUS);
-	set_field(&RegI2CStatus, I2C_STATUS_BC,
-			(4 == m_bAddressSize) ? 0 : m_bAddressSize);
-	hw_write_20kx(hw, I2C_IF_STATUS, RegI2CStatus);
-	if (!I2CWaitDataReady(hw))
+	i2c_status = hw_read_20kx(hw, I2C_IF_STATUS);
+	set_field(&i2c_status, I2C_STATUS_BC,
+		  (4 == hw20k2->addr_size) ? 0 : hw20k2->addr_size);
+	hw_write_20kx(hw, I2C_IF_STATUS, i2c_status);
+	if (!hw20k2_i2c_wait_data_ready(hw))
 		return -1;
 
-	hw_write_20kx(hw, I2C_IF_WDATA, (u32)wAddress);
-	if (!I2CWaitDataReady(hw))
+	hw_write_20kx(hw, I2C_IF_WDATA, addr);
+	if (!hw20k2_i2c_wait_data_ready(hw))
 		return -1;
 
 	/* Force a read operation */
 	hw_write_20kx(hw, I2C_IF_RDATA, 0);
-	if (!I2CWaitDataReady(hw))
+	if (!hw20k2_i2c_wait_data_ready(hw))
 		return -1;
 
-	*pdwData = hw_read_20kx(hw, I2C_IF_RDATA);
+	*datap = hw_read_20kx(hw, I2C_IF_RDATA);
 
 	return 0;
 }
 
-static int I2CWrite(struct hw *hw, u16 wAddress, u32 dwData)
+static int hw20k2_i2c_write(struct hw *hw, u16 addr, u32 data)
 {
-	unsigned int dwI2CData = (dwData << (m_bAddressSize * 8)) | wAddress;
-	unsigned int RegI2CStatus;
+	struct hw20k2 *hw20k2 = (struct hw20k2 *)hw;
+	unsigned int i2c_data = (data << (hw20k2->addr_size * 8)) | addr;
+	unsigned int i2c_status;
 
-	RegI2CStatus = hw_read_20kx(hw, I2C_IF_STATUS);
+	i2c_status = hw_read_20kx(hw, I2C_IF_STATUS);
 
-	set_field(&RegI2CStatus, I2C_STATUS_BC,
-		  (4 == (m_bAddressSize + m_bDataSize)) ?
-		  0 : (m_bAddressSize + m_bDataSize));
+	set_field(&i2c_status, I2C_STATUS_BC,
+		  (4 == (hw20k2->addr_size + hw20k2->data_size)) ?
+		  0 : (hw20k2->addr_size + hw20k2->data_size));
 
-	hw_write_20kx(hw, I2C_IF_STATUS, RegI2CStatus);
-	I2CWaitDataReady(hw);
+	hw_write_20kx(hw, I2C_IF_STATUS, i2c_status);
+	hw20k2_i2c_wait_data_ready(hw);
 	/* Dummy write to trigger the write oprtation */
 	hw_write_20kx(hw, I2C_IF_WDATA, 0);
-	I2CWaitDataReady(hw);
+	hw20k2_i2c_wait_data_ready(hw);
 
 	/* This is the real data */
-	hw_write_20kx(hw, I2C_IF_WDATA, dwI2CData);
-	I2CWaitDataReady(hw);
+	hw_write_20kx(hw, I2C_IF_WDATA, i2c_data);
+	hw20k2_i2c_wait_data_ready(hw);
 
 	return 0;
 }
 
 static int hw_dac_init(struct hw *hw, const struct dac_conf *info)
 {
-	int err = 0;
-	u32 dwData = 0;
-	int i = 0;
-	struct REGS_CS4382 cs4382_Read = {0};
-	struct REGS_CS4382 cs4382_Def = {
+	int err;
+	u32 data;
+	int i;
+	struct regs_cs4382 cs_read = {0};
+	struct regs_cs4382 cs_def = {
 				   0x00000001,  /* Mode Control 1 */
 				   0x00000000,  /* Mode Control 2 */
 				   0x00000084,  /* Mode Control 3 */
@@ -1562,87 +1575,86 @@ static int hw_dac_init(struct hw *hw, const struct dac_conf *info)
 				 };
 
 	/* Set DAC reset bit as output */
-	dwData = hw_read_20kx(hw, GPIO_CTRL);
-	dwData |= 0x02;
-	hw_write_20kx(hw, GPIO_CTRL, dwData);
+	data = hw_read_20kx(hw, GPIO_CTRL);
+	data |= 0x02;
+	hw_write_20kx(hw, GPIO_CTRL, data);
 
-	err = I2CInit(hw, 0x18, 1, 1);
+	err = hw20k2_i2c_init(hw, 0x18, 1, 1);
 	if (err < 0)
 		goto End;
 
 	for (i = 0; i < 2; i++) {
 		/* Reset DAC twice just in-case the chip
 		 * didn't initialized properly */
-		dwData = hw_read_20kx(hw, GPIO_DATA);
+		data = hw_read_20kx(hw, GPIO_DATA);
 		/* GPIO data bit 1 */
-		dwData &= 0xFFFFFFFD;
-		hw_write_20kx(hw, GPIO_DATA, dwData);
+		data &= 0xFFFFFFFD;
+		hw_write_20kx(hw, GPIO_DATA, data);
 		mdelay(10);
-		dwData |= 0x2;
-		hw_write_20kx(hw, GPIO_DATA, dwData);
+		data |= 0x2;
+		hw_write_20kx(hw, GPIO_DATA, data);
 		mdelay(50);
 
 		/* Reset the 2nd time */
-		dwData &= 0xFFFFFFFD;
-		hw_write_20kx(hw, GPIO_DATA, dwData);
+		data &= 0xFFFFFFFD;
+		hw_write_20kx(hw, GPIO_DATA, data);
 		mdelay(10);
-		dwData |= 0x2;
-		hw_write_20kx(hw, GPIO_DATA, dwData);
+		data |= 0x2;
+		hw_write_20kx(hw, GPIO_DATA, data);
 		mdelay(50);
 
-		if (I2CRead(hw, CS4382_MC1,  &cs4382_Read.dwModeControl_1))
+		if (hw20k2_i2c_read(hw, CS4382_MC1,  &cs_read.mode_control_1))
 			continue;
 
-		if (I2CRead(hw, CS4382_MC2,  &cs4382_Read.dwModeControl_2))
+		if (hw20k2_i2c_read(hw, CS4382_MC2,  &cs_read.mode_control_2))
 			continue;
 
-		if (I2CRead(hw, CS4382_MC3,  &cs4382_Read.dwModeControl_3))
+		if (hw20k2_i2c_read(hw, CS4382_MC3,  &cs_read.mode_control_3))
 			continue;
 
-		if (I2CRead(hw, CS4382_FC,   &cs4382_Read.dwFilterControl))
+		if (hw20k2_i2c_read(hw, CS4382_FC,   &cs_read.filter_control))
 			continue;
 
-		if (I2CRead(hw, CS4382_IC,   &cs4382_Read.dwInvertControl))
+		if (hw20k2_i2c_read(hw, CS4382_IC,   &cs_read.invert_control))
 			continue;
 
-		if (I2CRead(hw, CS4382_XC1,  &cs4382_Read.dwMixControl_P1))
+		if (hw20k2_i2c_read(hw, CS4382_XC1,  &cs_read.mix_control_P1))
 			continue;
 
-		if (I2CRead(hw, CS4382_VCA1, &cs4382_Read.dwVolControl_A1))
+		if (hw20k2_i2c_read(hw, CS4382_VCA1, &cs_read.vol_control_A1))
 			continue;
 
-		if (I2CRead(hw, CS4382_VCB1, &cs4382_Read.dwVolControl_B1))
+		if (hw20k2_i2c_read(hw, CS4382_VCB1, &cs_read.vol_control_B1))
 			continue;
 
-		if (I2CRead(hw, CS4382_XC2,  &cs4382_Read.dwMixControl_P2))
+		if (hw20k2_i2c_read(hw, CS4382_XC2,  &cs_read.mix_control_P2))
 			continue;
 
-		if (I2CRead(hw, CS4382_VCA2, &cs4382_Read.dwVolControl_A2))
+		if (hw20k2_i2c_read(hw, CS4382_VCA2, &cs_read.vol_control_A2))
 			continue;
 
-		if (I2CRead(hw, CS4382_VCB2, &cs4382_Read.dwVolControl_B2))
+		if (hw20k2_i2c_read(hw, CS4382_VCB2, &cs_read.vol_control_B2))
 			continue;
 
-		if (I2CRead(hw, CS4382_XC3,  &cs4382_Read.dwMixControl_P3))
+		if (hw20k2_i2c_read(hw, CS4382_XC3,  &cs_read.mix_control_P3))
 			continue;
 
-		if (I2CRead(hw, CS4382_VCA3, &cs4382_Read.dwVolControl_A3))
+		if (hw20k2_i2c_read(hw, CS4382_VCA3, &cs_read.vol_control_A3))
 			continue;
 
-		if (I2CRead(hw, CS4382_VCB3, &cs4382_Read.dwVolControl_B3))
+		if (hw20k2_i2c_read(hw, CS4382_VCB3, &cs_read.vol_control_B3))
 			continue;
 
-		if (I2CRead(hw, CS4382_XC4,  &cs4382_Read.dwMixControl_P4))
+		if (hw20k2_i2c_read(hw, CS4382_XC4,  &cs_read.mix_control_P4))
 			continue;
 
-		if (I2CRead(hw, CS4382_VCA4, &cs4382_Read.dwVolControl_A4))
+		if (hw20k2_i2c_read(hw, CS4382_VCA4, &cs_read.vol_control_A4))
 			continue;
 
-		if (I2CRead(hw, CS4382_VCB4, &cs4382_Read.dwVolControl_B4))
+		if (hw20k2_i2c_read(hw, CS4382_VCB4, &cs_read.vol_control_B4))
 			continue;
 
-		if (memcmp(&cs4382_Read, &cs4382_Def,
-						sizeof(struct REGS_CS4382)))
+		if (memcmp(&cs_read, &cs_def, sizeof(cs_read)))
 			continue;
 		else
 			break;
@@ -1653,29 +1665,29 @@ static int hw_dac_init(struct hw *hw, const struct dac_conf *info)
 
 	/* Note: Every I2C write must have some delay.
 	 * This is not a requirement but the delay works here... */
-	I2CWrite(hw, CS4382_MC1, 0x80);
-	I2CWrite(hw, CS4382_MC2, 0x10);
+	hw20k2_i2c_write(hw, CS4382_MC1, 0x80);
+	hw20k2_i2c_write(hw, CS4382_MC2, 0x10);
 	if (1 == info->msr) {
-		I2CWrite(hw, CS4382_XC1, 0x24);
-		I2CWrite(hw, CS4382_XC2, 0x24);
-		I2CWrite(hw, CS4382_XC3, 0x24);
-		I2CWrite(hw, CS4382_XC4, 0x24);
+		hw20k2_i2c_write(hw, CS4382_XC1, 0x24);
+		hw20k2_i2c_write(hw, CS4382_XC2, 0x24);
+		hw20k2_i2c_write(hw, CS4382_XC3, 0x24);
+		hw20k2_i2c_write(hw, CS4382_XC4, 0x24);
 	} else if (2 == info->msr) {
-		I2CWrite(hw, CS4382_XC1, 0x25);
-		I2CWrite(hw, CS4382_XC2, 0x25);
-		I2CWrite(hw, CS4382_XC3, 0x25);
-		I2CWrite(hw, CS4382_XC4, 0x25);
+		hw20k2_i2c_write(hw, CS4382_XC1, 0x25);
+		hw20k2_i2c_write(hw, CS4382_XC2, 0x25);
+		hw20k2_i2c_write(hw, CS4382_XC3, 0x25);
+		hw20k2_i2c_write(hw, CS4382_XC4, 0x25);
 	} else {
-		I2CWrite(hw, CS4382_XC1, 0x26);
-		I2CWrite(hw, CS4382_XC2, 0x26);
-		I2CWrite(hw, CS4382_XC3, 0x26);
-		I2CWrite(hw, CS4382_XC4, 0x26);
+		hw20k2_i2c_write(hw, CS4382_XC1, 0x26);
+		hw20k2_i2c_write(hw, CS4382_XC2, 0x26);
+		hw20k2_i2c_write(hw, CS4382_XC3, 0x26);
+		hw20k2_i2c_write(hw, CS4382_XC4, 0x26);
 	}
 
 	return 0;
 End:
 
-	I2CUninit(hw);
+	hw20k2_i2c_uninit(hw);
 	return -1;
 }
 
@@ -1692,7 +1704,7 @@ End:
 
 static int hw_is_adc_input_selected(struct hw *hw, enum ADCSRC type)
 {
-	u32 data = 0;
+	u32 data;
 
 	data = hw_read_20kx(hw, GPIO_DATA);
 	switch (type) {
@@ -1710,28 +1722,28 @@ static int hw_is_adc_input_selected(struct hw *hw, enum ADCSRC type)
 
 static int hw_adc_input_select(struct hw *hw, enum ADCSRC type)
 {
-	u32 data = 0;
+	u32 data;
 
 	data = hw_read_20kx(hw, GPIO_DATA);
 	switch (type) {
 	case ADC_MICIN:
 		data |= (0x1 << 14);
 		hw_write_20kx(hw, GPIO_DATA, data);
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_ADCMC, 0x101),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_ADCMC, 0x101),
 				MAKE_WM8775_DATA(0x101)); /* Mic-in */
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_AADCL, 0xE7),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_AADCL, 0xE7),
 				MAKE_WM8775_DATA(0xE7)); /* +12dB boost */
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_AADCR, 0xE7),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_AADCR, 0xE7),
 				MAKE_WM8775_DATA(0xE7)); /* +12dB boost */
 		break;
 	case ADC_LINEIN:
 		data &= ~(0x1 << 14);
 		hw_write_20kx(hw, GPIO_DATA, data);
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_ADCMC, 0x102),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_ADCMC, 0x102),
 				MAKE_WM8775_DATA(0x102)); /* Line-in */
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_AADCL, 0xCF),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_AADCL, 0xCF),
 				MAKE_WM8775_DATA(0xCF)); /* No boost */
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_AADCR, 0xCF),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_AADCR, 0xCF),
 				MAKE_WM8775_DATA(0xCF)); /* No boost */
 		break;
 	default:
@@ -1743,35 +1755,35 @@ static int hw_adc_input_select(struct hw *hw, enum ADCSRC type)
 
 static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
 {
-	int err = 0;
-	u32 dwMux = 2, dwData = 0, dwCtl = 0;
+	int err;
+	u32 mux = 2, data, ctl;
 
 	/*  Set ADC reset bit as output */
-	dwData = hw_read_20kx(hw, GPIO_CTRL);
-	dwData |= (0x1 << 15);
-	hw_write_20kx(hw, GPIO_CTRL, dwData);
+	data = hw_read_20kx(hw, GPIO_CTRL);
+	data |= (0x1 << 15);
+	hw_write_20kx(hw, GPIO_CTRL, data);
 
 	/* Initialize I2C */
-	err = I2CInit(hw, 0x1A, 1, 1);
+	err = hw20k2_i2c_init(hw, 0x1A, 1, 1);
 	if (err < 0) {
 		printk(KERN_ALERT "ctxfi: Failure to acquire I2C!!!\n");
 		goto error;
 	}
 
 	/* Make ADC in normal operation */
-	dwData = hw_read_20kx(hw, GPIO_DATA);
-	dwData &= ~(0x1 << 15);
+	data = hw_read_20kx(hw, GPIO_DATA);
+	data &= ~(0x1 << 15);
 	mdelay(10);
-	dwData |= (0x1 << 15);
-	hw_write_20kx(hw, GPIO_DATA, dwData);
+	data |= (0x1 << 15);
+	hw_write_20kx(hw, GPIO_DATA, data);
 	mdelay(50);
 
 	/* Set the master mode (256fs) */
 	if (1 == info->msr) {
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_MMC, 0x02),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_MMC, 0x02),
 						MAKE_WM8775_DATA(0x02));
 	} else if (2 == info->msr) {
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_MMC, 0x0A),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_MMC, 0x0A),
 						MAKE_WM8775_DATA(0x0A));
 	} else {
 		printk(KERN_ALERT "ctxfi: Invalid master sampling "
@@ -1781,35 +1793,35 @@ static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
 	}
 
 	/* Configure GPIO bit 14 change to line-in/mic-in */
-	dwCtl = hw_read_20kx(hw, GPIO_CTRL);
-	dwCtl |= 0x1<<14;
-	hw_write_20kx(hw, GPIO_CTRL, dwCtl);
+	ctl = hw_read_20kx(hw, GPIO_CTRL);
+	ctl |= 0x1 << 14;
+	hw_write_20kx(hw, GPIO_CTRL, ctl);
 
 	/* Check using Mic-in or Line-in */
-	dwData = hw_read_20kx(hw, GPIO_DATA);
+	data = hw_read_20kx(hw, GPIO_DATA);
 
-	if (dwMux == 1) {
+	if (mux == 1) {
 		/* Configures GPIO data to select Mic-in */
-		dwData |= 0x1<<14;
-		hw_write_20kx(hw, GPIO_DATA, dwData);
+		data |= 0x1 << 14;
+		hw_write_20kx(hw, GPIO_DATA, data);
 
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_ADCMC, 0x101),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_ADCMC, 0x101),
 				MAKE_WM8775_DATA(0x101)); /* Mic-in */
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_AADCL, 0xE7),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_AADCL, 0xE7),
 				MAKE_WM8775_DATA(0xE7)); /* +12dB boost */
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_AADCR, 0xE7),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_AADCR, 0xE7),
 				MAKE_WM8775_DATA(0xE7)); /* +12dB boost */
-	} else if (dwMux == 2) {
+	} else if (mux == 2) {
 		/* Configures GPIO data to select Line-in */
-		dwData &= ~(0x1<<14);
-		hw_write_20kx(hw, GPIO_DATA, dwData);
+		data &= ~(0x1 << 14);
+		hw_write_20kx(hw, GPIO_DATA, data);
 
 		/* Setup ADC */
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_ADCMC, 0x102),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_ADCMC, 0x102),
 				MAKE_WM8775_DATA(0x102)); /* Line-in */
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_AADCL, 0xCF),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_AADCL, 0xCF),
 				MAKE_WM8775_DATA(0xCF)); /* No boost */
-		I2CWrite(hw, MAKE_WM8775_ADDR(WM8775_AADCR, 0xCF),
+		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_AADCR, 0xCF),
 				MAKE_WM8775_DATA(0xCF)); /* No boost */
 	} else {
 		printk(KERN_ALERT "ctxfi: ERROR!!! Invalid input mux!!!\n");
@@ -1820,7 +1832,7 @@ static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
 	return 0;
 
 error:
-	I2CUninit(hw);
+	hw20k2_i2c_uninit(hw);
 	return err;
 }
 
@@ -1834,18 +1846,16 @@ static int hw_card_start(struct hw *hw)
 	int err = 0;
 	struct pci_dev *pci = hw->pci;
 	unsigned int gctl;
-	unsigned int dma_mask = 0;
 
 	err = pci_enable_device(pci);
 	if (err < 0)
 		return err;
 
 	/* Set DMA transfer mask */
-	dma_mask = CT_XFI_DMA_MASK;
-	if (pci_set_dma_mask(pci, dma_mask) < 0 ||
-	    pci_set_consistent_dma_mask(pci, dma_mask) < 0) {
+	if (pci_set_dma_mask(pci, CT_XFI_DMA_MASK) < 0 ||
+	    pci_set_consistent_dma_mask(pci, CT_XFI_DMA_MASK) < 0) {
 		printk(KERN_ERR "ctxfi: architecture does not support PCI "
-		"busmaster DMA with mask 0x%x\n", dma_mask);
+		"busmaster DMA with mask 0x%llx\n", CT_XFI_DMA_MASK);
 		err = -ENXIO;
 		goto error1;
 	}
@@ -2006,112 +2016,113 @@ static void hw_write_20kx(struct hw *hw, u32 reg, u32 data)
 	writel(data, (void *)(hw->mem_base + reg));
 }
 
-int create_20k2_hw_obj(struct hw **rhw)
+static struct hw ct20k2_preset __devinitdata = {
+	.irq = -1,
+
+	.card_init = hw_card_init,
+	.card_stop = hw_card_stop,
+	.pll_init = hw_pll_init,
+	.is_adc_source_selected = hw_is_adc_input_selected,
+	.select_adc_source = hw_adc_input_select,
+	.have_digit_io_switch = hw_have_digit_io_switch,
+
+	.src_rsc_get_ctrl_blk = src_get_rsc_ctrl_blk,
+	.src_rsc_put_ctrl_blk = src_put_rsc_ctrl_blk,
+	.src_mgr_get_ctrl_blk = src_mgr_get_ctrl_blk,
+	.src_mgr_put_ctrl_blk = src_mgr_put_ctrl_blk,
+	.src_set_state = src_set_state,
+	.src_set_bm = src_set_bm,
+	.src_set_rsr = src_set_rsr,
+	.src_set_sf = src_set_sf,
+	.src_set_wr = src_set_wr,
+	.src_set_pm = src_set_pm,
+	.src_set_rom = src_set_rom,
+	.src_set_vo = src_set_vo,
+	.src_set_st = src_set_st,
+	.src_set_ie = src_set_ie,
+	.src_set_ilsz = src_set_ilsz,
+	.src_set_bp = src_set_bp,
+	.src_set_cisz = src_set_cisz,
+	.src_set_ca = src_set_ca,
+	.src_set_sa = src_set_sa,
+	.src_set_la = src_set_la,
+	.src_set_pitch = src_set_pitch,
+	.src_set_dirty = src_set_dirty,
+	.src_set_clear_zbufs = src_set_clear_zbufs,
+	.src_set_dirty_all = src_set_dirty_all,
+	.src_commit_write = src_commit_write,
+	.src_get_ca = src_get_ca,
+	.src_get_dirty = src_get_dirty,
+	.src_dirty_conj_mask = src_dirty_conj_mask,
+	.src_mgr_enbs_src = src_mgr_enbs_src,
+	.src_mgr_enb_src = src_mgr_enb_src,
+	.src_mgr_dsb_src = src_mgr_dsb_src,
+	.src_mgr_commit_write = src_mgr_commit_write,
+
+	.srcimp_mgr_get_ctrl_blk = srcimp_mgr_get_ctrl_blk,
+	.srcimp_mgr_put_ctrl_blk = srcimp_mgr_put_ctrl_blk,
+	.srcimp_mgr_set_imaparc = srcimp_mgr_set_imaparc,
+	.srcimp_mgr_set_imapuser = srcimp_mgr_set_imapuser,
+	.srcimp_mgr_set_imapnxt = srcimp_mgr_set_imapnxt,
+	.srcimp_mgr_set_imapaddr = srcimp_mgr_set_imapaddr,
+	.srcimp_mgr_commit_write = srcimp_mgr_commit_write,
+
+	.amixer_rsc_get_ctrl_blk = amixer_rsc_get_ctrl_blk,
+	.amixer_rsc_put_ctrl_blk = amixer_rsc_put_ctrl_blk,
+	.amixer_mgr_get_ctrl_blk = amixer_mgr_get_ctrl_blk,
+	.amixer_mgr_put_ctrl_blk = amixer_mgr_put_ctrl_blk,
+	.amixer_set_mode = amixer_set_mode,
+	.amixer_set_iv = amixer_set_iv,
+	.amixer_set_x = amixer_set_x,
+	.amixer_set_y = amixer_set_y,
+	.amixer_set_sadr = amixer_set_sadr,
+	.amixer_set_se = amixer_set_se,
+	.amixer_set_dirty = amixer_set_dirty,
+	.amixer_set_dirty_all = amixer_set_dirty_all,
+	.amixer_commit_write = amixer_commit_write,
+	.amixer_get_y = amixer_get_y,
+	.amixer_get_dirty = amixer_get_dirty,
+
+	.dai_get_ctrl_blk = dai_get_ctrl_blk,
+	.dai_put_ctrl_blk = dai_put_ctrl_blk,
+	.dai_srt_set_srco = dai_srt_set_srco,
+	.dai_srt_set_srcm = dai_srt_set_srcm,
+	.dai_srt_set_rsr = dai_srt_set_rsr,
+	.dai_srt_set_drat = dai_srt_set_drat,
+	.dai_srt_set_ec = dai_srt_set_ec,
+	.dai_srt_set_et = dai_srt_set_et,
+	.dai_commit_write = dai_commit_write,
+
+	.dao_get_ctrl_blk = dao_get_ctrl_blk,
+	.dao_put_ctrl_blk = dao_put_ctrl_blk,
+	.dao_set_spos = dao_set_spos,
+	.dao_commit_write = dao_commit_write,
+	.dao_get_spos = dao_get_spos,
+
+	.daio_mgr_get_ctrl_blk = daio_mgr_get_ctrl_blk,
+	.daio_mgr_put_ctrl_blk = daio_mgr_put_ctrl_blk,
+	.daio_mgr_enb_dai = daio_mgr_enb_dai,
+	.daio_mgr_dsb_dai = daio_mgr_dsb_dai,
+	.daio_mgr_enb_dao = daio_mgr_enb_dao,
+	.daio_mgr_dsb_dao = daio_mgr_dsb_dao,
+	.daio_mgr_dao_init = daio_mgr_dao_init,
+	.daio_mgr_set_imaparc = daio_mgr_set_imaparc,
+	.daio_mgr_set_imapnxt = daio_mgr_set_imapnxt,
+	.daio_mgr_set_imapaddr = daio_mgr_set_imapaddr,
+	.daio_mgr_commit_write = daio_mgr_commit_write,
+};
+
+int __devinit create_20k2_hw_obj(struct hw **rhw)
 {
-	struct hw *hw;
+	struct hw20k2 *hw20k2;
 
 	*rhw = NULL;
-	hw = kzalloc(sizeof(*hw), GFP_KERNEL);
-	if (NULL == hw)
+	hw20k2 = kzalloc(sizeof(*hw20k2), GFP_KERNEL);
+	if (!hw20k2)
 		return -ENOMEM;
 
-	hw->io_base = 0;
-	hw->mem_base = (unsigned long)NULL;
-	hw->irq = -1;
-
-	hw->card_init = hw_card_init;
-	hw->card_stop = hw_card_stop;
-	hw->pll_init = hw_pll_init;
-	hw->is_adc_source_selected = hw_is_adc_input_selected;
-	hw->select_adc_source = hw_adc_input_select;
-	hw->have_digit_io_switch = hw_have_digit_io_switch;
-
-	hw->src_rsc_get_ctrl_blk = src_get_rsc_ctrl_blk;
-	hw->src_rsc_put_ctrl_blk = src_put_rsc_ctrl_blk;
-	hw->src_mgr_get_ctrl_blk = src_mgr_get_ctrl_blk;
-	hw->src_mgr_put_ctrl_blk = src_mgr_put_ctrl_blk;
-	hw->src_set_state = src_set_state;
-	hw->src_set_bm = src_set_bm;
-	hw->src_set_rsr = src_set_rsr;
-	hw->src_set_sf = src_set_sf;
-	hw->src_set_wr = src_set_wr;
-	hw->src_set_pm = src_set_pm;
-	hw->src_set_rom = src_set_rom;
-	hw->src_set_vo = src_set_vo;
-	hw->src_set_st = src_set_st;
-	hw->src_set_ie = src_set_ie;
-	hw->src_set_ilsz = src_set_ilsz;
-	hw->src_set_bp = src_set_bp;
-	hw->src_set_cisz = src_set_cisz;
-	hw->src_set_ca = src_set_ca;
-	hw->src_set_sa = src_set_sa;
-	hw->src_set_la = src_set_la;
-	hw->src_set_pitch = src_set_pitch;
-	hw->src_set_dirty = src_set_dirty;
-	hw->src_set_clear_zbufs = src_set_clear_zbufs;
-	hw->src_set_dirty_all = src_set_dirty_all;
-	hw->src_commit_write = src_commit_write;
-	hw->src_get_ca = src_get_ca;
-	hw->src_get_dirty = src_get_dirty;
-	hw->src_dirty_conj_mask = src_dirty_conj_mask;
-	hw->src_mgr_enbs_src = src_mgr_enbs_src;
-	hw->src_mgr_enb_src = src_mgr_enb_src;
-	hw->src_mgr_dsb_src = src_mgr_dsb_src;
-	hw->src_mgr_commit_write = src_mgr_commit_write;
-
-	hw->srcimp_mgr_get_ctrl_blk = srcimp_mgr_get_ctrl_blk;
-	hw->srcimp_mgr_put_ctrl_blk = srcimp_mgr_put_ctrl_blk;
-	hw->srcimp_mgr_set_imaparc = srcimp_mgr_set_imaparc;
-	hw->srcimp_mgr_set_imapuser = srcimp_mgr_set_imapuser;
-	hw->srcimp_mgr_set_imapnxt = srcimp_mgr_set_imapnxt;
-	hw->srcimp_mgr_set_imapaddr = srcimp_mgr_set_imapaddr;
-	hw->srcimp_mgr_commit_write = srcimp_mgr_commit_write;
-
-	hw->amixer_rsc_get_ctrl_blk = amixer_rsc_get_ctrl_blk;
-	hw->amixer_rsc_put_ctrl_blk = amixer_rsc_put_ctrl_blk;
-	hw->amixer_mgr_get_ctrl_blk = amixer_mgr_get_ctrl_blk;
-	hw->amixer_mgr_put_ctrl_blk = amixer_mgr_put_ctrl_blk;
-	hw->amixer_set_mode = amixer_set_mode;
-	hw->amixer_set_iv = amixer_set_iv;
-	hw->amixer_set_x = amixer_set_x;
-	hw->amixer_set_y = amixer_set_y;
-	hw->amixer_set_sadr = amixer_set_sadr;
-	hw->amixer_set_se = amixer_set_se;
-	hw->amixer_set_dirty = amixer_set_dirty;
-	hw->amixer_set_dirty_all = amixer_set_dirty_all;
-	hw->amixer_commit_write = amixer_commit_write;
-	hw->amixer_get_y = amixer_get_y;
-	hw->amixer_get_dirty = amixer_get_dirty;
-
-	hw->dai_get_ctrl_blk = dai_get_ctrl_blk;
-	hw->dai_put_ctrl_blk = dai_put_ctrl_blk;
-	hw->dai_srt_set_srco = dai_srt_set_srco;
-	hw->dai_srt_set_srcm = dai_srt_set_srcm;
-	hw->dai_srt_set_rsr = dai_srt_set_rsr;
-	hw->dai_srt_set_drat = dai_srt_set_drat;
-	hw->dai_srt_set_ec = dai_srt_set_ec;
-	hw->dai_srt_set_et = dai_srt_set_et;
-	hw->dai_commit_write = dai_commit_write;
-
-	hw->dao_get_ctrl_blk = dao_get_ctrl_blk;
-	hw->dao_put_ctrl_blk = dao_put_ctrl_blk;
-	hw->dao_set_spos = dao_set_spos;
-	hw->dao_commit_write = dao_commit_write;
-	hw->dao_get_spos = dao_get_spos;
-
-	hw->daio_mgr_get_ctrl_blk = daio_mgr_get_ctrl_blk;
-	hw->daio_mgr_put_ctrl_blk = daio_mgr_put_ctrl_blk;
-	hw->daio_mgr_enb_dai = daio_mgr_enb_dai;
-	hw->daio_mgr_dsb_dai = daio_mgr_dsb_dai;
-	hw->daio_mgr_enb_dao = daio_mgr_enb_dao;
-	hw->daio_mgr_dsb_dao = daio_mgr_dsb_dao;
-	hw->daio_mgr_dao_init = daio_mgr_dao_init;
-	hw->daio_mgr_set_imaparc = daio_mgr_set_imaparc;
-	hw->daio_mgr_set_imapnxt = daio_mgr_set_imapnxt;
-	hw->daio_mgr_set_imapaddr = daio_mgr_set_imapaddr;
-	hw->daio_mgr_commit_write = daio_mgr_commit_write;
-
-	*rhw = hw;
+	hw20k2->hw = ct20k2_preset;
+	*rhw = &hw20k2->hw;
 
 	return 0;
 }
