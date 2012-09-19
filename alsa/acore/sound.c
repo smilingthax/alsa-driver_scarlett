@@ -15,3 +15,6 @@ EXPORT_SYMBOL(pm_send);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 EXPORT_SYMBOL(snd_wrapper_kill_fasync);
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
+EXPORT_SYMBOL(snd_compat_devfs_remove);
+#endif
