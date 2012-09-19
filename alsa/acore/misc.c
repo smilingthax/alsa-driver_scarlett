@@ -204,6 +204,48 @@ int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 
 #endif /* kernel version < 2.3.0 && CONFIG_APM */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
+/* wait-for-completion handler emulation */
+
+/* we know this is used below exactly once for at most one waiter */
+struct completion {
+	int done;
+	wait_queue_head_t wait;
+};
+
+static inline void init_completion(struct completion *comp)
+{
+	comp->done = 0;
+	init_waitqueue_head(&comp->wait);
+}
+
+static void wait_for_completion(struct completion *comp)
+{
+	wait_queue_t wait;
+
+	init_waitqueue_entry(&wait, current);
+	add_wait_queue(&comp->wait, &wait);
+	for (;;) {
+		mb();
+		if (comp->done)
+			break;
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule();
+		set_current_state(TASK_RUNNING);
+	}
+	remove_wait_queue(&comp->wait, &wait);
+}
+
+static void complete_and_exit(struct completion *comp, long code)
+{
+	comp->done = 1;
+	wmb();
+	wake_up(&comp->wait);
+	do_exit(code);
+}
+
+#endif /* kernel version < 2.3.0 */
+
 /* workqueue-alike; 2.5.45 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 45)
 
