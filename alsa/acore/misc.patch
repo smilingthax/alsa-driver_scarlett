@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/misc.c	2009-08-27 17:44:33.000000000 +0200
-+++ misc.c	2009-09-01 08:28:18.000000000 +0200
+--- ../alsa-kernel/core/misc.c	2010-01-14 09:24:33.415809949 +0100
++++ misc.c	2010-01-14 09:30:42.691557398 +0100
 @@ -1,3 +1,9 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -19,29 +19,22 @@
  	}
  }
  
-@@ -115,15 +121,47 @@
+@@ -143,9 +149,42 @@
+ const struct snd_pci_quirk *
  snd_pci_quirk_lookup(struct pci_dev *pci, const struct snd_pci_quirk *list)
  {
- 	const struct snd_pci_quirk *q;
-+	unsigned short subsystem_vendor, subsystem_device;
- 
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 0)
-+	subsystem_vendor = pci->subsystem_vendor;
-+	subsystem_device = pci->subsystem_device;
+ 	return snd_pci_quirk_lookup_id(pci->subsystem_vendor,
+ 				       pci->subsystem_device,
+ 				       list);
 +#else
++	unsigned short subsystem_vendor, subsystem_device;
 +	pci_read_config_word(pci, PCI_SUBSYSTEM_VENDOR_ID, &subsystem_vendor);
 +	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &subsystem_device);
++	return snd_pci_quirk_lookup_id(subsystem_vendor,
++				       subsystem_device,
++				       list);
 +#endif
- 	for (q = list; q->subvendor; q++) {
--		if (q->subvendor != pci->subsystem_vendor)
-+		if (q->subvendor != subsystem_vendor)
- 			continue;
- 		if (!q->subdevice ||
--		    (pci->subsystem_device & q->subdevice_mask) == q->subdevice)
-+		    (subsystem_device & q->subdevice_mask) == q->subdevice)
- 			return q;
- 	}
- 	return NULL;
  }
  EXPORT_SYMBOL(snd_pci_quirk_lookup);
  #endif
