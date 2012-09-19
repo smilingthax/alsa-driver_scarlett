@@ -83,6 +83,7 @@ static void __devinit snd_ice1712_stdsp24_box_channel(ice1712_t *ice, int box, i
 		ICE1712_STDSP24_2_CHN4(ice->hoontech_boxbits, 0);
 	ICE1712_STDSP24_2_MIDI1(ice->hoontech_boxbits, activate);
 	snd_ice1712_stdsp24_gpio_write(ice, ice->hoontech_boxbits[2]);
+	snd_ice1712_stdsp24_gpio_write(ice, ice->hoontech_boxbits[3]);
 
 	ICE1712_STDSP24_1_CHN1(ice->hoontech_boxbits, 1);
 	ICE1712_STDSP24_1_CHN2(ice->hoontech_boxbits, 1);
@@ -117,7 +118,7 @@ static void __devinit snd_ice1712_stdsp24_box_channel(ice1712_t *ice, int box, i
 	up(&ice->gpio_mutex);
 }
 
-static void __devinit snd_ice1712_stdsp24_box_midi(ice1712_t *ice, int box, int master, int slave)
+static void __devinit snd_ice1712_stdsp24_box_midi(ice1712_t *ice, int box, int master)
 {
 	down(&ice->gpio_mutex);
 
@@ -128,43 +129,32 @@ static void __devinit snd_ice1712_stdsp24_box_midi(ice1712_t *ice, int box, int 
 	ICE1712_STDSP24_2_MIDIIN(ice->hoontech_boxbits, 1);
 	ICE1712_STDSP24_2_MIDI1(ice->hoontech_boxbits, master);
 	snd_ice1712_stdsp24_gpio_write(ice, ice->hoontech_boxbits[2]);
+	snd_ice1712_stdsp24_gpio_write(ice, ice->hoontech_boxbits[3]);
 
 	udelay(100);
 	
 	ICE1712_STDSP24_2_MIDIIN(ice->hoontech_boxbits, 0);
 	snd_ice1712_stdsp24_gpio_write(ice, ice->hoontech_boxbits[2]);
 	
-	udelay(100);
+	mdelay(10);
 	
 	ICE1712_STDSP24_2_MIDIIN(ice->hoontech_boxbits, 1);
 	snd_ice1712_stdsp24_gpio_write(ice, ice->hoontech_boxbits[2]);
 
-	udelay(100);
+	up(&ice->gpio_mutex);
+}
 
-	/* MIDI2 is direct */
-	ICE1712_STDSP24_3_MIDI2(ice->hoontech_boxbits, slave);
+static void __devinit snd_ice1712_stdsp24_midi2(ice1712_t *ice, int activate)
+{
+	down(&ice->gpio_mutex);
+	ICE1712_STDSP24_3_MIDI2(ice->hoontech_boxbits, activate);
 	snd_ice1712_stdsp24_gpio_write(ice, ice->hoontech_boxbits[3]);
-
 	up(&ice->gpio_mutex);
 }
 
 static int __devinit snd_ice1712_hoontech_init(ice1712_t *ice)
 {
 	int box, chn;
-
-	/* EZ8 Hack: Change shortname and subvendor id, Recall functions called in
-	 * snd_ice1712_chip_init when it still thinks it is a Hoontech DSP24 card.
-	 */
-	if (ice->ez8) {
-		strcpy(ice->card->shortname, "Event Electronics EZ8");
-		ice->eeprom.subvendor = 0;
-		ice->gpio.write_mask = ice->eeprom.gpiomask;
-		ice->gpio.direction = ice->eeprom.gpiodir;
-		snd_ice1712_write(ice, ICE1712_IREG_GPIO_WRITE_MASK, ice->eeprom.gpiomask);
-		snd_ice1712_write(ice, ICE1712_IREG_GPIO_DIRECTION, ice->eeprom.gpiodir);
-		snd_ice1712_write(ice, ICE1712_IREG_GPIO_DATA, ice->eeprom.gpiostate);
-		return 0;
-	}
 
 	ice->num_total_dacs = 8;
 	ice->num_total_adcs = 8;
@@ -218,10 +208,22 @@ static int __devinit snd_ice1712_hoontech_init(ice1712_t *ice)
 		for (chn = 0; chn < 4; chn++)
 			snd_ice1712_stdsp24_box_channel(ice, box, chn, (ice->hoontech_boxconfig[box] & (1 << chn)) ? 1 : 0);
 		snd_ice1712_stdsp24_box_midi(ice, box,
-				(ice->hoontech_boxconfig[box] & ICE1712_STDSP24_BOX_MIDI1) ? 1 : 0,
-				(ice->hoontech_boxconfig[box] & ICE1712_STDSP24_BOX_MIDI2) ? 1 : 0);
+				(ice->hoontech_boxconfig[box] & ICE1712_STDSP24_BOX_MIDI1) ? 1 : 0);
+		if (ice->hoontech_boxconfig[box] & ICE1712_STDSP24_BOX_MIDI2)
+			snd_ice1712_stdsp24_midi2(ice, 1);
 	}
 
+	return 0;
+}
+
+
+static int __devinit snd_ice1712_ez8_init(ice1712_t *ice)
+{
+	ice->gpio.write_mask = ice->eeprom.gpiomask;
+	ice->gpio.direction = ice->eeprom.gpiodir;
+	snd_ice1712_write(ice, ICE1712_IREG_GPIO_WRITE_MASK, ice->eeprom.gpiomask);
+	snd_ice1712_write(ice, ICE1712_IREG_GPIO_DIRECTION, ice->eeprom.gpiodir);
+	snd_ice1712_write(ice, ICE1712_IREG_GPIO_DATA, ice->eeprom.gpiostate);
 	return 0;
 }
 
@@ -229,14 +231,22 @@ static int __devinit snd_ice1712_hoontech_init(ice1712_t *ice)
 /* entry point */
 struct snd_ice1712_card_info snd_ice1712_hoontech_cards[] __devinitdata = {
 	{
-		ICE1712_SUBDEVICE_STDSP24,
-		"Hoontech SoundTrack Audio DSP24",
-		snd_ice1712_hoontech_init,
+		.subvendor = ICE1712_SUBDEVICE_STDSP24,
+		.name = "Hoontech SoundTrack Audio DSP24",
+		.model = "dsp24",
+		.chip_init = snd_ice1712_hoontech_init,
 	},
 	{
-		ICE1712_SUBDEVICE_STDSP24_MEDIA7_1,
-		"Hoontech STA DSP24 Media 7.1",
-		snd_ice1712_hoontech_init,
+		.subvendor = ICE1712_SUBDEVICE_STDSP24_MEDIA7_1,
+		.name = "Hoontech STA DSP24 Media 7.1",
+		.model = "dsp24_71",
+		.chip_init = snd_ice1712_hoontech_init,
+	},
+	{
+		.subvendor = ICE1712_SUBDEVICE_EVENT_EZ8,	/* a dummy id */
+		.name = "Event Electronics EZ8",
+		.model = "ez8",
+		.chip_init = snd_ice1712_ez8_init,
 	},
 	{ } /* terminator */
 };
