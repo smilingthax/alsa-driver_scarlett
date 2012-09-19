@@ -2163,8 +2163,10 @@ static int parse_audio_endpoints(snd_usb_audio_t *chip, int iface_no)
 		/* skip invalid one */
 		if ((altsd->bInterfaceClass != USB_CLASS_AUDIO &&
 		     altsd->bInterfaceClass != USB_CLASS_VENDOR_SPEC) ||
-		    altsd->bInterfaceSubClass != USB_SUBCLASS_AUDIO_STREAMING ||
-		    altsd->bNumEndpoints < 1)
+		    (altsd->bInterfaceSubClass != USB_SUBCLASS_AUDIO_STREAMING &&
+		     altsd->bInterfaceSubClass != USB_SUBCLASS_VENDOR_SPEC) ||
+		    altsd->bNumEndpoints < 1 ||
+		    get_endpoint(alts, 0)->wMaxPacketSize == 0)
 			continue;
 		/* must be isochronous */
 		if ((get_endpoint(alts, 0)->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) !=
@@ -2381,7 +2383,8 @@ static int create_fixed_stream_quirk(snd_usb_audio_t *chip,
  * create a stream for an interface with proper descriptors
  */
 static int create_standard_interface_quirk(snd_usb_audio_t *chip,
-					   struct usb_interface *iface)
+					   struct usb_interface *iface,
+					   const snd_usb_audio_quirk_t *quirk)
 {
 	struct usb_host_interface *alts;
 	struct usb_interface_descriptor *altsd;
@@ -2389,19 +2392,18 @@ static int create_standard_interface_quirk(snd_usb_audio_t *chip,
 
 	alts = &iface->altsetting[0];
 	altsd = get_iface_desc(alts);
-	switch (altsd->bInterfaceSubClass) {
-	case USB_SUBCLASS_AUDIO_STREAMING:
+	switch (quirk->type) {
+	case QUIRK_AUDIO_STANDARD_INTERFACE:
 		err = parse_audio_endpoints(chip, altsd->bInterfaceNumber);
 		if (!err)
 			usb_set_interface(chip->dev, altsd->bInterfaceNumber, 0); /* reset the current interface */
 		break;
-	case USB_SUBCLASS_MIDI_STREAMING:
+	case QUIRK_MIDI_STANDARD_INTERFACE:
 		err = snd_usb_create_midi_interface(chip, iface, NULL);
 		break;
 	default:
-		snd_printk(KERN_ERR "if %d: non-supported subclass %d\n",
-			   altsd->bInterfaceNumber, altsd->bInterfaceSubClass);
-		return -ENODEV;
+		snd_printd(KERN_ERR "invalid quirk type %d\n", quirk->type);
+		return -ENXIO;
 	}
 	if (err < 0) {
 		snd_printk(KERN_ERR "cannot setup if %d: error %d\n",
@@ -2495,8 +2497,9 @@ static int snd_usb_create_quirk(snd_usb_audio_t *chip,
 		return create_composite_quirk(chip, iface, quirk);
 	case QUIRK_AUDIO_FIXED_ENDPOINT:
 		return create_fixed_stream_quirk(chip, iface, quirk);
-	case QUIRK_STANDARD_INTERFACE:
-		return create_standard_interface_quirk(chip, iface);
+	case QUIRK_AUDIO_STANDARD_INTERFACE:
+	case QUIRK_MIDI_STANDARD_INTERFACE:
+		return create_standard_interface_quirk(chip, iface, quirk);
 	default:
 		snd_printd(KERN_ERR "invalid quirk type %d\n", quirk->type);
 		return -ENXIO;

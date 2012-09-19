@@ -1258,7 +1258,7 @@ static void __devinit snd_cs4281_proc_init(cs4281_t * chip)
  * joystick support
  */
 
-#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#if defined(CONFIG_GAMEPORT) || (defined(MODULE) && defined(CONFIG_GAMEPORT_MODULE))
 
 typedef struct snd_cs4281_gameport {
 	struct gameport info;
@@ -1350,7 +1350,7 @@ static void __devinit snd_cs4281_gameport(cs4281_t *chip)
 
 #else
 #define snd_cs4281_gameport(chip) /*NOP*/
-#endif /* CONFIG_GAMEPORT || CONFIG_GAMEPORT_MODULE */
+#endif /* CONFIG_GAMEPORT || (MODULE && CONFIG_GAMEPORT_MODULE) */
 
 
 /*
@@ -1359,7 +1359,7 @@ static void __devinit snd_cs4281_gameport(cs4281_t *chip)
 
 static int snd_cs4281_free(cs4281_t *chip)
 {
-#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#if defined(CONFIG_GAMEPORT) || (defined(MODULE) && defined(CONFIG_GAMEPORT_MODULE))
 	if (chip->gameport) {
 		gameport_unregister_port(&chip->gameport->info);
 		kfree(chip->gameport);
