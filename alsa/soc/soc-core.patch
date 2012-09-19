@@ -1,5 +1,5 @@
---- ../alsa-kernel/soc/soc-core.c	2010-09-30 23:00:05.764410616 +0200
-+++ soc-core.c	2010-10-04 09:16:06.920758499 +0200
+--- ../alsa-kernel/soc/soc-core.c	2010-12-08 17:36:03.000000000 +0100
++++ soc-core.c	2010-12-08 17:36:56.000000000 +0100
 @@ -1,3 +1,8 @@
 +#include "adriver.h"
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 27)
@@ -9,17 +9,17 @@
  /*
   * soc-core.c  --  ALSA SoC Audio Layer
   *
-@@ -1452,7 +1457,9 @@
- 
- 	/* register the rtd device */
+@@ -1496,7 +1501,9 @@
+ 	rtd->card = card;
+ 	rtd->dev.parent = card->dev;
  	rtd->dev.release = rtd_release;
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)
- 	rtd->dev.init_name = dai_link->name;
+ 	rtd->dev.init_name = name;
 +#endif
  	ret = device_register(&rtd->dev);
  	if (ret < 0) {
- 		printk(KERN_ERR "asoc: failed to register DAI runtime device %d\n", ret);
-@@ -1693,21 +1700,43 @@
+ 		dev_err(card->dev,
+@@ -1966,21 +1973,43 @@
  	return 0;
  }
  
