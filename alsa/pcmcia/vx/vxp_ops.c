@@ -161,7 +161,8 @@ static int vxp_load_xilinx_binary(vx_core_t *_chip)
 {
 	struct snd_vxpocket *chip = (struct snd_vxpocket *)_chip;
 	const struct snd_vx_image *xilinx = &_chip->hw->xilinx;
-	int i, c, err;
+	unsigned int i;
+	int c, err;
 	int regCSUER, regRUER;
 
 	if ((err = vx_check_magic(_chip)) < 0)
