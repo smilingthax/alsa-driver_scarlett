@@ -3173,30 +3173,12 @@ static void snd_trident_proc_read(snd_info_entry_t *entry,
 static void __devinit snd_trident_proc_init(trident_t * trident)
 {
 	snd_info_entry_t *entry;
-	char *s = "trident";
+	const char *s = "trident";
 	
 	if (trident->device == TRIDENT_DEVICE_ID_SI7018)
 		s = "sis7018";
-	if ((entry = snd_info_create_card_entry(trident->card, s, trident->card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = trident;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 256;
-		entry->c.text.read = snd_trident_proc_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	trident->proc_entry = entry;
-}
-
-static void snd_trident_proc_done(trident_t * trident)
-{
-	if (trident->proc_entry) {
-		snd_info_unregister(trident->proc_entry);
-		trident->proc_entry = NULL;
-	}
+	if (! snd_card_proc_new(trident->card, s, &entry))
+		snd_info_set_text_ops(entry, trident, snd_trident_proc_read);
 }
 
 static int snd_trident_dev_free(snd_device_t *device)
@@ -3493,7 +3475,6 @@ int snd_trident_free(trident_t *trident)
 	else if (trident->device == TRIDENT_DEVICE_ID_SI7018) {
 		outl(0, TRID_REG(trident, SI_SERIAL_INTF_CTRL));
 	}
-	snd_trident_proc_done(trident);
 	if (trident->tlb.buffer) {
 		outl(0, TRID_REG(trident, NX_TLBC));
 		if (trident->tlb.memhdr)
@@ -3732,9 +3713,8 @@ void snd_trident_suspend(trident_t *trident)
 {
 	snd_card_t *card = trident->card;
 
-	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
-		goto __skip;
+		return;
 	snd_pcm_suspend_all(trident->pcm);
 	if (trident->foldback)
 		snd_pcm_suspend_all(trident->foldback);
@@ -3748,17 +3728,14 @@ void snd_trident_suspend(trident_t *trident)
 		break;
 	}
 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
-      __skip:
-      	snd_power_unlock(card);
 }
 
 void snd_trident_resume(trident_t *trident)
 {
 	snd_card_t *card = trident->card;
 
-	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D0)
-		goto __skip;
+		return;
 	switch (trident->device) {
 	case TRIDENT_DEVICE_ID_DX:
 	case TRIDENT_DEVICE_ID_NX:
@@ -3767,8 +3744,6 @@ void snd_trident_resume(trident_t *trident)
 		break;
 	}
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
-      __skip:
-	snd_power_unlock(card);
 }
 
 static int snd_trident_set_power_state(snd_card_t *card, unsigned int power_state)

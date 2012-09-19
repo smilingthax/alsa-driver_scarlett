@@ -51,7 +51,6 @@ MODULE_PARM_SYNTAX(enable_loopback, SNDRV_BOOLEAN_FALSE_DESC);
  */
 
 static void snd_ac97_proc_init(snd_card_t * card, ac97_t * ac97);
-static void snd_ac97_proc_done(ac97_t * ac97);
 
 typedef struct {
 	unsigned int id;
@@ -935,6 +934,11 @@ static const snd_kcontrol_new_t snd_ac97_controls_alc650[] = {
 	AC97_SINGLE("Surround Down Mix", AC97_ALC650_MULTICH, 1, 1, 0),
 	AC97_SINGLE("Center/LFE Down Mix", AC97_ALC650_MULTICH, 2, 1, 0),
 	AC97_SINGLE("Exchange Center/LFE", AC97_ALC650_MULTICH, 3, 1, 0),
+	/* 4: Analog Input To Surround */
+	/* 5: Analog Input To Center/LFE */
+	/* 6: Indepedent Master Volume Right */
+	/* 7: Indepedent Master Volume Left */
+	/* 8: reserved */
 	AC97_SINGLE("Line-In As Surround", AC97_ALC650_MULTICH, 9, 1, 0),
 	AC97_SINGLE("Mic As Center/LFE", AC97_ALC650_MULTICH, 10, 1, 0),
 	AC97_SINGLE("IEC958 Capture Switch", AC97_ALC650_MULTICH, 11, 1, 0),
@@ -944,6 +948,10 @@ static const snd_kcontrol_new_t snd_ac97_controls_alc650[] = {
 	AC97_SINGLE("IEC958 Input Clock Enable", AC97_ALC650_CLOCK, 0, 1, 0),
 	AC97_SINGLE("IEC958 Input Pin Enable", AC97_ALC650_CLOCK, 1, 1, 0),
 #endif
+	AC97_SINGLE("Surround DAC Switch", AC97_ALC650_SURR_DAC_VOL, 15, 1, 1),
+	AC97_DOUBLE("Surround DAC Volume", AC97_ALC650_SURR_DAC_VOL, 8, 0, 31, 1),
+	AC97_SINGLE("Center/LFE DAC Switch", AC97_ALC650_LFE_DAC_VOL, 15, 1, 1),
+	AC97_DOUBLE("Center/LFE DAC Volume", AC97_ALC650_LFE_DAC_VOL, 8, 0, 31, 1),
 };
 
 /* The following snd_ac97_ymf753_... items added by David Shust (dshust@shustring.com) */
@@ -1098,7 +1106,6 @@ static const snd_kcontrol_new_t snd_ac97_ymf753_controls_spdif[3] = {
 static int snd_ac97_free(ac97_t *ac97)
 {
 	if (ac97) {
-		snd_ac97_proc_done(ac97);
 		if (ac97->private_free)
 			ac97->private_free(ac97);
 		snd_magic_kfree(ac97);
@@ -2089,46 +2096,14 @@ static void snd_ac97_proc_init(snd_card_t * card, ac97_t * ac97)
 		sprintf(name, "ac97#%d-%d", ac97->addr, ac97->num);
 	else
 		sprintf(name, "ac97#%d", ac97->addr);
-	if ((entry = snd_info_create_card_entry(card, name, card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = ac97;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 512;
-		entry->c.text.read = snd_ac97_proc_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	ac97->proc_entry = entry;
+	if (! snd_card_proc_new(card, name, &entry))
+		snd_info_set_text_ops(entry, ac97, snd_ac97_proc_read);
 	if (ac97->num)
 		sprintf(name, "ac97#%d-%dregs", ac97->addr, ac97->num);
 	else
 		sprintf(name, "ac97#%dregs", ac97->addr);
-	if ((entry = snd_info_create_card_entry(card, name, card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = ac97;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 1024;
-		entry->c.text.read = snd_ac97_proc_regs_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	ac97->proc_regs_entry = entry;
-}
-
-static void snd_ac97_proc_done(ac97_t * ac97)
-{
-	if (ac97->proc_regs_entry) {
-		snd_info_unregister(ac97->proc_regs_entry);
-		ac97->proc_regs_entry = NULL;
-	}
-	if (ac97->proc_entry) {
-		snd_info_unregister(ac97->proc_entry);
-		ac97->proc_entry = NULL;
-	}
+	if (! snd_card_proc_new(card, name, &entry))
+		snd_info_set_text_ops(entry, ac97, snd_ac97_proc_regs_read);
 }
 
 /*

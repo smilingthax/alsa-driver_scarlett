@@ -993,13 +993,6 @@ struct _snd_emu10k1 {
 	emu10k1_midi_t midi2; /* for audigy */
 
 	unsigned int efx_voices_mask[2];
-
-	snd_info_entry_t *proc_entry;
-	snd_info_entry_t *proc_entry_fx8010_gpr;
-	snd_info_entry_t *proc_entry_fx8010_tram_data;
-	snd_info_entry_t *proc_entry_fx8010_tram_addr;
-	snd_info_entry_t *proc_entry_fx8010_code;
-	snd_info_entry_t *proc_entry_fx8010_iblocks;
 };
 
 int snd_emu10k1_create(snd_card_t * card,
@@ -1063,7 +1056,6 @@ int snd_emu10k1_audigy_midi(emu10k1_t * emu);
 
 /* proc interface */
 int snd_emu10k1_proc_init(emu10k1_t * emu);
-int snd_emu10k1_proc_done(emu10k1_t * emu);
 
 #endif /* __KERNEL__ */
 

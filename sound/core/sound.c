@@ -463,6 +463,7 @@ EXPORT_SYMBOL(snd_info_create_device);
 EXPORT_SYMBOL(snd_info_free_device);
 EXPORT_SYMBOL(snd_info_register);
 EXPORT_SYMBOL(snd_info_unregister);
+EXPORT_SYMBOL(snd_card_proc_new);
 #endif
   /* info_oss.c */
 #if defined(CONFIG_SND_OSSEMUL) && defined(CONFIG_PROC_FS)

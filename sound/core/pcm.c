@@ -774,6 +774,7 @@ int snd_pcm_open_substream(snd_pcm_t *pcm, int stream,
 	runtime->status->state = SNDRV_PCM_STATE_OPEN;
 
 	substream->runtime = runtime;
+	substream->private_data = pcm->private_data;
 	pstr->substream_opened++;
 	*rsubstream = substream;
 	return 0;

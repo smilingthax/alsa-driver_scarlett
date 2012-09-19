@@ -220,7 +220,6 @@ typedef struct snd_rme32 {
 	snd_pcm_t *spdif_pcm;
 	snd_pcm_t *adat_pcm;
 	struct pci_dev *pci;
-	snd_info_entry_t *proc_entry;
 	snd_kcontrol_t *spdif_ctl;
 } rme32_t;
 
@@ -1240,7 +1239,6 @@ static void snd_rme32_free(void *private_data)
 	if (rme32->irq >= 0) {
 		snd_rme32_playback_stop(rme32);
 		snd_rme32_capture_stop(rme32);
-		snd_rme32_proc_done(rme32);
 		free_irq(rme32->irq, (void *) rme32);
 		rme32->irq = -1;
 	}
@@ -1484,26 +1482,8 @@ static void __devinit snd_rme32_proc_init(rme32_t * rme32)
 {
 	snd_info_entry_t *entry;
 
-	if ((entry = snd_info_create_card_entry(rme32->card, "rme32", rme32->card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = rme32;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 256;
-		entry->c.text.read = snd_rme32_proc_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	rme32->proc_entry = entry;
-}
-
-static void snd_rme32_proc_done(rme32_t * rme32)
-{
-	if (rme32->proc_entry) {
-		snd_info_unregister(rme32->proc_entry);
-		rme32->proc_entry = NULL;
-	}
+	if (! snd_card_proc_new(rme32->card, "rme32", &entry))
+		snd_info_set_text_ops(entry, rme32, snd_rme32_proc_read);
 }
 
 /*

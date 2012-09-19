@@ -398,8 +398,6 @@ struct _snd_ensoniq {
 	unsigned int spdif_default;
 	unsigned int spdif_stream;
 
-	snd_info_entry_t *proc_entry;
-
 #ifdef CHIP1370
 	unsigned char *bugbuf;
 	dma_addr_t bugbuf_addr;
@@ -1725,26 +1723,8 @@ static void __devinit snd_ensoniq_proc_init(ensoniq_t * ensoniq)
 {
 	snd_info_entry_t *entry;
 
-	if ((entry = snd_info_create_card_entry(ensoniq->card, "audiopci", ensoniq->card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = ensoniq;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 256;
-		entry->c.text.read = snd_ensoniq_proc_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	ensoniq->proc_entry = entry;
-}
-
-static void snd_ensoniq_proc_done(ensoniq_t * ensoniq)
-{
-	if (ensoniq->proc_entry) {
-		snd_info_unregister(ensoniq->proc_entry);
-		ensoniq->proc_entry = NULL;
-	}
+	if (! snd_card_proc_new(ensoniq->card, "audiopci", &entry))
+		snd_info_set_text_ops(entry, ensoniq, snd_ensoniq_proc_read);
 }
 
 /*
@@ -1757,7 +1737,6 @@ static int snd_ensoniq_free(ensoniq_t *ensoniq)
 	if (ensoniq->ctrl & ES_JYSTK_EN)
 		snd_ensoniq_joy_disable(ensoniq);
 #endif
-	snd_ensoniq_proc_done(ensoniq);
 	if (ensoniq->irq < 0)
 		goto __hw_end;
 #ifdef CHIP1370
