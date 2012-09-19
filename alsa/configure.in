@@ -658,6 +658,7 @@ fi
 AC_SUBST(CONFIG_ISAPNP)
 if test "$CONFIG_ISAPNP" = "y"; then
   AC_DEFINE(CONFIG_ISAPNP)
+  AC_DEFINE(CONFIG_PNP)
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
@@ -743,7 +744,7 @@ fi
 fi
 dnl 2.2 kernel
 
-if test "$CONFIG_ISAPNP_KERNEL" == "y"; then
+if test "$CONFIG_ISAPNP_KERNEL" = "y"; then
   if test -f include/linux/isapnp.h; then
     echo "Removing local linux/isapnp.h."
     rm include/linux/isapnp.h
@@ -756,7 +757,7 @@ else
   fi
 fi
 
-if test "$CONFIG_PNP_KERNEL" == "y"; then
+if test "$CONFIG_PNP_KERNEL" = "y"; then
   if test -f include/linux/pnp.h; then
     echo "Removing local linux/pnp.h."
     rm include/linux/pnp.h
