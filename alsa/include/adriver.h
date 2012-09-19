@@ -81,11 +81,13 @@
 #define list_for_each_safe(pos, n, head) \
 	for (pos = (head)->next, n = pos->next; pos != (head); pos = n, n = pos->next)
 #endif
-#endif
+#endif /* LINUX_2_4__donotuse */
 
 #ifndef __devexit_p
 #define __devexit_p(x) x
 #endif
+
+#include <linux/kdev_t.h>
 #ifndef major
 #define major(x) MAJOR(x)
 #endif
@@ -95,12 +97,15 @@
 #ifndef mk_kdev
 #define mk_kdev(maj, min) MKDEV(maj, min)
 #endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 3)
 #define need_resched() (current->need_resched)
 #endif
 #include <asm/io.h>
-#if defined(virt_to_bus) && !defined(isa_virt_to_bus)
+#if !defined(isa_virt_to_bus)
+#if defined(virt_to_bus) || defined(__alpha__)
 #define isa_virt_to_bus virt_to_bus
+#endif
 #endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
