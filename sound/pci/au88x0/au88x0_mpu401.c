@@ -47,7 +47,7 @@ static int __devinit snd_vortex_midi(vortex_t * vortex)
 	struct snd_rawmidi *rmidi;
 	int temp, mode;
 	struct snd_mpu401 *mpu;
-	int port;
+	unsigned long port;
 
 #ifdef VORTEX_MPU401_LEGACY
 	/* EnableHardCodedMPU401Port() */
@@ -95,7 +95,8 @@ static int __devinit snd_vortex_midi(vortex_t * vortex)
 	port = (unsigned long)(vortex->mmio + VORTEX_MIDI_DATA);
 	if ((temp =
 	     snd_mpu401_uart_new(vortex->card, 0, MPU401_HW_AUREAL, port,
-				 1, 0, 0, &rmidi)) != 0) {
+				 MPU401_INFO_INTEGRATED | MPU401_INFO_MMIO,
+				 0, 0, &rmidi)) != 0) {
 		hwwrite(vortex->mmio, VORTEX_CTRL,
 			(hwread(vortex->mmio, VORTEX_CTRL) &
 			 ~CTRL_MIDI_PORT) & ~CTRL_MIDI_EN);
