@@ -687,6 +687,7 @@ case "$processor" in
 	machine="default"
 	ac_save_CFLAGS="$CFLAGS"
 	CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+	rm -f machine.id
 	AC_TRY_RUN([
 #include <stdio.h>
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
@@ -715,6 +716,7 @@ int main(void) {
 ],      
 	machine=`cat machine.id`;AC_MSG_RESULT($machine))
 	CFLAGS="$ac_save_CFLAGS"
+	rm -f machine.id
 	c_opts="$c_opts -I\$(CONFIG_SND_KERNELDIR)/include/asm-i386/mach-$machine"
     fi
     ;;

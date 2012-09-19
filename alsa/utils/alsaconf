@@ -43,11 +43,11 @@ usage() {
     echo "  -m|--modinfo   read module descriptions instead of reading card db"
     echo "  -s|--sound wav-file"
     echo "                 use the specified wav file as a test sound"
-    echo "  -u|--uid uid   set the uid for the ALSA devices (default = 0)"
-    echo "  -g|--gid gid   set the gid for the ALSA devices (default = 0)"
+    echo "  -u|--uid uid   set the uid for the ALSA devices (default = 0) [obsoleted]"
+    echo "  -g|--gid gid   set the gid for the ALSA devices (default = 0) [obsoleted]"
     echo "  -d|--devmode mode"
-    echo "                 set the device mode for the ALSA devices (default = 0666)"
-    echo "  -r|--strict    set strict device mode (equiv. with -g 17 -d 0660)"
+    echo "                 set the device mode for the ALSA devices (default = 0666) [obs.]"
+    echo "  -r|--strict    set strict device mode (equiv. with -g 17 -d 0660) [obsoleted]"
     echo "  -L|--log       logging on $LOGFILE"
     echo "  -p|--probe card-name"
     echo "                 probe a legacy non-isapnp card and print module options"
@@ -56,7 +56,7 @@ usage() {
     exit 1
 }
 
-OPTS=`getopt -o lmLhp:u:g:d:rs: --long legacy,modinfo,log,help,probe,listprobe,uid,gid,devmode,strict,sound -n alsaconf -- "$@"` || exit 1
+OPTS=`getopt -o lmLhp:Pu:g:d:rs: --long legacy,modinfo,log,help,probe,listprobe,uid,gid,devmode,strict,sound -n alsaconf -- "$@"` || exit 1
 eval set -- "$OPTS"
 
 do_legacy_only=0
@@ -113,14 +113,18 @@ else
 fi
 
 alsa_device_opts=""
-if [ x"$alsa_uid" != x0 ]; then
+if modinfo -p snd | grep uid ; then
+  if [ x"$alsa_uid" != x0 ]; then
     alsa_device_opts="$alsa_device_opts ${mpfx}device_uid=$alsa_uid"
-fi
-if [ x"$alsa_gid" != x0 ]; then
+  fi
+  if [ x"$alsa_gid" != x0 ]; then
     alsa_device_opts="$alsa_device_opts ${mpfx}device_gid=$alsa_gid"
+  fi
 fi
-if [ x"$alsa_mode" != x0 ]; then
+if modinfo -p snd | grep device_mode ; then
+  if [ x"$alsa_mode" != x0 ]; then
     alsa_device_opts="$alsa_device_opts ${mpfx}device_mode=$alsa_mode"
+  fi
 fi
 
 if [ "$distribution" = "debian" ]; then
