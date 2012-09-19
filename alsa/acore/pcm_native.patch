@@ -1,11 +1,11 @@
---- ../alsa-kernel/core/pcm_native.c	2005-01-20 16:56:36.187740915 +0100
-+++ pcm_native.c	2005-01-20 16:56:48.150511366 +0100
+--- ../alsa-kernel/core/pcm_native.c	2005-05-18 16:21:52.000000000 +0200
++++ pcm_native.c	2005-05-18 16:22:20.000000000 +0200
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
   *  Digital Audio (PCM) abstract layer
   *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
-@@ -2730,6 +2731,9 @@
+@@ -2747,6 +2748,9 @@
  	snd_pcm_runtime_t *runtime;
  	snd_pcm_sframes_t result;
  
@@ -15,7 +15,7 @@
  	pcm_file = file->private_data;
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, result = -ENXIO; goto end);
-@@ -2747,9 +2751,13 @@
+@@ -2764,9 +2768,13 @@
  	if (result > 0)
  		result = frames_to_bytes(runtime, result);
   end:
@@ -29,7 +29,7 @@
  static ssize_t snd_pcm_readv(struct file *file, const struct iovec *_vector,
  			     unsigned long count, loff_t * offset)
  
-@@ -2796,6 +2804,9 @@
+@@ -2813,6 +2821,9 @@
  	void __user **bufs;
  	snd_pcm_uframes_t frames;
  
@@ -39,7 +39,7 @@
  	pcm_file = file->private_data;
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, result = -ENXIO; goto end);
-@@ -2820,8 +2831,12 @@
+@@ -2837,8 +2848,12 @@
  		result = frames_to_bytes(runtime, result);
  	kfree(bufs);
   end:
@@ -52,7 +52,7 @@
  
  static unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait)
  {
-@@ -2907,6 +2922,17 @@
+@@ -2924,6 +2939,17 @@
   * mmap support
   */
  
@@ -70,7 +70,7 @@
  /*
   * Only on coherent architectures, we can mmap the status and the control records
   * for effcient data transfer.  On others, we have to use HWSYNC ioctl...
-@@ -2915,7 +2941,13 @@
+@@ -2932,7 +2958,13 @@
  /*
   * mmap status record
   */
@@ -84,7 +84,7 @@
  {
  	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
  	snd_pcm_runtime_t *runtime;
-@@ -2927,9 +2959,15 @@
+@@ -2944,9 +2976,15 @@
  	page = virt_to_page(runtime->status);
  	if (!PageReserved(page))
  		get_page(page);
@@ -100,7 +100,7 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_status =
-@@ -2950,15 +2988,27 @@
+@@ -2967,15 +3005,27 @@
  	if (size != PAGE_ALIGN(sizeof(snd_pcm_mmap_status_t)))
  		return -EINVAL;
  	area->vm_ops = &snd_pcm_vm_ops_status;
@@ -128,7 +128,7 @@
  {
  	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
  	snd_pcm_runtime_t *runtime;
-@@ -2970,9 +3020,15 @@
+@@ -2987,9 +3037,15 @@
  	page = virt_to_page(runtime->control);
  	if (!PageReserved(page))
  		get_page(page);
@@ -144,7 +144,7 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_control =
-@@ -2993,8 +3049,14 @@
+@@ -3010,8 +3066,14 @@
  	if (size != PAGE_ALIGN(sizeof(snd_pcm_mmap_control_t)))
  		return -EINVAL;
  	area->vm_ops = &snd_pcm_vm_ops_control;
@@ -159,7 +159,7 @@
  	return 0;
  }
  #else /* ! coherent mmap */
-@@ -3016,7 +3078,13 @@
+@@ -3033,7 +3095,13 @@
  /*
   * nopage callback for mmapping a RAM page
   */
@@ -173,7 +173,7 @@
  {
  	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
  	snd_pcm_runtime_t *runtime;
-@@ -3028,7 +3096,11 @@
+@@ -3045,7 +3113,11 @@
  	if (substream == NULL)
  		return NOPAGE_OOM;
  	runtime = substream->runtime;
@@ -185,7 +185,7 @@
  	offset += address - area->vm_start;
  	snd_assert((offset % PAGE_SIZE) == 0, return NOPAGE_OOM);
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
-@@ -3044,9 +3116,15 @@
+@@ -3061,9 +3133,15 @@
  	}
  	if (!PageReserved(page))
  		get_page(page);
@@ -201,7 +201,7 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_data =
-@@ -3054,6 +3132,9 @@
+@@ -3071,6 +3149,9 @@
  	.open =		snd_pcm_mmap_data_open,
  	.close =	snd_pcm_mmap_data_close,
  	.nopage =	snd_pcm_mmap_data_nopage,
@@ -211,7 +211,7 @@
  };
  
  /*
-@@ -3062,8 +3143,14 @@
+@@ -3079,8 +3160,14 @@
  static int snd_pcm_default_mmap(snd_pcm_substream_t *substream, struct vm_area_struct *area)
  {
  	area->vm_ops = &snd_pcm_vm_ops_data;
@@ -226,38 +226,25 @@
  	atomic_inc(&substream->runtime->mmap_count);
  	return 0;
  }
-@@ -3087,13 +3174,30 @@
- 	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
- #endif
- 	area->vm_ops = &snd_pcm_vm_ops_data_mmio;
-+#ifndef LINUX_2_2
- 	area->vm_private_data = substream;
-+#else
-+	area->vm_private_data = (long)substream;
-+#endif
+@@ -3108,10 +3195,17 @@
  	area->vm_flags |= VM_IO;
  	size = area->vm_end - area->vm_start;
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 25)
  	offset = area->vm_pgoff << PAGE_SHIFT;
++#ifdef CONFIG_HAVE_REMAP_PFN_RANGE
+ 	if (io_remap_pfn_range(area, area->vm_start,
+ 				(substream->runtime->dma_addr + offset) >> PAGE_SHIFT,
+ 				size, area->vm_page_prot))
+ 		return -EAGAIN;
 +#else
-+	offset = area->vm_offset;
-+#endif
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
-+#define io_remap_page_range remap_page_range
-+#endif
-+#ifdef CONFIG_OLD_REMAP_PAGE_RANGE
-+	if (io_remap_page_range(area->vm_start,
++	if (io_remap_page_range(area, area->vm_start,
 +				substream->runtime->dma_addr + offset,
 +				size, area->vm_page_prot))
-+#else
- 	if (io_remap_page_range(area, area->vm_start,
- 				substream->runtime->dma_addr + offset,
- 				size, area->vm_page_prot))
++		return -EAGAIN;
 +#endif
- 		return -EAGAIN;
  	atomic_inc(&substream->runtime->mmap_count);
  	return 0;
-@@ -3128,7 +3232,11 @@
+ }
+@@ -3145,7 +3239,11 @@
  	    runtime->access == SNDRV_PCM_ACCESS_RW_NONINTERLEAVED)
  		return -EINVAL;
  	size = area->vm_end - area->vm_start;
@@ -269,7 +256,7 @@
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
  	if ((size_t)size > dma_bytes)
  		return -EINVAL;
-@@ -3151,7 +3259,11 @@
+@@ -3168,7 +3266,11 @@
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, return -ENXIO);
  
@@ -281,7 +268,7 @@
  	switch (offset) {
  	case SNDRV_PCM_MMAP_OFFSET_STATUS:
  		if (substream->no_mmap_ctrl)
-@@ -3188,12 +3300,34 @@
+@@ -3205,12 +3307,34 @@
  /*
   * ioctl32 compat
   */
@@ -317,7 +304,7 @@
  /*
   *  To be removed helpers to keep binary compatibility
   */
-@@ -3309,27 +3443,43 @@
+@@ -3326,27 +3450,43 @@
   */
  
  static struct file_operations snd_pcm_f_ops_playback = {
