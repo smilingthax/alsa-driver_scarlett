@@ -1469,7 +1469,7 @@ if test "$CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK" = "1"; then
   AC_DEFINE(CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK)
 fi
 
-dnl Check for pci_consistent_set_dma_mask()
+dnl Check for pci_set_dev_present()
 AC_MSG_CHECKING(for pci_dev_present)
 pci_consistent_defined="0"
 ac_save_CFLAGS="$CFLAGS"
@@ -1493,6 +1493,62 @@ CC=$ac_save_CC
 CONFIG_HAVE_PCI_DEV_PRESENT=$pci_dev_present_defined
 if test "$CONFIG_HAVE_PCI_DEV_PRESENT" = "1"; then
   AC_DEFINE(CONFIG_HAVE_PCI_DEV_PRESENT)
+fi
+
+dnl Check for msleep
+AC_MSG_CHECKING(for msleep)
+msleep="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/delay.h>
+],[
+  void (*func)(unsigned int);
+  func = msleep;
+],
+    AC_MSG_RESULT("yes");msleep="1",
+    AC_MSG_RESULT("no");msleep="0",
+    AC_MSG_RESULT("unknown");msleep="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_MSLEEP=$msleep
+dnl AC_SUBST(CONFIG_HAVE_MSLEEP)
+if test "$CONFIG_HAVE_MSLEEP" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_MSLEEP)
+fi
+
+dnl Check for msleep_interrupt
+if test "$CONFIG_HAVE_MSLEEP" = "1"; then
+AC_MSG_CHECKING(for msleep_interrupt)
+msleep_interrupt="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/delay.h>
+],[
+  unsigned long (*func)(unsigned int);
+  func = msleep_interruptible;
+],
+    AC_MSG_RESULT("yes");msleep_interruptible="1",
+    AC_MSG_RESULT("no");msleep_interruptible="0",
+    AC_MSG_RESULT("unknown");msleep_interruptible="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_MSLEEP_INTERRUPTIBLE=$msleep_interruptible
+dnl AC_SUBST(CONFIG_HAVE_MSLEEP_INTERRUPTIBLE)
+if test "$CONFIG_HAVE_MSLEEP_INTERRUPTIBLE" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_MSLEEP_INTERRUPTIBLE)
+fi
 fi
 
 dnl Check for tty->count is the atomic type

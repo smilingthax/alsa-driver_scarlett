@@ -215,7 +215,7 @@ int snd_pci_dev_present(const struct pci_device_id *ids)
 /*
  * msleep wrapper
  */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)) || (LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 29))
+#ifndef CONFIG_HAVE_MSLEEP
 #include <linux/delay.h>
 void snd_compat_msleep(unsigned int msecs)
 {
@@ -225,5 +225,19 @@ void snd_compat_msleep(unsigned int msecs)
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		timeout = schedule_timeout(timeout);
 	}
+}
+#endif
+
+#ifndef CONFIG_HAVE_MSLEEP_INTERRUPTIBLE
+#include <linux/delay.h>
+unsigned long snd_compat_msleep_interruptible(unsigned int msecs)
+{
+	unsigned long timeout = ((msecs) * HZ + 999) / 1000;
+
+	while (timeout && !signal_pending(current)) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		timeout = schedule_timeout(timeout);
+	}
+	return (timeout * 1000) / HZ;
 }
 #endif /* < 2.6.6 */
