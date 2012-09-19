@@ -10,6 +10,9 @@ clean-files := usbaudio.c
 # for compatibility
 extra-snd-usb-audio-objs := usbcompat.o
 
+# usx2y depends on usb-audio
+obj-$(CONFIG_SND_USB_USX2Y) += snd-usb-audio.o
+
 obj-$(CONFIG_SND) += usx2y/
 
 export-objs := usbaudio.o usbmidi.o

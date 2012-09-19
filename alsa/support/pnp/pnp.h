@@ -186,7 +186,7 @@ struct pnp_card_driver {
 
 #define pnp_resource_change(resource, start, size) isapnp_resource_change(resource, start, size)
 
-#if defined(CONFIG_PNP) && (!defined(ALSA_BUILD) || defined(CONFIG_PNP_KERNEL))
+#if defined(CONFIG_PNP)
 
 struct pnp_dev * pnp_request_card_device(struct pnp_card_link *clink, const char * id, struct pnp_dev * from);
 void pnp_release_card_device(struct pnp_dev * dev);
