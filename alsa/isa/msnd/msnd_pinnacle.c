@@ -713,7 +713,7 @@ static int upload_dsp_code(void)
 	PERMCODESIZE = mod_firmware_load(PERMCODEFILE, &PERMCODE);
 	if (!PERMCODE) {
 		printk(KERN_ERR LOGNAME ": Error loading " PERMCODEFILE);
-		vfree_nocheck(INITCODE);
+		vfree(INITCODE);
 		return -EBUSY;
 	}
 #endif
@@ -729,8 +729,8 @@ static int upload_dsp_code(void)
 #endif
 
 #ifndef HAVE_DSPCODEH
-	vfree_nocheck(INITCODE);
-	vfree_nocheck(PERMCODE);
+	vfree(INITCODE);
+	vfree(PERMCODE);
 #endif
 	return 0;
 }
