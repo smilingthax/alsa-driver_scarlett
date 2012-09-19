@@ -53,6 +53,8 @@ struct sel {
 	struct sel *next;
 };
 
+enum { TYPE_TRISTATE, TYPE_BOOL, TYPE_INT };
+
 struct dep {
 	char *name;
 	// dependency part - conditions (chain)
@@ -62,9 +64,7 @@ struct dep {
 	// misc
 	struct dep *next;
 	// bool?
-	int is_bool;
-	// int?
-	int is_int;
+	int type;
 	int int_val;
 	// hitflag?
 	int hitflag;
@@ -334,9 +334,9 @@ static int read_file_1(const char *filename, struct cond **template)
 		switch (state) {
 		case READ_STATE_CONFIG:
 			if (!strncmp(buffer, "\ttristate", 9))
-				dep->is_bool = 0;
+				dep->type = TYPE_TRISTATE;
 			else if (!strncmp(buffer, "\tbool", 5))
-				dep->is_bool = 1;
+				dep->type = TYPE_BOOL;
 			else if (!strncmp(buffer, "\tdepends on ", 12))
 				add_dep(dep, buffer + 12, *template);
 			else if (!strncmp(buffer, "\tdepends ", 9))
@@ -344,9 +344,9 @@ static int read_file_1(const char *filename, struct cond **template)
 			else if (!strncmp(buffer, "\tselect ", 8))
 				add_select(dep, buffer + 8, *template);
 			else if (!strncmp(buffer, "\tint ", 5))
-				dep->is_int = 1;
+				dep->type = TYPE_INT;
 			if (!strncmp(buffer, "\tdefault ", 9)) {
-				if (dep->is_int) {
+				if (dep->type == TYPE_INT) {
 					char *p = buffer + 9;
 					for (; *p && !isdigit(*p); p++)
 						;
@@ -919,7 +919,7 @@ static int is_always_true(struct dep *dep)
 }
 
 // Print out ALL deps for firstdep (Cards, Deps)
-static void output_card_list(struct dep *firstdep, int space, int size, int tristate)
+static void output_card_list(struct dep *firstdep, int space, int size, int type)
 {
 	struct dep *temp_dep=firstdep;
 	char *card_name;
@@ -931,9 +931,7 @@ static void output_card_list(struct dep *firstdep, int space, int size, int tris
 	while(temp_dep) {
 		if (!is_toplevel(temp_dep))
 			goto __skip;
-		if (tristate && temp_dep->is_bool)
-			goto __skip;
-		if (!tristate && !temp_dep->is_bool)
+		if (temp_dep->type != type)
 			goto __skip;
 		card_name=get_card_name(temp_dep->name);
 		if (card_name) {
@@ -1088,7 +1086,7 @@ static void sel_print_acinclude(struct sel *sel)
 				printf(" && ");
 			}
 			printf("CONFIG_%s=\"%c\"\n", nsel->name,
-				(nsel->dep && nsel->dep->is_bool) ? 'y' : 'm');
+				(nsel->dep && nsel->dep->type == TYPE_BOOL) ? 'y' : 'm');
 		}
 	}
 }
@@ -1124,7 +1122,7 @@ static void output_acinclude(void)
 	       "  [                        cards may be separated with commas; ]\n"
 	       "  [                        'all' compiles all drivers; ]\n"
 	       "  [                        Possible cards are: ]\n");
-	output_card_list(all_deps, 26, 50, 1);
+	output_card_list(all_deps, 26, 50, TYPE_TRISTATE);
 	printf(" ],\n");
 	printf("  cards=\"$withval\", cards=\"all\")\n");
 	printf("SELECTED_CARDS=`echo $cards | sed 's/,/ /g'`\n");
@@ -1133,7 +1131,7 @@ static void output_acinclude(void)
 	       "  probed=\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		int put_if;
-		if (!is_toplevel(tempdep) || tempdep->is_bool)
+		if (!is_toplevel(tempdep) || tempdep->type != TYPE_TRISTATE)
 			continue;
 		text = get_card_name(tempdep->name);
 		if (! text)
@@ -1189,13 +1187,13 @@ static void output_acinclude(void)
 				printf(" && ");
 			}
 			printf("CONFIG_%s=\"%c\"\n", sel->name,
-			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
+			       (sel->dep && sel->dep->type == TYPE_BOOL) ? 'y' : 'm');
 		}
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		if (tempdep->is_int)
+		if (tempdep->type == TYPE_INT)
 			printf("      %s=\"%d\"\n", text, tempdep->int_val);
 		else
-			printf("      %s=\"%c\"\n", text, tempdep->is_bool ? 'y' : 'm');
+			printf("      %s=\"%c\"\n", text, tempdep->type == TYPE_BOOL ? 'y' : 'm');
 		free(text);
 		printf("      probed=1\n");
 		if (put_if)
@@ -1216,7 +1214,7 @@ static void output_acinclude(void)
 	       "  [                        options may be separated with commas; ]\n"
 	       "  [                        'all' enables all options; ]\n"
 	       "  [                        Possible options are: ]\n");
-	output_card_list(all_deps, 26, 50, 0);
+	output_card_list(all_deps, 26, 50, TYPE_BOOL);
 	printf(" ],\n");
 	printf("  cards=\"$withval\", cards=\"all\")\n");
 	printf("SELECTED_OPTIONS=`echo $cards | sed 's/,/ /g'`\n");
@@ -1225,7 +1223,7 @@ static void output_acinclude(void)
 	       "  probed=\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		int put_if;
-		if (!is_toplevel(tempdep) || !tempdep->is_bool)
+		if (!is_toplevel(tempdep) || tempdep->type == TYPE_TRISTATE)
 			continue;
 		text = get_card_name(tempdep->name);
 		if (! text)
@@ -1257,7 +1255,7 @@ static void output_acinclude(void)
 		for (sel = tempdep->sel; sel; sel = sel->next)
 			sel_print_acinclude(sel);			
 		for (sel = tempdep->sel; sel; sel = sel->next) {
-			if (sel->dep->is_int)
+			if (sel->dep->type == TYPE_INT)
 				continue;
 			if (is_always_true(sel->dep))
 				continue;
@@ -1268,10 +1266,13 @@ static void output_acinclude(void)
 				printf(" && ");
 			}
 			printf("CONFIG_%s=\"%c\"\n", sel->name,
-			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
+			       (sel->dep && sel->dep->type == TYPE_BOOL) ? 'y' : 'm');
 		}
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		printf("      %s=\"y\"\n", text);
+		if (tempdep->type == TYPE_INT)
+			printf("      %s=\"%d\"\n", text, tempdep->int_val);
+		else
+			printf("      %s=\"y\"\n", text);
 		free(text);
 		printf("      probed=1\n");
 		if (put_if)
@@ -1297,10 +1298,10 @@ static void output_acinclude(void)
 			continue;
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("if test -n \"$%s\"; then\n", text);
-		if (tempdep->is_int) {
+		if (tempdep->type == TYPE_INT) {
 			printf("  AC_DEFINE_UNQUOTED([%s], [%d])\n",
 			       text, tempdep->int_val);
-		} else if (tempdep->is_bool)
+		} else if (tempdep->type == TYPE_BOOL)
 			printf("  AC_DEFINE(%s)\n", text);
 		else
 			printf("  AC_DEFINE(%s_MODULE)\n", text);
@@ -1347,7 +1348,7 @@ static void output_include(void)
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("#undef %s%s\n", text,
-		       tempdep->is_bool ? "" : "_MODULE");
+		       tempdep->type == TYPE_TRISTATE ? "_MODULE" : "");
 		free(text);
 	}
 }
