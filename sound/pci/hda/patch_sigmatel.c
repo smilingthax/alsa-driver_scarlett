@@ -52,6 +52,7 @@ enum {
 	STAC_9200_DELL_M26,
 	STAC_9200_DELL_M27,
 	STAC_9200_GATEWAY,
+	STAC_9200_PANASONIC,
 	STAC_9200_MODELS
 };
 
@@ -526,6 +527,25 @@ static struct hda_verb stac92hd73xx_6ch_core_init[] = {
 	{ 0x0f, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
 	{ 0x10, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
 	{ 0x11, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
+	/* setup import muxs */
+	{ 0x28, AC_VERB_SET_CONNECT_SEL, 0x01},
+	{ 0x29, AC_VERB_SET_CONNECT_SEL, 0x01},
+	{ 0x2a, AC_VERB_SET_CONNECT_SEL, 0x01},
+	{ 0x2b, AC_VERB_SET_CONNECT_SEL, 0x00},
+	{}
+};
+
+static struct hda_verb dell_eq_core_init[] = {
+	/* set master volume to max value without distortion
+	 * and direct control */
+	{ 0x1f, AC_VERB_SET_VOLUME_KNOB_CONTROL, 0xec},
+	/* setup audio connections */
+	{ 0x0d, AC_VERB_SET_CONNECT_SEL, 0x00},
+	{ 0x0a, AC_VERB_SET_CONNECT_SEL, 0x01},
+	{ 0x0f, AC_VERB_SET_CONNECT_SEL, 0x02},
+	/* setup adcs to point to mixer */
+	{ 0x20, AC_VERB_SET_CONNECT_SEL, 0x0b},
+	{ 0x21, AC_VERB_SET_CONNECT_SEL, 0x0b},
 	/* setup import muxs */
 	{ 0x28, AC_VERB_SET_CONNECT_SEL, 0x01},
 	{ 0x29, AC_VERB_SET_CONNECT_SEL, 0x01},
@@ -1102,6 +1122,7 @@ static unsigned int *stac9200_brd_tbl[STAC_9200_MODELS] = {
 	[STAC_9200_DELL_M25] = dell9200_m25_pin_configs,
 	[STAC_9200_DELL_M26] = dell9200_m26_pin_configs,
 	[STAC_9200_DELL_M27] = dell9200_m27_pin_configs,
+	[STAC_9200_PANASONIC] = ref9200_pin_configs,
 };
 
 static const char *stac9200_models[STAC_9200_MODELS] = {
@@ -1118,6 +1139,7 @@ static const char *stac9200_models[STAC_9200_MODELS] = {
 	[STAC_9200_DELL_M26] = "dell-m26",
 	[STAC_9200_DELL_M27] = "dell-m27",
 	[STAC_9200_GATEWAY] = "gateway",
+	[STAC_9200_PANASONIC] = "panasonic",
 };
 
 static struct snd_pci_quirk stac9200_cfg_tbl[] = {
@@ -1184,7 +1206,7 @@ static struct snd_pci_quirk stac9200_cfg_tbl[] = {
 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x01f6,
 		      "unknown Dell", STAC_9200_DELL_M26),
 	/* Panasonic */
-	SND_PCI_QUIRK(0x10f7, 0x8338, "Panasonic CF-74", STAC_REF),
+	SND_PCI_QUIRK(0x10f7, 0x8338, "Panasonic CF-74", STAC_9200_PANASONIC),
 	/* Gateway machines needs EAPD to be set on resume */
 	SND_PCI_QUIRK(0x107b, 0x0205, "Gateway S-7110M", STAC_9200_GATEWAY),
 	SND_PCI_QUIRK(0x107b, 0x0317, "Gateway MT3423, MX341*",
@@ -1910,7 +1932,7 @@ static int stac92xx_capture_pcm_cleanup(struct hda_pcm_stream *hinfo,
 {
 	struct sigmatel_spec *spec = codec->spec;
 
-	snd_hda_codec_setup_stream(codec, spec->adc_nids[substream->number], 0, 0, 0);
+	snd_hda_codec_cleanup_stream(codec, spec->adc_nids[substream->number]);
 	return 0;
 }
 
@@ -2490,12 +2512,8 @@ static int stac92xx_auto_create_hp_ctls(struct hda_codec *codec,
 			return err;
 	}
 	if (spec->multiout.hp_nid) {
-		const char *pfx;
-		if (old_num_dacs == spec->multiout.num_dacs)
-			pfx = "Master";
-		else
-			pfx = "Headphone";
-		err = create_controls(spec, pfx, spec->multiout.hp_nid, 3);
+		err = create_controls(spec, "Headphone",
+				      spec->multiout.hp_nid, 3);
 		if (err < 0)
 			return err;
 	}
@@ -3287,6 +3305,11 @@ static int patch_stac9200(struct hda_codec *codec)
 		spec->init = stac9200_core_init;
 	spec->mixer = stac9200_mixer;
 
+	if (spec->board_config == STAC_9200_PANASONIC) {
+		spec->gpio_mask = spec->gpio_dir = 0x09;
+		spec->gpio_data = 0x00;
+	}
+
 	err = stac9200_parse_auto_config(codec);
 	if (err < 0) {
 		stac92xx_free(codec);
@@ -3460,17 +3483,19 @@ again:
 
 	switch (spec->board_config) {
 	case STAC_DELL_M6:
-		spec->init = dell_m6_core_init;
+		spec->init = dell_eq_core_init;
 		switch (codec->subsystem_id) {
 		case 0x1028025e: /* Analog Mics */
 		case 0x1028025f:
 			stac92xx_set_config_reg(codec, 0x0b, 0x90A70170);
 			spec->num_dmics = 0;
 			break;
-		case 0x10280254: /* Digital Mics */
-		case 0x10280255:
-		case 0x10280271:
+		case 0x10280271: /* Digital Mics */
 		case 0x10280272:
+			spec->init = dell_m6_core_init;
+			/* fall-through */
+		case 0x10280254:
+		case 0x10280255:
 			stac92xx_set_config_reg(codec, 0x13, 0x90A60160);
 			spec->num_dmics = 1;
 			break;
