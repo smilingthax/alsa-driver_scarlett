@@ -1000,8 +1000,6 @@ static int init_dsp_comm_page(echoaudio_t *chip)
 	chip->comm_page->midi_out_free_count = __constant_cpu_to_le32(DSP_MIDI_OUT_FIFO_SIZE);
 	chip->comm_page->sample_rate = __constant_cpu_to_le32(44100);
 	chip->sample_rate = 44100;
-	for (i = 0; i < DSP_MAXAUDIOINPUTS; i++)
-		chip->comm_page->line_in_level[i] = 0;
 
 	/* Set line levels so we don't blast any inputs on startup */
 	memset(chip->comm_page->monitors, ECHOGAIN_MUTED, MONITOR_ARRAY_SIZE);

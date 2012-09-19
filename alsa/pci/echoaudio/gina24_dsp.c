@@ -83,13 +83,6 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 	/* Must call this here after DSP is init to init gains and mutes */
 	err = init_line_levels(chip);
 
-	/* Set professional nominal levels (FALSE is +4dBu) */
-	for (i = 0; i < num_analog_busses_out(chip); i++)
-		err = set_nominal_level(chip, i, FALSE);
-
-	for (i = 0; i < num_analog_busses_in(chip); i++)
-		err = set_nominal_level(chip, bx_analog_in(chip) + i, FALSE);
-
 	/* Set the digital mode to S/PDIF RCA */
 	set_digital_mode(chip, DIGITAL_MODE_SPDIF_RCA);
 
