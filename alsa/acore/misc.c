@@ -447,6 +447,7 @@ int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct work_struc
 /* Don't put this to wrappers.c.  We need to call the kmalloc wrapper here. */
 void *snd_compat_kzalloc(size_t size, unsigned int __nocast flags)
 {
+	void *ret;
 	ret = kmalloc(size, flags);
 	if (ret)
 		memset(ret, 0, size);

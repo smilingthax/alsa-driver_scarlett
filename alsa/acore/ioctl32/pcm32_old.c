@@ -408,8 +408,8 @@ static inline int _snd_ioctl32_pcm_hw_params_old(unsigned int fd, unsigned int c
 	mm_segment_t oldseg;
 	int err;
 
-	data32 = kcalloc(1, sizeof(*data32), GFP_KERNEL);
-	data = kcalloc(1, sizeof(*data), GFP_KERNEL);
+	data32 = kzalloc(sizeof(*data32), GFP_KERNEL);
+	data = kzalloc(sizeof(*data), GFP_KERNEL);
 	if (data32 == NULL || data == NULL) {
 		err = -ENOMEM;
 		goto __end;

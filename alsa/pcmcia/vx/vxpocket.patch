@@ -30,7 +30,7 @@
 +#ifdef SND_VX_FW_LOADER
 +#ifndef handle_to_dev
 +	/* fake a device here since pcmcia doesn't give a valid device... */
-+	chip->dev = kcalloc(1, sizeof(*chip->dev), GFP_KERNEL);
++	chip->dev = kzalloc(sizeof(*chip->dev), GFP_KERNEL);
 +	if (! chip->dev) {
 +		snd_printk(KERN_ERR "vxp: can't malloc chip->dev\n");
 +		kfree(chip);

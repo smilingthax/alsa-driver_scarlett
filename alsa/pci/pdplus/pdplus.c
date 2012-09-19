@@ -6096,7 +6096,7 @@ static int __devinit pdplus_probe(
         if (card == NULL)
                 LEAVE (-ENOMEM);
 
-	card->private_data = kcalloc(1, sizeof(pdplus_t), GFP_KERNEL);
+	card->private_data = kzalloc(sizeof(pdplus_t), GFP_KERNEL);
 	if (card->private_data == NULL) {
 		snd_card_free(card);
                 LEAVE (-ENOMEM);

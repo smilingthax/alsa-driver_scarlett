@@ -269,7 +269,7 @@ static inline int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd,
 		return -ENOTTY;
 
 	data32 = compat_ptr(arg);
-	data = kcalloc(1, sizeof(*data), GFP_KERNEL);
+	data = kzalloc(sizeof(*data), GFP_KERNEL);
 	if (data == NULL)
 		return -ENOMEM;
 

@@ -485,7 +485,7 @@ static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
 	if (outs > 16)
 		outs = 16;
 
-	if ((serial = kcalloc(1, sizeof(*serial), GFP_KERNEL)) == NULL)
+	if ((serial = kzalloc(sizeof(*serial), GFP_KERNEL)) == NULL)
 		return -ENOMEM;
 
 	init_MUTEX(&serial->open_lock);
