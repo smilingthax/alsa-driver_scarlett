@@ -6,7 +6,7 @@
 ifneq ($(KERNELRELEASE),)
 # call from 2.6 kernel build system
 
-obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ pcmcia/ aoa/
+obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ pcmcia/ aoa/ soc/
 
 else
 
