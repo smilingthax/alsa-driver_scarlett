@@ -961,6 +961,14 @@ typedef u32 __bitwise pm_message_t;
 #endif
 #endif
 
+/* PMSG_IS_AUTO macro */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 2, 0)
+#include <linux/pm.h>
+#ifndef PMSG_IS_AUTO
+#define PMSG_IS_AUTO(msg)	(((msg).event & PM_EVENT_AUTO) != 0)
+#endif
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 11)
 #ifdef CONFIG_PCI
 #include <linux/pci.h>
