@@ -2024,4 +2024,20 @@ static inline void *snd_compat_krealloc(const void *p, size_t new_size, gfp_t fl
 #define krealloc(p, s, f)	snd_compat_krealloc(p, s, f)
 #endif
 
+/* Workaround for IRQF_DISABLED removal in the upstream code */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 1, 0)
+#include <linux/interrupt.h>
+static inline int
+request_irq_with_irqf_check(unsigned int irq, irq_handler_t handler,
+			    unsigned long flags, const char *name, void *dev)
+{
+	if (!(flags & ~IRQF_PROBE_SHARED))
+		flags |= IRQF_DISABLED;
+	return request_irq(irq, handler, flags, name, dev);
+}
+#define request_irq(irq, fn, flags, name, dev_id) \
+	request_irq_with_irqf_check(irq, fn, flags, name, dev_id)
+#endif
+
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
