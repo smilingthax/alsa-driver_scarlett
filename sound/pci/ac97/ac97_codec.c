@@ -25,6 +25,7 @@
 #include <sound/driver.h>
 #include <linux/delay.h>
 #include <linux/init.h>
+#include <linux/pci.h>
 #include <linux/slab.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -87,6 +88,7 @@ static const ac97_codec_id_t snd_ac97_codec_id_vendors[] = {
 };
 
 static const ac97_codec_id_t snd_ac97_codec_ids[] = {
+{ 0x014b0502, 0xffffffff, "NM256AV",		NULL }, // FIXME: which real one?
 { 0x414b4d00, 0xffffffff, "AK4540",		NULL },
 { 0x414b4d01, 0xffffffff, "AK4542",		NULL },
 { 0x414b4d02, 0xffffffff, "AK4543",		NULL },
@@ -323,7 +325,7 @@ static void snd_ac97_write_cache_test(ac97_t *ac97, unsigned short reg, unsigned
  * Compares the value with the register cache and updates the value
  * only when the value is changed.
  *
- * Retruns 1 if the value is changed, 0 if no change, or a negative
+ * Returns 1 if the value is changed, 0 if no change, or a negative
  * code on failure.
  */
 int snd_ac97_update(ac97_t *ac97, unsigned short reg, unsigned short value)
@@ -350,7 +352,7 @@ int snd_ac97_update(ac97_t *ac97, unsigned short reg, unsigned short value)
  * @mask: the bit-mask to change
  * @value: the value to set
  *
- * Updates the masked-bits on the given register onle when the value
+ * Updates the masked-bits on the given register only when the value
  * is changed.
  *
  * Returns 1 if the bits are changed, 0 if no change, or a negative
@@ -1030,8 +1032,8 @@ static const snd_kcontrol_new_t snd_ac97_controls_alc650[] = {
 	AC97_SINGLE("Exchange Center/LFE", AC97_ALC650_MULTICH, 3, 1, 0),
 	/* 4: Analog Input To Surround */
 	/* 5: Analog Input To Center/LFE */
-	/* 6: Indepedent Master Volume Right */
-	/* 7: Indepedent Master Volume Left */
+	/* 6: Independent Master Volume Right */
+	/* 7: Independent Master Volume Left */
 	/* 8: reserved */
 	AC97_SINGLE("Line-In As Surround", AC97_ALC650_MULTICH, 9, 1, 0),
 	AC97_SINGLE("Mic As Center/LFE", AC97_ALC650_MULTICH, 10, 1, 0),
@@ -1138,7 +1140,7 @@ static int snd_ac97_ymf753_spdif_source_put(snd_kcontrol_t * kcontrol, snd_ctl_e
 }
 
 /* The AC'97 spec states that the S/PDIF signal is to be output at pin 48.
-   The YMF753 will ouput the S/PDIF signal to pin 43, 47 (EAPD), or 48.
+   The YMF753 will output the S/PDIF signal to pin 43, 47 (EAPD), or 48.
    By default, no output pin is selected, and the S/PDIF signal is not output.
    There is also a bit to mute S/PDIF output in a vendor-specific register. */
 static int snd_ac97_ymf753_spdif_output_pin_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
@@ -1252,6 +1254,10 @@ static int snd_ac97_try_volume_mix(ac97_t * ac97, int reg)
 			return 0;
 		break;
 	}
+
+	if (ac97->limited_regs && test_bit(reg, ac97->reg_accessed))
+		return 1; /* allow without check */
+
 	val = snd_ac97_read(ac97, reg);
 	if (!(val & mask)) {
 		/* nothing seems to be here - mute flag is not set */
@@ -1261,7 +1267,7 @@ static int snd_ac97_try_volume_mix(ac97_t * ac97, int reg)
 		if (!(val & mask))
 			return 0;	/* nothing here */
 	}
-	return 1;		/* success, useable */
+	return 1;		/* success, usable */
 }
 
 static int snd_ac97_try_bit(ac97_t * ac97, int reg, int bit)
@@ -1844,7 +1850,7 @@ static int ac97_reset_wait(ac97_t *ac97, int timeout, int with_modem)
  * The template must include the valid callbacks (at least read and
  * write), the codec number (num) and address (addr), and the private
  * data (private_data).  The other callbacks, wait and reset, are not
- * mandantory.
+ * mandatory.
  * 
  * The clock is set to 48000.  If another clock is needed, reset
  * ac97->clock manually afterwards.
@@ -1852,7 +1858,7 @@ static int ac97_reset_wait(ac97_t *ac97, int timeout, int with_modem)
  * The ac97 instance is registered as a low-level device, so you don't
  * have to release it manually.
  *
- * Returns zero if sucessful, or a negative error code on failure.
+ * Returns zero if successful, or a negative error code on failure.
  */
 
 int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
@@ -1886,8 +1892,8 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	else {
 		udelay(50);
 		if (ac97_reset_wait(ac97, HZ/2, 0) < 0 &&
-		    (err = ac97_reset_wait(ac97, HZ/2, 1)) < 0) {
-			snd_printk("AC'97 %d:%d does not respond - RESET [REC_GAIN = 0x%x]\n", ac97->num, ac97->addr, err);
+		    ac97_reset_wait(ac97, HZ/2, 1) < 0) {
+			snd_printk("AC'97 %d:%d does not respond - RESET\n", ac97->num, ac97->addr);
 			snd_ac97_free(ac97);
 			return -ENXIO;
 		}
@@ -2418,6 +2424,81 @@ __reset_ready:
 
 
 /*
+ */
+static int remove_ctl(ac97_t *ac97, const char *name)
+{
+	snd_ctl_elem_id_t id;
+	memset(&id, 0, sizeof(id));
+	strcpy(id.name, name);
+	return snd_ctl_remove_id(ac97->card, &id);
+}
+
+static int rename_ctl(ac97_t *ac97, const char *src, const char *dst)
+{
+	snd_ctl_elem_id_t sid, did;
+	memset(&sid, 0, sizeof(sid));
+	strcpy(sid.name, src);
+	memset(&did, 0, sizeof(did));
+	strcpy(did.name, dst);
+	return snd_ctl_rename_id(ac97->card, &sid, &did);
+}
+
+static int swap_headphone(ac97_t *ac97, int remove_master)
+{
+	/* FIXME: error checks.. */
+	if (remove_master) {
+		remove_ctl(ac97, "Master Playback Switch");
+		remove_ctl(ac97, "Master Playback Volume");
+	} else {
+		rename_ctl(ac97, "Master Playback Switch", "Line-Out Playback Switch");
+		rename_ctl(ac97, "Master Playback Volume", "Line-Out Playback Volume");
+	}
+	rename_ctl(ac97, "Headphone Playback Switch", "Master Playback Switch");
+	rename_ctl(ac97, "Headphone Playback Volume", "Master Playback Volume");
+	return 0;
+}
+
+
+/**
+ * snd_ac97_tune_hardware - tune up the hardware
+ * @ac97: the ac97 instance
+ * @pci: pci device
+ * @quirk: quirk list
+ *
+ * Do some workaround for each pci device, such as renaming of the
+ * headphone (true line-out) control as "Master".
+ * The quirk-list must be terminated with a zero-filled entry.
+ *
+ * Returns zero if successful, or a negative error code on failure.
+ */
+
+int snd_ac97_tune_hardware(ac97_t *ac97, struct pci_dev *pci, struct ac97_quirk *quirk)
+{
+	unsigned short vendor, device;
+
+	snd_assert(quirk, return -EINVAL);
+
+	pci_read_config_word(pci, PCI_SUBSYSTEM_VENDOR_ID, &vendor);
+	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &device);
+
+	for (; quirk->vendor; quirk++) {
+		if (quirk->vendor == vendor && quirk->device == device) {
+			snd_printdd("ac97 quirk for %04x:%04x\n", vendor, device);
+			switch (quirk->type) {
+			case AC97_TUNE_HP_ONLY:
+				return swap_headphone(ac97, 1);
+			case AC97_TUNE_SWAP_HP:
+				return swap_headphone(ac97, 0);
+			}
+			snd_printk(KERN_ERR "invalid quirk type %d\n", quirk->type);
+			return -EINVAL;
+		}
+	}
+	return 0;
+}
+
+
+/*
  *  Exported symbols
  */
 
@@ -2428,6 +2509,7 @@ EXPORT_SYMBOL(snd_ac97_update);
 EXPORT_SYMBOL(snd_ac97_update_bits);
 EXPORT_SYMBOL(snd_ac97_mixer);
 EXPORT_SYMBOL(snd_ac97_set_rate);
+EXPORT_SYMBOL(snd_ac97_tune_hardware);
 #ifdef CONFIG_PM
 EXPORT_SYMBOL(snd_ac97_resume);
 #endif

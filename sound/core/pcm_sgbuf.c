@@ -108,13 +108,6 @@ int snd_pcm_sgbuf_free_pages(struct snd_pcm_dma_buffer *dmab)
 
 	for (i = 0; i < sgbuf->pages; i++)
 		snd_free_pci_page(sgbuf->pci, sgbuf->table[i].buf, sgbuf->table[i].addr);
-
-	/* some version of kernel use vfree() as vunmap().
-	 * this conflicts with our vfree wrapper, so force to use the native vfree().
-	 */
-#ifdef vfree
-#undef vfree
-#endif
 	if (dmab->area)
 		vunmap(dmab->area);
 	dmab->area = NULL;

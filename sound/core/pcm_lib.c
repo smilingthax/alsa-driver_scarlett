@@ -73,9 +73,16 @@ void snd_pcm_playback_silence(snd_pcm_substream_t *substream, snd_pcm_uframes_t 
 			ofs = runtime->status->hw_ptr;
 			frames = new_hw_ptr - ofs;
 			if ((snd_pcm_sframes_t)frames < 0)
-				frames = new_hw_ptr + runtime->boundary - ofs;
+				frames += runtime->boundary;
 			runtime->silenced_size -= frames;
-			runtime->silenced_start = ofs;
+			if ((snd_pcm_sframes_t)runtime->silenced_size < 0) {
+				runtime->silenced_size = 0;
+				runtime->silenced_start = (ofs + frames) - runtime->buffer_size;
+			} else {
+				runtime->silenced_start = ofs - runtime->silenced_size;
+			}
+			if ((snd_pcm_sframes_t)runtime->silenced_start < 0)
+				runtime->silenced_start += runtime->boundary;
 		}
 		frames = runtime->buffer_size;
 	}
@@ -83,9 +90,7 @@ void snd_pcm_playback_silence(snd_pcm_substream_t *substream, snd_pcm_uframes_t 
 	frames -= runtime->silenced_size;
 	if (frames == 0)
 		return;
-	ofs = runtime->silenced_start % runtime->buffer_size + runtime->silenced_size;
-	if (ofs >= runtime->buffer_size)
-		ofs -= runtime->buffer_size;
+	ofs = (runtime->silenced_start + runtime->silenced_size) % runtime->buffer_size;
 	while (frames > 0) {
 		transfer = ofs + frames > runtime->buffer_size ? runtime->buffer_size - ofs : frames;
 		if (runtime->access == SNDRV_PCM_ACCESS_RW_INTERLEAVED ||
@@ -115,9 +120,10 @@ void snd_pcm_playback_silence(snd_pcm_substream_t *substream, snd_pcm_uframes_t 
 				}
 			}
 		}
+		runtime->silenced_size += transfer;
 		frames -= transfer;
+		ofs = 0;
 	}
-	runtime->silenced_size += frames;
 }
 
 int snd_pcm_update_hw_ptr_interrupt(snd_pcm_substream_t *substream)
@@ -2180,6 +2186,8 @@ static snd_pcm_sframes_t snd_pcm_lib_write1(snd_pcm_substream_t *substream,
 		} else {
 			runtime->control->appl_ptr = appl_ptr;
 		}
+		if (substream->ops->ack)
+			substream->ops->ack(substream);
 
 		offset += frames;
 		size -= frames;
@@ -2472,6 +2480,8 @@ static snd_pcm_sframes_t snd_pcm_lib_read1(snd_pcm_substream_t *substream, void 
 		} else {
 			runtime->control->appl_ptr = appl_ptr;
 		}
+		if (substream->ops->ack)
+			substream->ops->ack(substream);
 
 		offset += frames;
 		size -= frames;
