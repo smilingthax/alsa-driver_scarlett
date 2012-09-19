@@ -56,7 +56,7 @@
  /*
   * A hack to allocate large buffers via dma_alloc_coherent()
   *
-@@ -104,21 +148,45 @@
+@@ -104,22 +148,46 @@
   * so dma_mask doesn't have to be messed with.
   */
  
@@ -85,7 +85,8 @@
 +#endif
 +
  static void *snd_dma_hack_alloc_coherent(struct device *dev, size_t size,
- 					 dma_addr_t *dma_handle, int flags)
+ 					 dma_addr_t *dma_handle,
+ 					 unsigned int __nocast flags)
  {
  	void *ret;
  	u64 dma_mask, coherent_dma_mask;
@@ -109,7 +110,7 @@
  	if (ret) {
  		/* obtained address is out of range? */
  		if (((unsigned long)*dma_handle + size - 1) & ~dma_mask) {
-@@ -143,6 +211,8 @@
+@@ -144,6 +212,8 @@
  #define dma_alloc_coherent snd_dma_hack_alloc_coherent
  
  #endif /* arch */
@@ -118,7 +119,7 @@
  
  #if ! defined(__arm__)
  #define NEED_RESERVE_PAGES
-@@ -544,6 +614,7 @@
+@@ -545,6 +615,7 @@
  
  /* FIXME: for pci only - other bus? */
  #ifdef CONFIG_PCI
@@ -126,7 +127,7 @@
  #define gettoken(bufp) strsep(bufp, " \t\n")
  
  static int snd_mem_proc_write(struct file *file, const char __user *buffer,
-@@ -631,6 +702,7 @@
+@@ -632,6 +703,7 @@
  		printk(KERN_ERR "snd-page-alloc: invalid proc cmd\n");
  	return (int)count;
  }
@@ -134,7 +135,7 @@
  #endif /* CONFIG_PCI */
  #endif /* CONFIG_PROC_FS */
  
-@@ -645,8 +717,10 @@
+@@ -646,8 +718,10 @@
  	if (snd_mem_proc) {
  		snd_mem_proc->read_proc = snd_mem_proc_read;
  #ifdef CONFIG_PCI
@@ -145,7 +146,7 @@
  	}
  #endif
  	return 0;
-@@ -678,3 +752,5 @@
+@@ -679,3 +753,5 @@
  
  EXPORT_SYMBOL(snd_malloc_pages);
  EXPORT_SYMBOL(snd_free_pages);
