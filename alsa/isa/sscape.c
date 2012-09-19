@@ -68,9 +68,6 @@ ISAPNP_CARD_TABLE(sscape_pnpids);
 static snd_card_t *sscape_card[SNDRV_CARDS];
 static unsigned __initdata sscape_count;
 
-#ifndef ARRAY_SIZE
-#  define ARRAY_SIZE(a)  (sizeof(a) / sizeof(a[0]))
-#endif
 
 #define MPU401_IO(i)     ((i) + 0)
 #define MIDI_DATA_IO(i)  ((i) + 0)
@@ -286,7 +283,7 @@ static inline int host_write_unsafe(unsigned io_base, unsigned char data)
  * Also leaves all locking-issues to the caller ...
  */
 static int host_write_ctrl_unsafe(unsigned io_base, unsigned char data,
-		       unsigned timeout)
+                                  unsigned timeout)
 {
 	int err;
 
