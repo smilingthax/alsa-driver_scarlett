@@ -604,6 +604,7 @@ static void awacs_restore_all_regs(pmac_t *chip)
 		mdelay(2);
 		snd_pmac_awacs_write_noreg(chip, 1, chip->awacs_reg[1]);
 		snd_pmac_awacs_write_noreg(chip, 7, chip->awacs_reg[7]);
+		snd_pmac_awacs_write_noreg(chip, 0, chip->awacs_reg[0]);
 	}
 }
 
@@ -696,8 +697,10 @@ snd_pmac_awacs_init(pmac_t *chip)
 {
 	int err, vol;
 
-	chip->awacs_reg[0] = MASK_MUX_CD | 0xff;
-	// chip->awacs_reg[1] = MASK_LOOPTHRU;
+	/* looks like MASK_GAINLINE triggers something, so we set here
+	 * as start-up
+	 */
+	chip->awacs_reg[0] = MASK_MUX_CD | 0xff | MASK_GAINLINE;
 	chip->awacs_reg[1] = MASK_CMUTE | MASK_AMUTE;
 	/* FIXME: Only machines with external SRS module need MASK_PAROUT */
 	if (chip->has_iic || chip->device_id == 0x5 ||
@@ -707,7 +710,7 @@ snd_pmac_awacs_init(pmac_t *chip)
 	/* get default volume from nvram */
 	// vol = (~nvram_read_byte(0x1308) & 7) << 1;
 	// vol = ((pmac_xpram_read( 8 ) & 7 ) << 1 );
-	vol = 0x0f;
+	vol = 0x0f; /* no, on alsa, muted as default */
 	vol = vol + (vol << 6);
 	chip->awacs_reg[2] = vol;
 	chip->awacs_reg[4] = vol;

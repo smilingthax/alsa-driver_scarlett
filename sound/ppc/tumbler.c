@@ -549,7 +549,7 @@ static void check_mute(pmac_t *chip, pmac_gpio_t *gp, int val, int do_notify, sn
 {
 	pmac_tumbler_t *mix = chip->mixer_data;
 	if (val != read_audio_gpio(gp)) {
-		write_audio_gpio(&mix->amp_mute, val);
+		write_audio_gpio(gp, val);
 		if (do_notify)
 			snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE, &sw->id);
 	}

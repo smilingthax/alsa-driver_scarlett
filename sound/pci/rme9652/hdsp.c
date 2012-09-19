@@ -411,29 +411,17 @@ MODULE_DEVICE_TABLE(pci, snd_hdsp_ids);
 
 static inline void hdsp_write(hdsp_t *hdsp, int reg, int val)
 {
-#ifdef SNDRV_BIG_ENDIAN
-	writel(bswap_32(val), hdsp->iobase + reg);
-#else 
-	writel(val, hdsp->iobase + reg);
-#endif
+	writel(cpu_to_le32(val), hdsp->iobase + reg);
 }
 
 static inline void hdsp_write_bigendian(hdsp_t *hdsp, int reg, int val)
 {
-#ifdef SNDRV_BIG_ENDIAN
-	writel(val, hdsp->iobase + reg);
-#else 
-	writel(bswap_32(val), hdsp->iobase + reg);
-#endif
+	writel(cpu_to_be32(val), hdsp->iobase + reg);
 }
 
 static inline unsigned int hdsp_read(hdsp_t *hdsp, int reg)
 {
-#ifdef SNDRV_BIG_ENDIAN
-	return bswap_32 (readl (hdsp->iobase + reg));
-#else
-	return readl(hdsp->iobase + reg);
-#endif
+	return le32_to_cpu (readl (hdsp->iobase + reg));
 }
 
 static inline unsigned long long hdsp_read64 (hdsp_t *hdsp, int reg)
@@ -442,11 +430,7 @@ static inline unsigned long long hdsp_read64 (hdsp_t *hdsp, int reg)
 	val = hdsp_read(hdsp, reg);
 	val = (val<<32)|hdsp_read(hdsp, reg + 4);
 
-#ifdef SNDRV_BIG_ENDIAN
-	return bswap_64(val);
-#else
-	return val;
-#endif
+	return le64_to_cpu(val);
 }
 
 static inline int hdsp_check_for_iobox (hdsp_t *hdsp)

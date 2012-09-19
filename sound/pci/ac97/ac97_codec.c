@@ -60,7 +60,7 @@ static int patch_sigmatel_stac9721(ac97_t * ac97);
 static int patch_sigmatel_stac9744(ac97_t * ac97);
 static int patch_sigmatel_stac9756(ac97_t * ac97);
 static int patch_cirrus_cs4299(ac97_t * ac97);
-static int patch_cirrus_cs4205(ac97_t * ac97);
+static int patch_cirrus_spdif(ac97_t * ac97);
 static int patch_ad1819(ac97_t * ac97);
 static int patch_ad1881(ac97_t * ac97);
 static int patch_ad1886(ac97_t * ac97);
@@ -107,14 +107,18 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x414c4300, 0xfffffff0, "RL5306",	 	NULL },
 { 0x414c4310, 0xfffffff0, "RL5382", 		NULL },
 { 0x414c4320, 0xfffffff0, "RL5383", 		NULL },
-{ 0x414c4710, 0xffffffff, "ALC200/200P",	NULL },
+{ 0x414c4710, 0xfffffff0, "ALC200/200P",	NULL },
+{ 0x414c4720, 0xfffffff0, "ALC650",		NULL },
+{ 0x414c4730, 0xffffffff, "ALC101",		NULL },
+{ 0x414c4740, 0xfffffff0, "ALC202",		NULL },
+{ 0x414c4750, 0xfffffff0, "ALC250",		NULL },
 { 0x43525900, 0xfffffff8, "CS4297",		NULL },
-{ 0x43525910, 0xfffffff8, "CS4297A",		NULL },
+{ 0x43525910, 0xfffffff8, "CS4297A",		patch_cirrus_spdif },
 { 0x42525920, 0xfffffff8, "CS4294/4298",	NULL },
 { 0x42525928, 0xfffffff8, "CS4294",		NULL },
 { 0x43525930, 0xfffffff8, "CS4299",		patch_cirrus_cs4299 },
 { 0x43525948, 0xfffffff8, "CS4201",		NULL },
-{ 0x43525958, 0xfffffff8, "CS4205",		patch_cirrus_cs4205 },
+{ 0x43525958, 0xfffffff8, "CS4205",		patch_cirrus_spdif },
 { 0x43525960, 0xfffffff8, "CS4291",		NULL },
 { 0x48525300, 0xffffff00, "HMP9701",		NULL },
 { 0x49434501, 0xffffffff, "ICE1230",		NULL },
@@ -158,9 +162,10 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 #define AC97_ID_STAC9721	0x83847609
 #define AC97_ID_STAC9744	0x83847644
 #define AC97_ID_STAC9756	0x83847656
-
-#define SPDIF_CS4205            0x68
-#define MODE_CS4205            0x5e
+#define AC97_ID_CS4297A		0x43525910
+#define AC97_ID_CS4299		0x43525930
+#define AC97_ID_CS4201		0x43525948
+#define AC97_ID_CS4205		0x43525958
 
 static const char *snd_ac97_stereo_enhancements[] =
 {
@@ -760,7 +765,7 @@ static int snd_ac97_spdif_default_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 		case 2: x = 0; break;  // 48.0
 		default: x = 0; break; // illegal.
 		}
-		change = snd_ac97_update_bits(ac97, SPDIF_CS4205, 0x3fff, ((val & 0xcfff) | (x << 12)));
+		change = snd_ac97_update_bits(ac97, AC97_CSR_SPDIF, 0x3fff, ((val & 0xcfff) | (x << 12)));
 	} else {
 		change = snd_ac97_update_bits(ac97, AC97_SPDIF, 0x3fff, val);
 	}
@@ -798,9 +803,9 @@ static const snd_kcontrol_new_t snd_ac97_controls_spdif[5] = {
 	AC97_SINGLE(SNDRV_CTL_NAME_IEC958("",PLAYBACK,NONE) "AC97-SPSA",AC97_EXTENDED_STATUS, 4, 3, 0)
 };
 
-static const snd_kcontrol_new_t snd_ac97_cs4205_controls_spdif[2] = {
-    AC97_SINGLE(SNDRV_CTL_NAME_IEC958("",PLAYBACK,SWITCH),SPDIF_CS4205, 15, 1, 0),
-    AC97_SINGLE(SNDRV_CTL_NAME_IEC958("",PLAYBACK,NONE) "AC97-SPSA",MODE_CS4205, 0, 3, 0)
+static const snd_kcontrol_new_t snd_ac97_cirrus_controls_spdif[2] = {
+    AC97_SINGLE(SNDRV_CTL_NAME_IEC958("",PLAYBACK,SWITCH), AC97_CSR_SPDIF, 15, 1, 0),
+    AC97_SINGLE(SNDRV_CTL_NAME_IEC958("",PLAYBACK,NONE) "AC97-SPSA", AC97_CSR_ACMODE, 0, 3, 0)
 };
 
 #define AD18XX_PCM_BITS(xname, codec, shift, mask) \
@@ -1326,21 +1331,25 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 			for (idx = 0; idx < 3; idx++)
 				if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_spdif[idx], ac97))) < 0)
 					return err;
-			for (idx = 0; idx < 2; idx++)
-				if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_cs4205_controls_spdif[idx], ac97))) < 0)
+			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_cirrus_controls_spdif[0], ac97))) < 0)
+				return err;
+			switch (ac97->id) {
+			case AC97_ID_CS4205:
+				if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_cirrus_controls_spdif[1], ac97))) < 0)
 					return err;
+				break;
+			}
+			/* set default PCM S/PDIF params */
+			/* consumer,PCM audio,no copyright,no preemphasis,PCM coder,original,48000Hz */
+			snd_ac97_write_cache(ac97, AC97_CSR_SPDIF, 0x0a20);
 		} else {
 			for (idx = 0; idx < 5; idx++)
 				if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_spdif[idx], ac97))) < 0)
 					return err;
-		}
-
-		/* set default PCM S/PDIF params */
-		/* consumer,PCM audio,no copyright,no preemphasis,PCM coder,original,48000Hz */
-	        if (ac97->flags & AC97_CS_SPDIF)
-			snd_ac97_write_cache(ac97, SPDIF_CS4205, 0x0a20);
-		else 
+			/* set default PCM S/PDIF params */
+			/* consumer,PCM audio,no copyright,no preemphasis,PCM coder,original,48000Hz */
 			snd_ac97_write_cache(ac97, AC97_SPDIF, 0x2a20);
+		}
 
 		ac97->spdif_status = SNDRV_PCM_DEFAULT_CON_SPDIF;
 	}
@@ -1675,7 +1684,7 @@ static void snd_ac97_proc_read_main(ac97_t *ac97, snd_info_buffer_t * buffer, in
 	}
 	if ((ext & 0x0004) || (ac97->flags & AC97_CS_SPDIF)) {
 	        if (ac97->flags & AC97_CS_SPDIF)
-			val = snd_ac97_read(ac97, SPDIF_CS4205);
+			val = snd_ac97_read(ac97, AC97_CSR_SPDIF);
 		else
 			val = snd_ac97_read(ac97, AC97_SPDIF);
 
@@ -1928,30 +1937,31 @@ static int patch_sigmatel_stac9756(ac97_t * ac97)
 	return 0;
 }
 
-static int patch_cirrus_cs4299(ac97_t * ac97)
+static int patch_cirrus_spdif(ac97_t * ac97)
 {
-	ac97->flags |= AC97_HAS_PC_BEEP;	/* force the detection of PC Beep */
-	
-	return 0;
-}
-
-static int patch_cirrus_cs4205(ac97_t * ac97)
-{
-  /* Basically, the cs4205 has non-standard sp/dif registers.
-     WHY CAN'T ANYONE FOLLOW THE BLOODY SPEC?  *sigh*
-      - sp/dif EA ID is not set, but sp/dif is always present.
-        - enable/disable is spdif register bit 15.
-      - sp/dif control register is 0x68.  differs from AC97:
-        - valid is bit 14 (vs 15)
-	- no DRS
-	- only 44.1/48k [00 = 48, 01=44,1] (AC97 is 00=44.1, 10=48)
-      - sp/dif ssource select is in 0x5e bits 0,1.
-  */
+	/* Basically, the cs4201/cs4205/cs4297a has non-standard sp/dif registers.
+	   WHY CAN'T ANYONE FOLLOW THE BLOODY SPEC?  *sigh*
+	   - sp/dif EA ID is not set, but sp/dif is always present.
+	   - enable/disable is spdif register bit 15.
+	   - sp/dif control register is 0x68.  differs from AC97:
+	   - valid is bit 14 (vs 15)
+	   - no DRS
+	   - only 44.1/48k [00 = 48, 01=44,1] (AC97 is 00=44.1, 10=48)
+	   - sp/dif ssource select is in 0x5e bits 0,1.
+	*/
 
 	ac97->flags |= AC97_CS_SPDIF; 
         ac97->ext_id |= AC97_EA_SPDIF;	/* force the detection of spdif */
-	snd_ac97_write_cache(ac97, MODE_CS4205, 0x0080);
+	snd_ac97_write_cache(ac97, AC97_CSR_ACMODE, 0x0080);
 	return 0;
+}
+
+static int patch_cirrus_cs4299(ac97_t * ac97)
+{
+	/* force the detection of PC Beep */
+	ac97->flags |= AC97_HAS_PC_BEEP;
+	
+	return patch_cirrus_spdif(ac97);
 }
 
 static int patch_ad1819(ac97_t * ac97)

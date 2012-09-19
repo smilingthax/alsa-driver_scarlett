@@ -1981,7 +1981,7 @@ static void es1968_update_hw_volume(unsigned long private_data)
 			/* volume up */
 			if ((val & 0xff) > 0)
 				val--;
-			if ((val & 0xff00) > 0x100)
+			if ((val & 0xff00) > 0)
 				val -= 0x0100;
 		} else {
 			/* volume down */
