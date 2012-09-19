@@ -31,102 +31,77 @@ If USE_ZLIB is defined, hpizlib.c must also be linked
 #ifndef _HPIDSPLD_H_
 #define _HPIDSPLD_H_
 
+//#include <stdio.h>
 #include "hpi.h"
 #include "hpios.h"
 
 #include <linux/version.h>
+#if ( LINUX_VERSION_CODE >= KERNEL_VERSION ( 2 , 5 , 0 ) )
 #include <linux/device.h>
+#endif
+
 #include <linux/firmware.h>
 
 /** Descriptor for dspcode from firmware loader */
-struct DSP_CODE_FIRMWARE
-{
-    const struct firmware *psFirmware;  // Firmware descriptor
-    struct pci_dev * psDev;
-    long int dwBlockLength;   //!< Expected number of words in the whole dsp code,INCL header
-    long int dwWordCount;     //!< Number of words read so far
-    HW32 dwVersion; //<! Version read from dsp code file
+struct DSP_CODE_FIRMWARE {
+	const struct firmware *psFirmware;	// Firmware descriptor
+	struct pci_dev *psDev;
+	long int dwBlockLength;	//!< Expected number of words in the whole dsp code,INCL header
+	long int dwWordCount;	//!< Number of words read so far
+	u32 dwVersion;		//<! Version read from dsp code file
 };
-
-/** Descriptor used when dsp code read from a file */
-struct DSP_CODE_FILE
-{
-	 HpiOs_FILE pDspCodeFile;  //!< File descriptor for dsp code file
-	 long int dwBlockLength;   //!< Expected number of words in the whole dsp code, from header
-	 long int dwWordCount;     //!< Number of words read so far
-	HW32 nAdapter;    //!< Adapter type
-	HW32 dwVersion; //<! Version read from dsp code file
-};
-
-/*! Descriptor used when dsp code arrays are linked in */
-struct DSP_CODE_ARRAY
-{
-	 short nArrayNum;             //!< Index of array currently in use
-	 int nDspCode_ArrayCount;     //!< Total number of code arrays for this DSP
-	 HW32 dwOffset;               //!< Current read position within code array
-	 HW32 * * apaCodeArrays; //!< pointer to array of pointers to code arrays
-	 HW32 * adwDspCodeArray; //!< pointer to current code array
-};
-
-
-/* Determine which format of dsp code to use */
 
 /* DSP CODE IS LOADED FROM FILE DSPnnnn.BIN */
 typedef struct DSP_CODE_FIRMWARE DSP_CODE;
 
 enum BootLoadFamily {
-	Load2200=0x2200,
-	Load4100=0x4100,
-	Load4300=0x4300,
-	Load4400=0x4400,
-	Load4500=0x4500,
-	Load4600=0x4600,
-	Load5000=0x5000,
-	Load6200=0x6200,
-	Load6413=0x6413,
-	Load8600=0x8600,
-	Load6205=0x6205,
-	Load8713=0x8713,
-	Load8800=0x8800
+	Load2200 = 0x2200,
+	Load4100 = 0x4100,
+	Load4300 = 0x4300,
+	Load4400 = 0x4400,
+	Load4500 = 0x4500,
+	Load4600 = 0x4600,
+	Load5000 = 0x5000,
+	Load6200 = 0x6200,
+	Load6413 = 0x6413,
+	Load8600 = 0x8600,
+	Load6205 = 0x6205,
+	Load8713 = 0x8713,
+	Load8800 = 0x8800
 };
 
 /*! Prepare *psDspCode to refer to the requuested adapter.
-	 Searches the file, or selects the appropriate linked array
+Searches the file, or selects the appropriate linked array
 
-	 \return 0 for success, or error code if requested code is not available
+\return 0 for success, or error code if requested code is not available
 */
-short HpiDspCode_Open(
-	HW32 nAdapter,       //!< Adapter family
-	DSP_CODE * psDspCode //!< Pointer to DSP code control structure
-	);
+short HpiDspCode_Open(u32 nAdapter,	//!< Adapter family
+		      DSP_CODE * psDspCode	//!< Pointer to DSP code control structure
+    );
 
 /*! Close the DSP code file */
-void HpiDspCode_Close(
-	DSP_CODE * psDspCode //!< Pointer to DSP code control structure
-	);
+void HpiDspCode_Close(DSP_CODE * psDspCode	//!< Pointer to DSP code control structure
+    );
 
 /*! Rewind to the beginning of the DSP code file (for verify) */
-void HpiDspCode_Rewind(
-	DSP_CODE * psDspCode //!< Pointer to DSP code control structure
-	);
+void HpiDspCode_Rewind(DSP_CODE * psDspCode	//!< Pointer to DSP code control structure
+    );
 
 /*! Read one word from the dsp code file
-	\return 0 for success, or error code if eof, or block length exceeded
+\return 0 for success, or error code if eof, or block length exceeded
 */
-short HpiDspCode_ReadWord(
-	DSP_CODE * psDspCode, //!< Pointer to DSP code control structure
-	HW32 * pdwWord //!< Where to store the read word
-	);
+short HpiDspCode_ReadWord(DSP_CODE * psDspCode,	//!< Pointer to DSP code control structure
+			  u32 * pdwWord	//!< Where to store the read word
+    );
 
 /*! Get a block of dsp code into an internal buffer, and provide a pointer to
-	 that buffer. (If dsp code is already an array in memory, it is referenced, not copied.)
-	\return Error if requested number of words are not available
+that buffer. (If dsp code is already an array in memory, it is referenced, not copied.)
+\return Error if requested number of words are not available
 */
-short HpiDspCode_ReadBlock(
-	size_t nWordsRequested, //!< Number of words
-	DSP_CODE * psDspCode, //!< Pointer to DSP code control structure
-	HW32 * * ppdwBlock    //!< Pointer to store (Pointer to code buffer)
-	);
+short HpiDspCode_ReadBlock(size_t nWordsRequested,	//!< Number of words
+			   DSP_CODE * psDspCode,	//!< Pointer to DSP code control structure
+			   u32 * *ppdwBlock	//!< Pointer to store (Pointer to code buffer)
+    );
 
 #endif
 

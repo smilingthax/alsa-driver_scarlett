@@ -16,13 +16,12 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
 System Module   :   DPI56301 (PC and DSP)
 
 Description     :   Definitions of Host flags and host commands passed
-                    between PC and 56301DSP over PCI bus. This file is shared
-                    between DPI56301.C on the PC side and the DSP message
-                    routines to ensure consistency
+between PC and 56301DSP over PCI bus. This file is shared
+between DPI56301.C on the PC side and the DSP message
+routines to ensure consistency
 
 (C) Copyright AudioScience Inc. 2002
 ******************************************************************************/
@@ -32,7 +31,7 @@ Description     :   Definitions of Host flags and host commands passed
 #define _DPI_CMD
 
 /* The host flags are 3 bits, so there are only 8 possible values */
-#define HF_MASK             0x0038  /* also applies to HCTR,DCTR,DSR */
+#define HF_MASK             0x0038	/* also applies to HCTR,DCTR,DSR */
 #define HF_CLEAR            (~HF_MASK)
 
 /* Used for PC->DSP */
@@ -56,27 +55,27 @@ Description     :   Definitions of Host flags and host commands passed
 in the 56301.  The value here needs CVR_INT added to generate an interrupt
 when written to HCVR (Use function DpiCommand())
 */
-#define CVR_NMI             0x8000      /* NMI bit */
+#define CVR_NMI             0x8000	/* NMI bit */
 #define CVR_INT             0x0001
 #define CVR_RESET           0x0072
-#define CVR_NMIRESET        (CVR_NMI+CVR_RESET) /* NMI version to reset */
+#define CVR_NMIRESET        (CVR_NMI+CVR_RESET)	/* NMI version to reset */
 
 #define CVR_RESTART         0x004E
 #define CVR_CMD             0x005a
 #define CVR_CMDRESET        0x005e
-#define	CVR_DMASTOP			0x005c
+#define CVR_DMASTOP                     0x005c
 
 /* CURRENTLY UNUSED, COULD ALLOCATE TO SOMETHING ELSE */
 #define CVR_MSGCLEAR        0x0074
 #define CVR_DATATX          0x0076
 #define CVR_DATARX          0x0078
 
-#define CVR_START0          0x007a      /* Experiment with fast messages */
+#define CVR_START0          0x007a	/* Experiment with fast messages */
 #define CVR_STOP0           0x007c
 #define CVR_START1          0x007e
 #define CVR_STOP1           0x0080
 
-#define CVR_START2          0x0082      /* Experiment with fast messages */
+#define CVR_START2          0x0082	/* Experiment with fast messages */
 #define CVR_STOP2           0x0084
 #define CVR_START3          0x0084
 #define CVR_STOP3           0x0086

@@ -1,26 +1,20 @@
 /******************************************************************************
-Copyright (C) 1997-2003 AudioScience, Inc. All rights reserved.
 
-This software is provided 'as-is', without any express or implied warranty.
-In no event will AudioScience Inc. be held liable for any damages arising
-from the use of this software.
+    AudioScience HPI driver
+    Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
 
-Permission is granted to anyone to use this software for any purpose,
-including commercial applications, and to alter it and redistribute it
-freely, subject to the following restrictions:
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of version 2 of the GNU General Public License as
+    published by the Free Software Foundation;
 
-1. The origin of this software must not be misrepresented; you must not
-   claim that you wrote the original software. If you use this software
-   in a product, an acknowledgment in the product documentation would be
-   appreciated but is not required.
-2. Altered source versions must be plainly marked as such, and must not be
-   misrepresented as being the original software.
-3. This copyright notice and list of conditions may not be altered or removed 
-   from any source distribution.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-AudioScience, Inc. <support@audioscience.com>
-
-( This license is GPL compatible see http://www.gnu.org/licenses/license-list.html#GPLCompatibleLicenses )
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 HPI Operating System function declarations
 
@@ -31,50 +25,76 @@ HPI Operating System function declarations
 
 #include "hpi.h"
 
-
 /////////////////////////// MACROS ///////////////////////////////////////
 #ifdef HPI_DEBUG
-	#define HPIOS_DEBUG_INIT()	HpiOs_DebugInit()
-	#define HPIOS_DEBUG_STRING(s)	HpiOs_DebugString(s)
-	#define HPIOS_DEBUG_DWORD(d)	HpiOs_DebugDword(d)
+#define HPIOS_DEBUG_INIT()      HpiOs_DebugInit()
+#define HPIOS_DEBUG_STRING(s)   HpiOs_DebugString(s)
+#define HPIOS_DEBUG_DWORD(d)    HpiOs_DebugDword(d)
 #else
-	#define HPIOS_DEBUG_INIT()
-	#define HPIOS_DEBUG_STRING(s)
-	#define HPIOS_DEBUG_DWORD(d)
+#define HPIOS_DEBUG_INIT()
+#define HPIOS_DEBUG_STRING(s)
+#define HPIOS_DEBUG_DWORD(d)
+#endif
+
+#define _test
+
+#if defined ( _test )
+/*  was stripped by preprocessing scripts */
+#else
+
+#ifndef __GNUC__
+#define  huge
+#else
+#undef
+#define
+#endif
+
 #endif
 
 #include "hpios_linux.h"
-
 
 /////////////////////////// PROTOTYPES ///////////////////////////////////
 
 // monochrome screen debug functions
 void HpiOs_DebugInit(void);
-void HpiOs_DebugString( char *pszString );	// print a string to the monochrome display
-void HpiOs_DebugDword( HW32 dwDword );
+void HpiOs_DebugString(char *pszString);	// print a string to the monochrome display
+void HpiOs_DebugDword(u32 dwDword);
 
 // memory allocation
-HW16 HpiOs_AllocLockedMemory( HW32 dwSize, void **ppvLinear, HW32 *pPhysical );
-HW16 HpiOs_FreeLockedMemory( void *pvLinear );
+u16 HpiOs_AllocLockedMemory(u32 dwSize, void **ppvLinear, u32 * pPhysical);
+u16 HpiOs_FreeLockedMemory(void *pvLinear);
 
 // physical memory allocation
-HW16 HpiOs_LockedMem_Alloc( HpiOs_LockedMem_Handle *pLockedMemHandle, HW32 dwSize, void *pOsReference );
-HW16 HpiOs_LockedMem_Free( HpiOs_LockedMem_Handle LockedMemHandle );
-HW16 HpiOs_LockedMem_GetPhysAddr( HpiOs_LockedMem_Handle LockedMemHandle, HW32 *pPhysicalAddr );
-HW16 HpiOs_LockedMem_GetVirtAddr( HpiOs_LockedMem_Handle LockedMemHandle, void **ppvVirtualAddr );
+#ifndef NO_HPIOS_LOCKEDMEM_OPS
+u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
+			  void *pOsReference);
+u16 HpiOs_LockedMem_Free(HpiOs_LockedMem_Handle LockedMemHandle);
+u16 HpiOs_LockedMem_GetPhysAddr(HpiOs_LockedMem_Handle LockedMemHandle,
+				u32 * pPhysicalAddr);
+u16 HpiOs_LockedMem_GetVirtAddr(HpiOs_LockedMem_Handle LockedMemHandle,
+				void **ppvVirtualAddr);
+#endif
 
 // memory read/write
-HW32 HpiOs_MemRead32( HW32 dwAddress );
-void HpiOs_MemWrite32(HW32 dwAddress, HW32 dwData );
+u32 HpiOs_MemRead32(u32 dwAddress);
+void HpiOs_MemWrite32(u32 dwAddress, u32 dwData);
 
 // port I/O
-void HpiOs_OutBuf8( HW16 wDataPort, void *pbBuffer, HW16 wLength );
+void HpiOs_OutBuf8(u16 wDataPort, void *pbBuffer, u16 wLength);
 
 // timing/delay
-void HpiOs_DelayMicroSeconds( HW32 dwNumMicroSec );
+void HpiOs_DelayMicroSeconds(u32 dwNumMicroSec);
+
+#ifndef NO_HPIOS_FILE_OPS
+#ifndef HpiOs_fopen_rb		// functions not implemented as macros in OS.h files
+HpiOs_FILE HpiOs_fopen_rb(const char *filename);
+int HpiOs_fseek(HpiOs_FILE stream, long offset, int origin);
+int HpiOs_fread(void *buffer, size_t size, size_t count, HpiOs_FILE stream);
+int HpiOs_fclose(HpiOs_FILE stream);
+#endif
 
 char *HpiOs_GetDspCodePath(void);
-
-#endif //_HPIOS_H_
+#endif
+#endif				//_HPIOS_H_
 
 ///////////////////////////////////////////////////////////////////////////

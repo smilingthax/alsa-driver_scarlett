@@ -670,8 +670,8 @@ unsigned long snd_compat_msleep_interruptible(unsigned int msecs);
 /* msecs_to_jiffies */
 #ifndef CONFIG_HAVE_MSECS_TO_JIFFIES
 #include <linux/jiffies.h>
-#if defined(CONFIG_SUSE_KERNEL) && LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#define HAVE_VARIABLE_HZ	/* HZ is a variable */
+#if defined(DESKTOP_HZ) && LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
+#define HAVE_VARIABLE_HZ	/* 2.4 SUSE kernel, HZ is a variable */
 #endif
 static inline unsigned int jiffies_to_msecs(const unsigned long j)
 {
