@@ -3151,6 +3151,28 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   fi
 fi
 
+dnl compiler support for _Bool
+AC_MSG_CHECKING(for builtin _Bool support)
+builtin_bool="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([],[
+  _Bool b;
+  b = (_Bool)0;
+],
+  AC_MSG_RESULT(yes);builtin_bool="1",
+  AC_MSG_RESULT(no);builtin_bool="0",
+  AC_MSG_RESULT(unknown);builtin_bool="1"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_SND_HAS_BUILTIN_BOOL=$builtin_bool
+if test "$CONFIG_SND_HAS_BUILTIN_BOOL" = "1"; then
+  AC_DEFINE(CONFIG_SND_HAS_BUILTIN_BOOL)
+fi
+
 AC_SUBST(CONFIG_SND_BIT32_EMUL)
 test "$CONFIG_SND_BIT32_EMUL" = "m" && AC_DEFINE(CONFIG_SND_BIT32_EMUL_MODULE)
 
