@@ -78,7 +78,7 @@ AC_ARG_WITH(kernel,
    DEFAULT_KERNEL_BUILD=""],
   [kerneldir="$DEFAULT_KERNEL_DIR"]
 )
-CONFIG_SND_KERNELDIR="$kerneldir"
+CONFIG_SND_KERNELDIR=$(cd "$kerneldir" && pwd)
 AC_MSG_RESULT($kerneldir)
 
 dnl Check for directory with kernel build tree...
