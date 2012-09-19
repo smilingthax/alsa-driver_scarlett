@@ -12,9 +12,11 @@ ifeq ($(CONFIG_SND),y)
   obj-y      += instr/_instr.o
 endif
 
-subdir-$(CONFIG_SND_SEQUENCER) += oss
 ifeq ($(CONFIG_SND_SEQUENCER_OSS),y)
-  obj-y    += oss/_oss.o
+  subdir-$(CONFIG_SND_SEQUENCER) += oss
+  ifeq ($(CONFIG_SND_SEQUENCER),y)
+    obj-y    += oss/_oss.o
+  endif
 endif
 
 export-objs  := seq_device.o seq.o seq_ports.o seq_instr.o seq_midi_emul.o \

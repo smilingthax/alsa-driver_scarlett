@@ -11,4 +11,6 @@ snd-seq-oss-objs  := seq_oss.o seq_oss_init.o seq_oss_timer.o seq_oss_ioctl.o \
 
 obj-$(CONFIG_SND_SEQUENCER_OSS) += snd-seq-oss.o
 
-include $(TOPDIR)/Rules.make
+ifeq ($(CONFIG_SND_SEQUENCER_OSS),y)
+  include $(TOPDIR)/Rules.make
+endif
