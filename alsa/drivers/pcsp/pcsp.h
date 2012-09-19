@@ -3,7 +3,7 @@
  *
  * Copyright (C) 1993-1997  Michael Beck
  * Copyright (C) 1997-2001  David Woodhouse
- * Copyright (C) 2001-2007  Stas Sergeev
+ * Copyright (C) 2001-2008  Stas Sergeev
  */
 
 #ifndef __PCSP_H__

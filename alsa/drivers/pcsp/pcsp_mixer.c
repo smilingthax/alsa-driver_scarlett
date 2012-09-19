@@ -2,7 +2,7 @@
  * PC-Speaker driver for Linux
  *
  * Mixer implementation.
- * Copyright (C) 2001-2007  Stas Sergeev
+ * Copyright (C) 2001-2008  Stas Sergeev
  */
 
 #include "adriver.h"
@@ -72,7 +72,7 @@ static int pcsp_treble_put(struct snd_kcontrol *kcontrol,
 	if (treble != chip->treble) {
 		chip->treble = treble;
 #if PCSP_DEBUG
-		printk(KERN_INFO "PCSP: rate set to %i\n", PCSP_RATE);
+		printk(KERN_INFO "PCSP: rate set to %i\n", PCSP_RATE());
 #endif
 		changed = 1;
 	}

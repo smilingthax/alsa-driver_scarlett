@@ -4,7 +4,7 @@
  *
  * Copyright (C) 1993-1997  Michael Beck
  * Copyright (C) 1997-2001  David Woodhouse
- * Copyright (C) 2001-2007  Stas Sergeev
+ * Copyright (C) 2001-2008  Stas Sergeev
  */
 
 #include <sound/pcm.h>
@@ -199,7 +199,7 @@ static int snd_pcsp_playback_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 #if PCSP_DEBUG
-	printk("prepare called, size=%i psize=%i f=%i f1=%i\n",
+	printk("prepare called, size=%zi psize=%zi f=%zi f1=%i\n",
 	       snd_pcm_lib_buffer_bytes(substream),
 	       snd_pcm_lib_period_bytes(substream),
 	       snd_pcm_lib_buffer_bytes(substream) /

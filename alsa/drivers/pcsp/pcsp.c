@@ -2,7 +2,7 @@
  * PC-Speaker driver for Linux
  *
  * Copyright (C) 1997-2001  David Woodhouse
- * Copyright (C) 2001-2007  Stas Sergeev
+ * Copyright (C) 2001-2008  Stas Sergeev
  */
 
 #include "adriver.h"
