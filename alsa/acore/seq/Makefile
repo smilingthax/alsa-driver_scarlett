@@ -8,8 +8,7 @@ include $(SND_TOPDIR)/Makefile.conf
 clean-files := seq.c seq_clientmgr.c seq_memory.c
 
 export-objs  := seq_device.o seq_clientmgr.o seq_lock.o seq_memory.o \
-	seq_ports.o seq_instr.o seq_midi_emul.o \
-		seq_midi_event.o seq_virmidi.o
+	seq_ports.o seq_midi_emul.o seq_midi_event.o seq_virmidi.o
 
 include $(SND_TOPDIR)/alsa-kernel/core/seq/Makefile
 

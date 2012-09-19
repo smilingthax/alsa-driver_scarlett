@@ -19,6 +19,7 @@
  */
 
 #include <sound/driver.h>
+#include <linux/mutex.h>
 #include <sound/ac97_codec.h>
 #include <sound/asoundef.h>
 #include <sound/control.h>
@@ -203,12 +204,15 @@ void oxygen_update_spdif_source(struct oxygen *chip)
 		new_routing = (old_routing & ~0x00e0) | 0x0000;
 		oxygen_rate = (old_control >> OXYGEN_SPDIF_OUT_RATE_SHIFT)
 			& OXYGEN_I2S_RATE_MASK;
+		/* S/PDIF rate was already set by the caller */
 	} else if ((chip->pcm_active & (1 << PCM_MULTICH)) &&
 		   chip->spdif_playback_enable) {
-		new_control = old_control | OXYGEN_SPDIF_OUT_ENABLE;
 		new_routing = (old_routing & ~0x00e0) | 0x0020;
 		oxygen_rate = oxygen_read16(chip, OXYGEN_I2S_MULTICH_FORMAT)
 			& OXYGEN_I2S_RATE_MASK;
+		new_control = (old_control & ~OXYGEN_SPDIF_OUT_RATE_MASK) |
+			(oxygen_rate << OXYGEN_SPDIF_OUT_RATE_SHIFT) |
+			OXYGEN_SPDIF_OUT_ENABLE;
 	} else {
 		new_control = old_control & ~OXYGEN_SPDIF_OUT_ENABLE;
 		new_routing = old_routing;
@@ -463,7 +467,7 @@ static int ac97_volume_put(struct snd_kcontrol *ctl,
 		.info = ac97_volume_info, \
 		.get = ac97_volume_get, \
 		.put = ac97_volume_put, \
-		.tlv.p = ac97_db_scale, \
+		.tlv = { .p = ac97_db_scale, }, \
 		.private_value = (index), \
 	}
 
@@ -478,7 +482,9 @@ static const struct snd_kcontrol_new controls[] = {
 		.info = dac_volume_info,
 		.get = dac_volume_get,
 		.put = dac_volume_put,
-		.tlv.p = NULL, /* set later */
+		.tlv = {
+			.p = NULL, /* set later */
+		},
 	},
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
