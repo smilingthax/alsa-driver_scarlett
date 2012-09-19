@@ -49,6 +49,7 @@ struct hda_vendor_id {
 /* codec vendor labels */
 static struct hda_vendor_id hda_vendor_ids[] = {
 	{ 0x10ec, "Realtek" },
+	{ 0x11d4, "Analog Devices" },
 	{ 0x13f6, "C-Media" },
 	{ 0x434d, "C-Media" },
 	{ 0x8384, "SigmaTel" },
@@ -509,7 +510,7 @@ int snd_hda_codec_new(struct hda_bus *bus, unsigned int codec_addr,
 	/* FIXME: support for multiple AFGs? */
 	codec->afg = look_for_afg_node(codec);
 	if (! codec->afg) {
-		snd_printk(KERN_ERR "hda_codec: no AFG node found\n");
+		snd_printdd("hda_codec: no AFG node found\n");
 		snd_hda_codec_free(codec);
 		return -ENODEV;
 	}
@@ -662,7 +663,7 @@ static void put_vol_mute(struct hda_codec *codec,
 /*
  * read/write AMP value.  The volume is between 0 to 0x7f, 0x80 = mute bit.
  */
-int snd_hda_codec_amp_read(struct hda_codec *codec, hda_nid_t nid, int ch, int direction, int index)
+static int snd_hda_codec_amp_read(struct hda_codec *codec, hda_nid_t nid, int ch, int direction, int index)
 {
 	struct hda_amp_info *info = get_alloc_amp_hash(codec, HDA_HASH_KEY(nid, direction, index));
 	if (! info)
@@ -671,7 +672,7 @@ int snd_hda_codec_amp_read(struct hda_codec *codec, hda_nid_t nid, int ch, int d
 	return info->vol[ch];
 }
 
-int snd_hda_codec_amp_write(struct hda_codec *codec, hda_nid_t nid, int ch, int direction, int idx, int val)
+static int snd_hda_codec_amp_write(struct hda_codec *codec, hda_nid_t nid, int ch, int direction, int idx, int val)
 {
 	struct hda_amp_info *info = get_alloc_amp_hash(codec, HDA_HASH_KEY(nid, direction, idx));
 	if (! info)

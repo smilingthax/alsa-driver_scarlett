@@ -1680,6 +1680,23 @@ static int snd_timer_user_continue(struct file *file)
 	return (err = snd_timer_continue(tu->timeri)) < 0 ? err : 0;
 }
 
+static int snd_timer_user_pause(struct file *file)
+{
+	int err;
+	snd_timer_user_t *tu;
+		
+	tu = file->private_data;
+	snd_assert(tu->timeri != NULL, return -ENXIO);
+	return (err = snd_timer_pause(tu->timeri)) < 0 ? err : 0;
+}
+
+enum {
+	SNDRV_TIMER_IOCTL_START_OLD = _IO('T', 0x20),
+	SNDRV_TIMER_IOCTL_STOP_OLD = _IO('T', 0x21),
+	SNDRV_TIMER_IOCTL_CONTINUE_OLD = _IO('T', 0x22),
+	SNDRV_TIMER_IOCTL_PAUSE_OLD = _IO('T', 0x23),
+};
+
 static long snd_timer_user_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	snd_timer_user_t *tu;
@@ -1724,11 +1741,17 @@ static long snd_timer_user_ioctl(struct file *file, unsigned int cmd, unsigned l
 	case SNDRV_TIMER_IOCTL_STATUS:
 		return snd_timer_user_status(file, argp);
 	case SNDRV_TIMER_IOCTL_START:
+	case SNDRV_TIMER_IOCTL_START_OLD:
 		return snd_timer_user_start(file);
 	case SNDRV_TIMER_IOCTL_STOP:
+	case SNDRV_TIMER_IOCTL_STOP_OLD:
 		return snd_timer_user_stop(file);
 	case SNDRV_TIMER_IOCTL_CONTINUE:
+	case SNDRV_TIMER_IOCTL_CONTINUE_OLD:
 		return snd_timer_user_continue(file);
+	case SNDRV_TIMER_IOCTL_PAUSE:
+	case SNDRV_TIMER_IOCTL_PAUSE_OLD:
+		return snd_timer_user_pause(file);
 	}
 	return -ENOTTY;
 }

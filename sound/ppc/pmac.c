@@ -670,7 +670,7 @@ int __init snd_pmac_pcm_new(pmac_t *chip)
 	chip->capture.cur_freqs = chip->freqs_ok;
 
 	/* preallocate 64k buffer */
-	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV, 
+	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
 					      &chip->pdev->dev,
 					      64 * 1024, 64 * 1024);
 
@@ -881,7 +881,7 @@ static int __init snd_pmac_detect(pmac_t *chip)
 	struct macio_chip* macio;
 
 	u32 layout_id = 0;
-	
+
 	if (_machine != _MACH_Pmac)
 		return -ENODEV;
 
@@ -927,7 +927,7 @@ static int __init snd_pmac_detect(pmac_t *chip)
 	}
 	if (! chip->node)
 		return -ENODEV;
-	
+
 	sound = find_devices("sound");
 	while (sound && sound->parent != chip->node)
 		sound = sound->next;
