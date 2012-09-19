@@ -873,6 +873,12 @@ static inline void snd_compat_vprintk(const char *fmt, va_list args)
 #define vprintk snd_compat_vprintk
 #endif
 
+/* printk_ratelimit() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#include <linux/kernel.h>
+#define printk_ratelimit()	1
+#endif
+
 #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
 #define wait_ms gameport_wait_ms
 #include <linux/gameport.h>
