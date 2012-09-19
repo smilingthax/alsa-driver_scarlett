@@ -47,7 +47,7 @@ i.e 3.05.02 is a development version
 #define HPI_VER_MINOR(v) (((v)>>8) & 0xFF )
 #define HPI_VER_RELEASE(v) ((v) & 0xFF )
 
-#define HPI_VER HPI_VERSION_CONSTRUCTOR( 3, 05, 07 )
+#define HPI_VER HPI_VERSION_CONSTRUCTOR( 3, 5, 10 )
 
 /** Define HPI_WITHOUT_HPI_DATA to remove public definition and use of HPI_DATA struct */
 /* #define HPI_WITHOUT_HPI_DATA */
@@ -723,8 +723,7 @@ Ethernet header size
 #define HPI_ETHERNET_PACKET_HOSTED_VIA_HPI 0x40	/*!< This packet must make its way to the host across the HPI interface */
 #define HPI_ETHERNET_PACKET_HOSTED_VIA_HPI_V1 0x41	/*!< This packet must make its way to the host across the HPI interface */
 
-#define HPI_ETHERNET_UDP_PORT (5151)	/*!< UDP messaging port */
-#define HPI_ETHERNET_UDP_PORT_BROADCAST_RESPONSE (5152)	/*!< UDP message port for returning broadcast responses */
+#define HPI_ETHERNET_UDP_PORT (44600)	/*!< UDP messaging port */
 
 /** \defgroup tonedet_attr Tonedetector attributes
 \{
@@ -2118,10 +2117,10 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 	typedef struct {
 		union {
 			HPI_PCI *Pci;
-#ifndef HPI_64BIT		/* keep structure size constant */
-			u32 dwPadTo64;
-#endif
 		} r;
+#ifndef HPI_64BIT		/* keep structure size constant */
+		u32 dwPadTo64;
+#endif
 		u16 wBusType;	/* HPI_BUS_PNPISA, _PCI, _USB etc */
 		u16 wPadding;
 
@@ -2258,7 +2257,9 @@ Must be kept 7 * 32 bits to match public HPI_DATA struct */
 	typedef struct {
 		union {
 			HPI_MSG_DATA Data;
+#ifndef HPI_64BIT
 			HPI_DATA_LEGACY32 Data32;
+#endif
 			u16 wVelocity;
 			HPI_PUNCHINOUT Pio;
 			u32 dwTimeScale;

@@ -623,7 +623,9 @@ static int __init hpimod_init(void)
 	       __stringify(DRIVER_VERSION), hpiDebugLevel);
 	printk("Spinlock on=%d Local copy=%d\n", USE_SPINLOCK, COPY_TO_LOCAL);
 	HPI_SubSysGetVersionEx(NULL, &dwVersion);
-	printk(KERN_INFO "HPI_SubSysGetVersion=%x\n", dwVersion);
+	printk(KERN_INFO "SubSys Version=%d.%02d.%02d\n",
+	       HPI_VER_MAJOR(dwVersion),
+	       HPI_VER_MINOR(dwVersion), HPI_VER_RELEASE(dwVersion));
 
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DRIVER_LOAD);
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
