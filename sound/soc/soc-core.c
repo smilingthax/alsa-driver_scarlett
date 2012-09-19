@@ -287,16 +287,25 @@ static void close_delayed_work(struct work_struct *work)
 		/* are we waiting on this codec DAI stream */
 		if (codec_dai->pop_wait == 1) {
 
+			/* power down the codec to D1 if no longer active */
+			if (codec->active == 0) {
+				dbg("pop wq D1 %s %s\n", codec->name,
+					codec_dai->playback.stream_name);
+				snd_soc_dapm_device_event(socdev,
+					SNDRV_CTL_POWER_D1);
+			}
+
 			codec_dai->pop_wait = 0;
-			snd_soc_dapm_stream_event(codec, codec_dai->playback.stream_name,
+			snd_soc_dapm_stream_event(codec,
+				codec_dai->playback.stream_name,
 				SND_SOC_DAPM_STREAM_STOP);
 
 			/* power down the codec power domain if no longer active */
 			if (codec->active == 0) {
 				dbg("pop wq D3 %s %s\n", codec->name,
 					codec_dai->playback.stream_name);
-		 		if (codec->dapm_event)
-					codec->dapm_event(codec, SNDRV_CTL_POWER_D3hot);
+				snd_soc_dapm_device_event(socdev,
+					SNDRV_CTL_POWER_D3hot);
 			}
 		}
 	}
@@ -352,12 +361,12 @@ static int soc_codec_close(struct snd_pcm_substream *substream)
 	} else {
 		/* capture streams can be powered down now */
 		snd_soc_dapm_stream_event(codec,
-			codec_dai->capture.stream_name, SND_SOC_DAPM_STREAM_STOP);
+			codec_dai->capture.stream_name,
+			SND_SOC_DAPM_STREAM_STOP);
 
-		if (codec->active == 0 && codec_dai->pop_wait == 0){
-			if (codec->dapm_event)
-				codec->dapm_event(codec, SNDRV_CTL_POWER_D3hot);
-		}
+		if (codec->active == 0 && codec_dai->pop_wait == 0)
+			snd_soc_dapm_device_event(socdev,
+						SNDRV_CTL_POWER_D3hot);
 	}
 
 	mutex_unlock(&pcm_mutex);
@@ -432,8 +441,7 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 		/* no delayed work - do we need to power up codec */
 		if (codec->dapm_state != SNDRV_CTL_POWER_D0) {
 
-			if (codec->dapm_event)
-				codec->dapm_event(codec, SNDRV_CTL_POWER_D1);
+			snd_soc_dapm_device_event(socdev,  SNDRV_CTL_POWER_D1);
 
 			if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 				snd_soc_dapm_stream_event(codec,
@@ -444,8 +452,7 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 					codec_dai->capture.stream_name,
 					SND_SOC_DAPM_STREAM_START);
 
-			if (codec->dapm_event)
-				codec->dapm_event(codec, SNDRV_CTL_POWER_D0);
+			snd_soc_dapm_device_event(socdev, SNDRV_CTL_POWER_D0);
 			if (codec_dai->dai_ops.digital_mute)
 				codec_dai->dai_ops.digital_mute(codec_dai, 0);
 
@@ -637,6 +644,10 @@ static int soc_suspend(struct platform_device *pdev, pm_message_t state)
 		if (dai->dai_ops.digital_mute && dai->playback.active)
 			dai->dai_ops.digital_mute(dai, 1);
 	}
+
+	/* suspend all pcms */
+	for (i = 0; i < machine->num_links; i++)
+		snd_pcm_suspend_all(machine->dai_link[i].pcm);
 
 	if (machine->suspend_pre)
 		machine->suspend_pre(pdev, state);
@@ -872,6 +883,7 @@ static int soc_new_pcm(struct snd_soc_device *socdev,
 		return ret;
 	}
 
+	dai_link->pcm = pcm;
 	pcm->private_data = rtd;
 	soc_pcm_ops.mmap = socdev->platform->pcm_ops->mmap;
 	soc_pcm_ops.pointer = socdev->platform->pcm_ops->pointer;
@@ -1214,7 +1226,6 @@ struct snd_kcontrol *snd_soc_cnew(const struct snd_kcontrol_new *_template,
 	memcpy(&template, _template, sizeof(template));
 	if (long_name)
 		template.name = long_name;
-	template.access = SNDRV_CTL_ELEM_ACCESS_READWRITE;
 	template.index = 0;
 
 	return snd_ctl_new1(&template, data);
@@ -1349,13 +1360,16 @@ EXPORT_SYMBOL_GPL(snd_soc_info_enum_ext);
 int snd_soc_info_volsw_ext(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_info *uinfo)
 {
-	int mask = kcontrol->private_value;
+	int max = kcontrol->private_value;
 
-	uinfo->type =
-		mask == 1 ? SNDRV_CTL_ELEM_TYPE_BOOLEAN : SNDRV_CTL_ELEM_TYPE_INTEGER;
+	if (max == 1)
+		uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	else
+		uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+
 	uinfo->count = 1;
 	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = mask;
+	uinfo->value.integer.max = max;
 	return 0;
 }
 EXPORT_SYMBOL_GPL(snd_soc_info_volsw_ext);
@@ -1372,15 +1386,18 @@ EXPORT_SYMBOL_GPL(snd_soc_info_volsw_ext);
 int snd_soc_info_volsw(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_info *uinfo)
 {
-	int mask = (kcontrol->private_value >> 16) & 0xff;
+	int max = (kcontrol->private_value >> 16) & 0xff;
 	int shift = (kcontrol->private_value >> 8) & 0x0f;
 	int rshift = (kcontrol->private_value >> 12) & 0x0f;
 
-	uinfo->type =
-		mask == 1 ? SNDRV_CTL_ELEM_TYPE_BOOLEAN : SNDRV_CTL_ELEM_TYPE_INTEGER;
+	if (max == 1)
+		uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	else
+		uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+
 	uinfo->count = shift == rshift ? 1 : 2;
 	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = mask;
+	uinfo->value.integer.max = max;
 	return 0;
 }
 EXPORT_SYMBOL_GPL(snd_soc_info_volsw);
@@ -1401,7 +1418,8 @@ int snd_soc_get_volsw(struct snd_kcontrol *kcontrol,
 	int reg = kcontrol->private_value & 0xff;
 	int shift = (kcontrol->private_value >> 8) & 0x0f;
 	int rshift = (kcontrol->private_value >> 12) & 0x0f;
-	int mask = (kcontrol->private_value >> 16) & 0xff;
+	int max = (kcontrol->private_value >> 16) & 0xff;
+	int mask = (1 << fls(max)) - 1;
 	int invert = (kcontrol->private_value >> 24) & 0x01;
 
 	ucontrol->value.integer.value[0] =
@@ -1411,10 +1429,10 @@ int snd_soc_get_volsw(struct snd_kcontrol *kcontrol,
 			(snd_soc_read(codec, reg) >> rshift) & mask;
 	if (invert) {
 		ucontrol->value.integer.value[0] =
-			mask - ucontrol->value.integer.value[0];
+			max - ucontrol->value.integer.value[0];
 		if (shift != rshift)
 			ucontrol->value.integer.value[1] =
-				mask - ucontrol->value.integer.value[1];
+				max - ucontrol->value.integer.value[1];
 	}
 
 	return 0;
@@ -1437,25 +1455,24 @@ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
 	int reg = kcontrol->private_value & 0xff;
 	int shift = (kcontrol->private_value >> 8) & 0x0f;
 	int rshift = (kcontrol->private_value >> 12) & 0x0f;
-	int mask = (kcontrol->private_value >> 16) & 0xff;
+	int max = (kcontrol->private_value >> 16) & 0xff;
+	int mask = (1 << fls(max)) - 1;
 	int invert = (kcontrol->private_value >> 24) & 0x01;
-	int err;
 	unsigned short val, val2, val_mask;
 
 	val = (ucontrol->value.integer.value[0] & mask);
 	if (invert)
-		val = mask - val;
+		val = max - val;
 	val_mask = mask << shift;
 	val = val << shift;
 	if (shift != rshift) {
 		val2 = (ucontrol->value.integer.value[1] & mask);
 		if (invert)
-			val2 = mask - val2;
+			val2 = max - val2;
 		val_mask |= mask << rshift;
 		val |= val2 << rshift;
 	}
-	err = snd_soc_update_bits(codec, reg, val_mask, val);
-	return err;
+	return snd_soc_update_bits(codec, reg, val_mask, val);
 }
 EXPORT_SYMBOL_GPL(snd_soc_put_volsw);
 
@@ -1472,13 +1489,16 @@ EXPORT_SYMBOL_GPL(snd_soc_put_volsw);
 int snd_soc_info_volsw_2r(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_info *uinfo)
 {
-	int mask = (kcontrol->private_value >> 12) & 0xff;
+	int max = (kcontrol->private_value >> 12) & 0xff;
 
-	uinfo->type =
-		mask == 1 ? SNDRV_CTL_ELEM_TYPE_BOOLEAN : SNDRV_CTL_ELEM_TYPE_INTEGER;
+	if (max == 1)
+		uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	else
+		uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+
 	uinfo->count = 2;
 	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = mask;
+	uinfo->value.integer.max = max;
 	return 0;
 }
 EXPORT_SYMBOL_GPL(snd_soc_info_volsw_2r);
@@ -1499,7 +1519,8 @@ int snd_soc_get_volsw_2r(struct snd_kcontrol *kcontrol,
 	int reg = kcontrol->private_value & 0xff;
 	int reg2 = (kcontrol->private_value >> 24) & 0xff;
 	int shift = (kcontrol->private_value >> 8) & 0x0f;
-	int mask = (kcontrol->private_value >> 12) & 0xff;
+	int max = (kcontrol->private_value >> 12) & 0xff;
+	int mask = (1<<fls(max))-1;
 	int invert = (kcontrol->private_value >> 20) & 0x01;
 
 	ucontrol->value.integer.value[0] =
@@ -1508,9 +1529,9 @@ int snd_soc_get_volsw_2r(struct snd_kcontrol *kcontrol,
 		(snd_soc_read(codec, reg2) >> shift) & mask;
 	if (invert) {
 		ucontrol->value.integer.value[0] =
-			mask - ucontrol->value.integer.value[0];
+			max - ucontrol->value.integer.value[0];
 		ucontrol->value.integer.value[1] =
-			mask - ucontrol->value.integer.value[1];
+			max - ucontrol->value.integer.value[1];
 	}
 
 	return 0;
@@ -1533,7 +1554,8 @@ int snd_soc_put_volsw_2r(struct snd_kcontrol *kcontrol,
 	int reg = kcontrol->private_value & 0xff;
 	int reg2 = (kcontrol->private_value >> 24) & 0xff;
 	int shift = (kcontrol->private_value >> 8) & 0x0f;
-	int mask = (kcontrol->private_value >> 12) & 0xff;
+	int max = (kcontrol->private_value >> 12) & 0xff;
+	int mask = (1 << fls(max)) - 1;
 	int invert = (kcontrol->private_value >> 20) & 0x01;
 	int err;
 	unsigned short val, val2, val_mask;
@@ -1543,8 +1565,8 @@ int snd_soc_put_volsw_2r(struct snd_kcontrol *kcontrol,
 	val2 = (ucontrol->value.integer.value[1] & mask);
 
 	if (invert) {
-		val = mask - val;
-		val2 = mask - val2;
+		val = max - val;
+		val2 = max - val2;
 	}
 
 	val = val << shift;
