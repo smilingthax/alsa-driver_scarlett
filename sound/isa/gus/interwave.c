@@ -207,9 +207,9 @@ static snd_i2c_bit_ops_t snd_interwave_i2c_bit_ops = {
 	.getdata  = snd_interwave_i2c_getdataline,
 };
 
-static int __init snd_interwave_detect_stb(struct snd_interwave *iwcard,
-					   snd_gus_card_t * gus, int dev,
-					   snd_i2c_bus_t **rbus)
+static int __devinit snd_interwave_detect_stb(struct snd_interwave *iwcard,
+					      snd_gus_card_t * gus, int dev,
+					      snd_i2c_bus_t **rbus)
 {
 	unsigned long port;
 	snd_i2c_bus_t *bus;
@@ -247,13 +247,13 @@ static int __init snd_interwave_detect_stb(struct snd_interwave *iwcard,
 }
 #endif
 
-static int __init snd_interwave_detect(struct snd_interwave *iwcard,
-				       snd_gus_card_t * gus,
-				       int dev
+static int __devinit snd_interwave_detect(struct snd_interwave *iwcard,
+				          snd_gus_card_t * gus,
+				          int dev
 #ifdef SNDRV_STB
-				       , snd_i2c_bus_t **rbus
+				          , snd_i2c_bus_t **rbus
 #endif
-				       )
+				          )
 {
 	unsigned long flags;
 	unsigned char rev1, rev2;
@@ -330,7 +330,7 @@ static void snd_interwave_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	} while (loop && --max > 0);
 }
 
-static void __init snd_interwave_reset(snd_gus_card_t * gus)
+static void __devinit snd_interwave_reset(snd_gus_card_t * gus)
 {
 	snd_gf1_write8(gus, SNDRV_GF1_GB_RESET, 0x00);
 	udelay(160);
@@ -338,7 +338,7 @@ static void __init snd_interwave_reset(snd_gus_card_t * gus)
 	udelay(160);
 }
 
-static void __init snd_interwave_bank_sizes(snd_gus_card_t * gus, int *sizes)
+static void __devinit snd_interwave_bank_sizes(snd_gus_card_t * gus, int *sizes)
 {
 	unsigned int idx;
 	unsigned int local;
@@ -387,7 +387,7 @@ struct rom_hdr {
 	/* 511 */ unsigned char csum;
 };
 
-static void __init snd_interwave_detect_memory(snd_gus_card_t * gus)
+static void __devinit snd_interwave_detect_memory(snd_gus_card_t * gus)
 {
 	static unsigned int lmc[13] =
 	{
@@ -490,7 +490,7 @@ static void __init snd_interwave_detect_memory(snd_gus_card_t * gus)
 		snd_interwave_reset(gus);
 }
 
-static void __init snd_interwave_init(int dev, snd_gus_card_t * gus)
+static void __devinit snd_interwave_init(int dev, snd_gus_card_t * gus)
 {
 	unsigned long flags;
 
@@ -521,7 +521,7 @@ CS4231_DOUBLE("Mic Playback Switch", 0, CS4231_LEFT_MIC_INPUT, CS4231_RIGHT_MIC_
 CS4231_DOUBLE("Mic Playback Volume", 0, CS4231_LEFT_MIC_INPUT, CS4231_RIGHT_MIC_INPUT, 0, 0, 31, 1)
 };
 
-static int __init snd_interwave_mixer(cs4231_t *chip)
+static int __devinit snd_interwave_mixer(cs4231_t *chip)
 {
 	snd_card_t *card = chip->card;
 	snd_ctl_elem_id_t id1, id2;
@@ -571,12 +571,12 @@ static int __init snd_interwave_mixer(cs4231_t *chip)
 
 #ifdef CONFIG_PNP
 
-static int __init snd_interwave_pnp(int dev, struct snd_interwave *iwcard,
-				    struct pnp_card_link *card,
-				    const struct pnp_card_device_id *id)
+static int __devinit snd_interwave_pnp(int dev, struct snd_interwave *iwcard,
+				       struct pnp_card_link *card,
+				       const struct pnp_card_device_id *id)
 {
 	struct pnp_dev *pdev;
-	struct pnp_resource_table * cfg = kmalloc(GFP_ATOMIC, sizeof(struct pnp_resource_table));
+	struct pnp_resource_table * cfg = kmalloc(sizeof(struct pnp_resource_table), GFP_KERNEL);
 	int err;
 
 	iwcard->dev = pnp_request_card_device(card, id->devs[0].id, NULL);
@@ -669,8 +669,8 @@ static void snd_interwave_free(snd_card_t *card)
 		free_irq(iwcard->irq, (void *)iwcard);
 }
 
-static int __init snd_interwave_probe(int dev, struct pnp_card_link *pcard,
-				      const struct pnp_card_device_id *pid)
+static int __devinit snd_interwave_probe(int dev, struct pnp_card_link *pcard,
+				         const struct pnp_card_device_id *pid)
 {
 	static int possible_irqs[] = {5, 11, 12, 9, 7, 15, 3, -1};
 	static int possible_dmas[] = {0, 1, 3, 5, 6, 7, -1};
@@ -856,7 +856,7 @@ static int __init snd_interwave_probe(int dev, struct pnp_card_link *pcard,
 	return 0;
 }
 
-static int __init snd_interwave_probe_legacy_port(unsigned long xport)
+static int __devinit snd_interwave_probe_legacy_port(unsigned long xport)
 {
 	static int dev;
 	int res;
@@ -879,7 +879,7 @@ static int __init snd_interwave_probe_legacy_port(unsigned long xport)
 
 #ifdef CONFIG_PNP
 
-static int __init snd_interwave_pnp_detect(struct pnp_card_link *card,
+static int __devinit snd_interwave_pnp_detect(struct pnp_card_link *card,
 					   const struct pnp_card_device_id *id)
 {
 	static int dev;

@@ -622,7 +622,7 @@ static int __init snd_opl3sa2_pnp(int dev, opl3sa2_t *chip,
 				  const struct pnp_card_device_id *id)
 {
 	struct pnp_dev *pdev;
-	struct pnp_resource_table * cfg = kmalloc(GFP_ATOMIC, sizeof(struct pnp_resource_table));
+	struct pnp_resource_table * cfg = kmalloc(sizeof(struct pnp_resource_table), GFP_KERNEL);
 	int err;
 
 	if (!cfg)
