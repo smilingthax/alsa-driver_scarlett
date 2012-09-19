@@ -1959,6 +1959,7 @@ if test "$CONFIG_HAVE_KZALLOC" = "1"; then
 fi
 
 dnl Check for create_workqueue() with flags
+if test "$kversion.$kpatchlevel" = "2.6"; then
 AC_MSG_CHECKING(for create_workqueue with flags)
 workqueue2="0"
 ac_save_CFLAGS="$CFLAGS"
@@ -1982,6 +1983,7 @@ CONFIG_CREATE_WORKQUEUE_FLAGS=$workqueue2
 dnl AC_SUBST(CONFIG_CREATE_WORKQUEUE_FLAGS)
 if test "$CONFIG_CREATE_WORKQUEUE_FLAGS" = "1"; then
   AC_DEFINE(CONFIG_CREATE_WORKQUEUE_FLAGS)
+fi
 fi
 
 dnl Check for saved_config_space in pci_dev

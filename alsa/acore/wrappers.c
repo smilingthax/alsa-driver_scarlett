@@ -244,7 +244,7 @@ struct irq_list {
 	
 struct pt_regs *snd_irq_regs;
 
-#ifdef IRQ_NONE
+#if defined(IRQ_NONE) && LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 static irqreturn_t irq_redirect(int irq, void *data, struct pt_regs *reg)
 {
 	struct irq_list *list = data;

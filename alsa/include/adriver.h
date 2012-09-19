@@ -406,10 +406,10 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #define synchronize_irq(irq)	synchronize_irq_wrapper(irq)
 #endif /* LINUX_VERSION_CODE < 2.5.28 */
 #ifndef IRQ_NONE
-typedef int irqreturn_t;
-#define IRQ_NONE	(0)
-#define IRQ_HANDLED	(1)
-#define IRQ_RETVAL(x)	((x) != 0)
+typedef void irqreturn_t;
+#define IRQ_NONE
+#define IRQ_HANDLED
+#define IRQ_RETVAL(x)
 #endif
 #endif /* < 2.6.0 */
 
