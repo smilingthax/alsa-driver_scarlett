@@ -131,6 +131,7 @@ COMMENT_MAP = [
 		('/include/sscape_ioctl.h','Sound Scape driver'),
 		('/isa/sscape.c'	,'Sound Scape driver'),
 		('/isa'			,'ERROR'),
+		('/include/ak4531_codec.h','AK4531 codec'),
 		('/pci/ac97/ak4531_codec.c','AK4531 codec'),
 		('/include/ac97_codec.h','AC97 Codec Core'),
 		('/pci/ac97'		,'AC97 Codec Core'),
@@ -175,8 +176,10 @@ COMMENT_MAP = [
 		('/pci/atiixp.c'	,'ATIIXP driver'),
 		('/pci/atiixp_modem.c'	,'ATIIXP-modem driver'),
 		('/pci/intel8x0m.c'	,'Intel8x0-modem driver'),
+		('/pci/via82xx_modem.c'	,'VIA82xx-modem driver'),
 		('/pci/Kconfig'		,'PCI drivers'),
 		('/pci/Makefile'	,'PCI drivers'),
+		('/pci/ca0106/.*'	,'CA0106 driver'),
 		('/pci'			,'ERROR'),
 		('/ppc/Makefile'	,'PPC'),
 		('/ppc/Kconfig'		,'PPC'),
@@ -210,6 +213,7 @@ COMMENT_MAP = [
 		('/sparc'		,'ERROR'),
 		('/include/emux_synth.h','Common EMU synth'),
 		('/synth/emux'		,'Common EMU synth'),
+		('/include/soundmem.h'  ,'Synth'),
 		('/synth/Makefile'	,'Synth'),
 		('/synth/util_mem.c'	,'Synth'),
 		('/pcmcia/vx'		,'Digigram VX Pocket driver'),
@@ -233,6 +237,7 @@ COMMENT_MAP = [
 		('/include/ainstr.*'	,'Instrument layer'),
 		('/core/seq/instr'	,'Instrument layer'),
 		('/include/seq_kernel.h','ALSA sequencer'),
+		('/include/seq_midi_emul.h','ALSA sequencer'),
 		('/include/asequencer.h','ALSA sequencer'),
 		('/core/seq'		,'ALSA sequencer'),
 		('/core/Kconfig'	,'ALSA Core'),
@@ -1070,6 +1075,8 @@ def cvsps_merge1(f,t=0):
 		elif line[:-1] == 'Members: ':
 			ok = 2
 		elif line[:6] == 'Index:':
+			ok = 0
+		elif line[:3] == '---':
 			ok = 0
 		elif line[:5] == 'Date:':
 			date = line[6:-1]
