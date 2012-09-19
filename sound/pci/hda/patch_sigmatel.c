@@ -32,6 +32,7 @@
 #include <sound/core.h>
 #include <sound/asoundef.h>
 #include <sound/jack.h>
+#include <sound/tlv.h>
 #include "hda_codec.h"
 #include "hda_local.h"
 #include "hda_beep.h"
@@ -263,6 +264,7 @@ struct sigmatel_spec {
 
 	struct sigmatel_mic_route ext_mic;
 	struct sigmatel_mic_route int_mic;
+	struct sigmatel_mic_route dock_mic;
 
 	const char **spdif_labels;
 
@@ -991,7 +993,7 @@ static struct hda_verb stac9205_core_init[] = {
 	}
 
 static struct snd_kcontrol_new stac9200_mixer[] = {
-	HDA_CODEC_VOLUME("Master Playback Volume", 0xb, 0, HDA_OUTPUT),
+	HDA_CODEC_VOLUME_MIN_MUTE("Master Playback Volume", 0xb, 0, HDA_OUTPUT),
 	HDA_CODEC_MUTE("Master Playback Switch", 0xb, 0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME("Capture Volume", 0x0a, 0, HDA_OUTPUT),
 	HDA_CODEC_MUTE("Capture Switch", 0x0a, 0, HDA_OUTPUT),
@@ -1019,7 +1021,7 @@ static struct snd_kcontrol_new stac92hd71bxx_loopback[] = {
 };
 
 static struct snd_kcontrol_new stac925x_mixer[] = {
-	HDA_CODEC_VOLUME("Master Playback Volume", 0x0e, 0, HDA_OUTPUT),
+	HDA_CODEC_VOLUME_MIN_MUTE("Master Playback Volume", 0xe, 0, HDA_OUTPUT),
 	HDA_CODEC_MUTE("Master Playback Switch", 0x0e, 0, HDA_OUTPUT),
 	{ } /* end */
 };
@@ -1143,6 +1145,8 @@ static int stac92xx_build_controls(struct hda_codec *codec)
 					HDA_OUTPUT, vmaster_tlv);
 		/* correct volume offset */
 		vmaster_tlv[2] += vmaster_tlv[3] * spec->volume_offset;
+		/* minimum value is actually mute */
+		vmaster_tlv[3] |= TLV_DB_SCALE_MUTE;
 		err = snd_hda_add_vmaster(codec, "Master Playback Volume",
 					  vmaster_tlv, slave_vols);
 		if (err < 0)
@@ -1747,6 +1751,8 @@ static struct snd_pci_quirk stac92hd71bxx_cfg_tbl[] = {
 		      "HP dv6", STAC_HP_DV5),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x3061,
 		      "HP dv6", STAC_HP_DV5), /* HP dv6-1110ax */
+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x363e,
+		      "HP DV6", STAC_HP_DV5),
 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xfff0, 0x7010,
 		      "HP", STAC_HP_DV5),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0233,
@@ -2777,7 +2783,7 @@ static inline int stac92xx_add_jack_mode_control(struct hda_codec *codec,
 	struct sigmatel_spec *spec = codec->spec;
 	char name[22];
 
-	if (!((get_defcfg_connect(def_conf)) & AC_JACK_PORT_FIXED)) {
+	if (snd_hda_get_input_pin_attr(def_conf) != INPUT_PIN_ATTR_INT) {
 		if (stac92xx_get_default_vref(codec, nid) == AC_PINCTL_VREF_GRD
 			&& nid == spec->line_switch)
 			control = STAC_CTL_WIDGET_IO_SWITCH;
@@ -2856,7 +2862,7 @@ static hda_nid_t check_mic_out_switch(struct hda_codec *codec, hda_nid_t *dac)
 		def_conf = snd_hda_codec_get_pincfg(codec, nid);
 		/* some laptops have an internal analog microphone
 		 * which can't be used as a output */
-		if (get_defcfg_connect(def_conf) != AC_JACK_PORT_FIXED) {
+		if (snd_hda_get_input_pin_attr(def_conf) != INPUT_PIN_ATTR_INT) {
 			pincap = snd_hda_query_pin_caps(codec, nid);
 			if (pincap & AC_PINCAP_OUT) {
 				*dac = get_unassigned_dac(codec, nid);
@@ -3480,28 +3486,37 @@ static int stac92xx_auto_create_dmic_input_ctls(struct hda_codec *codec,
 				return err;
 		}
 
-		if (snd_hda_get_bool_hint(codec, "separate_dmux") != 1)
+		if (snd_hda_get_bool_hint(codec, "separate_dmux") != 1) {
 			snd_hda_add_imux_item(imux, label, index, NULL);
+			spec->num_analog_muxes++;
+		}
 	}
 
 	return 0;
 }
 
 static int check_mic_pin(struct hda_codec *codec, hda_nid_t nid,
-			 hda_nid_t *fixed, hda_nid_t *ext)
+			 hda_nid_t *fixed, hda_nid_t *ext, hda_nid_t *dock)
 {
 	unsigned int cfg;
 
 	if (!nid)
 		return 0;
 	cfg = snd_hda_codec_get_pincfg(codec, nid);
-	switch (get_defcfg_connect(cfg)) {
-	case AC_JACK_PORT_FIXED:
+	switch (snd_hda_get_input_pin_attr(cfg)) {
+	case INPUT_PIN_ATTR_INT:
 		if (*fixed)
 			return 1; /* already occupied */
 		*fixed = nid;
 		break;
-	case AC_JACK_PORT_COMPLEX:
+	case INPUT_PIN_ATTR_UNUSED:
+		break;
+	case INPUT_PIN_ATTR_DOCK:
+		if (*dock)
+			return 1; /* already occupied */
+		*dock = nid;
+		break;
+	default:
 		if (*ext)
 			return 1; /* already occupied */
 		*ext = nid;
@@ -3519,6 +3534,8 @@ static int set_mic_route(struct hda_codec *codec,
 	int i;
 
 	mic->pin = pin;
+	if (pin == 0)
+		return 0;
 	for (i = 0; i < cfg->num_inputs; i++) {
 		if (pin == cfg->inputs[i].pin)
 			break;
@@ -3554,26 +3571,29 @@ static int stac_check_auto_mic(struct hda_codec *codec)
 {
 	struct sigmatel_spec *spec = codec->spec;
 	struct auto_pin_cfg *cfg = &spec->autocfg;
-	hda_nid_t fixed, ext;
+	hda_nid_t fixed, ext, dock;
 	int i;
 
 	for (i = 0; i < cfg->num_inputs; i++) {
 		if (cfg->inputs[i].type >= AUTO_PIN_LINE_IN)
 			return 0; /* must be exclusively mics */
 	}
-	fixed = ext = 0;
+	fixed = ext = dock = 0;
 	for (i = 0; i < cfg->num_inputs; i++)
-		if (check_mic_pin(codec, cfg->inputs[i].pin, &fixed, &ext))
+		if (check_mic_pin(codec, cfg->inputs[i].pin,
+		    &fixed, &ext, &dock))
 			return 0;
 	for (i = 0; i < spec->num_dmics; i++)
-		if (check_mic_pin(codec, spec->dmic_nids[i], &fixed, &ext))
+		if (check_mic_pin(codec, spec->dmic_nids[i],
+		    &fixed, &ext, &dock))
 			return 0;
-	if (!fixed || !ext)
-		return 0;
+	if (!fixed && !ext && !dock)
+		return 0; /* no input to switch */
 	if (!(get_wcaps(codec, ext) & AC_WCAP_UNSOL_CAP))
 		return 0; /* no unsol support */
 	if (set_mic_route(codec, &spec->ext_mic, ext) ||
-	    set_mic_route(codec, &spec->int_mic, fixed))
+	    set_mic_route(codec, &spec->int_mic, fixed) ||
+	    set_mic_route(codec, &spec->dock_mic, dock))
 		return 0; /* something is wrong */
 	return 1;
 }
@@ -4281,6 +4301,9 @@ static int stac92xx_init(struct hda_codec *codec)
 					  AC_VERB_SET_CONNECT_SEL, 0);
 		if (enable_pin_detect(codec, spec->ext_mic.pin, STAC_MIC_EVENT))
 			stac_issue_unsol_event(codec, spec->ext_mic.pin);
+		if (enable_pin_detect(codec, spec->dock_mic.pin,
+		    STAC_MIC_EVENT))
+			stac_issue_unsol_event(codec, spec->dock_mic.pin);
 	}
 	for (i = 0; i < cfg->num_inputs; i++) {
 		hda_nid_t nid = cfg->inputs[i].pin;
@@ -4356,11 +4379,9 @@ static int stac92xx_init(struct hda_codec *codec)
 			stac_issue_unsol_event(codec, nid);
 	}
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
 	/* sync mute LED */
-	if (spec->gpio_led && codec->patch_ops.check_power_status)
-		codec->patch_ops.check_power_status(codec, 0x01);
-#endif	
+	if (spec->gpio_led)
+		hda_call_check_power_status(codec, 0x01);
 	if (spec->dac_list)
 		stac92xx_power_down(codec);
 	return 0;
@@ -4698,6 +4719,8 @@ static void stac92xx_mic_detect(struct hda_codec *codec)
 
 	if (get_pin_presence(codec, spec->ext_mic.pin))
 		mic = &spec->ext_mic;
+	else if (get_pin_presence(codec, spec->dock_mic.pin))
+		mic = &spec->dock_mic;
 	else
 		mic = &spec->int_mic;
 	if (mic->dmux_idx >= 0)
@@ -4940,11 +4963,9 @@ static int stac92xx_resume(struct hda_codec *codec)
 			stac_issue_unsol_event(codec,
 					       spec->autocfg.line_out_pins[0]);
 	}
-#ifdef CONFIG_SND_HDA_POWER_SAVE
 	/* sync mute LED */
-	if (spec->gpio_led && codec->patch_ops.check_power_status)
-		codec->patch_ops.check_power_status(codec, 0x01);
-#endif	
+	if (spec->gpio_led)
+		hda_call_check_power_status(codec, 0x01);
 	return 0;
 }
 
@@ -5305,6 +5326,82 @@ again:
 	return 0;
 }
 
+static int stac92hd83xxx_set_system_btl_amp(struct hda_codec *codec)
+{
+	if (codec->vendor_id != 0x111d7605 &&
+	    codec->vendor_id != 0x111d76d1)
+		return 0;
+
+	switch (codec->subsystem_id) {
+	case 0x103c1618:
+	case 0x103c1619:
+	case 0x103c161a:
+	case 0x103c161b:
+	case 0x103c161c:
+	case 0x103c161d:
+	case 0x103c161e:
+	case 0x103c161f:
+	case 0x103c1620:
+	case 0x103c1621:
+	case 0x103c1622:
+	case 0x103c1623:
+
+	case 0x103c162a:
+	case 0x103c162b:
+
+	case 0x103c1630:
+	case 0x103c1631:
+
+	case 0x103c1633:
+
+	case 0x103c1635:
+
+	case 0x103c164f:
+
+	case 0x103c1676:
+	case 0x103c1677:
+	case 0x103c1678:
+	case 0x103c1679:
+	case 0x103c167a:
+	case 0x103c167b:
+	case 0x103c167c:
+	case 0x103c167d:
+	case 0x103c167e:
+	case 0x103c167f:
+	case 0x103c1680:
+	case 0x103c1681:
+	case 0x103c1682:
+	case 0x103c1683:
+	case 0x103c1684:
+	case 0x103c1685:
+	case 0x103c1686:
+	case 0x103c1687:
+	case 0x103c1688:
+	case 0x103c1689:
+	case 0x103c168a:
+	case 0x103c168b:
+	case 0x103c168c:
+	case 0x103c168d:
+	case 0x103c168e:
+	case 0x103c168f:
+	case 0x103c1690:
+	case 0x103c1691:
+	case 0x103c1692:
+
+	case 0x103c3587:
+	case 0x103c3588:
+	case 0x103c3589:
+	case 0x103c358a:
+
+	case 0x103c3667:
+	case 0x103c3668:
+		/* set BTL amp level to 13.43dB for louder speaker output */
+		return snd_hda_codec_write_cache(codec, codec->afg, 0,
+						 0x7F4, 0x14);
+	}
+	return 0;
+}
+
 static int patch_stac92hd83xxx(struct hda_codec *codec)
 {
 	struct sigmatel_spec *spec;
@@ -5316,6 +5413,9 @@ static int patch_stac92hd83xxx(struct hda_codec *codec)
 	if (spec == NULL)
 		return -ENOMEM;
 
+	/* reset pin power-down; Windows may leave these bits after reboot */
+	snd_hda_codec_write_cache(codec, codec->afg, 0, 0x7EC, 0);
+	snd_hda_codec_write_cache(codec, codec->afg, 0, 0x7ED, 0);
 	codec->no_trigger_sense = 1;
 	codec->spec = spec;
 	spec->linear_tone_beep = 1;
@@ -5427,6 +5527,8 @@ again:
 		snd_hda_codec_write_cache(codec, 0xF, 0,
 			AC_VERB_SET_CONNECT_SEL, num_dacs);
 	}
+
+	stac92hd83xxx_set_system_btl_amp(codec);
 
 	codec->proc_widget_hook = stac92hd_proc_hook;
 

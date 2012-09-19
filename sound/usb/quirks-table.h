@@ -240,9 +240,21 @@ YAMAHA_DEVICE(0x104f, NULL),
 YAMAHA_DEVICE(0x1050, NULL),
 YAMAHA_DEVICE(0x1051, NULL),
 YAMAHA_DEVICE(0x1052, NULL),
+YAMAHA_INTERFACE(0x1053, 0, NULL),
+YAMAHA_INTERFACE(0x1054, 0, NULL),
+YAMAHA_DEVICE(0x1055, NULL),
+YAMAHA_DEVICE(0x1056, NULL),
+YAMAHA_DEVICE(0x1057, NULL),
+YAMAHA_DEVICE(0x1058, NULL),
+YAMAHA_DEVICE(0x1059, NULL),
+YAMAHA_DEVICE(0x105a, NULL),
+YAMAHA_DEVICE(0x105b, NULL),
+YAMAHA_DEVICE(0x105c, NULL),
+YAMAHA_DEVICE(0x105d, NULL),
 YAMAHA_DEVICE(0x2000, "DGP-7"),
 YAMAHA_DEVICE(0x2001, "DGP-5"),
 YAMAHA_DEVICE(0x2002, NULL),
+YAMAHA_DEVICE(0x2003, NULL),
 YAMAHA_DEVICE(0x5000, "CS1D"),
 YAMAHA_DEVICE(0x5001, "DSP1D"),
 YAMAHA_DEVICE(0x5002, "DME32"),
@@ -2066,7 +2078,7 @@ YAMAHA_DEVICE(0x7010, "UB99"),
 		.data = & (const struct snd_usb_audio_quirk[]) {
 			{
 				.ifnum = 0,
-				.type = QUIRK_MIDI_FASTLANE
+				.type = QUIRK_MIDI_RAW_BYTES
 			},
 			{
 				.ifnum = 1,
@@ -2212,6 +2224,15 @@ YAMAHA_DEVICE(0x7010, "UB99"),
 		.product_name = "Speedio",
 		.ifnum = 3,
 		.type = QUIRK_MIDI_NOVATION
+	}
+},
+{
+	USB_DEVICE(0x1235, 0x000e),
+	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+		/* .vendor_name = "Novation", */
+		/* .product_name = "Launchpad", */
+		.ifnum = 0,
+		.type = QUIRK_MIDI_RAW_BYTES
 	}
 },
 {
