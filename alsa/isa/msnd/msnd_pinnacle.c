@@ -1536,62 +1536,62 @@ MODULE_DESCRIPTION		("Turtle Beach " LONGNAME " Linux Driver");
 MODULE_LICENSE("GPL");
 
 
-MODULE_PARM			(snd_io, "i");
-MODULE_PARM			(snd_irq, "i");
-MODULE_PARM			(snd_mem, "i");
-MODULE_PARM			(snd_write_ndelay, "i");
-MODULE_PARM			(snd_calibrate_signal, "i");
+MODULE_PARM			(io, "i");
+MODULE_PARM			(irq, "i");
+MODULE_PARM			(mem, "i");
+MODULE_PARM			(write_ndelay, "i");
+MODULE_PARM			(calibrate_signal, "i");
 #ifndef MSND_CLASSIC
-MODULE_PARM			(snd_digital, "i");
-MODULE_PARM			(snd_cfg, "i");
-MODULE_PARM			(snd_reset, "i");
-MODULE_PARM			(snd_mpu_io, "i");
-MODULE_PARM			(snd_mpu_irq, "i");
+MODULE_PARM			(digital, "i");
+MODULE_PARM			(cfg, "i");
+MODULE_PARM			(reset, "i");
+MODULE_PARM			(mpu_io, "i");
+MODULE_PARM			(mpu_irq, "i");
 MODULE_PARM			(ide_io0, "i");
 MODULE_PARM			(ide_io1, "i");
 MODULE_PARM			(ide_irq, "i");
-MODULE_PARM			(snd_joystick_io, "i");
+MODULE_PARM			(joystick_io, "i");
 #endif
 
-static int snd_io __initdata =		-1;
-static int snd_irq __initdata =		-1;
-static int snd_mem __initdata =		-1;
-static int snd_write_ndelay __initdata =	-1;
+static int io __initdata =		-1;
+static int irq __initdata =		-1;
+static int mem __initdata =		-1;
+static int write_ndelay __initdata =	-1;
 
 #ifndef MSND_CLASSIC
 //static int play_period_bytes __initdata =	DAP_BUFF_SIZE;
 
 /* Pinnacle/Fiji non-PnP Config Port */
-static int snd_cfg __initdata =		-1;
+static int cfg __initdata =		-1;
 
 /* Extra Peripheral Configuration */
-static int snd_reset __initdata = 0;
-static int snd_mpu_io __initdata = 0;
-static int snd_mpu_irq __initdata = 0;
+static int reset __initdata = 0;
+static int mpu_io __initdata = 0;
+static int mpu_irq __initdata = 0;
 static int ide_io0 __initdata = 0;
 static int ide_io1 __initdata = 0;
 static int ide_irq __initdata = 0;
-static int snd_joystick_io __initdata = 0;
+static int joystick_io __initdata = 0;
 
 /* If we have the digital daugherboard... */
-static int snd_digital __initdata = 0;
+static int digital __initdata = 0;
 #endif
 
-static int snd_calibrate_signal __initdata = 0;
+static int calibrate_signal __initdata = 0;
 
 #else /* not a module */
 
-static int snd_write_ndelay __initdata =	-1;
+static int write_ndelay __initdata =	-1;
 
 #ifdef MSND_CLASSIC
-static int snd_io __initdata =		CONFIG_MSNDCLAS_IO;
-static int snd_irq __initdata =		CONFIG_MSNDCLAS_IRQ;
-static int snd_mem __initdata =		CONFIG_MSNDCLAS_MEM;
+static int io __initdata =		CONFIG_MSNDCLAS_IO;
+static int irq __initdata =		CONFIG_MSNDCLAS_IRQ;
+static int mem __initdata =		CONFIG_MSNDCLAS_MEM;
 #else /* Pinnacle/Fiji */
 
-static int snd_io __initdata =		CONFIG_MSNDPIN_IO;
-static int snd_irq __initdata =		CONFIG_MSNDPIN_IRQ;
-static int snd_mem __initdata =		CONFIG_MSNDPIN_MEM;
+static int io __initdata =		CONFIG_MSNDPIN_IO;
+static int irq __initdata =		CONFIG_MSNDPIN_IRQ;
+static int mem __initdata =		CONFIG_MSNDPIN_MEM;
 
 /* Pinnacle/Fiji non-PnP Config Port */
 #ifdef CONFIG_MSNDPIN_NONPNP
@@ -1604,20 +1604,20 @@ static int snd_mem __initdata =		CONFIG_MSNDPIN_MEM;
 #  endif
 #  define CONFIG_MSNDPIN_CFG		-1
 #endif
-static int snd_cfg __initdata =		CONFIG_MSNDPIN_CFG;
+static int cfg __initdata =		CONFIG_MSNDPIN_CFG;
 /* If not a module, we don't need to bother with reset=1 */
-static int snd_reset;
+static int reset;
 
 /* Extra Peripheral Configuration (Default: Disable) */
 #ifndef CONFIG_MSNDPIN_MPU_IO
 #  define CONFIG_MSNDPIN_MPU_IO		0
 #endif
-static int snd_mpu_io __initdata =		CONFIG_MSNDPIN_MPU_IO;
+static int mpu_io __initdata =		CONFIG_MSNDPIN_MPU_IO;
 
 #ifndef CONFIG_MSNDPIN_MPU_IRQ
 #  define CONFIG_MSNDPIN_MPU_IRQ	0
 #endif
-static int snd_mpu_irq __initdata =		CONFIG_MSNDPIN_MPU_IRQ;
+static int mpu_irq __initdata =		CONFIG_MSNDPIN_MPU_IRQ;
 
 #ifndef CONFIG_MSNDPIN_IDE_IO0
 #  define CONFIG_MSNDPIN_IDE_IO0	0
@@ -1637,13 +1637,13 @@ static int ide_irq __initdata =		CONFIG_MSNDPIN_IDE_IRQ;
 #ifndef CONFIG_MSNDPIN_JOYSTICK_IO
 #  define CONFIG_MSNDPIN_JOYSTICK_IO	0
 #endif
-static int snd_joystick_io __initdata =	CONFIG_MSNDPIN_JOYSTICK_IO;
+static int joystick_io __initdata =	CONFIG_MSNDPIN_JOYSTICK_IO;
 
 /* Have SPDIF (Digital) Daughterboard */
 #ifndef CONFIG_MSNDPIN_DIGITAL
 #  define CONFIG_MSNDPIN_DIGITAL	0
 #endif
-static int snd_digital __initdata =		CONFIG_MSNDPIN_DIGITAL;
+static int digital __initdata =		CONFIG_MSNDPIN_DIGITAL;
 
 #endif /* MSND_CLASSIC */
 
@@ -1651,7 +1651,7 @@ static int snd_digital __initdata =		CONFIG_MSNDPIN_DIGITAL;
 #  define CONFIG_MSND_CALSIGNAL		0
 #endif
 static int
-snd_calibrate_signal __initdata =		CONFIG_MSND_CALSIGNAL;
+calibrate_signal __initdata =		CONFIG_MSND_CALSIGNAL;
 #endif /* MODULE */
 
 
@@ -1665,57 +1665,57 @@ static int __init snd_msnd_init(void)
 	printk(KERN_INFO LOGNAME ": Turtle Beach " LONGNAME " Linux Driver Version "
 	       VERSION ", Copyright (C) 2002 Karsten Wiese 1998 Andrew Veliath\n");
 
-	if (snd_io == -1 || snd_irq == -1 || snd_mem == -1)
-		printk(KERN_WARNING LOGNAME ": snd_io, snd_irq and snd_mem must be set\n");
+	if (io == -1 || irq == -1 || mem == -1)
+		printk(KERN_WARNING LOGNAME ": io, irq and mem must be set\n");
 
 #ifdef MSND_CLASSIC
-	if (snd_io == -1 ||
-	    !(snd_io == 0x290 ||
-	      snd_io == 0x260 ||
-	      snd_io == 0x250 ||
-	      snd_io == 0x240 ||
-	      snd_io == 0x230 ||
-	      snd_io == 0x220 ||
-	      snd_io == 0x210 ||
-	      snd_io == 0x3e0)) {
-		printk(KERN_ERR LOGNAME ": \"snd_io\" - DSP I/O base must be set to 0x210, 0x220, 0x230, 0x240, 0x250, 0x260, 0x290, or 0x3E0\n");
+	if (io == -1 ||
+	    !(io == 0x290 ||
+	      io == 0x260 ||
+	      io == 0x250 ||
+	      io == 0x240 ||
+	      io == 0x230 ||
+	      io == 0x220 ||
+	      io == 0x210 ||
+	      io == 0x3e0)) {
+		printk(KERN_ERR LOGNAME ": \"io\" - DSP I/O base must be set to 0x210, 0x220, 0x230, 0x240, 0x250, 0x260, 0x290, or 0x3E0\n");
 		return -EINVAL;
 	}
 #else
-	if (snd_io == -1 ||
-		snd_io < 0x100 ||
-		snd_io > 0x3e0 ||
-		(snd_io % 0x10) != 0) {
-			printk(KERN_ERR LOGNAME ": \"snd_io\" - DSP I/O base must within the range 0x100 to 0x3E0 and must be evenly divisible by 0x10\n");
+	if (io == -1 ||
+		io < 0x100 ||
+		io > 0x3e0 ||
+		(io % 0x10) != 0) {
+			printk(KERN_ERR LOGNAME ": \"io\" - DSP I/O base must within the range 0x100 to 0x3E0 and must be evenly divisible by 0x10\n");
 			return -EINVAL;
 	}
 #endif /* MSND_CLASSIC */
 
-	if (snd_irq == -1 ||
-	    !(snd_irq == 5 ||
-	      snd_irq == 7 ||
-	      snd_irq == 9 ||
-	      snd_irq == 10 ||
-	      snd_irq == 11 ||
-	      snd_irq == 12)) {
-		printk(KERN_ERR LOGNAME ": \"snd_irq\" - must be set to 5, 7, 9, 10, 11 or 12\n");
+	if (irq == -1 ||
+	    !(irq == 5 ||
+	      irq == 7 ||
+	      irq == 9 ||
+	      irq == 10 ||
+	      irq == 11 ||
+	      irq == 12)) {
+		printk(KERN_ERR LOGNAME ": \"irq\" - must be set to 5, 7, 9, 10, 11 or 12\n");
 		return -EINVAL;
 	}
 
-	if (snd_mem == -1 ||
-	    !(snd_mem == 0xb0000 ||
-	      snd_mem == 0xc8000 ||
-	      snd_mem == 0xd0000 ||
-	      snd_mem == 0xd8000 ||
-	      snd_mem == 0xe0000 ||
-	      snd_mem == 0xe8000)) {
-		printk(KERN_ERR LOGNAME ": \"snd_mem\" - must be set to "
+	if (mem == -1 ||
+	    !(mem == 0xb0000 ||
+	      mem == 0xc8000 ||
+	      mem == 0xd0000 ||
+	      mem == 0xd8000 ||
+	      mem == 0xe0000 ||
+	      mem == 0xe8000)) {
+		printk(KERN_ERR LOGNAME ": \"mem\" - must be set to "
 		       "0xb0000, 0xc8000, 0xd0000, 0xd8000, 0xe0000 or 0xe8000\n");
 		return -EINVAL;
 	}
 
 #ifdef MSND_CLASSIC
-	switch (snd_irq) {
+	switch (irq) {
 	case 5: dev.irqid = HPIRQ_5; break;
 	case 7: dev.irqid = HPIRQ_7; break;
 	case 9: dev.irqid = HPIRQ_9; break;
@@ -1724,7 +1724,7 @@ static int __init snd_msnd_init(void)
 	case 12: dev.irqid = HPIRQ_12; break;
 	}
 
-	switch (snd_mem) {
+	switch (mem) {
 	case 0xb0000: dev.memid = HPMEM_B000; break;
 	case 0xc8000: dev.memid = HPMEM_C800; break;
 	case 0xd0000: dev.memid = HPMEM_D000; break;
@@ -1733,24 +1733,24 @@ static int __init snd_msnd_init(void)
 	case 0xe8000: dev.memid = HPMEM_E800; break;
 	}
 #else
-	if (snd_cfg == -1) {
+	if (cfg == -1) {
 		printk(KERN_INFO LOGNAME ": Assuming PnP mode\n");
-	} else if (snd_cfg != 0x250 && snd_cfg != 0x260 && snd_cfg != 0x270) {
+	} else if (cfg != 0x250 && cfg != 0x260 && cfg != 0x270) {
 		printk(KERN_INFO LOGNAME ": Config port must be 0x250, 0x260 or 0x270 (or unspecified for PnP mode)\n");
 		return -EINVAL;
 	} else {
-		printk(KERN_INFO LOGNAME ": Non-PnP mode: configuring at port 0x%x\n", snd_cfg);
+		printk(KERN_INFO LOGNAME ": Non-PnP mode: configuring at port 0x%x\n", cfg);
 
 		/* DSP */
-		pinnacle_devs[0].io0 = snd_io;
-		pinnacle_devs[0].irq = snd_irq;
-		pinnacle_devs[0].mem = snd_mem;
+		pinnacle_devs[0].io0 = io;
+		pinnacle_devs[0].irq = irq;
+		pinnacle_devs[0].mem = mem;
 
 		/* The following are Pinnacle specific */
 
 		/* MPU */
-		pinnacle_devs[1].io0 = snd_mpu_io;
-		pinnacle_devs[1].irq = snd_mpu_irq;
+		pinnacle_devs[1].io0 = mpu_io;
+		pinnacle_devs[1].irq = mpu_irq;
 
 		/* IDE */
 		pinnacle_devs[2].io0 = ide_io0;
@@ -1758,20 +1758,20 @@ static int __init snd_msnd_init(void)
 		pinnacle_devs[2].irq = ide_irq;
 
 		/* Joystick */
-		pinnacle_devs[3].io0 = snd_joystick_io;
+		pinnacle_devs[3].io0 = joystick_io;
 
-		if (check_region(snd_cfg, 2)) {
-			printk(KERN_ERR LOGNAME ": Config port 0x%x conflict\n", snd_cfg);
+		if (check_region(cfg, 2)) {
+			printk(KERN_ERR LOGNAME ": Config port 0x%x conflict\n", cfg);
 			return -EIO;
 		}
 
-		request_region(snd_cfg, 2, "Pinnacle/Fiji Config");
-		if (snd_msnd_pinnacle_cfg_devices(snd_cfg, snd_reset, pinnacle_devs)) {
+		request_region(cfg, 2, "Pinnacle/Fiji Config");
+		if (snd_msnd_pinnacle_cfg_devices(cfg, reset, pinnacle_devs)) {
 			printk(KERN_ERR LOGNAME ": Device configuration error\n");
-			release_region(snd_cfg, 2);
+			release_region(cfg, 2);
 			return -EIO;
 		}
-		release_region(snd_cfg, 2);
+		release_region(cfg, 2);
 	}
 	
 #endif /* MSND_CLASSIC */
@@ -1789,23 +1789,23 @@ static int __init snd_msnd_init(void)
 	);
 	printk(KERN_INFO LOGNAME ": play_period_bytes=0x%X\n", dev.play_period_bytes);
 */
-	dev.io = snd_io;
+	dev.io = io;
 	dev.numio = DSP_NUMIO;
-	dev.irq = snd_irq;
-	dev.base = snd_mem;
+	dev.irq = irq;
+	dev.base = mem;
 
-	dev.calibrate_signal = snd_calibrate_signal ? 1 : 0;
+	dev.calibrate_signal = calibrate_signal ? 1 : 0;
 	dev.recsrc = 0;
 	dev.dspq_data_buff = DSPQ_DATA_BUFF;
 	dev.dspq_buff_size = DSPQ_BUFF_SIZE;
-	if (snd_write_ndelay == -1)
-		snd_write_ndelay = CONFIG_MSND_WRITE_NDELAY;
-	if (snd_write_ndelay)
+	if (write_ndelay == -1)
+		write_ndelay = CONFIG_MSND_WRITE_NDELAY;
+	if (write_ndelay)
 		clear_bit(F_DISABLE_WRITE_NDELAY, &dev.flags);
 	else
 		set_bit(F_DISABLE_WRITE_NDELAY, &dev.flags);
 #ifndef MSND_CLASSIC
-	if (snd_digital)
+	if (digital)
 		set_bit(F_HAVEDIGITAL, &dev.flags);
 #endif
 	spin_lock_init(&dev.lock);
