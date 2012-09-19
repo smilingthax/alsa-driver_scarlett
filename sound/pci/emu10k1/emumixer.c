@@ -398,7 +398,7 @@ static int snd_emu1010_input_output_source_info(struct snd_kcontrol *kcontrol,
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	uinfo->count = 1;
-	if (emu->card_capabilities->emu_model == 3) { /* 1616(m) cardbus */
+	if (emu->card_capabilities->emu_model == EMU_MODEL_EMU1616) {
 		uinfo->value.enumerated.items = 49;
 		items = emu1616_src_texts;
 	} else {
@@ -422,7 +422,8 @@ static int snd_emu1010_output_source_get(struct snd_kcontrol *kcontrol,
 	channel = (kcontrol->private_value) & 0xff;
 	/* Limit: emu1010_output_dst, emu->emu1010.output_source */
 	if (channel >= 24 ||
-	    (emu->card_capabilities->emu_model == 3 && channel >= 18))
+	    (emu->card_capabilities->emu_model == EMU_MODEL_EMU1616 &&
+	     channel >= 18))
 		return -EINVAL;
 	ucontrol->value.enumerated.item[0] = emu->emu1010.output_source[channel];
 	return 0;
@@ -437,17 +438,19 @@ static int snd_emu1010_output_source_put(struct snd_kcontrol *kcontrol,
 
 	val = ucontrol->value.enumerated.item[0];
 	if (val >= 53 ||
-	    (emu->card_capabilities->emu_model == 3 && val >= 49))
+	    (emu->card_capabilities->emu_model == EMU_MODEL_EMU1616 &&
+	     val >= 49))
 		return -EINVAL;
 	channel = (kcontrol->private_value) & 0xff;
 	/* Limit: emu1010_output_dst, emu->emu1010.output_source */
 	if (channel >= 24 ||
-	    (emu->card_capabilities->emu_model == 3 && channel >= 18))
+	    (emu->card_capabilities->emu_model == EMU_MODEL_EMU1616 &&
+	     channel >= 18))
 		return -EINVAL;
 	if (emu->emu1010.output_source[channel] == val)
 		return 0;
 	emu->emu1010.output_source[channel] = val;
-	if (emu->card_capabilities->emu_model == 3) /* 1616(m) cardbus */
+	if (emu->card_capabilities->emu_model == EMU_MODEL_EMU1616)
 		snd_emu1010_fpga_link_dst_src_write(emu,
 			emu1616_output_dst[channel], emu1616_src_regs[val]);
 	else
@@ -479,7 +482,8 @@ static int snd_emu1010_input_source_put(struct snd_kcontrol *kcontrol,
 
 	val = ucontrol->value.enumerated.item[0];
 	if (val >= 53 ||
-	    (emu->card_capabilities->emu_model == 3 && val >= 49))
+	    (emu->card_capabilities->emu_model == EMU_MODEL_EMU1616 &&
+	     val >= 49))
 		return -EINVAL;
 	channel = (kcontrol->private_value) & 0xff;
 	/* Limit: emu1010_input_dst, emu->emu1010.input_source */
@@ -488,7 +492,7 @@ static int snd_emu1010_input_source_put(struct snd_kcontrol *kcontrol,
 	if (emu->emu1010.input_source[channel] == val)
 		return 0;
 	emu->emu1010.input_source[channel] = val;
-	if (emu->card_capabilities->emu_model == 3) /* 1616(m) cardbus */
+	if (emu->card_capabilities->emu_model == EMU_MODEL_EMU1616)
 		snd_emu1010_fpga_link_dst_src_write(emu,
 			emu1010_input_dst[channel], emu1616_src_regs[val]);
 	else
@@ -1992,7 +1996,7 @@ int __devinit snd_emu10k1_mixer(struct snd_emu10k1 *emu,
 			return err;
 	}
 
-	if (emu->card_capabilities->emu_model == 3) {
+	if (emu->card_capabilities->emu_model == EMU_MODEL_EMU1616) {
 		/* 1616(m) cardbus */
 		int i;
 
@@ -2027,7 +2031,7 @@ int __devinit snd_emu10k1_mixer(struct snd_emu10k1 *emu,
 		if (err < 0)
 			return err;
 
-	} else {
+	} else if (emu->card_capabilities->emu_model) {
 		/* all other e-mu cards for now */
 		int i;
 
