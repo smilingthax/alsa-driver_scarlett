@@ -2811,6 +2811,15 @@ AC_ARG_WITH(oss,
   [  --with-oss=no,yes       driver will (not) be compiled with OSS/Free emulation],
   ossemul="$withval", ossemul="yes")
 if test "$ossemul" = "yes"; then
+  CHECK_KERNEL_CONFIG(CONFIG_SOUND_OSS_CORE, [OSS CORE])
+  if test $kvernum -ge 206028; then
+    if test "$CONFIG_SOUND_OSS_CORE" != "y"; then
+      echo "Didabling OSS-emulation as CONFIG_SOUND_OSS_CORE isn't set"
+      ossemul="no"
+    fi
+  fi
+fi
+if test "$ossemul" = "yes"; then
   CONFIG_SND_OSSEMUL="y"
   CONFIG_SND_MIXER_OSS="m"
   CONFIG_SND_PCM_OSS="m"

@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/misc.c	2011-06-10 15:36:34.870352164 +0200
-+++ misc.c	2011-06-10 15:49:50.133251884 +0200
+--- ../alsa-kernel/core/misc.c	2012-03-01 09:14:48.000000000 +0100
++++ misc.c	2012-03-05 22:25:52.000000000 +0100
 @@ -1,3 +1,9 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -10,7 +10,7 @@
  /*
   *  Misc and compatibility things
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -43,7 +49,7 @@
+@@ -45,7 +51,7 @@
  {
  	if (res) {
  		release_resource(res);
@@ -19,7 +19,7 @@
  	}
  }
  
-@@ -58,6 +64,25 @@
+@@ -60,6 +66,25 @@
  	else
  		return path;
  }
@@ -45,7 +45,7 @@
  #endif
  
  #if defined(CONFIG_SND_DEBUG) || defined(CONFIG_SND_VERBOSE_PRINTK)
-@@ -65,10 +90,12 @@
+@@ -67,10 +92,12 @@
  		  const char *format, ...)
  {
  	va_list args;
@@ -56,9 +56,9 @@
  #endif
 +#endif
  
- #ifdef CONFIG_SND_DEBUG	
+ #ifdef CONFIG_SND_DEBUG
  	if (debug < level)
-@@ -76,6 +103,11 @@
+@@ -78,6 +105,11 @@
  #endif
  
  	va_start(args, format);
@@ -70,7 +70,7 @@
  #ifdef CONFIG_SND_VERBOSE_PRINTK
  	vaf.fmt = format;
  	vaf.va = &args;
-@@ -89,6 +121,7 @@
+@@ -91,6 +123,7 @@
  	vprintk(format, args);
  #endif
  	va_end(args);
@@ -78,7 +78,7 @@
  }
  EXPORT_SYMBOL_GPL(__snd_printk);
  #endif
-@@ -138,9 +171,42 @@
+@@ -140,9 +173,42 @@
  const struct snd_pci_quirk *
  snd_pci_quirk_lookup(struct pci_dev *pci, const struct snd_pci_quirk *list)
  {
