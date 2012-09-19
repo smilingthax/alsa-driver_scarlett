@@ -1920,6 +1920,8 @@ blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
 
 /* hex_to_bin() */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
+/* RHEL 6.1 kernels has version 2.6.32, but already have hex_to_bin() */
+#if !defined(RHEL_RELEASE_CODE) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6,1)
 static inline int hex_to_bin(char c)
 {
 	if (c >= '0' && c <= '9')
@@ -1930,6 +1932,7 @@ static inline int hex_to_bin(char c)
 		return c - 'a' + 10;
 	return -1;
 }
+#endif
 #endif
 
 #ifndef CONFIG_HAVE_VZALLOC
