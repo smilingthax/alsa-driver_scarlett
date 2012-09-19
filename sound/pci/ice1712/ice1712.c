@@ -82,7 +82,7 @@ static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;		/* Enable this card */
 static int omni[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 0};	/* Delta44 & 66 Omni I/O support */
-static int cs8427_timeout[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 50}; /* CS8427 S/PDIF transciever reset timeout value in HZ/100 */
+static int cs8427_timeout[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 500}; /* CS8427 S/PDIF transciever reset timeout value in msec */
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(index, "Index value for ICE1712 soundcard.");
@@ -97,8 +97,8 @@ MODULE_PARM(omni, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(omni, "Enable Midiman M-Audio Delta Omni I/O support.");
 MODULE_PARM_SYNTAX(omni, SNDRV_ENABLED "," SNDRV_ENABLE_DESC);
 MODULE_PARM(cs8427_timeout, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(cs8427_timeout, "Define reset timeout for cs8427 chip in HZ/100 resolution.");
-MODULE_PARM_SYNTAX(cs8427_timeout, SNDRV_ENABLED ", allows:{{1,100}},default=50,skill:advanced");
+MODULE_PARM_DESC(cs8427_timeout, "Define reset timeout for cs8427 chip in msec resolution.");
+MODULE_PARM_SYNTAX(cs8427_timeout, SNDRV_ENABLED ", allows:{{1,1000}},default=500,skill:advanced");
 
 #ifndef PCI_VENDOR_ID_ICE
 #define PCI_VENDOR_ID_ICE		0x1412
@@ -391,7 +391,7 @@ int __devinit snd_ice1712_init_cs8427(ice1712_t *ice, int addr)
 	int err;
 
 	if ((err = snd_cs8427_create(ice->i2c, addr,
-				     (ice->cs8427_timeout * HZ) / 100,
+				     (ice->cs8427_timeout * HZ) / 1000,
 				     &ice->cs8427)) < 0) {
 		snd_printk("CS8427 initialization failed\n");
 		return err;
@@ -1511,10 +1511,10 @@ static void snd_ice1712_mixer_free_ac97(ac97_t *ac97)
 static int __devinit snd_ice1712_ac97_mixer(ice1712_t * ice)
 {
 	int err;
+	ac97_t ac97;
+	ac97_bus_t bus, *pbus;
 
 	if (ice_has_con_ac97(ice)) {
-		ac97_bus_t bus, *pbus;
-		ac97_t ac97;
 		memset(&bus, 0, sizeof(bus));
 		bus.write = snd_ice1712_ac97_write;
 		bus.read = snd_ice1712_ac97_read;
@@ -1533,8 +1533,6 @@ static int __devinit snd_ice1712_ac97_mixer(ice1712_t * ice)
 	}
 
 	if (! (ice->eeprom.data[ICE_EEP1_ACLINK] & ICE1712_CFG_PRO_I2S)) {
-		ac97_bus_t bus, *pbus;
-		ac97_t ac97;
 		memset(&bus, 0, sizeof(bus));
 		bus.write = snd_ice1712_pro_ac97_write;
 		bus.read = snd_ice1712_pro_ac97_read;
@@ -2437,8 +2435,8 @@ static int __devinit snd_ice1712_create(snd_card_t * card,
 	ice->omni = omni ? 1 : 0;
 	if (cs8427_timeout < 1)
 		cs8427_timeout = 1;
-	else if (cs8427_timeout > 100)
-		cs8427_timeout = 100;
+	else if (cs8427_timeout > 1000)
+		cs8427_timeout = 1000;
 	ice->cs8427_timeout = cs8427_timeout;
 	spin_lock_init(&ice->reg_lock);
 	init_MUTEX(&ice->gpio_mutex);
