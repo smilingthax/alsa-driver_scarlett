@@ -59,6 +59,8 @@ struct dep {
 	struct sel *sel;
 	// misc
 	struct dep *next;
+	// bool?
+	int is_bool;
 };
 
 // Prototypes
@@ -113,6 +115,7 @@ static char *kernel_deps[] = {
 	"RTC",
 	"GAMEPORT",
 	"VIDEO_DEV",
+	"ACPI_BUS",
 	/* some flags */
 	"EXPERIMENTAL",
 	NULL
@@ -265,9 +268,13 @@ static int read_file_1(const char *filename, struct cond **template)
 		}
 		switch (state) {
 		case READ_STATE_CONFIG:
-			if (!strncmp(buffer, "\tdepends on ", 12))
+			if (!strncmp(buffer, "\ttristate ", 10))
+				dep->is_bool = 0;
+			else if (!strncmp(buffer, "\tbool ", 6))
+				dep->is_bool = 1;
+			else if (!strncmp(buffer, "\tdepends on ", 12))
 				add_dep(dep, buffer + 12, *template);
-			if (!strncmp(buffer, "\tselect ", 8))
+			else if (!strncmp(buffer, "\tselect ", 8))
 				add_select(dep, buffer + 8, *template);
 			continue;
 		case READ_STATE_MENU:
@@ -800,6 +807,8 @@ static void output_card_list(struct dep *firstdep, int space, int size)
 	while(temp_dep) {
 		if (!is_toplevel(temp_dep))
 			goto __skip;
+		if (temp_dep->is_bool)
+			goto __skip;
 		card_name=get_card_name(temp_dep->name);
 		if (card_name) {
 			if (!first) {
@@ -851,8 +860,10 @@ static void output_acinclude(void)
 			continue;
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		if (!strncmp(text, "CONFIG_SND", 10)) {
-			printf("\t%s=\"m\"\n", text);
-			printf("\tAC_DEFINE(%s_MODULE)\n", text);
+			printf("\t%s=\"%c\"\n", text,
+			       tempdep->is_bool ? 'y' : 'm');
+			printf("\tAC_DEFINE(%s%s)\n", text,
+			       tempdep->is_bool ? "" : "_MODULE");
 		}
 		free(text);
 	}
@@ -881,11 +892,13 @@ static void output_acinclude(void)
 		printf("\t");
 		if (put_if)
 			printf("  ");
-		printf("%s=\"m\"\n", text);
+		printf("%s=\"%c\"\n", text,
+		       tempdep->is_bool ? 'y' : 'm');
 		printf("\t");
 		if (put_if)
 			printf("  ");
-		printf("AC_DEFINE(%s_MODULE)\n", text);
+		printf("AC_DEFINE(%s%s)\n", text,
+		       tempdep->is_bool ? "" : "_MODULE");
 		if (put_if)
 			printf("\tfi\n");
 		free(text);
@@ -921,12 +934,16 @@ static void output_acinclude(void)
 			for (sel = tempdep->sel; sel; sel = sel->next) {
 				if (is_always_true(sel->dep))
 					continue;
-				printf("\t\t%s=\"m\"\n", sel->name);
-				printf("\t\tAC_DEFINE(%s_MODULE)\n", sel->name);
+				printf("\t\tCONFIG_%s=\"%c\"\n", sel->name,
+				       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
+				printf("\t\tAC_DEFINE(CONFIG_%s%s)\n", sel->name,
+				       (sel->dep && sel->dep->is_bool) ? "" : "_MODULE");
 			}
 			text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-			printf("\t\t%s=\"m\"\n", text);
-			printf("\t\tAC_DEFINE(%s_MODULE)\n", text);
+			printf("\t\t%s=\"%c\"\n", text,
+			       tempdep->is_bool ? 'y' : 'm');
+			printf("\t\tAC_DEFINE(%s%s)\n", text,
+			       tempdep->is_bool ? "" : "_MODULE");
 			printf("\t\t;;\n");
 			free(text);
 		}
@@ -939,6 +956,9 @@ static void output_acinclude(void)
 	printf("  done\n");
 	printf("  AC_MSG_RESULT($cards)\n");
 	printf("fi\n");
+	printf("])\n\n");
+	printf("AC_DEFUN([ALSA_TOPLEVEL_OUTPUT], [\n");
+	printf("dnl output all subst\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("AC_SUBST(%s)\n", text);
@@ -974,7 +994,8 @@ static void output_include(void)
 	printf("/*                  Anders Semb Hermansen <ahermans@vf.telia.no> */\n\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		printf("#undef %s_MODULE\n", text);
+		printf("#undef %s%s\n", text,
+		       tempdep->is_bool ? "" : "_MODULE");
 		free(text);
 	}
 }

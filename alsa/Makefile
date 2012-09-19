@@ -14,6 +14,7 @@ endif
 
 ifeq (Makefile.conf,$(wildcard Makefile.conf))
 include Makefile.conf
+include toplevel.config
 else
 .PHONY: dummy1
 dummy1:
@@ -21,6 +22,7 @@ dummy1:
 	@echo
 	@echo "Please, run the configure script as first..."
 	@echo
+MAINSRCDIR := $(shell /bin/pwd)
 endif
 
 SND_TOPDIR   = $(MAINSRCDIR)
