@@ -319,9 +319,14 @@ void pnp_init_resource_table(struct pnp_resource_table *table)
 	}
 }
 
+/* FIXME: this function cannot be called many times.  the setting is cleared at each time */
 int pnp_manual_config_dev(struct pnp_dev *dev, struct pnp_resource_table *res, int mode)
 {
 	unsigned int idx;
+	int err;
+
+	/* prepare the isapnp */
+	err = dev->p.prepare((struct isapnp_dev *)dev);
 
 	for (idx = 0; idx < PNP_MAX_IRQ; idx++)
 		copy_resource(&dev->p.irq_resource[idx], &res->irq_resource[idx]);
@@ -357,8 +362,6 @@ int pnp_activate_dev(struct pnp_dev *dev)
 	for (idx = 0; idx < PNP_MAX_MEM; idx++)
 		copy_resource(&tmp->mem_resource[idx], &dev->p.resource[idx+8]);
 
-	/* prepare the isapnp to get the range of resources */
-	dev->p.prepare((struct isapnp_dev *)dev);
 	/* restore the manual configuration again */
 	pnp_manual_config_dev(dev, tmp, 0);
 	kfree(tmp);
