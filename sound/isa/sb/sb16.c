@@ -636,9 +636,9 @@ static int __init alsa_card_sb16_init(void)
 #ifdef MODULE
 		printk(KERN_ERR "Sound Blaster 16 soundcard not found or device busy\n");
 #ifdef SNDRV_SBAWE_EMU8000
-		printk(KERN_ERR "In case, if you have non-AWE card, try snd-card-sb16 module\n");
+		printk(KERN_ERR "In case, if you have non-AWE card, try snd-sb16 module\n");
 #else
-		printk(KERN_ERR "In case, if you have AWE card, try snd-card-sbawe module\n");
+		printk(KERN_ERR "In case, if you have AWE card, try snd-sbawe module\n");
 #endif
 #endif
 		return -ENODEV;

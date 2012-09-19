@@ -193,6 +193,7 @@ snd_seq_oss_open(struct file *file, int level)
 	}
 	if (i >= SNDRV_SEQ_OSS_MAX_CLIENTS) {
 		snd_printk(KERN_ERR "too many applications\n");
+		kfree(dp);
 		return -ENOMEM;
 	}
 
@@ -209,22 +210,19 @@ snd_seq_oss_open(struct file *file, int level)
 
 	if (dp->synth_opened == 0 && dp->max_mididev == 0) {
 		snd_printk(KERN_ERR "no device found\n");
-		kfree(dp);
-		return -ENODEV;
+		rc = -ENODEV;
+		goto _error;
 	}
 
 	/* create port */
 	if ((rc = create_port(dp)) < 0) {
 		snd_printk(KERN_ERR "can't create port\n");
-		free_devinfo(dp);
-		return rc;
+		goto _error;
 	}
 
 	/* allocate queue */
-	if ((rc = alloc_seq_queue(dp)) < 0) {
-		delete_port(dp);
-		return rc;
-	}
+	if ((rc = alloc_seq_queue(dp)) < 0)
+		goto _error;
 
 	/* set address */
 	dp->addr.client = dp->cseq;
@@ -240,9 +238,8 @@ snd_seq_oss_open(struct file *file, int level)
 	/* initialize read queue */
 	if (is_read_mode(dp->file_mode)) {
 		if ((dp->readq = snd_seq_oss_readq_new(dp, maxqlen)) == NULL) {
-			delete_seq_queue(dp);
-			delete_port(dp);
-			return -ENOMEM;
+			rc = -ENOMEM;
+			goto _error;
 		}
 	}
 
@@ -250,18 +247,16 @@ snd_seq_oss_open(struct file *file, int level)
 	if (is_write_mode(dp->file_mode)) {
 		dp->writeq = snd_seq_oss_writeq_new(dp, maxqlen);
 		if (dp->writeq == NULL) {
-			delete_seq_queue(dp);
-			delete_port(dp);
-			return -ENOMEM;
+			rc = -ENOMEM;
+			goto _error;
 		}
 	}
 
 	/* initialize timer */
 	if ((dp->timer = snd_seq_oss_timer_new(dp)) == NULL) {
 		snd_printk(KERN_ERR "can't alloc timer\n");
-		delete_seq_queue(dp);
-		delete_port(dp);
-		return -ENOMEM;
+		rc = -ENOMEM;
+		goto _error;
 	}
 
 	/* set private data pointer */
@@ -277,8 +272,15 @@ snd_seq_oss_open(struct file *file, int level)
 	num_clients++;
 
 	debug_printk(("open done\n"));
-
 	return 0;
+
+ _error:
+	delete_seq_queue(dp);
+	delete_port(dp);
+	snd_seq_oss_synth_cleanup(dp);
+	snd_seq_oss_midi_cleanup(dp);
+
+	return rc;
 }
 
 /*

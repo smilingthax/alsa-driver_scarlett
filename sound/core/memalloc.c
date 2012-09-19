@@ -734,9 +734,7 @@ static int snd_mem_proc_read(char *page, char **start, off_t off,
 
 static int __init snd_mem_init(void)
 {
-	if (! create_proc_read_entry("driver/snd-page-alloc", 0, 0,
-				     snd_mem_proc_read, NULL))
-		return -EIO;
+	create_proc_read_entry("driver/snd-page-alloc", 0, 0, snd_mem_proc_read, NULL);
 	return 0;
 }
 
