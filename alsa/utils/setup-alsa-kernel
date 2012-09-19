@@ -1,0 +1,61 @@
+#!/bin/sh
+#
+# set up alsa-kernel directory from an external linux kernel tree
+#
+# the linux kernel tree has to contain the latest alsa-kernel files
+# (this script doesn't check the consistency)
+#
+# with the option -c, the tree is copied instead of symlinks
+# so that it can be easily archived
+#
+
+copy_tree=""
+
+if [ x"$1" = x"-c" ]; then
+    copy_tree=1
+    shift
+fi
+
+if [ -z "$1" ]; then
+    echo "usage: setup-alsa-kernel [-c] kernel-tree-dir"
+    exit 1
+fi
+
+if [ ! -d acore ]; then
+    echo "Run this script on alsa-driver directory"
+    exit 1
+fi
+
+kern="$1"
+alsa=$(pwd)
+if [ -z "$copy_tree" ]; then
+    rm -f $alsa/linux
+    ln -s $kern linux
+fi
+
+rm -rf alsa-kernel
+mkdir alsa-kernel
+cd $kern/sound
+for i in *; do
+    if [ -n "$copy_tree" ]; then
+	if [ "$i" = "oss" ]; then
+	    mkdir $alsa/alsa-kernel/oss
+	    cp oss/Makefile $alsa/alsa-kernel/oss
+	else
+	    cp -al $i $alsa/alsa-kernel/
+	fi
+    else
+	ln -s ../linux/sound/$i $alsa/alsa-kernel/$i
+    fi
+done
+
+cd $alsa
+if [ -n "$copy_tree" ]; then
+    cp -al $kern/include/sound alsa-kernel/include
+    cp -al $kern/Documentation/sound/alsa alsa-kernel/Documentation
+else
+    ln -s ../linux/include/sound alsa-kernel/include
+    ln -s ../linux/Documentation/sound/alsa alsa-kernel/Documentation
+fi
+ln -sf alsa-kernel sound
+exit 0

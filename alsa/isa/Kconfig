@@ -1,9 +1,8 @@
-menu "ISA devices"
-	depends on SND!=n && ISA
+if SND_ISA
 
 config SND_PC98_CS4232
 	tristate "NEC PC9800 CS4232 driver"
-	depends on SND && X86_PC9800
+	depends on X86_PC9800
 	select SND_OPL3_LIB
 	select SND_MPU401_UART
 	select SND_PCM
@@ -16,7 +15,7 @@ config SND_PC98_CS4232
 
 config SND_MSND_PINNACLE
 	tristate "Turtle Beach MultiSound Pinnacle/Fiji driver"
-	depends on SND && X86
+	depends on X86
 	select FW_LOADER
 	select SND_RAWMIDI
 	select SND_PCM
@@ -27,4 +26,5 @@ config SND_MSND_PINNACLE
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-msnd-pinnacle.
 
-endmenu
+endif	# SND_ISA
+

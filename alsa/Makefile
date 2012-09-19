@@ -115,7 +115,6 @@ all: compile
 alsa-kernel/sound_core.c:
 	ln -sf $(ALSAKERNELDIR) alsa-kernel
 	ln -sf alsa-kernel sound
-	ln -sf alsa-kernel/scripts scripts
 
 include/sound/version.h: include/version.h
 	if [ ! -d include/sound -a ! -L include/sound ]; then \
@@ -126,13 +125,13 @@ include/sound/version.h: include/version.h
 utils/mod-deps: utils/mod-deps.c
 	gcc utils/mod-deps.c -o utils/mod-deps
 
-toplevel.config.in: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps
+toplevel.config.in: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps kconfig-vers
 	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --versiondep $(SND_TOPDIR)/kconfig-vers --makeconf > toplevel.config.in
 
-acinclude.m4: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps
+acinclude.m4: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps kconfig-vers
 	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --versiondep $(SND_TOPDIR)/kconfig-vers --acinclude > acinclude.m4
 
-include/config1.h.in: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps
+include/config1.h.in: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps kconfig-vers
 	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --versiondep $(SND_TOPDIR)/kconfig-vers --include > include/config1.h.in
 
 all-deps: toplevel.config.in acinclude.m4 include/config1.h.in
@@ -276,7 +275,7 @@ mrproper: clean1
 cvsclean: mrproper
 	rm -f configure snddevices aclocal.m4 acinclude.m4 include/config.h include/config1.h \
 	  include/config1.h.in toplevel.config toplevel.config.in \
-	  alsa-kernel sound scripts include/sound
+	  alsa-kernel sound include/sound
 	rm -rf include/linux
 hgclean: cvsclean
 

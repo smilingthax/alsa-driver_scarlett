@@ -197,7 +197,7 @@
 #endif
 
 #ifndef MANY_CHECKS
-#  ifdef CONFIG_SND_DEBUG_DETECT
+#  ifdef CONFIG_SND_DEBUG_VERBOSE
 #    define MANY_CHECKS 1
 #  else
 #    define MANY_CHECKS 0

@@ -1,4 +1,7 @@
 # for backward compatibility
+
+if SND
+
 config SND_BIT32_EMUL
 	tristate
 
@@ -10,7 +13,7 @@ config SND_DEBUG_MEMORY
 
 config SND_HPET
 	tristate "High Precision Event Timer support"
-	depends on SND && HPET && BROKEN
+	depends on HPET && BROKEN
 	select SND_TIMER
 	help
 	  Say Y here to enable HPET support for ALSA.  ALSA uses the
@@ -20,3 +23,5 @@ config SND_HPET
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-hpet.
+
+endif	# SND
