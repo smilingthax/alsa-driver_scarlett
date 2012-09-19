@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/caiaq/caiaq-audio.c	2008-12-11 10:28:00.000000000 +0100
-+++ caiaq-audio.c	2009-01-03 11:39:05.000000000 +0100
+--- ../../alsa-kernel/usb/caiaq/audio.c	2008-12-11 10:28:00.000000000 +0100
++++ audio.c	2009-01-03 11:39:05.000000000 +0100
 @@ -1,3 +1,5 @@
 +#include "adriver.h"
 +#include "../usbcompat.h"

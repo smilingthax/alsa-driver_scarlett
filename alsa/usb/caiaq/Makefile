@@ -5,7 +5,7 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-clean-files := caiaq-audio.c caiaq-device.c caiaq-input.c
+clean-files := audio.c device.c input.c
 
 include $(SND_TOPDIR)/alsa-kernel/usb/caiaq/Makefile
 
@@ -13,6 +13,6 @@ EXTRA_CFLAGS += -I$(SND_TOPDIR)/alsa-kernel/usb/caiaq
 
 include $(SND_TOPDIR)/Rules.make
 
-caiaq-audio.c: caiaq-audio.patch $(SND_TOPDIR)/alsa-kernel/usb/caiaq/caiaq-audio.c
-caiaq-device.c: caiaq-device.patch $(SND_TOPDIR)/alsa-kernel/usb/caiaq/caiaq-device.c
-caiaq-input.c: caiaq-input.patch $(SND_TOPDIR)/alsa-kernel/usb/caiaq/caiaq-input.c
+audio.c: audio.patch $(SND_TOPDIR)/alsa-kernel/usb/caiaq/audio.c
+device.c: device.patch $(SND_TOPDIR)/alsa-kernel/usb/caiaq/device.c
+input.c: input.patch $(SND_TOPDIR)/alsa-kernel/usb/caiaq/input.c

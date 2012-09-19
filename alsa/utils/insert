@@ -410,7 +410,6 @@ case "$1" in
   hda)
     basic
     insert snd-hda-codec$SUFF
-    insert snd-hda-codec-realtek$SUFF 
     insert snd-hda-codec-analog$SUFF
     insert snd-hda-codec-nvhdmi$SUFF
     insert snd-hda-codec-atihdmi$SUFF
@@ -421,8 +420,9 @@ case "$1" in
     insert snd-hda-codec-via$SUFF
     insert snd-hda-codec-idt$SUFF
     insert snd-hda-codec-intelhdmi$SUFF
-    insert snd-hda-intel$SUFF 
+    insert snd-hda-intel$SUFF
     restore hda.conf
+    #echo 1 > /proc/asound/card0/pcm0p/xrun_debug
     ;;
   pdplus|prodif-plus)
     basic

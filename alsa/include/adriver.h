@@ -891,7 +891,7 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #define snd_dma_continuous_data(x)	((struct device *)(unsigned long)(x))
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 17)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)
 #include <linux/mm.h>
 #include <asm/io.h>
@@ -1606,6 +1606,9 @@ static inline u64 get_unaligned_be64(void *p)
 #ifndef upper_32_bits
 #define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
 #endif
+#ifndef lower_32_bits
+#define lower_32_bits(n) ((u32)(n))
+#endif
 
 #ifndef CONFIG_HAVE_PAGE_TO_PFN
 #define page_to_pfn(page)       (page_to_phys(page) >> PAGE_SHIFT)
@@ -1777,6 +1780,23 @@ typedef int _Bool;
 #ifndef bool	/* just to be sure */
 typedef _Bool bool;
 #endif
+#endif
+
+/* memdup_user() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30)
+#include <linux/err.h>
+#include <asm/uaccess.h>
+static inline void *memdup_user(void __user *src, size_t len)
+{
+	void *p = kmalloc(len, GFP_KERNEL);
+	if (!p)
+		return ERR_PTR(-ENOMEM);
+	if (copy_from_user(p, src, len)) {
+		kfree(p);
+		return ERR_PTR(-EFAULT);
+	}
+	return p;
+}
 #endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
