@@ -54,18 +54,18 @@ module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "enable card");
 
 static struct pci_device_id oxygen_ids[] __devinitdata = {
-	{ OXYGEN_PCI_ID(0x10b0, 0x0216) },
-	{ OXYGEN_PCI_ID(0x10b0, 0x0218) },
-	{ OXYGEN_PCI_ID(0x10b0, 0x0219) },
-	{ OXYGEN_PCI_ID(0x13f6, 0x0001) },
-	{ OXYGEN_PCI_ID(0x13f6, 0x0010) },
-	{ OXYGEN_PCI_ID(0x13f6, 0x8788) },
-	{ OXYGEN_PCI_ID(0x147a, 0xa017) },
-	{ OXYGEN_PCI_ID(0x14c3, 0x1710) },
-	{ OXYGEN_PCI_ID(0x14c3, 0x1711) },
-	{ OXYGEN_PCI_ID(0x1a58, 0x0910) },
-	{ OXYGEN_PCI_ID(0x415a, 0x5431), .driver_data = 1 },
-	{ OXYGEN_PCI_ID(0x7284, 0x9761) },
+	{ OXYGEN_PCI_SUBID(0x10b0, 0x0216) },
+	{ OXYGEN_PCI_SUBID(0x10b0, 0x0218) },
+	{ OXYGEN_PCI_SUBID(0x10b0, 0x0219) },
+	{ OXYGEN_PCI_SUBID(0x13f6, 0x0001) },
+	{ OXYGEN_PCI_SUBID(0x13f6, 0x0010) },
+	{ OXYGEN_PCI_SUBID(0x13f6, 0x8788) },
+	{ OXYGEN_PCI_SUBID(0x147a, 0xa017) },
+	{ OXYGEN_PCI_SUBID(0x14c3, 0x1710) },
+	{ OXYGEN_PCI_SUBID(0x14c3, 0x1711) },
+	{ OXYGEN_PCI_SUBID(0x1a58, 0x0910) },
+	{ OXYGEN_PCI_SUBID(0x415a, 0x5431), .driver_data = 1 },
+	{ OXYGEN_PCI_SUBID(0x7284, 0x9761) },
 	{ }
 };
 MODULE_DEVICE_TABLE(pci, oxygen_ids);
@@ -123,10 +123,10 @@ static void ak4396_init(struct oxygen *chip)
 {
 	unsigned int i;
 
-	chip->model_data = AK4396_DEM_OFF | AK4396_DFS_NORMAL;
+	chip->ak4396_reg1 = AK4396_DEM_OFF | AK4396_DFS_NORMAL;
 	for (i = 0; i < 4; ++i) {
-		ak4396_write(chip, i, 0, AK4396_DIF_24_MSB);
-		ak4396_write(chip, i, 1, chip->model_data);
+		ak4396_write(chip, i, 0, AK4396_DIF_24_MSB | AK4396_RSTN);
+		ak4396_write(chip, i, 1, chip->ak4396_reg1);
 		ak4396_write(chip, i, 2, 0);
 		ak4396_write(chip, i, 3, 0xff);
 		ak4396_write(chip, i, 4, 0xff);
@@ -134,18 +134,30 @@ static void ak4396_init(struct oxygen *chip)
 	snd_component_add(chip->card, "AK4396");
 }
 
+static void ak5385_init(struct oxygen *chip)
+{
+	oxygen_set_bits16(chip, OXYGEN_GPIO_CONTROL, 0x0003);
+	snd_component_add(chip->card, "AK5385");
+}
+
+static void wm8785_init(struct oxygen *chip)
+{
+	wm8785_write(chip, 7, 0);
+	wm8785_write(chip, 0, WM8785_FORMAT_LJUST | WM8785_OSR_SINGLE);
+	wm8785_write(chip, 1, WM8785_WL_24);
+	snd_component_add(chip->card, "WM8785");
+}
+
 static void generic_init(struct oxygen *chip)
 {
 	ak4396_init(chip);
-	// TODO: init wm8785
-	snd_component_add(chip->card, "WM8785");
+	wm8785_init(chip);
 }
 
 static void meridian_init(struct oxygen *chip)
 {
 	ak4396_init(chip);
-	oxygen_set_bits16(chip, OXYGEN_GPIO_CONTROL, 0x0003);
-	snd_component_add(chip->card, "AK5385");
+	ak5385_init(chip);
 }
 
 static void generic_cleanup(struct oxygen *chip)
@@ -158,16 +170,19 @@ static void set_ak4396_params(struct oxygen *chip,
 	unsigned int i;
 	u8 value;
 
-	value = chip->model_data & ~AK4396_DFS_MASK;
+	value = chip->ak4396_reg1 & ~AK4396_DFS_MASK;
 	if (params_rate(params) <= 54000)
 		value |= AK4396_DFS_NORMAL;
 	else if (params_rate(params) < 120000)
 		value |= AK4396_DFS_DOUBLE;
 	else
 		value |= AK4396_DFS_QUAD;
-	chip->model_data = value;
-	for (i = 0; i < 4; ++i)
+	chip->ak4396_reg1 = value;
+	for (i = 0; i < 4; ++i) {
+		ak4396_write(chip, i, 0, AK4396_DIF_24_MSB);
 		ak4396_write(chip, i, 1, value);
+		ak4396_write(chip, i, 0, AK4396_DIF_24_MSB | AK4396_RSTN);
+	}
 }
 
 static void update_ak4396_volume(struct oxygen *chip)
@@ -185,7 +200,7 @@ static void update_ak4396_mute(struct oxygen *chip)
 	unsigned int i;
 	u8 value;
 
-	value = chip->model_data & ~AK4396_SMUTE;
+	value = chip->ak4396_reg1 & ~AK4396_SMUTE;
 	if (chip->dac_mute)
 		value |= AK4396_SMUTE;
 	for (i = 0; i < 4; ++i)

@@ -56,8 +56,8 @@ module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "enable card");
 
 static struct pci_device_id xonar_ids[] __devinitdata = {
-	{ OXYGEN_PCI_ID(0x1043, 0x8269) }, /* Asus Xonar D2 */
-	{ OXYGEN_PCI_ID(0x1043, 0x82b7) }, /* Asus Xonar D2X */
+	{ OXYGEN_PCI_SUBID(0x1043, 0x8269) }, /* Asus Xonar D2 */
+	{ OXYGEN_PCI_SUBID(0x1043, 0x82b7) }, /* Asus Xonar D2X */
 	{ }
 };
 MODULE_DEVICE_TABLE(pci, xonar_ids);
@@ -106,6 +106,7 @@ static void xonar_init(struct oxygen *chip)
 	oxygen_clear_bits16(chip, OXYGEN_I2S_MULTICH_FORMAT,
 			    OXYGEN_I2S_MAGIC1_MASK);
 #endif
+	oxygen_write_ac97(chip, 0, 0x62, 0x188f);
 	msleep(300);
 	oxygen_set_bits16(chip, OXYGEN_GPIO_CONTROL, 0x100);
 	oxygen_set_bits16(chip, OXYGEN_GPIO_DATA, 0x100);

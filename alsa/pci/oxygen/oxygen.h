@@ -13,7 +13,7 @@
 #define PCM_AC97	5
 #define PCM_COUNT	6
 
-#define OXYGEN_PCI_ID(sv, sd) \
+#define OXYGEN_PCI_SUBID(sv, sd) \
 	.vendor = PCI_VENDOR_ID_CMEDIA, \
 	.device = 0x8788, \
 	.subvendor = sv, \
@@ -39,7 +39,7 @@ struct oxygen {
 	u8 dac_mute;
 	u8 pcm_running;
 	u8 dac_routing;
-	u8 model_data;
+	u8 ak4396_reg1;
 	u8 revision;
 	u8 has_2nd_ac97_codec;
 	struct snd_pcm_substream *streams[PCM_COUNT];
