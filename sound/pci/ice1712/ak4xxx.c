@@ -122,8 +122,8 @@ static void snd_ice1712_akm4xxx_write(akm4xxx_t *ak, int chip,
 /*
  * initialize the akm4xxx_t record with the template
  */
-int __devinit snd_ice1712_akm4xxx_init(akm4xxx_t *ak, const akm4xxx_t *temp,
-				       const struct snd_ak4xxx_private *_priv, ice1712_t *ice)
+int snd_ice1712_akm4xxx_init(akm4xxx_t *ak, const akm4xxx_t *temp,
+			     const struct snd_ak4xxx_private *_priv, ice1712_t *ice)
 {
 	struct snd_ak4xxx_private *priv;
 
@@ -145,7 +145,7 @@ int __devinit snd_ice1712_akm4xxx_init(akm4xxx_t *ak, const akm4xxx_t *temp,
 	return 0;
 }
 
-void __devexit snd_ice1712_akm4xxx_free(ice1712_t *ice)
+void snd_ice1712_akm4xxx_free(ice1712_t *ice)
 {
 	unsigned int akidx;
 	if (ice->akm == NULL)
@@ -161,7 +161,7 @@ void __devexit snd_ice1712_akm4xxx_free(ice1712_t *ice)
 /*
  * build AK4xxx controls
  */
-int __devinit snd_ice1712_akm4xxx_build_controls(ice1712_t *ice)
+int snd_ice1712_akm4xxx_build_controls(ice1712_t *ice)
 {
 	unsigned int akidx;
 	int err;

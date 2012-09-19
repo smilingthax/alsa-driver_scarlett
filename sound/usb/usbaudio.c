@@ -388,6 +388,7 @@ static int prepare_playback_sync_urb(snd_usb_substream_t *subs,
 		urb->iso_frame_desc[i].length = 3;
 		urb->iso_frame_desc[i].offset = offs;
 	}
+	urb->interval = 1;
 	return 0;
 }
 
@@ -512,6 +513,7 @@ static int prepare_playback_urb(snd_usb_substream_t *subs,
 	spin_unlock_irqrestore(&subs->lock, flags);
 	urb->transfer_buffer_length = offs * stride;
 	ctx->transfer = offs;
+	urb->interval = 1;
 
 	return 0;
 }
@@ -2337,6 +2339,32 @@ static int parse_audio_endpoints(snd_usb_audio_t *chip, int iface_no)
 
 
 /*
+ * disconnect streams
+ * called from snd_usb_audio_disconnect()
+ */
+static void snd_usb_stream_disconnect(struct list_head *head, struct usb_driver *driver)
+{
+	int idx;
+	snd_usb_stream_t *as;
+	snd_usb_substream_t *subs;
+	struct list_head *p;
+
+	as = list_entry(head, snd_usb_stream_t, list);
+	for (idx = 0; idx < 2; idx++) {
+		subs = &as->substream[idx];
+		if (!subs->num_formats)
+			return;
+		release_substream_urbs(subs, 1);
+		subs->interface = -1;
+		/* release interfaces */
+		list_for_each(p, &subs->fmt_list) {
+			struct audioformat *fp = list_entry(p, struct audioformat, list);
+			usb_driver_release_interface(driver, usb_ifnum_to_if(subs->dev, fp->iface));
+		}
+	}
+}
+
+/*
  * parse audio control descriptor and create pcm/midi streams
  */
 static int snd_usb_create_streams(snd_usb_audio_t *chip, int ctrlif)
@@ -2806,21 +2834,11 @@ static void snd_usb_audio_disconnect(struct usb_device *dev, void *ptr)
 		snd_card_disconnect(card);
 		/* release the pcm resources */
 		list_for_each(p, &chip->pcm_list) {
-			snd_usb_stream_t *as;
-			int idx;
-			as = list_entry(p, snd_usb_stream_t, list);
-			for (idx = 0; idx < 2; idx++) {
-				snd_usb_substream_t *subs;
-				subs = &as->substream[idx];
-				if (!subs->num_formats)
-					continue;
-				release_substream_urbs(subs, 1);
-				subs->interface = -1;
-			}
+			snd_usb_stream_disconnect(p, &usb_audio_driver);
 		}
 		/* release the midi resources */
 		list_for_each(p, &chip->midi_list) {
-			snd_usbmidi_disconnect(p);
+			snd_usbmidi_disconnect(p, &usb_audio_driver);
 		}
 		up(&register_mutex);
 		snd_card_free_in_thread(card);
