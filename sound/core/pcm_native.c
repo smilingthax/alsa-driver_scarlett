@@ -76,12 +76,6 @@ static inline void snd_leave_user(mm_segment_t fs)
 	set_fs(fs);
 }
 
-static inline void dec_mod_count(struct module *module)
-{
-	if (module)
-		__MOD_DEC_USE_COUNT(module);
-}
-
 
 
 int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t *info)
@@ -1787,9 +1781,6 @@ int snd_pcm_open(struct inode *inode, struct file *file)
 	snd_pcm_file_t *pcm_file;
 	wait_queue_t wait;
 
-#ifdef LINUX_2_2
-	MOD_INC_USE_COUNT;
-#endif
 	snd_runtime_check(device >= SNDRV_MINOR_PCM_PLAYBACK && device < SNDRV_MINOR_DEVICES, return -ENXIO);
 	pcm = snd_pcm_devices[(cardnum * SNDRV_PCM_DEVICES) + (device % SNDRV_MINOR_PCMS)];
 	if (pcm == NULL) {
@@ -1799,7 +1790,7 @@ int snd_pcm_open(struct inode *inode, struct file *file)
 	err = snd_card_file_add(pcm->card, file);
 	if (err < 0)
 		goto __error1;
-	if (!try_inc_mod_count(pcm->card->module)) {
+	if (!try_module_get(pcm->card->module)) {
 		err = -EFAULT;
 		goto __error2;
 	}
@@ -1833,13 +1824,10 @@ int snd_pcm_open(struct inode *inode, struct file *file)
 	return err;
 
       __error:
-	dec_mod_count(pcm->card->module);
+	module_put(pcm->card->module);
       __error2:
       	snd_card_file_remove(pcm->card, file);
       __error1:
-#ifdef LINUX_2_2
-      	MOD_DEC_USE_COUNT;
-#endif
       	return err;
 }
 
@@ -1863,11 +1851,8 @@ int snd_pcm_release(struct inode *inode, struct file *file)
 	snd_pcm_release_file(pcm_file);
 	up(&pcm->open_mutex);
 	wake_up(&pcm->open_wait);
-	dec_mod_count(pcm->card->module);
+	module_put(pcm->card->module);
 	snd_card_file_remove(pcm->card, file);
-#ifdef LINUX_2_2
-	MOD_DEC_USE_COUNT;
-#endif
 	return 0;
 }
 

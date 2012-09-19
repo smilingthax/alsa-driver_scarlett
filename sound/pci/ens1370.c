@@ -405,8 +405,10 @@ struct _snd_ensoniq {
 	dma_addr_t bugbuf_addr;
 #endif
 
+#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
 	struct gameport gameport;
 	struct semaphore joy_sem;	// gameport configuration semaphore
+#endif
 };
 
 static void snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs *regs);
@@ -1576,6 +1578,7 @@ static int __devinit snd_ensoniq_1370_mixer(ensoniq_t * ensoniq)
  *  General Switches...
  */
 
+#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
 /* MQ: gameport driver connectivity */
 #define ENSONIQ_JOY_CONTROL(xname, mask) \
 { .iface = SNDRV_CTL_ELEM_IFACE_CARD, .name = xname, .info = snd_ensoniq_control_info, \
@@ -1693,6 +1696,7 @@ static snd_kcontrol_new_t snd_es1371_joystick_addr __devinitdata =
 ES1371_JOYSTICK_ADDR("Joystick Address");
 
 #endif /* CHIP1371 */
+#endif /* CONFIG_GAMEPORT */
 
 /*
 
@@ -1950,7 +1954,9 @@ static int __devinit snd_ensoniq_create(snd_card_t * card,
 	snd_ctl_add(card, snd_ctl_new1(&snd_es1371_joystick_addr, ensoniq));
 #endif
 	snd_ctl_add(card, snd_ctl_new1(&snd_ensoniq_control_joystick, ensoniq));
+#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
 	ensoniq->gameport.io = 0x200;	// FIXME: is ES1371 configured like this above ?
+#endif
 	synchronize_irq(ensoniq->irq);
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, ensoniq, &ops)) < 0) {
