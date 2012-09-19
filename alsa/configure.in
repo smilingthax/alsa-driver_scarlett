@@ -186,7 +186,7 @@ AC_DEFUN(CHECK_KERNEL_CONFIG, [
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
-  boolchk="n"
+  boolchk=""
   AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
 int main( void ) {
@@ -217,7 +217,7 @@ AC_SUBST(CONFIG_PCI)
 
 dnl Check for SGI/MIPS (HAL2) support...
 AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
-CONFIG_SGI="n"
+CONFIG_SGI=""
 if test -r "$CONFIG_SND_KERNELDIR/include/asm/sgi/sgihpc.h"; then
   CONFIG_SGI="y"
 fi
@@ -235,7 +235,7 @@ AC_ARG_WITH(moddir,
   [  --with-moddir=/path     give the path for the alsa driver kernel modules]
   [                        [/lib/modules/<KVER>/misc]],
   moddir="$withval", 
-  moddir_tree=n
+  moddir_tree=
   modsubdir="misc"
 # Special test for RH 5.1
   if test -d /lib/modules/preferred; then
@@ -314,12 +314,12 @@ fi
 
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
-CONFIG_X86=n
-CONFIG_ALPHA=n
-CONFIG_L3=n
-CONFIG_ARM=n
-CONFIG_PPC=n
-CONFIG_SND_BIT32_EMUL=n
+CONFIG_X86=
+CONFIG_ALPHA=
+CONFIG_L3=
+CONFIG_ARM=
+CONFIG_PPC=
+CONFIG_SND_BIT32_EMUL=
 processor=""
 rm -f processor.id
 ac_save_CFLAGS="$CFLAGS"
@@ -438,7 +438,7 @@ case "$processor" in
     ;;
   ia64)
     c_opts="-Wa,-x -ffixed-r13 -mfixed-range=f10-f15,f32-f127 -funwind-tables -falign-functions=32"
-    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     CONFIG_IA64=y
     ;;
   alpha*)
@@ -482,17 +482,17 @@ case "$processor" in
   ppc)
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
     CONFIG_PPC=y
-    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   ppc64)
     c_opts="-D__powerpc__ -fsigned-char -msoft-float -pipe -Wno-uninitialized -mminimal-toc -fno-builtin"
     CONFIG_SND_BIT32_EMUL=m
-    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   mips*)
     c_opts="-mcpu=r4600 -G 0 -mips2 -fno-pic -mno-abicalls -mlong-calls"
     processor="mips"
-    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sparc)
     IS_EGCS=n
@@ -508,7 +508,7 @@ case "$processor" in
       c_opts="-m32 -pipe -mno-fpu -fcall-used-g5 -fcall-used-g7"
     fi
     processor="sparc";
-    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sparc64)
     CC=gcc
@@ -531,27 +531,27 @@ case "$processor" in
     fi
     processor="sparc64"
     CONFIG_SND_BIT32_EMUL=m
-    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   x86_64)
     LD="ld -m elf_x86_64 -e stext"
     c_opts="-mno-red-zone -mcmodel=kernel -pipe -fno-reorder-blocks -fno-strength-reduce -finline-limit=2000"
     CONFIG_SND_BIT32_EMUL=m
-    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sa1100)
     c_opts="-march=armv4 -mtune=strongarm1100 -msoft-float"
     CONFIG_ARM=y
     CONFIG_L3=y
-    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   parisc)
     c_opts="-mno-space-regs -mfast-indirect-calls -mschedule=7200 -mdisable-fpregs"
-    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   *)
     processor="unknown"
-    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
 esac
 
@@ -595,7 +595,7 @@ AC_SUBST(msmp)
 
 dnl Check for ISA PnP driver in kernel...
 AC_MSG_CHECKING(for ISA PnP driver in kernel)
-CONFIG_ISAPNP_KERNEL=n
+CONFIG_ISAPNP_KERNEL=
 if test -r $CONFIG_SND_KERNELDIR/include/linux/isapnp.h; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(CONFIG_ISAPNP_KERNEL)
@@ -610,7 +610,7 @@ AC_MSG_CHECKING(for ISA PnP support)
 AC_ARG_WITH(isapnp,
   [  --with-isapnp=yes,no,auto  driver will (not) be compiled with ISA PnP support],
   pnp="$withval", pnp="yes")
-CONFIG_ISAPNP=n
+CONFIG_ISAPNP=
 if test "$pnp" = "auto"; then
   if test -f /proc/isapnp; then
     CONFIG_ISAPNP=y
@@ -738,7 +738,7 @@ AC_MSG_CHECKING(for sequencer support)
 AC_ARG_WITH(sequencer,
   [  --with-sequencer=yes,no  driver will (not) be compiled with sequencer support],
   sequencer="$withval", sequencer="yes")
-CONFIG_SND_SEQUENCER="n"
+CONFIG_SND_SEQUENCER=""
 if test "$sequencer" = "yes"; then
   CONFIG_SND_SEQUENCER="m"
 fi
@@ -755,7 +755,7 @@ AC_MSG_CHECKING(for OSS/Free emulation)
 AC_ARG_WITH(oss,
   [  --with-oss=no,yes       driver will (not) be compiled with OSS/Free emulation],
   ossemul="$withval", ossemul="yes")
-CONFIG_SND_OSSEMUL="n"
+CONFIG_SND_OSSEMUL=""
 if test "$ossemul" = "yes"; then
   CONFIG_SND_OSSEMUL="y"
 fi
@@ -797,8 +797,8 @@ int main(void)
 #endif
 ],
   AC_MSG_RESULT("yes");rtcsup="m",
-  AC_MSG_RESULT("no");rtcsup="n",
-  AC_MSG_RESULT("unknown");rtcsup="n"
+  AC_MSG_RESULT("no");rtcsup="",
+  AC_MSG_RESULT("unknown");rtcsup=""
 )
 CFLAGS="$ac_save_CFLAGS"
 CONFIG_SND_RTCTIMER=$rtcsup
