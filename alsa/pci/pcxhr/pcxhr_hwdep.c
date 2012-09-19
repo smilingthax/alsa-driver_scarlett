@@ -23,6 +23,7 @@
 #include <sound/driver.h>
 #include <linux/interrupt.h>
 #include <linux/firmware.h>
+#include <linux/pci.h>
 #include <asm/io.h>
 #include <sound/core.h>
 #include <sound/hwdep.h>
