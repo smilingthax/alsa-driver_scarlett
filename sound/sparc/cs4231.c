@@ -390,7 +390,7 @@ static void __cs4231_writeb(cs4231_t *cp, u8 val, void __iomem *reg_addr)
  *  Basic I/O functions
  */
 
-void snd_cs4231_outm(cs4231_t *chip, unsigned char reg,
+static void snd_cs4231_outm(cs4231_t *chip, unsigned char reg,
 		     unsigned char mask, unsigned char value)
 {
 	int timeout;
@@ -473,9 +473,9 @@ static unsigned char snd_cs4231_in(cs4231_t *chip, unsigned char reg)
 	return ret;
 }
 
-#ifdef CONFIG_SND_DEBUG
+#if 0
 
-void snd_cs4231_debug(cs4231_t *chip)
+static void snd_cs4231_debug(cs4231_t *chip)
 {
 	printk("CS4231 REGS:      INDEX = 0x%02x  ",
 	       __cs4231_readb(chip, CS4231P(chip, REGSEL)));
@@ -568,7 +568,7 @@ static void snd_cs4231_mce_down(cs4231_t *chip)
 #endif
 #ifdef CONFIG_SND_DEBUG
 	if (__cs4231_readb(chip, CS4231P(chip, REGSEL)) & CS4231_INIT)
-		snd_printk("mce_down [0x%lx] - auto calibration time out (0)\n", CS4231P(chip, REGSEL));
+		snd_printk("mce_down [%p] - auto calibration time out (0)\n", CS4231P(chip, REGSEL));
 #endif
 	chip->mce_bit &= ~CS4231_MCE;
 	timeout = __cs4231_readb(chip, CS4231P(chip, REGSEL));
