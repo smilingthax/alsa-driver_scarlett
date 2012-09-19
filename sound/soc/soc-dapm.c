@@ -37,6 +37,7 @@
 #include <linux/bitops.h>
 #include <linux/platform_device.h>
 #include <linux/jiffies.h>
+#include <linux/debugfs.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -55,15 +56,17 @@ static int dapm_up_seq[] = {
 	[snd_soc_dapm_pre] = 0,
 	[snd_soc_dapm_supply] = 1,
 	[snd_soc_dapm_micbias] = 2,
-	[snd_soc_dapm_mic] = 3,
-	[snd_soc_dapm_mux] = 4,
-	[snd_soc_dapm_value_mux] = 4,
-	[snd_soc_dapm_dac] = 5,
-	[snd_soc_dapm_mixer] = 6,
-	[snd_soc_dapm_mixer_named_ctl] = 6,
-	[snd_soc_dapm_pga] = 7,
-	[snd_soc_dapm_adc] = 8,
-	[snd_soc_dapm_hp] = 9,
+	[snd_soc_dapm_aif_in] = 3,
+	[snd_soc_dapm_aif_out] = 3,
+	[snd_soc_dapm_mic] = 4,
+	[snd_soc_dapm_mux] = 5,
+	[snd_soc_dapm_value_mux] = 5,
+	[snd_soc_dapm_dac] = 6,
+	[snd_soc_dapm_mixer] = 7,
+	[snd_soc_dapm_mixer_named_ctl] = 7,
+	[snd_soc_dapm_pga] = 8,
+	[snd_soc_dapm_adc] = 9,
+	[snd_soc_dapm_hp] = 10,
 	[snd_soc_dapm_spk] = 10,
 	[snd_soc_dapm_post] = 11,
 };
@@ -72,7 +75,7 @@ static int dapm_down_seq[] = {
 	[snd_soc_dapm_pre] = 0,
 	[snd_soc_dapm_adc] = 1,
 	[snd_soc_dapm_hp] = 2,
-	[snd_soc_dapm_spk] = 3,
+	[snd_soc_dapm_spk] = 2,
 	[snd_soc_dapm_pga] = 4,
 	[snd_soc_dapm_mixer_named_ctl] = 5,
 	[snd_soc_dapm_mixer] = 5,
@@ -81,8 +84,10 @@ static int dapm_down_seq[] = {
 	[snd_soc_dapm_micbias] = 8,
 	[snd_soc_dapm_mux] = 9,
 	[snd_soc_dapm_value_mux] = 9,
-	[snd_soc_dapm_supply] = 10,
-	[snd_soc_dapm_post] = 11,
+	[snd_soc_dapm_aif_in] = 10,
+	[snd_soc_dapm_aif_out] = 10,
+	[snd_soc_dapm_supply] = 11,
+	[snd_soc_dapm_post] = 12,
 };
 
 static void pop_wait(u32 pop_time)
@@ -148,8 +153,12 @@ static int snd_soc_dapm_set_bias_level(struct snd_soc_device *socdev,
 
 	if (card->set_bias_level)
 		ret = card->set_bias_level(card, level);
-	if (ret == 0 && codec->set_bias_level)
-		ret = codec->set_bias_level(codec, level);
+	if (ret == 0) {
+		if (codec->set_bias_level)
+			ret = codec->set_bias_level(codec, level);
+		else
+			codec->bias_level = level;
+	}
 
 	return ret;
 }
@@ -224,6 +233,8 @@ static void dapm_set_path_status(struct snd_soc_dapm_widget *w,
 	case snd_soc_dapm_micbias:
 	case snd_soc_dapm_vmid:
 	case snd_soc_dapm_supply:
+	case snd_soc_dapm_aif_in:
+	case snd_soc_dapm_aif_out:
 		p->connect = 1;
 	break;
 	/* does effect routing - dynamically connected */
@@ -497,8 +508,14 @@ static int is_connected_output_ep(struct snd_soc_dapm_widget *widget)
 	if (widget->id == snd_soc_dapm_supply)
 		return 0;
 
-	if (widget->id == snd_soc_dapm_adc && widget->active)
-		return 1;
+	switch (widget->id) {
+	case snd_soc_dapm_adc:
+	case snd_soc_dapm_aif_out:
+		if (widget->active)
+			return 1;
+	default:
+		break;
+	}
 
 	if (widget->connected) {
 		/* connected pin ? */
@@ -537,8 +554,14 @@ static int is_connected_input_ep(struct snd_soc_dapm_widget *widget)
 		return 0;
 
 	/* active stream ? */
-	if (widget->id == snd_soc_dapm_dac && widget->active)
-		return 1;
+	switch (widget->id) {
+	case snd_soc_dapm_dac:
+	case snd_soc_dapm_aif_in:
+		if (widget->active)
+			return 1;
+	default:
+		break;
+	}
 
 	if (widget->connected) {
 		/* connected pin ? */
@@ -966,6 +989,22 @@ static int dapm_power_widgets(struct snd_soc_codec *codec, int event)
 		}
 	}
 
+	/* If there are no DAPM widgets then try to figure out power from the
+	 * event type.
+	 */
+	if (list_empty(&codec->dapm_widgets)) {
+		switch (event) {
+		case SND_SOC_DAPM_STREAM_START:
+		case SND_SOC_DAPM_STREAM_RESUME:
+			sys_power = 1;
+			break;
+		case SND_SOC_DAPM_STREAM_NOP:
+			sys_power = codec->bias_level != SND_SOC_BIAS_STANDBY;
+		default:
+			break;
+		}
+	}
+
 	/* If we're changing to all on or all off then prepare */
 	if ((sys_power && codec->bias_level == SND_SOC_BIAS_STANDBY) ||
 	    (!sys_power && codec->bias_level == SND_SOC_BIAS_ON)) {
@@ -1036,6 +1075,8 @@ static void dbg_dump_dapm(struct snd_soc_codec* codec, const char *action)
 		case snd_soc_dapm_mixer:
 		case snd_soc_dapm_mixer_named_ctl:
 		case snd_soc_dapm_supply:
+		case snd_soc_dapm_aif_in:
+		case snd_soc_dapm_aif_out:
 			if (w->name) {
 				in = is_connected_input_ep(w);
 				dapm_clear_walk(w->codec);
@@ -1058,6 +1099,92 @@ static void dbg_dump_dapm(struct snd_soc_codec* codec, const char *action)
 		break;
 		}
 	}
+}
+#endif
+
+#ifdef CONFIG_DEBUG_FS
+static int dapm_widget_power_open_file(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+	return 0;
+}
+
+static ssize_t dapm_widget_power_read_file(struct file *file,
+					   char __user *user_buf,
+					   size_t count, loff_t *ppos)
+{
+	struct snd_soc_dapm_widget *w = file->private_data;
+	char *buf;
+	int in, out;
+	ssize_t ret;
+	struct snd_soc_dapm_path *p = NULL;
+
+	buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	in = is_connected_input_ep(w);
+	dapm_clear_walk(w->codec);
+	out = is_connected_output_ep(w);
+	dapm_clear_walk(w->codec);
+
+	ret = snprintf(buf, PAGE_SIZE, "%s: %s  in %d out %d\n",
+		       w->name, w->power ? "On" : "Off", in, out);
+
+	if (w->active && w->sname)
+		ret += snprintf(buf, PAGE_SIZE - ret, " stream %s active\n",
+				w->sname);
+
+	list_for_each_entry(p, &w->sources, list_sink) {
+		if (p->connect)
+			ret += snprintf(buf + ret, PAGE_SIZE - ret,
+					" in  %s %s\n",
+					p->name ? p->name : "static",
+					p->source->name);
+	}
+	list_for_each_entry(p, &w->sinks, list_source) {
+		if (p->connect)
+			ret += snprintf(buf + ret, PAGE_SIZE - ret,
+					" out %s %s\n",
+					p->name ? p->name : "static",
+					p->sink->name);
+	}
+
+	ret = simple_read_from_buffer(user_buf, count, ppos, buf, ret);
+
+	kfree(buf);
+	return ret;
+}
+
+static const struct file_operations dapm_widget_power_fops = {
+	.open = dapm_widget_power_open_file,
+	.read = dapm_widget_power_read_file,
+};
+
+void snd_soc_dapm_debugfs_init(struct snd_soc_codec *codec)
+{
+	struct snd_soc_dapm_widget *w;
+	struct dentry *d;
+
+	if (!codec->debugfs_dapm)
+		return;
+
+	list_for_each_entry(w, &codec->dapm_widgets, list) {
+		if (!w->name)
+			continue;
+
+		d = debugfs_create_file(w->name, 0444,
+					codec->debugfs_dapm, w,
+					&dapm_widget_power_fops);
+		if (!d)
+			printk(KERN_WARNING
+			       "ASoC: Failed to create %s debugfs file\n",
+			       w->name);
+	}
+}
+#else
+void snd_soc_dapm_debugfs_init(struct snd_soc_codec *codec)
+{
 }
 #endif
 
@@ -1326,6 +1453,8 @@ static int snd_soc_dapm_add_route(struct snd_soc_codec *codec,
 	case snd_soc_dapm_pre:
 	case snd_soc_dapm_post:
 	case snd_soc_dapm_supply:
+	case snd_soc_dapm_aif_in:
+	case snd_soc_dapm_aif_out:
 		list_add(&path->list, &codec->dapm_paths);
 		list_add(&path->list_sink, &wsink->sources);
 		list_add(&path->list_source, &wsource->sinks);
@@ -1428,9 +1557,11 @@ int snd_soc_dapm_new_widgets(struct snd_soc_codec *codec)
 			dapm_new_mux(codec, w);
 			break;
 		case snd_soc_dapm_adc:
+		case snd_soc_dapm_aif_out:
 			w->power_check = dapm_adc_check_power;
 			break;
 		case snd_soc_dapm_dac:
+		case snd_soc_dapm_aif_in:
 			w->power_check = dapm_dac_check_power;
 			break;
 		case snd_soc_dapm_pga:

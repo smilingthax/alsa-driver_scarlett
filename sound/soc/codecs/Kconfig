@@ -12,11 +12,13 @@ config SND_SOC_ALL_CODECS
 	tristate "Build all ASoC CODEC drivers"
 	select SND_SOC_L3
 	select SND_SOC_AC97_CODEC if SND_SOC_AC97_BUS
+	select SND_SOC_AD1836 if SPI_MASTER
 	select SND_SOC_AD1938 if SPI_MASTER
 	select SND_SOC_AD1980 if SND_SOC_AC97_BUS
 	select SND_SOC_AD73311 if I2C
 	select SND_SOC_AK4104 if SPI_MASTER
 	select SND_SOC_AK4535 if I2C
+	select SND_SOC_AK4642 if I2C
 	select SND_SOC_CS4270 if I2C
 	select SND_SOC_MAX9877 if I2C
 	select SND_SOC_PCM3008
@@ -38,12 +40,14 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_WM8731 if SND_SOC_I2C_AND_SPI
 	select SND_SOC_WM8750 if SND_SOC_I2C_AND_SPI
 	select SND_SOC_WM8753 if SND_SOC_I2C_AND_SPI
+	select SND_SOC_WM8776 if SND_SOC_I2C_AND_SPI
 	select SND_SOC_WM8900 if I2C
 	select SND_SOC_WM8903 if I2C
 	select SND_SOC_WM8940 if I2C
 	select SND_SOC_WM8960 if I2C
 	select SND_SOC_WM8961 if I2C
 	select SND_SOC_WM8971 if I2C
+	select SND_SOC_WM8974 if I2C
 	select SND_SOC_WM8988 if SND_SOC_I2C_AND_SPI
 	select SND_SOC_WM8990 if I2C
 	select SND_SOC_WM8993 if I2C
@@ -62,10 +66,17 @@ config SND_SOC_ALL_CODECS
 
           If unsure select "N".
 
+config SND_SOC_WM_HUBS
+	tristate
+	default y if SND_SOC_WM8993=y
+	default m if SND_SOC_WM8993=m
 
 config SND_SOC_AC97_CODEC
 	tristate
 	select SND_AC97_CODEC
+
+config SND_SOC_AD1836
+	tristate
 
 config SND_SOC_AD1938
 	tristate
@@ -80,6 +91,9 @@ config SND_SOC_AK4104
 	tristate
 
 config SND_SOC_AK4535
+	tristate
+
+config SND_SOC_AK4642
 	tristate
 
 # Cirrus Logic CS4270 Codec
@@ -158,6 +172,9 @@ config SND_SOC_WM8750
 config SND_SOC_WM8753
 	tristate
 
+config SND_SOC_WM8776
+	tristate
+
 config SND_SOC_WM8900
 	tristate
 
@@ -174,6 +191,9 @@ config SND_SOC_WM8961
 	tristate
 
 config SND_SOC_WM8971
+	tristate
+
+config SND_SOC_WM8974
 	tristate
 
 config SND_SOC_WM8988

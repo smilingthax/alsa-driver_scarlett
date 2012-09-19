@@ -1156,6 +1156,9 @@ static ssize_t soc_codec_reg_show(struct snd_soc_codec *codec, char *buf)
 
 	count += sprintf(buf, "%s registers\n", codec->name);
 	for (i = 0; i < codec->reg_cache_size; i += step) {
+		if (codec->readable_register && !codec->readable_register(i))
+			continue;
+
 		count += sprintf(buf + count, "%2x: ", i);
 		if (count >= PAGE_SIZE - 1)
 			break;
@@ -1264,10 +1267,18 @@ static void soc_init_codec_debugfs(struct snd_soc_codec *codec)
 	if (!codec->debugfs_pop_time)
 		printk(KERN_WARNING
 		       "Failed to create pop time debugfs file\n");
+
+	codec->debugfs_dapm = debugfs_create_dir("dapm", debugfs_root);
+	if (!codec->debugfs_dapm)
+		printk(KERN_WARNING
+		       "Failed to create DAPM debugfs directory\n");
+
+	snd_soc_dapm_debugfs_init(codec);
 }
 
 static void soc_cleanup_codec_debugfs(struct snd_soc_codec *codec)
 {
+	debugfs_remove_recursive(codec->debugfs_dapm);
 	debugfs_remove(codec->debugfs_pop_time);
 	debugfs_remove(codec->debugfs_reg);
 }
@@ -2220,17 +2231,20 @@ EXPORT_SYMBOL_GPL(snd_soc_dai_set_fmt);
 /**
  * snd_soc_dai_set_tdm_slot - configure DAI TDM.
  * @dai: DAI
- * @mask: DAI specific mask representing used slots.
+ * @tx_mask: bitmask representing active TX slots.
+ * @rx_mask: bitmask representing active RX slots.
  * @slots: Number of slots in use.
+ * @slot_width: Width in bits for each slot.
  *
  * Configures a DAI for TDM operation. Both mask and slots are codec and DAI
  * specific.
  */
 int snd_soc_dai_set_tdm_slot(struct snd_soc_dai *dai,
-	unsigned int mask, int slots)
+	unsigned int tx_mask, unsigned int rx_mask, int slots, int slot_width)
 {
 	if (dai->ops && dai->ops->set_tdm_slot)
-		return dai->ops->set_tdm_slot(dai, mask, slots);
+		return dai->ops->set_tdm_slot(dai, tx_mask, rx_mask,
+				slots, slot_width);
 	else
 		return -EINVAL;
 }

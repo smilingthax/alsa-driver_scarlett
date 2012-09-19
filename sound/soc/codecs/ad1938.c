@@ -72,14 +72,20 @@ static const struct snd_kcontrol_new ad1938_snd_controls[] = {
 			AD1938_DAC_R4_VOL, 0, 0xFF, 1),
 
 	/* ADC switch control */
-	SOC_DOUBLE("ADC1 Switch", AD1938_ADC_CTRL0, AD1938_ADCL1_MUTE, AD1938_ADCR1_MUTE, 1, 1),
-	SOC_DOUBLE("ADC2 Switch", AD1938_ADC_CTRL0, AD1938_ADCL2_MUTE, AD1938_ADCR2_MUTE, 1, 1),
+	SOC_DOUBLE("ADC1 Switch", AD1938_ADC_CTRL0, AD1938_ADCL1_MUTE,
+		AD1938_ADCR1_MUTE, 1, 1),
+	SOC_DOUBLE("ADC2 Switch", AD1938_ADC_CTRL0, AD1938_ADCL2_MUTE,
+		AD1938_ADCR2_MUTE, 1, 1),
 
 	/* DAC switch control */
-	SOC_DOUBLE("DAC1 Switch", AD1938_DAC_CHNL_MUTE, AD1938_DACL1_MUTE, AD1938_DACR1_MUTE, 1, 1),
-	SOC_DOUBLE("DAC2 Switch", AD1938_DAC_CHNL_MUTE, AD1938_DACL2_MUTE, AD1938_DACR2_MUTE, 1, 1),
-	SOC_DOUBLE("DAC3 Switch", AD1938_DAC_CHNL_MUTE, AD1938_DACL3_MUTE, AD1938_DACR3_MUTE, 1, 1),
-	SOC_DOUBLE("DAC4 Switch", AD1938_DAC_CHNL_MUTE, AD1938_DACL4_MUTE, AD1938_DACR4_MUTE, 1, 1),
+	SOC_DOUBLE("DAC1 Switch", AD1938_DAC_CHNL_MUTE, AD1938_DACL1_MUTE,
+		AD1938_DACR1_MUTE, 1, 1),
+	SOC_DOUBLE("DAC2 Switch", AD1938_DAC_CHNL_MUTE, AD1938_DACL2_MUTE,
+		AD1938_DACR2_MUTE, 1, 1),
+	SOC_DOUBLE("DAC3 Switch", AD1938_DAC_CHNL_MUTE, AD1938_DACL3_MUTE,
+		AD1938_DACR3_MUTE, 1, 1),
+	SOC_DOUBLE("DAC4 Switch", AD1938_DAC_CHNL_MUTE, AD1938_DACL4_MUTE,
+		AD1938_DACR4_MUTE, 1, 1),
 
 	/* ADC high-pass filter */
 	SOC_SINGLE("ADC High Pass Filter Switch", AD1938_ADC_CTRL0,
@@ -93,11 +99,23 @@ static const struct snd_soc_dapm_widget ad1938_dapm_widgets[] = {
 	SND_SOC_DAPM_DAC("DAC", "Playback", AD1938_DAC_CTRL0, 0, 1),
 	SND_SOC_DAPM_ADC("ADC", "Capture", SND_SOC_NOPM, 0, 0),
 	SND_SOC_DAPM_SUPPLY("ADC_PWR", AD1938_ADC_CTRL0, 0, 1, NULL, 0),
+	SND_SOC_DAPM_OUTPUT("DAC1OUT"),
+	SND_SOC_DAPM_OUTPUT("DAC2OUT"),
+	SND_SOC_DAPM_OUTPUT("DAC3OUT"),
+	SND_SOC_DAPM_OUTPUT("DAC4OUT"),
+	SND_SOC_DAPM_INPUT("ADC1IN"),
+	SND_SOC_DAPM_INPUT("ADC2IN"),
 };
 
 static const struct snd_soc_dapm_route audio_paths[] = {
 	{ "DAC", NULL, "ADC_PWR" },
 	{ "ADC", NULL, "ADC_PWR" },
+	{ "DAC1OUT", "DAC1 Switch", "DAC" },
+	{ "DAC2OUT", "DAC2 Switch", "DAC" },
+	{ "DAC3OUT", "DAC3 Switch", "DAC" },
+	{ "DAC4OUT", "DAC4 Switch", "DAC" },
+	{ "ADC", "ADC1 Switch", "ADC1IN" },
+	{ "ADC", "ADC2 Switch", "ADC2IN" },
 };
 
 /*
@@ -110,7 +128,8 @@ static int ad1938_mute(struct snd_soc_dai *dai, int mute)
 	int reg;
 
 	reg = codec->read(codec, AD1938_DAC_CTRL2);
-	reg = (mute > 0) ? reg | AD1938_DAC_MASTER_MUTE : reg & (~AD1938_DAC_MASTER_MUTE);
+	reg = (mute > 0) ? reg | AD1938_DAC_MASTER_MUTE : reg &
+		(~AD1938_DAC_MASTER_MUTE);
 	codec->write(codec, AD1938_DAC_CTRL2, reg);
 
 	return 0;
@@ -119,14 +138,15 @@ static int ad1938_mute(struct snd_soc_dai *dai, int mute)
 static inline int ad1938_pll_powerctrl(struct snd_soc_codec *codec, int cmd)
 {
 	int reg = codec->read(codec, AD1938_PLL_CLK_CTRL0);
-	reg = (cmd > 0) ? reg & (~AD1938_PLL_POWERDOWN) : reg | AD1938_PLL_POWERDOWN;
+	reg = (cmd > 0) ? reg & (~AD1938_PLL_POWERDOWN) : reg |
+		AD1938_PLL_POWERDOWN;
 	codec->write(codec, AD1938_PLL_CLK_CTRL0, reg);
 
 	return 0;
 }
 
-static int ad1938_set_tdm_slot(struct snd_soc_dai *dai,
-		unsigned int mask, int slots)
+static int ad1938_set_tdm_slot(struct snd_soc_dai *dai, unsigned int tx_mask,
+			       unsigned int mask, int slots, int width)
 {
 	struct snd_soc_codec *codec = dai->codec;
 	int dac_reg = codec->read(codec, AD1938_DAC_CTRL1);
@@ -171,8 +191,8 @@ static int ad1938_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	adc_reg = codec->read(codec, AD1938_ADC_CTRL2);
 	dac_reg = codec->read(codec, AD1938_DAC_CTRL1);
 
-	/* At present, the driver only support AUX ADC mode(SND_SOC_DAIFMT_I2S with TDM)
-	 * and ADC&DAC TDM mode(SND_SOC_DAIFMT_DSP_A)
+	/* At present, the driver only support AUX ADC mode(SND_SOC_DAIFMT_I2S
+	 * with TDM) and ADC&DAC TDM mode(SND_SOC_DAIFMT_DSP_A)
 	 */
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
@@ -363,7 +383,8 @@ static unsigned int ad1938_read_reg_cache(struct snd_soc_codec *codec,
  * read from the ad1938 register space
  */
 
-static unsigned int ad1938_read_reg(struct snd_soc_codec *codec, unsigned int reg)
+static unsigned int ad1938_read_reg(struct snd_soc_codec *codec,
+						unsigned int reg)
 {
 	char w_buf[AD1938_SPI_BUFLEN];
 	char r_buf[AD1938_SPI_BUFLEN];
@@ -435,7 +456,7 @@ static int __devexit ad1938_spi_remove(struct spi_device *spi)
 
 static struct spi_driver ad1938_spi_driver = {
 	.driver = {
-		.name	= "ad1938-spi",
+		.name	= "ad1938",
 		.bus	= &spi_bus_type,
 		.owner	= THIS_MODULE,
 	},
@@ -502,12 +523,19 @@ static int ad1938_register(struct ad1938_priv *ad1938)
 	ad1938_codec = codec;
 
 	/* default setting for ad1938 */
-	codec->write(codec, AD1938_DAC_CHNL_MUTE, 0x0); /* unmute dac channels */
-	codec->write(codec, AD1938_DAC_CTRL2, 0x1A); /* de-emphasis: 48kHz, powedown dac */
-	codec->write(codec, AD1938_DAC_CTRL0, 0x21); /* powerdown dac, dac tdm mode */
-	codec->write(codec, AD1938_ADC_CTRL0, 0x3); /* high-pass filter enable */
-	codec->write(codec, AD1938_ADC_CTRL1, 0x43); /* sata delay=1, adc aux mode */
-	codec->write(codec, AD1938_PLL_CLK_CTRL0, 0x9D); /* pll input:mclki/xi */
+
+	/* unmute dac channels */
+	codec->write(codec, AD1938_DAC_CHNL_MUTE, 0x0);
+	/* de-emphasis: 48kHz, powedown dac */
+	codec->write(codec, AD1938_DAC_CTRL2, 0x1A);
+	/* powerdown dac, dac in tdm mode */
+	codec->write(codec, AD1938_DAC_CTRL0, 0x41);
+	/* high-pass filter enable */
+	codec->write(codec, AD1938_ADC_CTRL0, 0x3);
+	/* sata delay=1, adc aux mode */
+	codec->write(codec, AD1938_ADC_CTRL1, 0x43);
+	/* pll input: mclki/xi */
+	codec->write(codec, AD1938_PLL_CLK_CTRL0, 0x9D);
 	codec->write(codec, AD1938_PLL_CLK_CTRL1, 0x04);
 
 	ad1938_fill_cache(codec);
@@ -515,6 +543,7 @@ static int ad1938_register(struct ad1938_priv *ad1938)
 	ret = snd_soc_register_codec(codec);
 	if (ret != 0) {
 		dev_err(codec->dev, "Failed to register codec: %d\n", ret);
+		kfree(ad1938);
 		return ret;
 	}
 
@@ -522,6 +551,7 @@ static int ad1938_register(struct ad1938_priv *ad1938)
 	if (ret != 0) {
 		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
 		snd_soc_unregister_codec(codec);
+		kfree(ad1938);
 		return ret;
 	}
 
