@@ -1278,6 +1278,9 @@ static int __devinit snd_intel8x0_pcm_mic(intel8x0_t *chip, int device, snd_pcm_
 	sprintf(pcm->name, "%s - MIC ADC", chip->card->shortname);
 
 	chip->pcm_mic = pcm;	
+
+	snd_pcm_lib_preallocate_pci_pages_for_all(chip->pci, pcm, 0, 128*1024);
+
 	if (rpcm)
 		*rpcm = pcm;
 	return 0;
@@ -1312,6 +1315,9 @@ static int __devinit snd_intel8x0_pcm_mic2(intel8x0_t *chip, int device, snd_pcm
 	sprintf(pcm->name, "%s - MIC2 ADC", chip->card->shortname);
 
 	chip->pcm_mic2 = pcm;	
+
+	snd_pcm_lib_preallocate_pci_pages_for_all(chip->pci, pcm, 0, 128*1024);
+
 	if (rpcm)
 		*rpcm = pcm;
 	return 0;
@@ -1346,6 +1352,9 @@ static int __devinit snd_intel8x0_pcm_capture2(intel8x0_t *chip, int device, snd
 	sprintf(pcm->name, "%s - ADC2", chip->card->shortname);
 
 	chip->pcm2 = pcm;	
+
+	snd_pcm_lib_preallocate_pci_pages_for_all(chip->pci, pcm, 0, 128*1024);
+
 	if (rpcm)
 		*rpcm = pcm;
 	return 0;
@@ -1380,6 +1389,9 @@ static int __devinit snd_intel8x0_pcm_spdif(intel8x0_t *chip, int device, snd_pc
 	sprintf(pcm->name, "%s - IEC958", chip->card->shortname);
 
 	chip->pcm_spdif = pcm;	
+
+	snd_pcm_lib_preallocate_pci_pages_for_all(chip->pci, pcm, 64*1024, 128*1024);
+
 	if (rpcm)
 		*rpcm = pcm;
 	return 0;
@@ -1415,6 +1427,9 @@ static int __devinit snd_intel8x0_ali_spdif(intel8x0_t *chip, int device, snd_pc
 	sprintf(pcm->name, "%s - IEC958", chip->card->shortname);
 
 	chip->pcm_spdif = pcm;	
+
+	snd_pcm_lib_preallocate_pci_pages_for_all(chip->pci, pcm, 64*1024, 128*1024);
+
 	if (rpcm)
 		*rpcm = pcm;
 	return 0;
@@ -1449,6 +1464,9 @@ static int __devinit snd_intel8x0_ali_ac97spdif(intel8x0_t *chip, int device, sn
 	sprintf(pcm->name, "%s - AC97 IEC958", chip->card->shortname);
 
 	chip->pcm_ac97spdif = pcm;	
+
+	snd_pcm_lib_preallocate_pci_pages_for_all(chip->pci, pcm, 64*1024, 128*1024);
+
 	if (rpcm)
 		*rpcm = pcm;
 	return 0;
