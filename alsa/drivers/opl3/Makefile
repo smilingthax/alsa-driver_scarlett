@@ -8,8 +8,6 @@ ifeq ($(subst m,y,$(CONFIG_SND_SEQUENCER)),y)
   obj-$(CONFIG_SND_AZT3328) += snd-opl3-synth.o
 endif
 
-obj-$(CONFIG_SND_PC98_CS4232) += $(OPL3_OBJS)
-
 export-objs  := opl3_lib.o
 
 TOPDIR = $(MAINSRCDIR)

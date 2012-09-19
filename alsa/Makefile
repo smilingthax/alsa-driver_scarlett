@@ -148,11 +148,11 @@ endif
 
 .PHONY: install-scripts
 install-scripts:
-	if [ -d /sbin/init.d ]; then \
+	if [ -d $(DESTDIR)/sbin/init.d ]; then \
 	  install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/sbin/init.d/alsasound; \
-	elif [ -d /etc/rc.d/init.d ]; then \
+	elif [ -d $(DESTDIR)/etc/rc.d/init.d ]; then \
 	  install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/etc/rc.d/init.d/alsasound; \
-	elif [ -d /etc/init.d ]; then \
+	elif [ -d $(DESTDIR)/etc/init.d ]; then \
 	  install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/etc/init.d/alsasound; \
 	fi
 
