@@ -170,7 +170,6 @@ struct adapter_info {
 struct asi_open_state {
 	int nOpenFlag;
 	void *hOwner;
-	u16 wDspIndex;
 };
 
 #ifndef DISABLE_PRAGMA_PACK1
@@ -266,8 +265,8 @@ static void SubSysMessage(
 			 * First, make sure we are pointing to a
 			 * non-zero adapter type.
 			 */
-			while (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.
-				awAdapterList[nIndex] == 0) {
+			while (gRESP_HPI_SUBSYS_FIND_ADAPTERS.
+				s.awAdapterList[nIndex] == 0) {
 				nIndex++;
 				if (nIndex >= HPI_MAX_ADAPTERS)
 					break;
@@ -277,8 +276,8 @@ static void SubSysMessage(
 				nIndex++;
 				if (nIndex >= HPI_MAX_ADAPTERS)
 					break;
-				while (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.
-					awAdapterList[nIndex] == 0) {
+				while (gRESP_HPI_SUBSYS_FIND_ADAPTERS.
+					s.awAdapterList[nIndex] == 0) {
 					nIndex++;
 					if (nIndex >= HPI_MAX_ADAPTERS)
 						break;
@@ -289,8 +288,8 @@ static void SubSysMessage(
 			if (nIndex < HPI_MAX_ADAPTERS) {
 				phr->u.s.wAdapterIndex = (u16)nIndex;
 				phr->u.s.awAdapterList[0] =
-					gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.
-					awAdapterList[nIndex];
+					gRESP_HPI_SUBSYS_FIND_ADAPTERS.
+					s.awAdapterList[nIndex];
 			} else {
 				phr->u.s.wAdapterIndex = 0;
 				phr->u.s.awAdapterList[0] = 0;
@@ -307,14 +306,14 @@ static void SubSysMessage(
 			struct hpi_message hm;
 			struct hpi_response hr;
 			/* call to HPI_ADAPTER_CLOSE */
-			HPI_InitMessage(&hm, HPI_OBJ_ADAPTER,
+			HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
 				HPI_ADAPTER_CLOSE);
 			hm.wAdapterIndex = phm->wAdapterIndex;
 			HW_EntryPoint(&hm, &hr);
 		}
 		HW_EntryPoint(phm, phr);
-		gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.awAdapterList[phm->
-			wAdapterIndex]
+		gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.
+			awAdapterList[phm->wAdapterIndex]
 			= 0;
 		hpi_entry_points[phm->wAdapterIndex] = NULL;
 		break;
@@ -367,7 +366,7 @@ static void OStreamMessage(
 	void *hOwner
 )
 {
-	if (phm->u.d.wStreamIndex >=
+	if (phm->wObjIndex >=
 		aADAPTER_INFO[phm->wAdapterIndex].wNumOutStreams) {
 		HPI_InitResponse(phr, HPI_OBJ_OSTREAM, phm->wFunction,
 			HPI_ERROR_INVALID_OBJ_INDEX);
@@ -393,8 +392,7 @@ static void IStreamMessage(
 	void *hOwner
 )
 {
-	if (phm->u.d.wStreamIndex >=
-		aADAPTER_INFO[phm->wAdapterIndex].wNumInStreams) {
+	if (phm->wObjIndex >= aADAPTER_INFO[phm->wAdapterIndex].wNumInStreams) {
 		HPI_InitResponse(phr, HPI_OBJ_ISTREAM, phm->wFunction,
 			HPI_ERROR_INVALID_OBJ_INDEX);
 		return;
@@ -470,7 +468,8 @@ void HPI_MessageEx(
 
 		HPI_DEBUG_MESSAGE(ERROR, phm);
 
-		ep = hpi_entry_points[phm->wAdapterIndex];
+		if (phm->wAdapterIndex < HPI_MAX_ADAPTERS)
+			ep = hpi_entry_points[phm->wAdapterIndex];
 
 		/* Don't need this? Have adapter index in debug info
 		   Know at driver load time index->backend mapping */
@@ -542,18 +541,17 @@ static void InStreamOpen(
 
 	HpiOs_Msgxlock_Lock(&msgxLock);
 
-	if (aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
-		nOpenFlag)
+	if (aIStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].nOpenFlag)
 		phr->wError = HPI_ERROR_OBJ_ALREADY_OPEN;
 	else if (aRESP_HPI_ISTREAM_OPEN[phm->wAdapterIndex]
-		[phm->u.d.wStreamIndex].h.wError)
+		[phm->wObjIndex].h.wError)
 		memcpy(phr,
-			&aRESP_HPI_ISTREAM_OPEN[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex],
+			&aRESP_HPI_ISTREAM_OPEN[phm->wAdapterIndex][phm->
+				wObjIndex],
 			sizeof(aRESP_HPI_ISTREAM_OPEN[0][0]));
 	else {
-		aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
-			nOpenFlag = 1;
+		aIStreamUserOpen[phm->wAdapterIndex][phm->
+			wObjIndex].nOpenFlag = 1;
 		HpiOs_Msgxlock_UnLock(&msgxLock);
 
 		/* issue a reset */
@@ -563,19 +561,17 @@ static void InStreamOpen(
 
 		HpiOs_Msgxlock_Lock(&msgxLock);
 		if (hr.wError) {
-			aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].nOpenFlag = 0;
+			aIStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				nOpenFlag = 0;
 			phr->wError = hr.wError;
 		} else {
-			aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].nOpenFlag = 1;
-			aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].hOwner = hOwner;
+			aIStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				nOpenFlag = 1;
+			aIStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				hOwner = hOwner;
 			memcpy(phr,
-				&aRESP_HPI_ISTREAM_OPEN[phm->
-					wAdapterIndex][phm->u.
-					d.
-					wStreamIndex],
+				&aRESP_HPI_ISTREAM_OPEN[phm->wAdapterIndex]
+				[phm->wObjIndex],
 				sizeof(aRESP_HPI_ISTREAM_OPEN[0][0]));
 		}
 	}
@@ -596,13 +592,12 @@ static void InStreamClose(
 
 	HpiOs_Msgxlock_Lock(&msgxLock);
 	if (hOwner ==
-		aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
-		hOwner) {
+		aIStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].hOwner) {
 		/* HPI_DEBUG_LOG(INFO,"closing adapter %d "
 		   "instream %d owned by %p\n",
-		   phm->wAdapterIndex, phm->u.d.wStreamIndex, hOwner); */
-		aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
-			hOwner = NULL;
+		   phm->wAdapterIndex, phm->wObjIndex, hOwner); */
+		aIStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].hOwner =
+			NULL;
 		HpiOs_Msgxlock_UnLock(&msgxLock);
 		/* issue a reset */
 		memcpy(&hm, phm, sizeof(hm));
@@ -610,22 +605,22 @@ static void InStreamClose(
 		HW_EntryPoint(&hm, &hr);
 		HpiOs_Msgxlock_Lock(&msgxLock);
 		if (hr.wError) {
-			aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].hOwner = hOwner;
+			aIStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				hOwner = hOwner;
 			phr->wError = hr.wError;
 		} else {
-			aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].nOpenFlag = 0;
-			aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].hOwner = NULL;
+			aIStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				nOpenFlag = 0;
+			aIStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				hOwner = NULL;
 		}
 	} else {
 		HPI_DEBUG_LOG(WARNING,
 			"%p trying to close %d instream %d owned by %p\n",
 			hOwner, phm->wAdapterIndex,
-			phm->u.d.wStreamIndex,
-			aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].hOwner);
+			phm->wObjIndex,
+			aIStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+			hOwner);
 		phr->wError = HPI_ERROR_OBJ_NOT_OPEN;
 	}
 	HpiOs_Msgxlock_UnLock(&msgxLock);
@@ -645,18 +640,17 @@ static void OutStreamOpen(
 
 	HpiOs_Msgxlock_Lock(&msgxLock);
 
-	if (aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
-		nOpenFlag)
+	if (aOStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].nOpenFlag)
 		phr->wError = HPI_ERROR_OBJ_ALREADY_OPEN;
 	else if (aRESP_HPI_OSTREAM_OPEN[phm->wAdapterIndex]
-		[phm->u.d.wStreamIndex].h.wError)
+		[phm->wObjIndex].h.wError)
 		memcpy(phr,
-			&aRESP_HPI_OSTREAM_OPEN[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex],
+			&aRESP_HPI_OSTREAM_OPEN[phm->wAdapterIndex][phm->
+				wObjIndex],
 			sizeof(aRESP_HPI_OSTREAM_OPEN[0][0]));
 	else {
-		aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
-			nOpenFlag = 1;
+		aOStreamUserOpen[phm->wAdapterIndex][phm->
+			wObjIndex].nOpenFlag = 1;
 		HpiOs_Msgxlock_UnLock(&msgxLock);
 
 		/* issue a reset */
@@ -666,19 +660,17 @@ static void OutStreamOpen(
 
 		HpiOs_Msgxlock_Lock(&msgxLock);
 		if (hr.wError) {
-			aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].nOpenFlag = 0;
+			aOStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				nOpenFlag = 0;
 			phr->wError = hr.wError;
 		} else {
-			aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].nOpenFlag = 1;
-			aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].hOwner = hOwner;
+			aOStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				nOpenFlag = 1;
+			aOStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				hOwner = hOwner;
 			memcpy(phr,
-				&aRESP_HPI_OSTREAM_OPEN[phm->
-					wAdapterIndex][phm->u.
-					d.
-					wStreamIndex],
+				&aRESP_HPI_OSTREAM_OPEN[phm->wAdapterIndex]
+				[phm->wObjIndex],
 				sizeof(aRESP_HPI_OSTREAM_OPEN[0][0]));
 		}
 	}
@@ -700,13 +692,12 @@ static void OutStreamClose(
 	HpiOs_Msgxlock_Lock(&msgxLock);
 
 	if (hOwner ==
-		aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
-		hOwner) {
+		aOStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].hOwner) {
 		/* HPI_DEBUG_LOG(INFO,"closing adapter %d "
 		   "outstream %d owned by %p\n",
-		   phm->wAdapterIndex, phm->u.d.wStreamIndex, hOwner); */
-		aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
-			hOwner = NULL;
+		   phm->wAdapterIndex, phm->wObjIndex, hOwner); */
+		aOStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].hOwner =
+			NULL;
 		HpiOs_Msgxlock_UnLock(&msgxLock);
 		/* issue a reset */
 		memcpy(&hm, phm, sizeof(hm));
@@ -714,22 +705,22 @@ static void OutStreamClose(
 		HW_EntryPoint(&hm, &hr);
 		HpiOs_Msgxlock_Lock(&msgxLock);
 		if (hr.wError) {
-			aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].hOwner = hOwner;
+			aOStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				hOwner = hOwner;
 			phr->wError = hr.wError;
 		} else {
-			aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].nOpenFlag = 0;
-			aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].hOwner = NULL;
+			aOStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				nOpenFlag = 0;
+			aOStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+				hOwner = NULL;
 		}
 	} else {
 		HPI_DEBUG_LOG(WARNING,
 			"%p trying to close %d outstream %d owned by %p\n",
 			hOwner, phm->wAdapterIndex,
-			phm->u.d.wStreamIndex,
-			aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.
-				wStreamIndex].hOwner);
+			phm->wObjIndex,
+			aOStreamUserOpen[phm->wAdapterIndex][phm->wObjIndex].
+			hOwner);
 		phr->wError = HPI_ERROR_OBJ_NOT_OPEN;
 	}
 	HpiOs_Msgxlock_UnLock(&msgxLock);
@@ -746,7 +737,7 @@ static u16 AdapterPrepare(
 	u16 i;
 
 	/* call to HPI_ADAPTER_OPEN */
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN);
 	hm.wAdapterIndex = wAdapter;
 	HW_EntryPoint(&hm, &hr);
 	memcpy(&aRESP_HPI_ADAPTER_OPEN[wAdapter], &hr,
@@ -755,7 +746,8 @@ static u16 AdapterPrepare(
 		return hr.wError;
 
 	/* call to HPI_ADAPTER_GET_INFO */
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_INFO);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_GET_INFO);
 	hm.wAdapterIndex = wAdapter;
 	HW_EntryPoint(&hm, &hr);
 	if (hr.wError)
@@ -774,9 +766,10 @@ static u16 AdapterPrepare(
 
 	/* call to HPI_OSTREAM_OPEN */
 	for (i = 0; i < aADAPTER_INFO[wAdapter].wNumOutStreams; i++) {
-		HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_OPEN);
+		HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+			HPI_OSTREAM_OPEN);
 		hm.wAdapterIndex = wAdapter;
-		hm.u.d.wStreamIndex = i;
+		hm.wObjIndex = i;
 		HW_EntryPoint(&hm, &hr);
 		memcpy(&aRESP_HPI_OSTREAM_OPEN[wAdapter][i], &hr,
 			sizeof(aRESP_HPI_OSTREAM_OPEN[0][0]));
@@ -786,12 +779,10 @@ static u16 AdapterPrepare(
 
 	/* call to HPI_ISTREAM_OPEN */
 	for (i = 0; i < aADAPTER_INFO[wAdapter].wNumInStreams; i++) {
-		HPI_AdapterFindObject(NULL, wAdapter, HPI_OBJ_ISTREAM, i,
-			&aIStreamUserOpen[wAdapter][i].wDspIndex);
-		HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_OPEN);
+		HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+			HPI_ISTREAM_OPEN);
 		hm.wAdapterIndex = wAdapter;
-		hm.u.d.wStreamIndex = i;
-		hm.wDspIndex = aIStreamUserOpen[wAdapter][i].wDspIndex;
+		hm.wObjIndex = i;
 		HW_EntryPoint(&hm, &hr);
 		memcpy(&aRESP_HPI_ISTREAM_OPEN[wAdapter][i], &hr,
 			sizeof(aRESP_HPI_ISTREAM_OPEN[0][0]));
@@ -800,7 +791,7 @@ static u16 AdapterPrepare(
 	}
 
 	/* call to HPI_MIXER_OPEN */
-	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_OPEN);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_MIXER, HPI_MIXER_OPEN);
 	hm.wAdapterIndex = wAdapter;
 	HW_EntryPoint(&hm, &hr);
 	memcpy(&aRESP_HPI_MIXER_OPEN[wAdapter], &hr,
@@ -866,10 +857,10 @@ static void HPIMSGX_Reset(
 			aRESP_HPI_ISTREAM_OPEN[wAdapterIndex][i].h.wError =
 				HPI_ERROR_INVALID_OBJ;
 		}
-		if (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.
-			awAdapterList[wAdapterIndex]) {
-			gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.
-				awAdapterList[wAdapterIndex] = 0;
+		if (gRESP_HPI_SUBSYS_FIND_ADAPTERS.
+			s.awAdapterList[wAdapterIndex]) {
+			gRESP_HPI_SUBSYS_FIND_ADAPTERS.
+				s.awAdapterList[wAdapterIndex] = 0;
 			gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.wNumAdapters--;
 		}
 	}
@@ -949,11 +940,10 @@ static void HPIMSGX_Cleanup(
 					"Close adapter %d ostream %d\n",
 					wAdapter, i);
 
-				HPI_InitMessage(&hm, HPI_OBJ_OSTREAM,
-					HPI_OSTREAM_RESET);
+				HPI_InitMessageResponse(&hm, &hr,
+					HPI_OBJ_OSTREAM, HPI_OSTREAM_RESET);
 				hm.wAdapterIndex = (u16)wAdapter;
-				hm.u.d.wStreamIndex = (u16)i;
-				/* hm.wDspIndex = Always 0 for Ostream */
+				hm.wObjIndex = (u16)i;
 				HW_EntryPoint(&hm, &hr);
 
 				hm.wFunction = HPI_OSTREAM_HOSTBUFFER_FREE;
@@ -973,13 +963,10 @@ static void HPIMSGX_Cleanup(
 					"Close adapter %d istream %d\n",
 					wAdapter, i);
 
-				HPI_InitMessage(&hm, HPI_OBJ_ISTREAM,
-					HPI_ISTREAM_RESET);
+				HPI_InitMessageResponse(&hm, &hr,
+					HPI_OBJ_ISTREAM, HPI_ISTREAM_RESET);
 				hm.wAdapterIndex = (u16)wAdapter;
-				hm.u.d.wStreamIndex = (u16)i;
-				hm.wDspIndex =
-					aIStreamUserOpen[wAdapter][i].
-					wDspIndex;
+				hm.wObjIndex = (u16)i;
 				HW_EntryPoint(&hm, &hr);
 
 				hm.wFunction = HPI_ISTREAM_HOSTBUFFER_FREE;

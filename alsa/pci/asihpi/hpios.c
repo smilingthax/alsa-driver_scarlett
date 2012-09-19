@@ -20,10 +20,15 @@ HPI Operating System function implementation for Linux
 
 (C) Copyright AudioScience Inc. 1997-2003
 ******************************************************************************/
-#define SOURCEFILE_NAME "hpios_linux_kernel.c"
+#define SOURCEFILE_NAME "hpios.c"
+#include "hpi_internal.h"
 #include "hpidebug.h"
 #include <linux/delay.h>
 #include <linux/sched.h>
+
+#ifndef __KERNEL__
+#error Using kernel source for userspace build
+#endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2 , 6 , 14)
 void HpiOs_DelayMicroSeconds(
@@ -113,4 +118,30 @@ void HpiOs_LockedMem_FreeAll(
 	void
 )
 {
+}
+
+void __iomem *HpiOs_MapIo(
+	struct pci_dev *pci_dev,
+	int idx,
+	unsigned int length
+)
+{
+	HPI_DEBUG_LOG(DEBUG, "Mapping %d %s %08llx-%08llx %04llx len 0x%x\n",
+		idx, pci_dev->resource[idx].name,
+		(unsigned long long)pci_resource_start(pci_dev, idx),
+		(unsigned long long)pci_resource_end(pci_dev, idx),
+		(unsigned long long)pci_resource_flags(pci_dev, idx), length);
+
+	if (!(pci_resource_flags(pci_dev, idx) & IORESOURCE_MEM)) {
+		HPI_DEBUG_LOG(ERROR, "not an io memory resource\n");
+		return NULL;
+	}
+
+	if (length > pci_resource_len(pci_dev, idx)) {
+		HPI_DEBUG_LOG(ERROR, "resource too small for requested %d \n",
+			length);
+		return NULL;
+	}
+
+	return ioremap(pci_resource_start(pci_dev, idx), length);
 }

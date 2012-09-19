@@ -51,6 +51,21 @@ enum { HPI_DEBUG_LEVEL_ERROR = 0,	/* Always log errors */
 #define FILE_LINE  __FILE__ ":" __stringify(__LINE__) " "
 #endif
 
+#if defined(HPI_DEBUG) && defined(_WINDOWS)
+#define HPI_DEBUGBREAK() DebugBreak()
+#else
+#define HPI_DEBUGBREAK()
+#endif
+
+#define HPI_DEBUG_ASSERT(_expression) \
+	do { \
+		if (!(_expression)) {\
+			printk(KERN_ERR  FILE_LINE\
+				"ASSERT " __stringify(_expression));\
+			HPI_DEBUGBREAK();\
+		} \
+	} while (0)
+
 #define HPI_DEBUG_LOG(level, ...) \
 	do { \
 		if (hpiDebugLevel >= HPI_DEBUG_LEVEL_##level) { \
@@ -113,7 +128,7 @@ void hpi_debug_data(
 	  /* check that size is exactly some number */
 #define function_count_check(sym, size) \
     compile_time_assert((sym##_FUNCTION_COUNT) == (size),\
-	    strings_dont_match_defs_##sym)
+	    strings_match_defs_##sym)
 
 /* These strings should be generated using a macro which defines
    the corresponding symbol values.  */
@@ -148,8 +163,10 @@ void hpi_debug_data(
   "HPI_SUBSYS_READ_PORT_8",   \
   "HPI_SUBSYS_WRITE_PORT_8",  \
   "HPI_SUBSYS_GET_NUM_ADAPTERS",\
-  "HPI_SUBSYS_GET_ADAPTER"    \
+  "HPI_SUBSYS_GET_ADAPTER",   \
+  "HPI_SUBSYS_SET_NETWORK_INTERFACE"\
 }
+function_count_check(HPI_SUBSYS, 14);
 
 #define HPI_ADAPTER_STRINGS     \
 {                               \
@@ -199,8 +216,9 @@ function_count_check(HPI_ADAPTER, 18);
   "HPI_OSTREAM_GROUP_ADD",\
   "HPI_OSTREAM_GROUP_GETMAP", \
   "HPI_OSTREAM_GROUP_RESET", \
+  "HPI_OSTREAM_HOSTBUFFER_GET_INFO", \
 }
-function_count_check(HPI_OSTREAM, 22);
+function_count_check(HPI_OSTREAM, 23);
 
 #define HPI_ISTREAM_STRINGS     \
 {                               \
@@ -221,8 +239,9 @@ function_count_check(HPI_OSTREAM, 22);
   "HPI_ISTREAM_GROUP_ADD", \
   "HPI_ISTREAM_GROUP_GETMAP", \
   "HPI_ISTREAM_GROUP_RESET", \
+  "HPI_ISTREAM_HOSTBUFFER_GET_INFO", \
 }
-function_count_check(HPI_ISTREAM, 17);
+function_count_check(HPI_ISTREAM, 18);
 
 #define HPI_MIXER_STRINGS       \
 {                               \
@@ -305,7 +324,7 @@ function_count_check(HPI_ASYNCEVENT, 6);
 
 #define HPI_CONTROL_TYPE_STRINGS \
 { \
-	"no control (0"), \
+	"null control", \
 	"HPI_CONTROL_CONNECTION", \
 	"HPI_CONTROL_VOLUME", \
 	"HPI_CONTROL_METER", \
@@ -329,11 +348,13 @@ function_count_check(HPI_ASYNCEVENT, 6);
 	"HPI_CONTROL_COBRANET", \
 	"HPI_CONTROL_TONE_DETECT", \
 	"HPI_CONTROL_SILENCE_DETECT", \
-	"HPI_CONTROL_PAD" \
+	"HPI_CONTROL_PAD", \
+	"HPI_CONTROL_SRC" ,\
+	"HPI_CONTROL_UNIVERSAL" \
 }
 
-compile_time_assert((HPI_CONTROL_LAST_INDEX + 1) == (25),
-	controltype_strings_dont_match_defs);
+compile_time_assert((HPI_CONTROL_LAST_INDEX + 1 == 27),
+	controltype_strings_match_defs);
 
 #define HPI_SOURCENODE_STRINGS \
 { \
@@ -347,11 +368,12 @@ compile_time_assert((HPI_CONTROL_LAST_INDEX + 1) == (25),
 	"HPI_SOURCENODE_RAW_BITSTREAM", \
 	"HPI_SOURCENODE_MICROPHONE", \
 	"HPI_SOURCENODE_COBRANET", \
-	"HPI_SOURCENODE_ANALOG" \
+	"HPI_SOURCENODE_ANALOG", \
+	"HPI_SOURCENODE_ADAPTER" \
 }
 
 compile_time_assert((HPI_SOURCENODE_LAST_INDEX - HPI_SOURCENODE_BASE + 1) ==
-	(11), sourcenode_strings_dont_match_defs);
+	(12), sourcenode_strings_match_defs);
 
 #define HPI_DESTNODE_STRINGS \
 { \
@@ -365,7 +387,7 @@ compile_time_assert((HPI_SOURCENODE_LAST_INDEX - HPI_SOURCENODE_BASE + 1) ==
 	"HPI_DESTNODE_ANALOG" \
 }
 compile_time_assert((HPI_DESTNODE_LAST_INDEX - HPI_DESTNODE_BASE + 1) == (8),
-	destnode_strings_dont_match_defs);
+	destnode_strings_match_defs);
 
 #define HPI_CONTROL_CHANNEL_MODE_STRINGS \
 { \
