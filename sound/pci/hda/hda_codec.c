@@ -647,9 +647,9 @@ static void /*__devinit*/ setup_fg_nodes(struct hda_codec *codec)
 
 	total_nodes = snd_hda_get_sub_nodes(codec, AC_NODE_ROOT, &nid);
 	for (i = 0; i < total_nodes; i++, nid++) {
-		unsigned int func;
-		func = snd_hda_param_read(codec, nid, AC_PAR_FUNCTION_TYPE);
-		switch (func & 0xff) {
+		codec->function_id = snd_hda_param_read(codec, nid,
+						AC_PAR_FUNCTION_TYPE) & 0xff;
+		switch (codec->function_id) {
 		case AC_GRP_AUDIO_FUNCTION:
 			codec->afg = nid;
 			break;
@@ -1052,6 +1052,7 @@ EXPORT_SYMBOL_HDA(snd_hda_codec_cleanup_stream);
 
 /* FIXME: more better hash key? */
 #define HDA_HASH_KEY(nid,dir,idx) (u32)((nid) + ((idx) << 16) + ((dir) << 24))
+#define HDA_HASH_PINCAP_KEY(nid) (u32)((nid) + (0x02 << 24))
 #define INFO_AMP_CAPS	(1<<0)
 #define INFO_AMP_VOL(ch)	(1 << (1 + (ch)))
 
@@ -1141,6 +1142,21 @@ int snd_hda_override_amp_caps(struct hda_codec *codec, hda_nid_t nid, int dir,
 	return 0;
 }
 EXPORT_SYMBOL_HDA(snd_hda_override_amp_caps);
+
+u32 snd_hda_query_pin_caps(struct hda_codec *codec, hda_nid_t nid)
+{
+	struct hda_amp_info *info;
+
+	info = get_alloc_amp_hash(codec, HDA_HASH_PINCAP_KEY(nid));
+	if (!info)
+		return 0;
+	if (!info->head.val) {
+		info->amp_caps = snd_hda_param_read(codec, nid, AC_PAR_PIN_CAP);
+		info->head.val |= INFO_AMP_CAPS;
+	}
+	return info->amp_caps;
+}
+EXPORT_SYMBOL_HDA(snd_hda_query_pin_caps);
 
 /*
  * read the current volume to info
@@ -2305,8 +2321,7 @@ static void hda_set_power_state(struct hda_codec *codec, hda_nid_t fg,
 				 * don't power down the widget if it controls
 				 * eapd and EAPD_BTLENABLE is set.
 				 */
-				pincap = snd_hda_param_read(codec, nid,
-							    AC_PAR_PIN_CAP);
+				pincap = snd_hda_query_pin_caps(codec, nid);
 				if (pincap & AC_PINCAP_EAPD) {
 					int eapd = snd_hda_codec_read(codec,
 						nid, 0,

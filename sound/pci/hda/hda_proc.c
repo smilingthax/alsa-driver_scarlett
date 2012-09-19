@@ -399,8 +399,10 @@ static void print_conn_list(struct snd_info_buffer *buffer,
 {
 	int c, curr = -1;
 
-	if (conn_len > 1 && wid_type != AC_WID_AUD_MIX &&
-	    wid_type != AC_WID_VOL_KNB)
+	if (conn_len > 1 &&
+	    wid_type != AC_WID_AUD_MIX &&
+	    wid_type != AC_WID_VOL_KNB &&
+	    wid_type != AC_WID_POWER)
 		curr = snd_hda_codec_read(codec, nid, 0,
 					  AC_VERB_GET_CONNECT_SEL, 0);
 	snd_iprintf(buffer, "  Connection: %d\n", conn_len);
@@ -467,8 +469,9 @@ static void print_codec_info(struct snd_info_entry *entry,
 	snd_iprintf(buffer, "Codec: %s\n",
 		    codec->name ? codec->name : "Not Set");
 	snd_iprintf(buffer, "Address: %d\n", codec->addr);
-	snd_iprintf(buffer, "Vendor Id: 0x%x\n", codec->vendor_id);
-	snd_iprintf(buffer, "Subsystem Id: 0x%x\n", codec->subsystem_id);
+	snd_iprintf(buffer, "Function Id: 0x%x\n", codec->function_id);
+	snd_iprintf(buffer, "Vendor Id: 0x%08x\n", codec->vendor_id);
+	snd_iprintf(buffer, "Subsystem Id: 0x%08x\n", codec->subsystem_id);
 	snd_iprintf(buffer, "Revision Id: 0x%x\n", codec->revision_id);
 
 	if (codec->mfg)
