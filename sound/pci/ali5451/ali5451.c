@@ -1970,9 +1970,10 @@ static void snd_ali_resume(struct pci_dev *dev)
 static int snd_ali_free(ali_t * codec)
 {
 	snd_ali_disable_address_interrupt(codec);
-	synchronize_irq();
-	if (codec->irq >=0)
+	if (codec->irq >= 0) {
+		synchronize_irq(codec->irq);
 		free_irq(codec->irq, (void *)codec);
+	}
 	if (codec->res_port) {
 		release_resource(codec->res_port);
 		kfree_nocheck(codec->res_port);
@@ -2118,7 +2119,7 @@ static int __devinit snd_ali_create(snd_card_t * card,
 		return -EBUSY;
 	}
 
-	synchronize_irq();
+	synchronize_irq(pci->irq);
 
 	codec->synth.chmap = 0;
 	codec->synth.chcnt = 0;
