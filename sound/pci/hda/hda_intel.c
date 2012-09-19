@@ -1706,13 +1706,16 @@ static int azx_pcm_prepare(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	unsigned int bufsize, period_bytes, format_val, stream_tag;
 	int err;
+	struct hda_spdif_out *spdif =
+		snd_hda_spdif_out_of_nid(apcm->codec, hinfo->nid);
+	unsigned short ctls = spdif ? spdif->ctls : 0;
 
 	azx_stream_reset(chip, azx_dev);
 	format_val = snd_hda_calc_stream_format(runtime->rate,
 						runtime->channels,
 						runtime->format,
 						hinfo->maxbps,
-						apcm->codec->spdif_ctls);
+						ctls);
 	if (!format_val) {
 		snd_printk(KERN_ERR SFX
 			   "invalid format_val, rate=%d, ch=%d, format=%d\n",
@@ -1863,7 +1866,7 @@ static unsigned int azx_via_get_position(struct azx *chip,
 	unsigned int fifo_size;
 
 	link_pos = azx_sd_readl(azx_dev, SD_LPIB);
-	if (azx_dev->index >= 4) {
+	if (azx_dev->substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		/* Playback, no problem using link position */
 		return link_pos;
 	}
@@ -1927,6 +1930,17 @@ static unsigned int azx_get_position(struct azx *chip,
 	default:
 		/* use the position buffer */
 		pos = le32_to_cpu(*azx_dev->posbuf);
+		if (chip->position_fix[stream] == POS_FIX_AUTO) {
+			if (!pos || pos == (u32)-1) {
+				printk(KERN_WARNING
+				       "hda-intel: Invalid position buffer, "
+				       "using LPIB read method instead.\n");
+				chip->position_fix[stream] = POS_FIX_LPIB;
+				pos = azx_sd_readl(azx_dev, SD_LPIB);
+			} else
+				chip->position_fix[stream] = POS_FIX_POSBUF;
+		}
+		break;
 	}
 
 	if (pos >= azx_dev->bufsize)
@@ -1964,16 +1978,6 @@ static int azx_position_ok(struct azx *chip, struct azx_dev *azx_dev)
 
 	stream = azx_dev->substream->stream;
 	pos = azx_get_position(chip, azx_dev);
-	if (chip->position_fix[stream] == POS_FIX_AUTO) {
-		if (!pos) {
-			printk(KERN_WARNING
-			       "hda-intel: Invalid position buffer, "
-			       "using LPIB read method instead.\n");
-			chip->position_fix[stream] = POS_FIX_LPIB;
-			pos = azx_get_position(chip, azx_dev);
-		} else
-			chip->position_fix[stream] = POS_FIX_POSBUF;
-	}
 
 	if (WARN_ONCE(!azx_dev->period_bytes,
 		      "hda-intel: zero azx_dev->period_bytes"))

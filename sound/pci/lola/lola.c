@@ -32,6 +32,7 @@
 #include <sound/initval.h>
 #include "lola.h"
 
+/* Standard options */
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
@@ -42,6 +43,28 @@ module_param_array(id, charp, NULL, 0444);
 MODULE_PARM_DESC(id, "ID string for Digigram Lola driver.");
 module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "Enable Digigram Lola driver.");
+
+/* Lola-specific options */
+
+/* for instance use always max granularity which is compatible
+ * with all sample rates
+ */
+static int granularity[SNDRV_CARDS] = {
+	[0 ... (SNDRV_CARDS - 1)] = LOLA_GRANULARITY_MAX
+};
+
+/* below a sample_rate of 16kHz the analogue audio quality is NOT excellent */
+static int sample_rate_min[SNDRV_CARDS] = {
+	[0 ... (SNDRV_CARDS - 1) ] = 16000
+};
+
+module_param_array(granularity, int, NULL, 0444);
+MODULE_PARM_DESC(granularity, "Granularity value");
+module_param_array(sample_rate_min, int, NULL, 0444);
+MODULE_PARM_DESC(sample_rate_min, "Minimal sample rate");
+
+/*
+ */
 
 MODULE_LICENSE("GPL");
 MODULE_SUPPORTED_DEVICE("{{Digigram, Lola}}");
@@ -73,6 +96,7 @@ static int corb_send_verb(struct lola *chip, unsigned int nid,
 	chip->last_data = data;
 	chip->last_extdata = extdata;
 	data |= (nid << 20) | (verb << 8);
+
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	if (chip->rirb.cmds < LOLA_CORB_ENTRIES - 1) {
 		unsigned int wp = chip->corb.wp + 1;
@@ -129,8 +153,14 @@ static int rirb_get_response(struct lola *chip, unsigned int *val,
 {
 	unsigned long timeout;
 
+ again:
 	timeout = jiffies + msecs_to_jiffies(1000);
 	for (;;) {
+		if (chip->polling_mode) {
+			spin_lock_irq(&chip->reg_lock);
+			lola_update_rirb(chip);
+			spin_unlock_irq(&chip->reg_lock);
+		}
 		if (!chip->rirb.cmds) {
 			*val = chip->res;
 			if (extval)
@@ -151,9 +181,13 @@ static int rirb_get_response(struct lola *chip, unsigned int *val,
 			break;
 		udelay(20);
 		cond_resched();
-		lola_update_rirb(chip);
 	}
 	printk(KERN_WARNING SFX "RIRB response error\n");
+	if (!chip->polling_mode) {
+		printk(KERN_WARNING SFX "switching to polling mode\n");
+		chip->polling_mode = 1;
+		goto again;
+	}
 	return -EIO;
 }
 
@@ -338,8 +372,6 @@ static int setup_corb_rirb(struct lola *chip)
 	chip->corb.buf = (u32 *)chip->rb.area;
 	chip->rirb.addr = chip->rb.addr + 2048;
 	chip->rirb.buf = (u32 *)(chip->rb.area + 2048);
-	lola_writel(chip, BAR0, CORBLBASE, (u32)chip->corb.addr);
-	lola_writel(chip, BAR0, CORBUBASE, upper_32_bits(chip->corb.addr));
 
 	/* disable ringbuffer DMAs */
 	lola_writeb(chip, BAR0, RIRBCTL, 0);
@@ -447,9 +479,9 @@ static int lola_parse_tree(struct lola *chip)
 	chip->lola_caps = val;
 	chip->pin[CAPT].num_pins = LOLA_AFG_INPUT_PIN_COUNT(chip->lola_caps);
 	chip->pin[PLAY].num_pins = LOLA_AFG_OUTPUT_PIN_COUNT(chip->lola_caps);
-	snd_printd(SFX "speccaps=0x%x, pins in=%d, out=%d\n",
-		   chip->lola_caps,
-		   chip->pin[CAPT].num_pins, chip->pin[PLAY].num_pins);
+	snd_printdd(SFX "speccaps=0x%x, pins in=%d, out=%d\n",
+		    chip->lola_caps,
+		    chip->pin[CAPT].num_pins, chip->pin[PLAY].num_pins);
 
 	if (chip->pin[CAPT].num_pins > MAX_AUDIO_INOUT_COUNT ||
 	    chip->pin[PLAY].num_pins > MAX_AUDIO_INOUT_COUNT) {
@@ -496,6 +528,10 @@ static int lola_parse_tree(struct lola *chip)
 	if (!chip->cold_reset) {
 		lola_reset_setups(chip);
 		chip->cold_reset = 1;
+	} else {
+		/* set the granularity if it is not the default */
+		if (chip->granularity != LOLA_GRANULARITY_MIN)
+			lola_set_granularity(chip, chip->granularity, true);
 	}
 
 	return 0;
@@ -533,7 +569,7 @@ static int lola_dev_free(struct snd_device *device)
 }
 
 static int __devinit lola_create(struct snd_card *card, struct pci_dev *pci,
-				 struct lola **rchip)
+				 int dev, struct lola **rchip)
 {
 	struct lola *chip;
 	int err;
@@ -561,8 +597,32 @@ static int __devinit lola_create(struct snd_card *card, struct pci_dev *pci,
 	chip->pci = pci;
 	chip->irq = -1;
 
-	chip->sample_rate_min = 48000;
-	chip->granularity = LOLA_GRANULARITY_MIN;
+	chip->granularity = granularity[dev];
+	switch (chip->granularity) {
+	case 8:
+		chip->sample_rate_max = 48000;
+		break;
+	case 16:
+		chip->sample_rate_max = 96000;
+		break;
+	case 32:
+		chip->sample_rate_max = 192000;
+		break;
+	default:
+		snd_printk(KERN_WARNING SFX
+			   "Invalid granularity %d, reset to %d\n",
+			   chip->granularity, LOLA_GRANULARITY_MAX);
+		chip->granularity = LOLA_GRANULARITY_MAX;
+		chip->sample_rate_max = 192000;
+		break;
+	}
+	chip->sample_rate_min = sample_rate_min[dev];
+	if (chip->sample_rate_min > chip->sample_rate_max) {
+		snd_printk(KERN_WARNING SFX
+			   "Invalid sample_rate_min %d, reset to 16000\n",
+			   chip->sample_rate_min);
+		chip->sample_rate_min = 16000;
+	}
 
 	err = pci_request_regions(pci, DRVNAME);
 	if (err < 0) {
@@ -600,7 +660,7 @@ static int __devinit lola_create(struct snd_card *card, struct pci_dev *pci,
 	chip->pcm[CAPT].num_streams = (dever >> 0) & 0x3ff;
 	chip->pcm[PLAY].num_streams = (dever >> 10) & 0x3ff;
 	chip->version = (dever >> 24) & 0xff;
-	snd_printd(SFX "streams in=%d, out=%d, version=0x%x\n",
+	snd_printdd(SFX "streams in=%d, out=%d, version=0x%x\n",
 		    chip->pcm[CAPT].num_streams, chip->pcm[PLAY].num_streams,
 		    chip->version);
 
@@ -665,7 +725,7 @@ static int __devinit lola_probe(struct pci_dev *pci,
 
 	snd_card_set_dev(card, &pci->dev);
 
-	err = lola_create(card, pci, &chip);
+	err = lola_create(card, pci, dev, &chip);
 	if (err < 0)
 		goto out_free;
 	card->private_data = chip;

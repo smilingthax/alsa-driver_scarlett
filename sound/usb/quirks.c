@@ -281,7 +281,7 @@ static int create_standard_mixer_quirk(struct snd_usb_audio *chip,
  * audio-interface quirks
  *
  * returns zero if no standard audio/MIDI parsing is needed.
- * returns a postive value if standard audio/midi interfaces are parsed
+ * returns a positive value if standard audio/midi interfaces are parsed
  * after this.
  * returns a negative value at error.
  */
@@ -403,7 +403,7 @@ static int snd_usb_cm106_boot_quirk(struct usb_device *dev)
 static int snd_usb_cm6206_boot_quirk(struct usb_device *dev)
 {
 	int err, reg;
-	int val[] = {0x200c, 0x3000, 0xf800, 0x143f, 0x0000, 0x3000};
+	int val[] = {0x2004, 0x3000, 0xf800, 0x143f, 0x0000, 0x3000};
 
 	for (reg = 0; reg < ARRAY_SIZE(val); reg++) {
 		err = snd_usb_cm106_write_int_reg(dev, reg, val[reg]);

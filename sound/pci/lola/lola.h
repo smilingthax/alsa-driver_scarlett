@@ -242,6 +242,7 @@ struct lola_pin {
 
 struct lola_pin_array {
 	unsigned int num_pins;
+	unsigned int num_analog_pins;
 	struct lola_pin pins[MAX_PINS];
 };
 
@@ -299,13 +300,14 @@ struct lola_stream {
 	unsigned int bufsize;
 	unsigned int period_bytes;
 	unsigned int frags;
-	struct snd_dma_buffer bdl; /* BDL buffer */
 
 	/* format + channel setup */
 	unsigned int format_verb;
 
 	/* flags */
 	unsigned int opened:1;
+	unsigned int prepared:1;
+	unsigned int paused:1;
 	unsigned int running:1;
 };
 
@@ -314,6 +316,7 @@ struct lola_stream {
 
 struct lola_pcm {
 	unsigned int num_streams;
+	struct snd_dma_buffer bdl; /* BDL buffer */
 	struct lola_stream streams[MAX_STREAM_COUNT];
 };
 
@@ -355,6 +358,8 @@ struct lola {
 
 	/* clock */
 	struct lola_clock_widget clock;
+	int ref_count_rate;
+	unsigned int sample_rate;
 
 	/* mixer */
 	struct lola_mixer_widget mixer;
@@ -366,11 +371,12 @@ struct lola {
 	/* parameters */
 	unsigned int granularity;
 	unsigned int sample_rate_min;
+	unsigned int sample_rate_max;
 
 	/* flags */
-	unsigned int running :1;
-	unsigned int initialized :1;
-	unsigned int cold_reset :1;
+	unsigned int initialized:1;
+	unsigned int cold_reset:1;
+	unsigned int polling_mode:1;
 
 	/* for debugging */
 	unsigned int debug_res;
@@ -499,6 +505,7 @@ int lola_set_clock_index(struct lola *chip, unsigned int idx);
 int lola_set_clock(struct lola *chip, int idx);
 int lola_set_sample_rate(struct lola *chip, int rate);
 bool lola_update_ext_clock_freq(struct lola *chip, unsigned int val);
+unsigned int lola_sample_rate_convert(unsigned int coded);
 
 /* mixer */
 int lola_init_pins(struct lola *chip, int dir, int *nidp);

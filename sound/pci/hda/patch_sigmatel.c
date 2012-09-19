@@ -1112,7 +1112,9 @@ static int stac92xx_build_controls(struct hda_codec *codec)
 	}
 
 	if (spec->multiout.dig_out_nid) {
-		err = snd_hda_create_spdif_out_ctls(codec, spec->multiout.dig_out_nid);
+		err = snd_hda_create_spdif_out_ctls(codec,
+						    spec->multiout.dig_out_nid,
+						    spec->multiout.dig_out_nid);
 		if (err < 0)
 			return err;
 		err = snd_hda_create_spdif_share_sw(codec,
@@ -2479,7 +2481,7 @@ static int stac92xx_hp_switch_put(struct snd_kcontrol *kcontrol,
  
 	spec->hp_switch = ucontrol->value.integer.value[0] ? nid : 0;
 
-	/* check to be sure that the ports are upto date with
+	/* check to be sure that the ports are up to date with
 	 * switch changes
 	 */
 	stac_issue_unsol_event(codec, nid);

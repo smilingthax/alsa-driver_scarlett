@@ -19,7 +19,6 @@
 #include <linux/gcd.h>
 #include <linux/gpio.h>
 #include <linux/i2c.h>
-#include <linux/delay.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
@@ -991,17 +990,16 @@ SND_SOC_DAPM_MICBIAS("MICB1", WM8915_POWER_MANAGEMENT_1, 8, 0),
 SND_SOC_DAPM_PGA("IN1L PGA", WM8915_POWER_MANAGEMENT_2, 5, 0, NULL, 0),
 SND_SOC_DAPM_PGA("IN1R PGA", WM8915_POWER_MANAGEMENT_2, 4, 0, NULL, 0),
 
-SND_SOC_DAPM_PGA("ADC", SND_SOC_NOPM, 0, 0, NULL, 0),
-
-SND_SOC_DAPM_MUX("IN1 Mux", SND_SOC_NOPM, 0, 0, &in1_mux),
-SND_SOC_DAPM_MUX("IN2 Mux", SND_SOC_NOPM, 0, 0, &in2_mux),
+SND_SOC_DAPM_MUX("IN1L Mux", SND_SOC_NOPM, 0, 0, &in1_mux),
+SND_SOC_DAPM_MUX("IN1R Mux", SND_SOC_NOPM, 0, 0, &in1_mux),
+SND_SOC_DAPM_MUX("IN2L Mux", SND_SOC_NOPM, 0, 0, &in2_mux),
+SND_SOC_DAPM_MUX("IN2R Mux", SND_SOC_NOPM, 0, 0, &in2_mux),
 
 SND_SOC_DAPM_PGA("IN1L", WM8915_POWER_MANAGEMENT_7, 2, 0, NULL, 0),
 SND_SOC_DAPM_PGA("IN1R", WM8915_POWER_MANAGEMENT_7, 3, 0, NULL, 0),
 SND_SOC_DAPM_PGA("IN2L", WM8915_POWER_MANAGEMENT_7, 6, 0, NULL, 0),
 SND_SOC_DAPM_PGA("IN2R", WM8915_POWER_MANAGEMENT_7, 7, 0, NULL, 0),
 
-/* FIXME - these need to be concentrator widgets */
 SND_SOC_DAPM_SUPPLY("DMIC2", WM8915_POWER_MANAGEMENT_7, 9, 0, NULL, 0),
 SND_SOC_DAPM_SUPPLY("DMIC1", WM8915_POWER_MANAGEMENT_7, 8, 0, NULL, 0),
 
@@ -1172,28 +1170,33 @@ static const struct snd_soc_dapm_route wm8915_dapm_routes[] = {
 	{ "DMIC1L", NULL, "DMIC1" },
 	{ "DMIC1R", NULL, "DMIC1" },
 
-	{ "ADC", NULL, "ADCL" },
-	{ "ADC", NULL, "ADCR" },
+	{ "IN1L Mux", "ADC", "ADCL" },
+	{ "IN1L Mux", "DMIC1", "DMIC1L" },
+	{ "IN1L Mux", "DMIC2", "DMIC2L" },
 
-	{ "IN1 Mux", "ADC", "ADC" },
-	{ "IN1 Mux", "DMIC1", "DMIC1" },
-	{ "IN1 Mux", "DMIC2", "DMIC2" },
+	{ "IN1R Mux", "ADC", "ADCR" },
+	{ "IN1R Mux", "DMIC1", "DMIC1R" },
+	{ "IN1R Mux", "DMIC2", "DMIC2R" },
 
-	{ "IN2 Mux", "ADC", "ADC" },
-	{ "IN2 Mux", "DMIC1", "DMIC1" },
-	{ "IN2 Mux", "DMIC2", "DMIC2" },
+	{ "IN2L Mux", "ADC", "ADCL" },
+	{ "IN2L Mux", "DMIC1", "DMIC1L" },
+	{ "IN2L Mux", "DMIC2", "DMIC2L" },
 
-	{ "Left Sidetone", "IN1", "IN1 Mux" },
-	{ "Left Sidetone", "IN2", "IN2 Mux" },
+	{ "IN2R Mux", "ADC", "ADCR" },
+	{ "IN2R Mux", "DMIC1", "DMIC1R" },
+	{ "IN2R Mux", "DMIC2", "DMIC2R" },
 
-	{ "Right Sidetone", "IN1", "IN1 Mux" },
-	{ "Right Sidetone", "IN2", "IN2 Mux" },
+	{ "Left Sidetone", "IN1", "IN1L Mux" },
+	{ "Left Sidetone", "IN2", "IN2L Mux" },
 
-	{ "DSP1TXL", "IN1 Switch", "IN1 Mux" },
-	{ "DSP1TXR", "IN1 Switch", "IN1 Mux" },
+	{ "Right Sidetone", "IN1", "IN1R Mux" },
+	{ "Right Sidetone", "IN2", "IN2R Mux" },
 
-	{ "DSP2TXL", "IN1 Switch", "IN2 Mux" },
-	{ "DSP2TXR", "IN1 Switch", "IN2 Mux" },
+	{ "DSP1TXL", "IN1 Switch", "IN1L Mux" },
+	{ "DSP1TXR", "IN1 Switch", "IN1R Mux" },
+
+	{ "DSP2TXL", "IN1 Switch", "IN2L Mux" },
+	{ "DSP2TXR", "IN1 Switch", "IN2R Mux" },
 
 	{ "AIF1TX0", NULL, "DSP1TXL" },
 	{ "AIF1TX1", NULL, "DSP1TXR" },
@@ -1831,11 +1834,12 @@ static int wm8915_set_sysclk(struct snd_soc_dai *dai,
 	struct snd_soc_codec *codec = dai->codec;
 	struct wm8915_priv *wm8915 = snd_soc_codec_get_drvdata(codec);
 	int lfclk = 0;
+	int ratediv = 0;
 	int src;
 	int old;
 
 	/* Disable SYSCLK while we reconfigure */
-	old = snd_soc_read(codec, WM8915_AIF_CLOCKING_1);
+	old = snd_soc_read(codec, WM8915_AIF_CLOCKING_1) & WM8915_SYSCLK_ENA;
 	snd_soc_update_bits(codec, WM8915_AIF_CLOCKING_1,
 			    WM8915_SYSCLK_ENA, 0);
 
@@ -1862,6 +1866,8 @@ static int wm8915_set_sysclk(struct snd_soc_dai *dai,
 		snd_soc_update_bits(codec, WM8915_AIF_RATE,
 				    WM8915_SYSCLK_RATE, 0);
 		break;
+	case 24576000:
+		ratediv = WM8915_SYSCLK_DIV;
 	case 12288000:
 		snd_soc_update_bits(codec, WM8915_AIF_RATE,
 				    WM8915_SYSCLK_RATE, WM8915_SYSCLK_RATE);
@@ -1877,8 +1883,8 @@ static int wm8915_set_sysclk(struct snd_soc_dai *dai,
 	}
 
 	snd_soc_update_bits(codec, WM8915_AIF_CLOCKING_1,
-			    WM8915_SYSCLK_SRC_MASK,
-			    src << WM8915_SYSCLK_SRC_SHIFT);
+			    WM8915_SYSCLK_SRC_MASK | WM8915_SYSCLK_DIV_MASK,
+			    src << WM8915_SYSCLK_SRC_SHIFT | ratediv);
 	snd_soc_update_bits(codec, WM8915_CLOCKING_1, WM8915_LFCLK_ENA, lfclk);
 	snd_soc_update_bits(codec, WM8915_AIF_CLOCKING_1,
 			    WM8915_SYSCLK_ENA, old);
@@ -1997,10 +2003,9 @@ static int fll_factors(struct _fll_div *fll_div, unsigned int Fref,
 	return 0;
 }
 
-static int wm8915_set_fll(struct snd_soc_dai *dai, int fll_id, int source,
+static int wm8915_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
 			  unsigned int Fref, unsigned int Fout)
 {
-	struct snd_soc_codec *codec = dai->codec;
 	struct wm8915_priv *wm8915 = snd_soc_codec_get_drvdata(codec);
 	struct _fll_div fll_div;
 	unsigned long timeout;
@@ -2033,6 +2038,7 @@ static int wm8915_set_fll(struct snd_soc_dai *dai, int fll_id, int source,
 		break;
 	case WM8915_FLL_MCLK2:
 		reg = 1;
+		break;
 	case WM8915_FLL_DACLRCLK1:
 		reg = 2;
 		break;
@@ -2776,6 +2782,7 @@ static struct snd_soc_codec_driver soc_codec_dev_wm8915 = {
 	.num_dapm_widgets = ARRAY_SIZE(wm8915_dapm_widgets),
 	.dapm_routes = wm8915_dapm_routes,
 	.num_dapm_routes = ARRAY_SIZE(wm8915_dapm_routes),
+	.set_pll = wm8915_set_fll,
 };
 
 #define WM8915_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |\
@@ -2788,7 +2795,6 @@ static struct snd_soc_dai_ops wm8915_dai_ops = {
 	.set_fmt = wm8915_set_fmt,
 	.hw_params = wm8915_hw_params,
 	.set_sysclk = wm8915_set_sysclk,
-	.set_pll = wm8915_set_fll,
 };
 
 static struct snd_soc_dai_driver wm8915_dai[] = {
