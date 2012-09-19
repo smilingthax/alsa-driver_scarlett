@@ -878,6 +878,22 @@ static snd_pcm_ops_t snd_mixart_capture_ops = {
 	.pointer   = snd_mixart_stream_pointer,
 };
 
+static void preallocate_buffers(mixart_t *chip, snd_pcm_t *pcm)
+{
+	snd_pcm_substream_t *subs;
+	int stream;
+
+	for (stream = 0; stream < 2; stream++) {
+		int idx = 0;
+		for (subs = pcm->streams[stream].substream; subs; subs = subs->next, idx++)
+			/* set up the unique device id with the chip index */
+			subs->dma_device.id = subs->pcm->device << 16 |
+				subs->stream << 8 | (subs->number + 1) |
+				(chip->chip_idx + 1) << 24;
+	}
+	snd_pcm_lib_preallocate_pci_pages_for_all(chip->mgr->pci, pcm, 32*1024, 32*1024);
+}
+
 /*
  */
 static int snd_mixart_pcm_analog(mixart_t *chip)
@@ -902,7 +918,7 @@ static int snd_mixart_pcm_analog(mixart_t *chip)
 	pcm->info_flags = 0;
 	strcpy(pcm->name, name);
 
-	snd_pcm_lib_preallocate_pci_pages_for_all(chip->mgr->pci, pcm, 32*1024, 32*1024);
+	preallocate_buffers(chip, pcm);
 
 	chip->pcm = pcm;
 	return 0;
@@ -933,7 +949,7 @@ static int snd_mixart_pcm_digital(mixart_t *chip)
 	pcm->info_flags = 0;
 	strcpy(pcm->name, name);
 
-	snd_pcm_lib_preallocate_pci_pages_for_all(chip->mgr->pci, pcm, 32*1024, 32*1024);
+	preallocate_buffers(chip, pcm);
 
 	chip->pcm_dig = pcm;
 	return 0;
