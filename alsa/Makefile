@@ -183,7 +183,9 @@ install-scripts:
 	@for d in /sbin/init.d /etc/rc.d/init.d /etc/init.d; do \
 	 if [ -d $(DESTDIR)$$d ]; then \
 	   if [ -f $(DESTDIR)$$d/alsasound ]; then \
-	     cmp -s utils/alsasound $(DESTDIR)$$d/alsasound || cp $(DESTDIR)$$d/alsasound $(DESTDIR)$$d/alsasound.old; \
+	     cmp -s utils/alsasound $(DESTDIR)$$d/alsasound || \
+	       install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)$$d/alsasound.new; \
+	     break; \
 	   fi; \
 	   install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)$$d/alsasound; \
 	   break; \
