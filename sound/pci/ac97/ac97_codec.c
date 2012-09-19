@@ -1081,7 +1081,6 @@ static const snd_kcontrol_new_t snd_ac97_controls_alc650[] = {
 	/* 7: Independent Master Volume Left */
 	/* 8: reserved */
 	AC97_SINGLE("Line-In As Surround", AC97_ALC650_MULTICH, 9, 1, 0),
-	AC97_SINGLE("Mic As Center/LFE", AC97_ALC650_MULTICH, 10, 1, 0),
 	AC97_SINGLE("Swap Surround Slot", AC97_ALC650_MULTICH, 14, 1, 0),
 #if 0 /* always set in patch_alc650 */
 	AC97_SINGLE("IEC958 Input Clock Enable", AC97_ALC650_CLOCK, 0, 1, 0),
@@ -1091,6 +1090,43 @@ static const snd_kcontrol_new_t snd_ac97_controls_alc650[] = {
 	AC97_SINGLE("Center/LFE DAC Switch", AC97_ALC650_LFE_DAC_VOL, 15, 1, 1),
 	AC97_DOUBLE("Center/LFE DAC Volume", AC97_ALC650_LFE_DAC_VOL, 8, 0, 31, 1),
 #endif
+};
+
+static const snd_kcontrol_new_t snd_ac97_control_alc650_mic =
+AC97_SINGLE("Mic As Center/LFE", AC97_ALC650_MULTICH, 10, 1, 0);
+
+
+static int snd_ac97_alc650_mic_gpio_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	ac97_t *ac97 = snd_kcontrol_chip(kcontrol);
+	ucontrol->value.integer.value[0] = (ac97->regs[AC97_ALC650_MULTICH] >> 10) & 1;
+	return 0;
+}
+
+static int snd_ac97_alc650_mic_gpio_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	ac97_t *ac97 = snd_kcontrol_chip(kcontrol);
+	int change;
+	change = snd_ac97_update_bits(ac97, AC97_ALC650_MULTICH, 1 << 10,
+				      ucontrol->value.integer.value[0] ? (1 << 10) : 0);
+	if (change) {
+		/* GPIO0 write for mic */
+		snd_ac97_update_bits(ac97, 0x76, 0x01,
+				     ucontrol->value.integer.value[0] ? 0 : 0x01);
+		/* GPIO0 high for mic */
+		snd_ac97_update_bits(ac97, 0x78, 0x100,
+				     ucontrol->value.integer.value[0] ? 0 : 0x100);
+	}
+	return change;
+}
+
+static const snd_kcontrol_new_t snd_ac97_control_alc650_mic_gpio = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "Mic As Center/LFE",
+	.info = snd_ac97_info_single,
+	.get = snd_ac97_alc650_mic_gpio_get,
+	.put = snd_ac97_alc650_mic_gpio_put,
+	.private_value = (1 << 16), /* for info */
 };
 
 static const snd_kcontrol_new_t snd_ac97_spdif_controls_alc650[] = {
@@ -1832,9 +1868,14 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 				return err;
 		break;
 	case AC97_ID_ALC650:
+		/* detect ALC650 rev.E of later */
 		for (idx = 0; idx < ARRAY_SIZE(snd_ac97_controls_alc650); idx++)
 			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_alc650[idx], ac97))) < 0)
 				return err;
+		if ((err = snd_ctl_add(card, snd_ac97_cnew(ac97->spec.dev_flags ?
+							   &snd_ac97_control_alc650_mic :
+							   &snd_ac97_control_alc650_mic_gpio, ac97))) < 0)
+			return err;
 		if (ac97->ext_id & AC97_EI_SPDIF) {
 			for (idx = 0; idx < ARRAY_SIZE(snd_ac97_spdif_controls_alc650); idx++)
 				if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_spdif_controls_alc650[idx], ac97))) < 0)
