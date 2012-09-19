@@ -13,10 +13,8 @@ clean-files := cs4281.c es1968.c intel8x0.c maestro3.c
 
 obj-$(CONFIG_SND) += pdplus/ mixart/ au88x0/
 
-snd-bt87x-objs := bt87x.o
 snd-intel8x0m-objs := intel8x0m.o
 
-obj-$(CONFIG_SND_BT87X) += snd-bt87x.o
 obj-$(CONFIG_SND_INTEL8X0M) += snd-intel8x0m.o
 
 # Hack for FM801 && TEA575x
@@ -36,4 +34,3 @@ cs4281.c: cs4281.patch $(SND_TOPDIR)/alsa-kernel/pci/cs4281.c
 es1968.c: es1968.patch $(SND_TOPDIR)/alsa-kernel/pci/es1968.c
 intel8x0.c: intel8x0.patch $(SND_TOPDIR)/alsa-kernel/pci/intel8x0.c
 maestro3.c: maestro3.patch $(SND_TOPDIR)/alsa-kernel/pci/maestro3.c
-
