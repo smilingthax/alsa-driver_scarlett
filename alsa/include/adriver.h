@@ -601,9 +601,9 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 
 /* sysfs */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 2)
-struct class_simple;
-static inline void class_simple_device_add(struct class_simple *class, int devnum, ...) { return; }
-static inline void class_simple_device_remove(int devnum) { return; }
+struct class;
+static inline void class_device_create(struct class *class, int devnum, ...) { return; }
+static inline void class_device_destroy(struct class *class, int devnum) { return; }
 #endif
 
 /* msleep */
