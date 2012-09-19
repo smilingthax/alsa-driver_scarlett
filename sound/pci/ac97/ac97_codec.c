@@ -1679,18 +1679,18 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 			ac97->spec.ad18xx.pcmreg[2] = 0x9f1f;
 		}
 	} else {
+		unsigned int pcm_ctrls = 2;
 		/* FIXME: C-Media chips have no PCM volume!! */
 		if (/*ac97->id == 0x434d4941 ||*/
 		    ac97->id == 0x434d4942 ||
 		    ac97->id == 0x434d4961)
-			goto no_pcm;
-		for (idx = 0; idx < 2; idx++)
+			pcm_ctrls = 1;
+		for (idx = 0; idx < pcm_ctrls; idx++)
 			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_pcm[idx], ac97))) < 0)
 				return err;
 	}
 	snd_ac97_write_cache(ac97, AC97_PCM, 0x9f1f);
 
- no_pcm:
 	/* build Capture controls */
 	for (idx = 0; idx < 3; idx++)
 		if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_capture[idx], ac97))) < 0)
@@ -2720,7 +2720,7 @@ static int set_spdif_rate(ac97_t *ac97, unsigned short rate)
 	}
 
 	spin_lock(&ac97->reg_lock);
-	old = ac97->regs[reg] & ~mask;
+	old = ac97->regs[reg] & mask;
 	spin_unlock(&ac97->reg_lock);
 	if (old != bits) {
 		snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, 0);
