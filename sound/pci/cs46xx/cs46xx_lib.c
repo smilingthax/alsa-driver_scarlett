@@ -321,6 +321,7 @@ int snd_cs46xx_download(cs46xx_t *chip,
 #include "imgs/cwcasync.h"
 #include "imgs/cwcsnoop.h"
 #include "imgs/cwcbinhack.h"
+#include "imgs/cwcdma.h"
 
 int snd_cs46xx_clear_BA1(cs46xx_t *chip,
                          unsigned long offset,
@@ -3165,6 +3166,11 @@ int __devinit snd_cs46xx_start_dsp(cs46xx_t *chip)
 
 	if (cs46xx_dsp_load_module(chip, &cwcbinhack_module) < 0) {
 		snd_printk(KERN_ERR "image download error [cwcbinhack]\n");
+		return -EIO;
+	}
+
+	if (cs46xx_dsp_load_module(chip, &cwcdma_module) < 0) {
+		snd_printk(KERN_ERR "image download error [cwcdma]\n");
 		return -EIO;
 	}
 

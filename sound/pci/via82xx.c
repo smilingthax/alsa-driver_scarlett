@@ -598,12 +598,12 @@ static void snd_via82xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		status &= (VIA_REG_STAT_EOL|VIA_REG_STAT_FLAG);
 		if (! status)
 			continue;
-		outb(status, VIADEV_REG(viadev, OFFSET_STATUS)); /* ack */
 		if (viadev->substream && viadev->running) {
 			spin_unlock(&chip->reg_lock);
 			snd_pcm_period_elapsed(viadev->substream);
 			spin_lock(&chip->reg_lock);
 		}
+		outb(status, VIADEV_REG(viadev, OFFSET_STATUS)); /* ack */
 	}
 	spin_unlock(&chip->reg_lock);
 }

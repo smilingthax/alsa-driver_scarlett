@@ -1319,7 +1319,6 @@ static int snd_timer_user_ginfo(struct file *file, snd_timer_ginfo_t *_ginfo)
 			ginfo.flags |= SNDRV_TIMER_FLG_SLAVE;
 		strncpy(ginfo.id, t->id, sizeof(ginfo.id)-1);
 		strncpy(ginfo.name, t->name, sizeof(ginfo.name)-1);
-		ginfo.ticks = t->hw.ticks;
 		ginfo.resolution = t->hw.resolution;
 		if (t->hw.resolution_min > 0) {
 			ginfo.resolution_min = t->hw.resolution_min;
@@ -1350,7 +1349,7 @@ static int snd_timer_user_gparams(struct file *file, snd_timer_gparams_t *_gpara
 	if (t != NULL) {
 		if (list_empty(&t->open_list_head)) {
 			if (t->hw.set_period)
-				err = t->hw.set_period(t, gparams.period, gparams.period_num, gparams.period_den);
+				err = t->hw.set_period(t, gparams.period_num, gparams.period_den);
 			else
 				err = -ENOSYS;
 		} else {
@@ -1460,7 +1459,6 @@ static int snd_timer_user_info(struct file *file, snd_timer_info_t *_info)
 		info.flags |= SNDRV_TIMER_FLG_SLAVE;
 	strncpy(info.id, t->id, sizeof(info.id)-1);
 	strncpy(info.name, t->name, sizeof(info.name)-1);
-	info.ticks = t->hw.ticks;
 	info.resolution = t->hw.resolution;
 	if (copy_to_user(_info, &info, sizeof(*_info)))
 		return -EFAULT;
@@ -1665,7 +1663,7 @@ static ssize_t snd_timer_user_read(struct file *file, char *buffer, size_t count
 	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
 	unit = tu->tread ? sizeof(snd_timer_tread_t) : sizeof(snd_timer_read_t);
 	spin_lock_irq(&tu->qlock);
-	while (count - result >= unit) {
+	while ((long)count - result >= unit) {
 		while (!tu->qused) {
 			wait_queue_t wait;
 

@@ -574,7 +574,7 @@ struct sndrv_timer_ginfo {
 	int card;			/* card number */
 	unsigned char id[64];		/* timer identification */
 	unsigned char name[80];		/* timer name */
-	unsigned long ticks;		/* maximum ticks between interrupts */
+	unsigned long reserved0;	/* reserved for future use */
 	unsigned long resolution;	/* average period resolution in ns */
 	unsigned long resolution_min;	/* minimal period resolution in ns */
 	unsigned long resolution_max;	/* maximal period resolution in ns */
@@ -584,9 +584,8 @@ struct sndrv_timer_ginfo {
 
 struct sndrv_timer_gparams {
 	struct sndrv_timer_id tid;	/* requested timer ID */
-	unsigned long period;		/* requested minimal period in ns */
-	unsigned long period_num;	/* requested precise period resolution (in seconds) - numerator */
-	unsigned long period_den;	/* requested precise period resolution (in seconds) - denominator */
+	unsigned long period_num;	/* requested precise period duration (in seconds) - numerator */
+	unsigned long period_den;	/* requested precise period duration (in seconds) - denominator */
 	unsigned char reserved[32];
 };
 
@@ -608,7 +607,7 @@ struct sndrv_timer_info {
 	int card;			/* card number */
 	unsigned char id[64];		/* timer identificator */
 	unsigned char name[80];		/* timer name */
-	unsigned long ticks;		/* maximum ticks between interrupts */
+	unsigned long reserved0;	/* reserved for future use */
 	unsigned long resolution;	/* average period resolution in ns */
 	unsigned char reserved[64];	/* reserved */
 };
