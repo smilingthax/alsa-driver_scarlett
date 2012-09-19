@@ -1109,6 +1109,11 @@ EOF
     ;;
   ppc)
     ARCH=ppc
+    if test "$kversion.$kpatchlevel" = "2.6"; then
+	if test $ksublevel -gt 26; then
+	    ARCH=powerpc
+	fi
+    fi
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
     if test -d $CONFIG_SND_KERNELDIR/arch/ppc/include; then
       KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/ppc/include"
@@ -1120,11 +1125,10 @@ EOF
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   ppc64)
+    ARCH=ppc64
     if test "$kversion.$kpatchlevel" = "2.6"; then
 	if test $ksublevel -gt 14; then
 	    ARCH=powerpc
-	else
-	    ARCH=ppc64
 	fi
     fi
     c_opts="-D__powerpc__ -fsigned-char -msoft-float -Wno-uninitialized -mminimal-toc -fno-builtin"
@@ -1268,7 +1272,7 @@ case "$processor" in
       CONFIG_X86=y
       CONFIG_X86_32=y
     fi
-    for i in include/asm-x86 include/asm-i386 include2/asm-x86 include2/asm-i386; do
+    for i in include/asm-x86 include/asm-i386 include2/asm-x86 include2/asm-i386 arch/x86/include/asm; do
       if test -d $CONFIG_SND_KERNELDIR/$i/mach-default; then
         mach_dir="$CONFIG_SND_KERNELDIR/$i"
 	break
@@ -1280,7 +1284,7 @@ case "$processor" in
     done
     ;;
   x86_64)
-    for i in include/asm-x86 include2/asm-x86; do
+    for i in include/asm-x86 include2/asm-x86 arch/x86/include/asm; do
       if test -d $CONFIG_SND_KERNELDIR/$i/mach-default; then
         mach_dir="$CONFIG_SND_KERNELDIR/$i"
 	break
@@ -1292,6 +1296,21 @@ case "$processor" in
     done
     ;;
 esac
+
+dnl Additional include directories
+if test "$kpatchlevel" = 6 -a "$ksublevel" -ge 27; then
+    case "$ARCH" in
+    i386|x86_64)
+	checkarch="x86"
+	;;
+    *)
+	checkarch="$ARCH"
+	;;
+    esac
+    if test -d $CONFIG_SND_KERNELDIR/arch/$checkarch/include; then
+	KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/$checkarch/include"
+    fi
+fi
 
 if test -n "$mach_dir"; then
   AC_MSG_CHECKING(for i386 machine type)
@@ -2335,11 +2354,15 @@ CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#ifdef __alpha__ /* it's required (at least for 2.2.18) */
-#include "$CONFIG_SND_KERNELDIR/include/asm/current.h"
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
+#include <linux/config.h>
 #endif
-#include "$CONFIG_SND_KERNELDIR/include/linux/fs.h"
+#ifdef __alpha__ /* it's required (at least for 2.2.18) */
+#include <asm/current.h>
+#endif
+#include <linux/fs.h>
 ],[
  struct fasync_struct *fa;
  int sig;
@@ -2366,8 +2389,12 @@ CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/asm/types.h"
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
+#include <linux/config.h>
+#endif
+#include <asm/types.h>
 ],[
  dma_addr_t addr;
 ],
@@ -2392,8 +2419,12 @@ CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/asm/semaphore.h"
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
+#include <linux/config.h>
+#endif
+#include <asm/semaphore.h>
 ],[
 #ifndef init_MUTEX
 #error not defined
