@@ -2,3 +2,4 @@
 #ifndef __isapnp_now__
 #include "opti92x-cs4231.isapnp"
 #endif
+EXPORT_NO_SYMBOLS;

@@ -374,7 +374,7 @@ CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
 CHECK_KERNEL_HEADER(linux/highmem.h)
 CHECK_KERNEL_HEADER(linux/workqueue.h)
 if test ! -f include/linux/workqueue.h; then
-  if test "$kversion.$kpatchlevel.$ksublevel" = "2.4.20"; then
+  if test "$kversion.$kpatchlevel" = "2.4"; then
     CHECK_KERNEL_CONFIG(RED_HAT_LINUX_KERNEL, [redhat kernel])
     if test $RED_HAT_LINUX_KERNEL = y; then
       echo "It looks like you're using a RedHat 9 kernel."
@@ -385,6 +385,7 @@ if test ! -f include/linux/workqueue.h; then
   fi
 fi
 CHECK_KERNEL_HEADER(asm/hw_irq.h)
+CHECK_KERNEL_HEADER(linux/device.h)
 CHECK_KERNEL_HEADER(linux/jiffies.h, [#include <linux/sched.h>
 ])
 CHECK_KERNEL_HEADER(linux/compat.h, [#include \"compat_64.h\"
