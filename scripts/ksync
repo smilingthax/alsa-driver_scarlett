@@ -56,7 +56,7 @@ BRANCH = 'HEAD'
 
 # exclude some files or directories
 ALSA_EXCLUDE = ['/include/version.h']
-ALSA_EXCLUDE_DIR = ['/scripts', '/oss', '/kbuild']
+ALSA_EXCLUDE_DIR = ['/scripts', '/oss', '/kbuild', '/kernel/include']
 KERNEL_EXCLUDE = ['/COPYING', '/CREDITS',
 		  '/MAINTAINERS','/Makefile','/Kbuild',
 		  '/README','/REPORTING-BUGS',
@@ -67,12 +67,12 @@ KERNEL_EXCLUDE_DIR = ['/BitKeeper',
 		      '/arch', '/drivers', '/crypto', '/fs',
 		      '/include', '/init', '/ipc',
 		      '/kernel', '/lib', '/mm', '/usr',
-		      '/net', '/scripts', '/security',
+		      '/net', '/scripts', '/security', '/block',
 		      '/sound/oss']
 # force to process
-ALSA_FORCE = []
+ALSA_FORCE = ['/kernel/include/linux/pci_ids.h']
 ALSA_FORCE_DIR = ['/']
-KERNEL_FORCE = []
+KERNEL_FORCE = ['/CREDITS', '/MAINTAINERS', '/include/linux/pci_ids.h']
 KERNEL_FORCE_DIR = ['/Documentation/sound/alsa', '/include/sound']
 
 # Directory mapping
@@ -575,6 +575,7 @@ def modify_version_file():
 
 def update_cvs_file(file, destfile = '', params = ''):
 	path, file = os.path.split(file)
+	print get_cvs_root() + file
 	try:
 		os.chdir(get_cvs_root() + '/' + path)
 	except OSError, msg:
@@ -906,6 +907,8 @@ def diffall(reverse, from_cvs_time = 0, to_cvs_time = 0):
 		bfiles.remove(f)
 	first = 1
 	for d in cdirs:
+	        if d == '/kernel':
+	                continue
 		dm = d
 		d = remap_alsa(dm)
 		if not bdirs.count(d):
