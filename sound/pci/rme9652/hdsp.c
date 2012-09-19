@@ -411,17 +411,12 @@ MODULE_DEVICE_TABLE(pci, snd_hdsp_ids);
 
 static inline void hdsp_write(hdsp_t *hdsp, int reg, int val)
 {
-	writel(cpu_to_le32(val), hdsp->iobase + reg);
-}
-
-static inline void hdsp_write_bigendian(hdsp_t *hdsp, int reg, int val)
-{
-	writel(cpu_to_be32(val), hdsp->iobase + reg);
+	writel(val, hdsp->iobase + reg);
 }
 
 static inline unsigned int hdsp_read(hdsp_t *hdsp, int reg)
 {
-	return le32_to_cpu (readl (hdsp->iobase + reg));
+	return readl (hdsp->iobase + reg);
 }
 
 static inline unsigned long long hdsp_read64 (hdsp_t *hdsp, int reg)
@@ -430,7 +425,7 @@ static inline unsigned long long hdsp_read64 (hdsp_t *hdsp, int reg)
 	val = hdsp_read(hdsp, reg);
 	val = (val<<32)|hdsp_read(hdsp, reg + 4);
 
-	return le64_to_cpu(val);
+	return val;
 }
 
 static inline int hdsp_check_for_iobox (hdsp_t *hdsp)
@@ -1039,7 +1034,7 @@ snd_rawmidi_ops_t snd_hdsp_midi_input =
 	trigger:	snd_hdsp_midi_input_trigger,
 };
 
-static int __init snd_hdsp_create_midi (snd_card_t *card, hdsp_t *hdsp, int id)
+static int __devinit snd_hdsp_create_midi (snd_card_t *card, hdsp_t *hdsp, int id)
 {
 	char buf[32];
 
@@ -2050,7 +2045,7 @@ snd_hdsp_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 #endif
 }
 
-static void __init snd_hdsp_proc_init(hdsp_t *hdsp)
+static void __devinit snd_hdsp_proc_init(hdsp_t *hdsp)
 {
 	snd_info_entry_t *entry;
 
@@ -2102,7 +2097,7 @@ static void snd_hdsp_free_buffers(hdsp_t *hdsp)
 	}
 }
 
-static int __init snd_hdsp_initialize_memory(hdsp_t *hdsp)
+static int __devinit snd_hdsp_initialize_memory(hdsp_t *hdsp)
 {
 	void *pb, *cb;
 	dma_addr_t pb_addr, cb_addr;
@@ -2793,7 +2788,7 @@ static snd_pcm_ops_t snd_hdsp_capture_ops = {
 	copy:		snd_hdsp_capture_copy,
 };
 
-static int __init snd_hdsp_create_pcm(snd_card_t *card,
+static int __devinit snd_hdsp_create_pcm(snd_card_t *card,
 					 hdsp_t *hdsp)
 {
 	snd_pcm_t *pcm;
@@ -2814,7 +2809,7 @@ static int __init snd_hdsp_create_pcm(snd_card_t *card,
 	return 0;
 }
 
-static int __init snd_hdsp_initialize_firmware (hdsp_t *hdsp)
+static int __devinit snd_hdsp_initialize_firmware (hdsp_t *hdsp)
 {
 	int i;
 	int status_reg;
@@ -2888,9 +2883,9 @@ static int __init snd_hdsp_initialize_firmware (hdsp_t *hdsp)
 		hdsp_write (hdsp, HDSP_jtagReg, HDSP_S_LOAD);
 		
 		if (hdsp->type == Digiface) {
-			firmware_ptr = (u32 *) digiface_firmware;
+			firmware_ptr = digiface_firmware;
 		} else {
-			firmware_ptr = (u32 *) multiface_firmware;
+			firmware_ptr = multiface_firmware;
 		}
 		
 		for (i = 0; i < 24413; ++i) {
@@ -2919,9 +2914,9 @@ static int __init snd_hdsp_initialize_firmware (hdsp_t *hdsp)
 	return 0;
 }
 
-static int __init snd_hdsp_create(snd_card_t *card,
-				  hdsp_t *hdsp,
-				  int precise_ptr)
+static int __devinit snd_hdsp_create(snd_card_t *card,
+				     hdsp_t *hdsp,
+				     int precise_ptr)
 {
 	struct pci_dev *pci = hdsp->pci;
 	int err;
