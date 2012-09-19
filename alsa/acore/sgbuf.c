@@ -57,7 +57,7 @@ static int store_page_tables(struct snd_sg_buf *sgbuf, void *vmaddr, unsigned in
 	unsigned int i;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 	unsigned long rmask;
-	struct pci_dev *pci = (struct pci_dev *)sgbuf->dev.dev;
+	struct pci_dev *pci = (struct pci_dev *)sgbuf->dev;
 	rmask = pci->dma_mask;
 	if (rmask)
 		rmask = ~rmask;
@@ -127,7 +127,7 @@ int snd_free_sgbuf_pages(struct snd_dma_buffer *dmab)
 	return 0;
 }
 
-void *snd_malloc_sgbuf_pages(const struct snd_dma_device *dev,
+void *snd_malloc_sgbuf_pages(struct device *dev,
 			     size_t size, struct snd_dma_buffer *dmab,
 			     size_t *res_size)
 {
@@ -140,8 +140,7 @@ void *snd_malloc_sgbuf_pages(const struct snd_dma_device *dev,
 	if (! sgbuf)
 		return NULL;
 	memset(sgbuf, 0, sizeof(*sgbuf));
-	sgbuf->dev = *dev;
-	sgbuf->dev.type = SNDRV_DMA_TYPE_DEV;
+	sgbuf->dev = dev;
 	pages = snd_sgbuf_aligned_pages(size);
 	sgbuf->tblsize = sgbuf_align_table(pages);
 	sgbuf->table = kmalloc(sizeof(*sgbuf->table) * sgbuf->tblsize, GFP_KERNEL);

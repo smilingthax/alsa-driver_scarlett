@@ -377,7 +377,6 @@ struct snd_audigyls {
 	int spdif_enable;
 	int capture_source;
 
-	struct snd_dma_device dma_dev;
 	struct snd_dma_buffer buffer;
 };
 
@@ -963,7 +962,7 @@ static int snd_audigyls_free(audigyls_t *chip)
 	// release the data
 #if 1
 	if (chip->buffer.area)
-		snd_dma_free_pages(&chip->dma_dev, &chip->buffer);
+		snd_dma_free_pages(&chip->buffer);
 #endif
 
 	// release the i/o port
@@ -1157,11 +1156,8 @@ static int __devinit snd_audigyls_create(snd_card_t *card,
 	}
 	chip->irq = pci->irq;
   
-	memset(&chip->dma_dev, 0, sizeof(chip->dma_dev));
-	chip->dma_dev.type = SNDRV_DMA_TYPE_DEV;
-	chip->dma_dev.dev = snd_dma_pci_data(pci);
  	/* This stores the periods table. */ 
-	if(snd_dma_alloc_pages(&chip->dma_dev, 1024, &chip->buffer) < 0) {
+	if(snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(pci), 1024, &chip->buffer) < 0) {
 		snd_audigyls_free(chip);
 		return -ENOMEM;
 	}

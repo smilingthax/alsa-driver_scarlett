@@ -111,34 +111,9 @@
  
  /*
   *
-@@ -781,9 +844,24 @@
- 		case SNDRV_DMA_TYPE_DEV:
- 		case SNDRV_DMA_TYPE_DEV_SG:
- 			if (mem->dev.dev) {
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- 				len += sprintf(page + len, "%s [%s]",
- 					       mem->dev.type == SNDRV_DMA_TYPE_DEV_SG ? "DEV-SG" : "DEV",
- 					       mem->dev.dev->bus_id);
-+#else
-+				struct pci_dev *pci = (struct pci_dev *)mem->dev.dev;
-+				len += sprintf(page + len, "%s ",
-+					       mem->dev.type == SNDRV_DMA_TYPE_DEV_SG ? "PCI-SG" : "PCI");
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
-+				len += sprintf(page + len, "[%02x:%02x:%02x]",
-+					       pci->bus->number,
-+					       pci->bus->primary,
-+					       pci->bus->secondary);
-+#else
-+				len += sprintf(page + len, "[%s]",
-+					       pci->slot_name);
-+#endif /* < 2.4.0 */
-+#endif
- 			} else
- 				len += sprintf(page + len, "ISA");
- 			break;
-@@ -840,3 +918,5 @@
+@@ -840,3 +903,5 @@
+ 
  EXPORT_SYMBOL(snd_malloc_pages);
- EXPORT_SYMBOL(snd_malloc_pages_fallback);
  EXPORT_SYMBOL(snd_free_pages);
 +
 +#include "memalloc.inc1"

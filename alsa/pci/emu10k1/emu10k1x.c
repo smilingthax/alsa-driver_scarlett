@@ -253,7 +253,6 @@ struct snd_emu10k1x {
 	emu10k1x_voice_t capture_voice;
 	u32 spdif_bits[3]; // SPDIF out setup
 
-	struct snd_dma_device dma_dev;
 	struct snd_dma_buffer dma_buffer;
 
 	emu10k1x_midi_t midi;
@@ -771,7 +770,7 @@ static int snd_emu10k1x_free(emu10k1x_t *chip)
 
 	// release the DMA
 	if (chip->dma_buffer.area) {
-		snd_dma_free_pages(&chip->dma_dev, &chip->dma_buffer);
+		snd_dma_free_pages(&chip->dma_buffer);
 	}
 
 	// release the data
@@ -961,11 +960,8 @@ static int __devinit snd_emu10k1x_create(snd_card_t *card,
 	}
 	chip->irq = pci->irq;
   
-	memset(&chip->dma_dev, 0, sizeof(chip->dma_dev));
-	chip->dma_dev.type = SNDRV_DMA_TYPE_DEV;
-	chip->dma_dev.dev = snd_dma_pci_data(pci);
-
-	if(snd_dma_alloc_pages(&chip->dma_dev, 4 * 1024, &chip->dma_buffer) < 0) {
+	if(snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(pci),
+			       4 * 1024, &chip->dma_buffer) < 0) {
 		snd_emu10k1x_free(chip);
 		return -ENOMEM;
 	}
