@@ -972,8 +972,8 @@ static unsigned int dell_922x_m81_pin_configs[10] = {
     102801D7 (Dell XPS M1210)
 */
 static unsigned int dell_922x_m82_pin_configs[10] = {
-	0x0221121f, 0x408103ff, 0x02111212, 0x90100310, 
-	0x408003f1, 0x02111211, 0x03451340, 0x40c003f2, 
+	0x02211211, 0x408103ff, 0x02a1123e, 0x90100310, 
+	0x408003f1, 0x0221121f, 0x03451340, 0x40c003f2, 
 	0x508003f3, 0x405003f4, 
 };
 
@@ -1640,6 +1640,13 @@ static int stac92xx_io_switch_put(struct snd_kcontrol *kcontrol, struct snd_ctl_
 			pinctl |= stac92xx_get_vref(codec, nid);
 		stac92xx_auto_set_pinctl(codec, nid, pinctl);
 	}
+
+	/* check the auto-mute again: we need to mute/unmute the speaker
+	 * appropriately according to the pin direction
+	 */
+	if (spec->hp_detect)
+		codec->patch_ops.unsol_event(codec, STAC_HP_EVENT << 26);
+
         return 1;
 }
 
@@ -2176,6 +2183,7 @@ static int stac92xx_parse_auto_config(struct hda_codec *codec, hda_nid_t dig_out
 {
 	struct sigmatel_spec *spec = codec->spec;
 	int err;
+	int hp_speaker_swap = 0;
 
 	if ((err = snd_hda_parse_pin_def_config(codec,
 						&spec->autocfg,
@@ -2183,6 +2191,24 @@ static int stac92xx_parse_auto_config(struct hda_codec *codec, hda_nid_t dig_out
 		return err;
 	if (! spec->autocfg.line_outs)
 		return 0; /* can't find valid pin config */
+
+	/* If we have no real line-out pin and multiple hp-outs, HPs should
+	 * be set up as multi-channel outputs.
+	 */
+	if (spec->autocfg.line_out_type == AUTO_PIN_SPEAKER_OUT &&
+	    spec->autocfg.hp_outs > 1) {
+		/* Copy hp_outs to line_outs, backup line_outs in
+		 * speaker_outs so that the following routines can handle
+		 * HP pins as primary outputs.
+		 */
+		memcpy(spec->autocfg.speaker_pins, spec->autocfg.line_out_pins,
+		       sizeof(spec->autocfg.line_out_pins));
+		spec->autocfg.speaker_outs = spec->autocfg.line_outs;
+		memcpy(spec->autocfg.line_out_pins, spec->autocfg.hp_pins,
+		       sizeof(spec->autocfg.hp_pins));
+		spec->autocfg.line_outs = spec->autocfg.hp_outs;
+		hp_speaker_swap = 1;
+	}
 
 	if ((err = stac92xx_add_dyn_out_pins(codec, &spec->autocfg)) < 0)
 		return err;
@@ -2194,6 +2220,19 @@ static int stac92xx_parse_auto_config(struct hda_codec *codec, hda_nid_t dig_out
 
 	if (err < 0)
 		return err;
+
+	if (hp_speaker_swap == 1) {
+		/* Restore the hp_outs and line_outs */
+		memcpy(spec->autocfg.hp_pins, spec->autocfg.line_out_pins,
+		       sizeof(spec->autocfg.line_out_pins));
+		spec->autocfg.hp_outs = spec->autocfg.line_outs;
+		memcpy(spec->autocfg.line_out_pins, spec->autocfg.speaker_pins,
+		       sizeof(spec->autocfg.speaker_pins));
+		spec->autocfg.line_outs = spec->autocfg.speaker_outs;
+		memset(spec->autocfg.speaker_pins, 0,
+		       sizeof(spec->autocfg.speaker_pins));
+		spec->autocfg.speaker_outs = 0;
+	}
 
 	err = stac92xx_auto_create_hp_ctls(codec, &spec->autocfg);
 
@@ -2492,13 +2531,20 @@ static void stac92xx_reset_pinctl(struct hda_codec *codec, hda_nid_t nid,
 			pin_ctl & ~flag);
 }
 
-static int get_pin_presence(struct hda_codec *codec, hda_nid_t nid)
+static int get_hp_pin_presence(struct hda_codec *codec, hda_nid_t nid)
 {
 	if (!nid)
 		return 0;
 	if (snd_hda_codec_read(codec, nid, 0, AC_VERB_GET_PIN_SENSE, 0x00)
-	    & (1 << 31))
-		return 1;
+	    & (1 << 31)) {
+		unsigned int pinctl;
+		pinctl = snd_hda_codec_read(codec, nid, 0,
+					    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
+		if (pinctl & AC_PINCTL_IN_EN)
+			return 0; /* mic- or line-input */
+		else
+			return 1; /* HP-output */
+	}
 	return 0;
 }
 
@@ -2510,7 +2556,7 @@ static void stac92xx_hp_detect(struct hda_codec *codec, unsigned int res)
 
 	presence = 0;
 	for (i = 0; i < cfg->hp_outs; i++) {
-		presence = get_pin_presence(codec, cfg->hp_pins[i]);
+		presence = get_hp_pin_presence(codec, cfg->hp_pins[i]);
 		if (presence)
 			break;
 	}
@@ -3190,7 +3236,7 @@ static int stac9872_vaio_init(struct hda_codec *codec)
 
 static void stac9872_vaio_hp_detect(struct hda_codec *codec, unsigned int res)
 {
-	if (get_pin_presence(codec, 0x0a)) {
+	if (get_hp_pin_presence(codec, 0x0a)) {
 		stac92xx_reset_pinctl(codec, 0x0f, AC_PINCTL_OUT_EN);
 		stac92xx_set_pinctl(codec, 0x0a, AC_PINCTL_OUT_EN);
 	} else {
