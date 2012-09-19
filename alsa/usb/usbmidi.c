@@ -167,8 +167,8 @@ typedef struct usbmidi_in_port usbmidi_in_port_t;
  * or is supplied explicitly for broken devices.
  */
 struct usbmidi_device_info {
-	char vendor[24];		/* vendor name */
-	char product[24];		/* device name */
+	char vendor[32];		/* vendor name */
+	char product[32];		/* device name */
 	int16_t ifnum;			/* interface number */
 	struct usbmidi_endpoint_info {
 		int16_t epnum;		/* endpoint number,
@@ -803,7 +803,7 @@ static int snd_usbmidi_create_endpoint_ports(usbmidi_t* umidi, int ep,
 	int cap, type, port;
 	int out, in;
 	snd_seq_port_callback_t port_callback;
-	char port_name[40];
+	char port_name[48];
 
 	for (c = 0; c < 0x10; ++c) {
 		out = ep_info->out_cables & (1 << c);
@@ -834,8 +834,10 @@ static int snd_usbmidi_create_endpoint_ports(usbmidi_t* umidi, int ep,
 		port = snd_seq_event_port_attach(umidi->seq_client,
 						 &port_callback,
 						 cap, type, port_name);
-		if (port < 0)
+		if (port < 0) {
+			snd_printk(KERN_ERR "cannot create port (error code %d)\n", port);
 			return port;
+		}
 		if (in)
 			umidi->endpoints[ep].in->ports[c].seq_port = port;
 
@@ -889,7 +891,7 @@ static int snd_usbmidi_create_endpoints(usbmidi_t* umidi)
 		err = snd_usbmidi_create_endpoint_ports(umidi, i, &port_idx);
 		if (err < 0)
 			return err;
-		printk(KERN_INFO "snd-usb-midi: endpoint %d: %d output and %d input ports\n",
+		printk(KERN_INFO "snd-usb-midi: endpoint %d: created %d output and %d input ports\n",
 		       ep_info->epnum,
 		       snd_usbmidi_count_bits(ep_info->out_cables),
 		       snd_usbmidi_count_bits(ep_info->in_cables));
@@ -972,12 +974,12 @@ static int snd_usbmidi_card_create(usb_device_t* usb_device,
 		return -ENOMEM;
 	}
 	strcpy(card->driver, "USB MIDI");
-	sprintf(card->shortname, "%s %s",
-		device_info->vendor, device_info->product);
-	sprintf(card->longname, "%s (%x:%x if %d at %03d/%03d)",
-		card->shortname, usb_device->descriptor.idVendor,
-		usb_device->descriptor.idProduct, device_info->ifnum,
-		usb_device->bus->busnum, usb_device->devnum);
+	snprintf(card->shortname, sizeof(card->shortname), "%s %s",
+		 device_info->vendor, device_info->product);
+	snprintf(card->longname, sizeof(card->longname), "%s %s at %03d/%03d if %d",
+		 device_info->vendor, device_info->product,
+		 usb_device->bus->busnum, usb_device->devnum,
+		 device_info->ifnum);
 	card->private_data = (void*)dev;
 
 	err = snd_seq_device_new(card, 0, SNDRV_SEQ_DEV_ID_USBMIDI,
@@ -1084,14 +1086,16 @@ static int snd_usbmidi_get_ms_info(usb_device_t* usb_device,
 	usb_ms_endpoint_descriptor_t* ms_ep;
 	int i, epidx;
 
+	memset(device_info, 0, sizeof(*device_info));
+
 	if (usb_device->descriptor.iManufacturer == 0 ||
 	    usb_string(usb_device, usb_device->descriptor.iManufacturer,
 		       device_info->vendor, sizeof(device_info->vendor)) < 0)
-		strcpy(device_info->vendor, "Unknown Vendor");
+		sprintf(device_info->vendor, "Unknown Vendor %x", usb_device->descriptor.idVendor);
 	if (usb_device->descriptor.iProduct == 0 ||
 	    usb_string(usb_device, usb_device->descriptor.iProduct,
 		       device_info->product, sizeof(device_info->product)) < 0)
-		strcpy(device_info->product, "Unknown Device");
+		sprintf(device_info->product, "Unknown Device %x", usb_device->descriptor.idProduct);
 
 	intf = usb_ifnum_to_if(usb_device, ifnum);
 	if (!intf)
@@ -1140,7 +1144,7 @@ static int snd_usbmidi_get_ms_info(usb_device_t* usb_device,
 		} else {
 			device_info->endpoints[epidx].out_cables = (1 << ms_ep->bNumEmbMIDIJack) - 1;
 		}
-		printk(KERN_INFO "snd-usb-midi: using %d %s jack(s) on endpoint %d\n",
+		printk(KERN_INFO "snd-usb-midi: detected %d %s jack(s) on endpoint %d\n",
 		       ms_ep->bNumEmbMIDIJack,
 		       ep->bEndpointAddress & USB_DIR_IN ? "input" : "output",
 		       device_info->endpoints[epidx].epnum);
@@ -1180,12 +1184,15 @@ static void* snd_usbmidi_usb_probe(usb_device_t* device,
 {
 	usbmidi_device_info_t device_info;
 	snd_card_t* card = NULL;
+	int err;
 
 	if (snd_usbmidi_get_device_info(device, ifnum, device_id,
 					&device_info) == 0) {
 		printk(KERN_INFO "snd-usb-midi: detected %s %s\n",
 		       device_info.vendor, device_info.product);
-		snd_usbmidi_card_create(device, &device_info, &card);
+		err = snd_usbmidi_card_create(device, &device_info, &card);
+		if (err < 0)
+			snd_printk(KERN_ERR "cannot create card (error code %d)\n", err);
 	}
 	return card;
 }
@@ -1369,7 +1376,8 @@ module_exit(snd_usbmidi_module_exit)
 #ifndef MODULE
 
 /*
- * format is snd-usb-midi=snd_enable,snd_index,snd_id,snd_pid,snd_int_transfer
+ * format is snd-usb-midi=snd_enable,snd_index,snd_id,
+ *                        snd_vid,snd_pid,snd_int_transfer
  */
 static int __init snd_usbmidi_module_setup(char* str)
 {
