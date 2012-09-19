@@ -3,43 +3,61 @@
 # Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
 #
 
-srcdir=@srcdir@
-SRCDIR=@SRCDIR@
-sysconfdir=@sysconfdir@
-sbindir=@sbindir@
-VPATH=@srcdir@
-prefix=@prefix@
-moddir=@moddir@
-c_opts=@c_opts@
-m_opts=@m_opts@
-processor=@processor@
-msmp=@msmp@
-CONFIG_SND_VERSION=@CONFIG_SND_VERSION@
-kaversion=@kaversion@
-kversion=@kversion@
-kpatchlevel=@kpatchlevel@
-ksublevel=@ksublevel@
-kextraversion=@kextraversion@
-GENKSYMS=@GENKSYMS@
+AS		= @AS@
+LD		= @LD@
+CC		= @CC@ -DALSA_BUILD
+CPP		= @CPP@ -M -DALSA_BUILD
+AR		= @AR@
+MODFLAGS	= -DMODULE
+CFLAGS_KERNEL	=
+GENKSYMS	= @GENKSYMS@
 
-CONFIG_SND_KERNELDIR=@CONFIG_SND_KERNELDIR@
-CONFIG_SND_MVERSION=@CONFIG_SND_MVERSION@
-CONFIG_SND_PCI=@CONFIG_SND_PCI@
-CONFIG_SND_ISA=@CONFIG_SND_ISA@
-CONFIG_ISAPNP_KERNEL=@CONFIG_ISAPNP_KERNEL@
-CONFIG_ISAPNP=@CONFIG_ISAPNP@
-CONFIG_ISAPNP_NEW=0
-CONFIG_SND_SGI=@CONFIG_SND_SGI@
-CONFIG_SND_PPC=@CONFIG_SND_PPC@
-CONFIG_SND_SEQUENCER=@CONFIG_SND_SEQUENCER@
-CONFIG_SND_OSSEMUL=@CONFIG_SND_OSSEMUL@
-CONFIG_SND_RTC=@CONFIG_SND_RTC@
+mainsrcdir	= @srcdir@
+MAINSRCDIR	= @SRCDIR@
+prefix		= @prefix@
+sysconfdir	= @sysconfdir@
+sbindir		= @sbindir@
+moddir		= @moddir@
+c_opts		= @c_opts@
+m_opts		= @m_opts@
+processor	= @processor@
+msmp		= @msmp@
+kaversion	= @kaversion@
+kversion	= @kversion@
+kpatchlevel	= @kpatchlevel@
+ksublevel	= @ksublevel@
+kextraversion	= @kextraversion@
 
-CC=@CC@ $(CFLAGS) $(CPPFLAGS) -DALSA_BUILD -D__KERNEL__
-CPP=@CPP@ $(CPPFLAGS) -M -D__DEPEND__ -DALSA_BUILD -D__KERNEL__
-INCLUDE=-I$(CONFIG_SND_KERNELDIR)/include -I$(TOPDIR)/include
-COPTS=$(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
-LINKER=@LD@ -r
-MAKE+=$(m_opts)
-SNDVERSIONS=$(TOPDIR)/include/sndversions.h
-DEXPORT=$(TOPDIR)/include/modules
+CONFIG_SND_VERSION	= @CONFIG_SND_VERSION@
+CONFIG_SND_KERNELDIR	= @CONFIG_SND_KERNELDIR@
+CONFIG_MODULES		= y
+CONFIG_SND_MVERSION	= @CONFIG_SND_MVERSION@
+CONFIG_SND_PCI		= @CONFIG_SND_PCI@
+CONFIG_SND_ISA		= @CONFIG_SND_ISA@
+CONFIG_ISAPNP_KERNEL	= @CONFIG_ISAPNP_KERNEL@
+CONFIG_ISAPNP		= @CONFIG_ISAPNP@
+CONFIG_SND_SGI		= @CONFIG_SND_SGI@
+CONFIG_SND_PPC		= @CONFIG_SND_PPC@
+CONFIG_SND_SEQUENCER	= @CONFIG_SND_SEQUENCER@
+CONFIG_SND_OSSEMUL	= @CONFIG_SND_OSSEMUL@
+ifeq (y,$(CONFIG_SND_OSSEMUL))
+CONFIG_SND_MIXER_OSS	= m
+CONFIG_SND_PCM_OSS	= m
+CONFIG_SND_SEQUENCER_OSS = $(CONFIG_SND_SEQUENCER)
+else
+CONFIG_SND_MIXER_OSS	= n
+CONFIG_SND_PCM_OSS	= n
+CONFIG_SND_SEQUENCER_OSS = n
+endif
+CONFIG_SND_RTC		= @CONFIG_SND_RTC@
+
+INCLUDE		= -I$(CONFIG_SND_KERNELDIR)/include -I$(TOPDIR)/include
+CFLAGS		= $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
+MAKE		+= $(m_opts)
+SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
+DEXPORT		= $(TOPDIR)/include/modules
+
+# CC=@CC@ $(CFLAGS) $(CPPFLAGS) -DALSA_BUILD -D__KERNEL__
+# CPP=@CPP@ $(CPPFLAGS) -M -D__DEPEND__ -DALSA_BUILD -D__KERNEL__
+# COPTS=$(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
+# LINKER=@LD@ -r

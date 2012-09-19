@@ -37,7 +37,7 @@ Quick install
 5) Run the './snddevices' script to create new sound devices in /dev directory.
    Skip this step, if you have a kernel with the DEVFS support.
 6) Edit your /etc/modules.conf (see the kmod support section below).
-7) Run 'modprobe snd-card-xxxx' where xxxx is the name of your card.
+7) Run 'modprobe snd-xxxx' where xxxx is the name of your card.
    Note: If you have a ISA PnP soundcard you need to first run the isapnp
          program from isapnptools package to initialize your
          soundcard. You can also use the native ISA PnP support by
@@ -139,15 +139,15 @@ Module parameters
 		  of card if user does not want identify card with index number
     snd_enable  - enable card (only first card is enabled by default)
 
-  Module snd-card-dummy.o
-  -----------------------
+  Module snd-dummy.o
+  ------------------
 
     Module for the dummy soundcard. This soundcard doesn't do any output
     or input, but you may use this module for any application which
     requires a soundcard (like RealPlayer).
 
-  Module snd-card-es1688.o
-  ------------------------
+  Module snd-es1688.o
+  -------------------
 
     Module for ESS AudioDrive ES-1688 and ES-688 soundcards.
 
@@ -159,7 +159,7 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe (without MPU-401 port).
 
-  Module snd-card-es18xx.o
+  Module snd-es18xx.o
   ------------------------
 
     Module for ESS AudioDrive ES-18xx soundcards.
@@ -175,7 +175,7 @@ Module parameters
     Module supports up to 8 cards ISA PnP and autoprobe (without MPU-401 port
     if native ISA PnP routines are not used).
 
-  Module snd-card-gusclassic.o
+  Module snd-gusclassic.o
   ----------------------------
 
     Module for Gravis UltraSound Classic soundcard.
@@ -190,7 +190,7 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
 
-  Module snd-card-gusextreme.o
+  Module snd-gusextreme.o
   ----------------------------
 
     Module for Gravis UltraSound Extreme (Synergy ViperMax) soundcard.
@@ -209,8 +209,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe (without MPU-401 port).
 
-  Module snd-card-gusmax.o
-  ------------------------
+  Module snd-gusmax.o
+  -------------------
 
     Module for Gravis UltraSound MAX soundcard.
 
@@ -224,8 +224,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
-  Module snd-card-interwave.o
-  ---------------------------
+  Module snd-interwave.o
+  ----------------------
 
     Module for Gravis UltraSound PnP, Dynasonic 3-D/Pro, STB Sound Rage 32
     and other soundcards based on AMD InterWave (tm) chip.
@@ -242,8 +242,8 @@ Module parameters
 
     Module supports up to 8 cards, autoprobe and ISA PnP.
 
-  Module snd-card-interwave-stb.o
-  -------------------------------
+  Module snd-interwave-stb.o
+  --------------------------
 
     Module for UltraSound 32-Pro (soundcard from STB used by Compaq)
     and other soundcards based on AMD InterWave (tm) chip with TEA6330T
@@ -262,8 +262,8 @@ Module parameters
 
     Module supports up to 8 cards, autoprobe and ISA PnP.
 
-  Module snd-card-sb8.o
-  ---------------------
+  Module snd-sb8.o
+  ----------------
 
     Module for 8-bit SoundBlaster cards: SoundBlaster 1.0,
 					 SoundBlaster 2.0,
@@ -275,8 +275,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
-  Module snd-card-sb16.o/snd-card-sbawe.o
-  ---------------------------------------
+  Module snd-sb16.o/snd-sbawe.o
+  -----------------------------
 
     Module for 16-bit SoundBlaster cards: SoundBlaster 16 (PnP),
 					  SoundBlaster AWE 32 (PnP),
@@ -301,8 +301,8 @@ Module parameters
           half duplex mode through 8-bit DMA channel by disabling their
           16-bit DMA channel.
     
-  Module snd-card-opl3sa2.o
-  -------------------------
+  Module snd-opl3sa2.o
+  --------------------
 
     Module for Yamaha OPL3-SA2/SA3 soundcards.
 
@@ -319,8 +319,8 @@ Module parameters
     Module supports up to 8 cards and ISA PnP. This module does not support
     autoprobe (if ISA PnP is not used) thus all ports must be specified!!!
     
-  Module snd-card-opti92x-ad1848.o
-  --------------------------------
+  Module snd-opti92x-ad1848.o
+  ---------------------------
 
     Module for soundcards based on OPTi 82c92x and Analog Devices AD1848 chips.
     Module works with OAK Mozart cards as well.
@@ -334,8 +334,8 @@ Module parameters
 
     This module supports only one card, autoprobe and PnP.
 
-  Module snd-card-opti92x-cs4231.o
-  --------------------------------
+  Module snd-opti92x-cs4231.o
+  ---------------------------
 
     Module for soundcards based on OPTi 82c92x and Crystal CS4231 chips.
     
@@ -349,8 +349,8 @@ Module parameters
 
     This module supports only one card, autoprobe and PnP.
 
-  Module snd-card-opti93x.o
-  -------------------------
+  Module snd-opti93x.o
+  --------------------
 
     Module for soundcards based on OPTi 82c93x chips.
     
@@ -364,8 +364,8 @@ Module parameters
 
     This module supports only one card, autoprobe and PnP.
 
-  Module snd-card-sonicvibes.o
-  ----------------------------
+  Module snd-sonicvibes.o
+  -----------------------
 
     Module for S3 SonicVibes PCI soundcards.
 			* PINE Schubert 32 PCI
@@ -376,8 +376,8 @@ Module parameters
     
     Module supports up to 8 cards and autoprobe.
 
-  Module snd-card-ens1370.o
-  -------------------------
+  Module snd-ens1370.o
+  --------------------
 
     Module for Ensoniq AudioPCI ES1370 PCI soundcards.
 			* SoundBlaster PCI 64
@@ -385,8 +385,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
-  Module snd-card-ens1371.o
-  -------------------------
+  Module snd-ens1371.o
+  --------------------
 
     Module for Ensoniq AudioPCI ES1371 PCI soundcards.
 			* SoundBlaster PCI 64
@@ -395,8 +395,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
-  Module snd-card-ad1848.o
-  ------------------------
+  Module snd-ad1848.o
+  -------------------
 
     Module for soundcards based on AD1848/AD1847/CS4248 chips.
 
@@ -407,8 +407,8 @@ Module parameters
     Module supports up to 8 cards. This module does not support autoprobe
     thus main port must be specified!!! Other ports are optional.
     
-  Module snd-card-azt2320.o
-  -------------------------
+  Module snd-azt2320.o
+  --------------------
 
     Module for soundcards based on Aztech System AZT2320 chip (PnP only).
 
@@ -423,8 +423,8 @@ Module parameters
     
     Module supports up to 8 cards, PnP and autoprobe.
     
-  Module snd-card-cs4231.o
-  ------------------------
+  Module snd-cs4231.o
+  -------------------
 
     Module for soundcards based on CS4231 chips.
 
@@ -438,8 +438,8 @@ Module parameters
     Module supports up to 8 cards. This module does not support autoprobe
     thus main port must be specified!!! Other ports are optional.
     
-  Module snd-card-cs4232.o
-  ------------------------
+  Module snd-cs4232.o
+  -------------------
 
     Module for soundcards based on CS4232/CS4232A chips.
 
@@ -456,8 +456,8 @@ Module parameters
     Module supports up to 8 cards. This module does not support autoprobe
     thus main port must be specified!!! Other ports are optional.
     
-  Module snd-card-cs4236.o
-  ------------------------
+  Module snd-cs4236.o
+  -------------------
 
     Module for soundcards based on CS4235/CS4236/CS4236B/CS4237B/
                                    CS4238B/CS4239 chips.
@@ -476,8 +476,8 @@ Module parameters
     (if ISA PnP is not used) thus main port and control port must be
     specified!!! Other ports are optional.
 
-  Module snd-card-cs46xx.o
-  ------------------------
+  Module snd-cs46xx.o
+  -------------------
 
     Module for PCI soundcards based on CS4610/CS4612/CS4614/CS4615/CS4622/
 				       CS4624/CS4630/CS4280.
@@ -490,8 +490,8 @@ Module parameters
     from PCI sub vendor/device ids.  If they don't work, give the options
     above explicitly.
     
-  Module snd-card-serial.o
-  -------------------------
+  Module snd-serial.o
+  -------------------
 
     Module for UART16550A serial MIDI ports.
 
@@ -509,8 +509,8 @@ Module parameters
     Module supports up to 8 cards. This module does not support autoprobe
     thus the main port must be specified!!! Other options are optional.
 
-  Module snd-card-trident.o
-  -------------------------
+  Module snd-trident.o
+  --------------------
 
     Module for Trident 4DWave DX/NX soundcards.
 			* Best Union  Miss Melody 4DWave PCI
@@ -527,15 +527,15 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
 
-  Module snd-card-fm801.o
-  -----------------------
+  Module snd-fm801.o
+  ------------------
 
     Module for ForteMedia FM801 based PCI soundcards.
 
     Module supports up to 8 cards and autoprobe.
     
-  Module snd-card-es968.o
-  -----------------------
+  Module snd-es968.o
+  ------------------
 
     Module for soundcards based on ESS ES968 chip (PnP only).
 
@@ -545,8 +545,8 @@ Module parameters
     
     Module supports up to 8 cards, PnP and autoprobe.
     
-  Module snd-card-als100.o
-  ------------------------
+  Module snd-als100.o
+  -------------------
 
     Module for soundcards based on Avance Logic ALS100/ALS120 chip.
 
@@ -560,8 +560,8 @@ Module parameters
     
     Module supports up to 8 cards, autoprobe and PnP.
 
-  Module snd-card-als4000.o
-  ------------------------
+  Module snd-als4000.o
+  --------------------
 
     Module for soundcards based on Avance Logic ALS4000 PCI chip.
 
@@ -571,15 +571,15 @@ Module parameters
     
     Module supports up to 8 cards, autoprobe and PnP.
 
-  Module snd-card-es1938.o
-  ------------------------
+  Module snd-es1938.o
+  -------------------
 
     Module for soundcards based on ESS Solo-1 (ES1938,ES1946) chips.
 
     Module supports up to 8 cards and autoprobe.
 
-  Module snd-card-es1968.o
-  ------------------------
+  Module snd-es1968.o
+  -------------------
 
     Module for soundcards based on ESS Maestro-1/2/2E (ES1968/ES1978) chips.
 
@@ -590,8 +590,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
 
-  Module snd-card-cmi8330.o
-  -------------------------
+  Module snd-cmi8330.o
+  --------------------
 
     Module for soundcards based on C-Media CMI8330 chips.
 
@@ -605,8 +605,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
 
-  Module snd-card-emu10k1.o
-  -------------------------
+  Module snd-emu10k1.o
+  --------------------
 
     Module for EMU10K1 based PCI soundcards.
 			* Sound Blaster Live!
@@ -635,8 +635,8 @@ Module parameters
 	* Creative Card w/Digital CD in + Digital I/O 2	[0x0fcf/0x1f0f]
         * Creative Card 5.1/w Digital out + LiveDrive	[0x3fc3/0x1fff]
     
-  Module snd-card-ice1712.o
-  -------------------------
+  Module snd-ice1712.o
+  --------------------
 
     Module for Envy24 (ICE1712) based PCI soundcards.
 			* MidiMan M Audio Delta 1010
@@ -654,8 +654,8 @@ Module parameters
     is not used with all Envy24 based cards (for example in the MidiMan Delta
     serie).
 
-  Module snd-card-ad1816a.o
-  -------------------------
+  Module snd-ad1816a.o
+  --------------------
 
     Module for soundcards based on Analog Devices AD1816A/AD1815 chips.
 
@@ -669,8 +669,8 @@ Module parameters
     
     Module supports up to 8 cards, autoprobe and PnP.
     
-  Module snd-card-intel8x0.o
-  --------------------------
+  Module snd-intel8x0.o
+  ---------------------
 
     Module for AC'97 motherboards from Intel.
 			* Intel i810/810E, i815, i820, i830, i840, MX440
@@ -683,8 +683,8 @@ Module parameters
     if you still encounter too fast playback, specify the clock
     explicitly via the module option "snd_ac97_clock=41194".
     
-  Module snd-card-via686a.o
-  -------------------------
+  Module snd-via686a.o
+  --------------------
 
     Module for AC'97 motherboards based on VIA 82C686A/686B (south) bridge.
 
@@ -699,8 +699,8 @@ Module parameters
           default value 1.4.  Then the interrupt number will be
           assigned under 15. You might also upgrade your BIOS.
     
-  Module snd-card-via8233.o
-  -------------------------
+  Module snd-via8233.o
+  --------------------
 
     Module for AC'97 motherboards based on VIA 8233 (south) bridge.
 
@@ -708,8 +708,8 @@ Module parameters
 
     Module supports autoprobe and multiple bus-master chips (max 8).
     
-  Module snd-card-cmipci.o
-  ------------------------
+  Module snd-cmipci.o
+  -------------------
 
     Module for C-Media CMI8338 and 8738 PCI soundcards.
 
@@ -720,8 +720,8 @@ Module parameters
 
     Module supports autoprobe and multiple chips (max 8).
     
-  Module snd-card-ymfpci.o
-  ------------------------
+  Module snd-ymfpci.o
+  -------------------
 
     Module for Yamaha PCI chips (YMF72x, YMF74x & YMF75x).
 
@@ -732,8 +732,8 @@ Module parameters
 
     Module supports autoprobe and multiple chips (max 8).
     
-  Module snd-card-mpu401.o
-  ------------------------
+  Module snd-mpu401.o
+  -------------------
 
     Module for MPU-401 UART devices.
 
@@ -742,8 +742,8 @@ Module parameters
 
     Module supports multiple devices (max 8).
     
-  Module snd-card-maestro3.o
-  ------------------------
+  Module snd-maestro3.o
+  ---------------------
 
     Module for Allegro/Maestro3 chips
 
@@ -751,8 +751,8 @@ Module parameters
 
     Module supports autoprobe and multiple chips (max 8).
 
-  Module snd-card-nm256.o
-  ------------------------
+  Module snd-nm256.o
+  ------------------
 
     Module for NeoMagic NM256AV/ZX chips
 
@@ -775,8 +775,8 @@ Module parameters
     to initialize/use ac97 although it's not detected.  In such a
     case, use snd_force_ac97=1 option.
 
-  Module snd-card-ali5451.o
-  ------------------------
+  Module snd-ali5451.o
+  --------------------
 
     Module for ALi M5451
 
@@ -784,8 +784,8 @@ Module parameters
 
     Module supports autoprobe and multiple chips (max 8).
 
-  Module snd-card-pmac.o (on ppc only)
-  ------------------------------------
+  Module snd-powermac.o (on ppc only)
+  -----------------------------------
 
     Module for PowerMac, iMac and iBook on-board soundchips
 
@@ -888,16 +888,17 @@ A complete example if you want to use more soundcards in one machine
 ----- /etc/modules.conf
 
 # ISA PnP support (don't use IRQs 9,10,11,12,13)
+# it's only an example to reserve some IRQs for another hardware
 options isapnp isapnp_reserve_irq=9,10,11,12,13
 
 # ALSA native device support
 alias char-major-116 snd
 options snd snd_major=116 snd_cards_limit=2
-alias snd-card-0 snd-card-gusclassic
-alias snd-card-1 snd-card-sb16
-options snd-card-gusclassic snd_index=0 snd_id="Gus" \
+alias snd-card-0 snd-gusclassic
+alias snd-card-1 snd-sb16
+options snd-gusclassic snd_index=0 snd_id="Gus" \
         snd_port=0x220 snd_irq=5 snd_dma1=6 snd_dma2=7
-options snd-card-sb16 snd_index=1 snd_id="SB16"
+options snd-sb16 snd_index=1 snd_id="SB16"
 
 # OSS/Free setup
 alias char-major-14 soundcore
@@ -922,9 +923,9 @@ in the system:
 # ALSA native device support
 alias char-major-116 snd
 options snd snd_major=116 snd_cards_limit=2
-alias snd-card-0 snd-card-gusclassic
-alias snd-card-1 snd-card-gusclassic
-options snd-card-gusclassic snd_index=0,1 snd_id="Gus1","Gus2" \
+alias snd-card-0 snd-gusclassic
+alias snd-card-1 snd-gusclassic
+options snd-gusclassic snd_index=0,1 snd_id="Gus1","Gus2" \
         snd_port=0x220,0x240 snd_irq=5,7 snd_dma1=1,5 snd_dma2=3,6
 
 # OSS/Free setup

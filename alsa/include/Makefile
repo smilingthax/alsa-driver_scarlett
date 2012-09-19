@@ -9,5 +9,4 @@ all: $(TARGETS)
 	@echo "What's?" 
 
 clean:
-	rm -f core .depend *.o *.orig *~ modules/*.ver
-
+	rm -f core .depend *.o *.orig *~ sndversions.h modules/*.ver modules/*.stamp
