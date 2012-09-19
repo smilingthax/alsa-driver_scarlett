@@ -37,12 +37,6 @@ int snd_task_name(struct task_struct *task, char *name, size_t size)
 	return 0;
 }
 
-/* no vsnprintf yet? */
-/* FIXME: the version number is not sure.. at least it exists already on 2.4.10 */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 10)
-#define vsnprintf(buf,size,fmt,args) vsprintf(buf,fmt,args)
-#endif
-
 #ifdef CONFIG_SND_VERBOSE_PRINTK
 void snd_verbose_printk(const char *file, int line, const char *format, ...)
 {
