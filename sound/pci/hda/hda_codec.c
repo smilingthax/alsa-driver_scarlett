@@ -885,7 +885,7 @@ static void hda_set_power_state(struct hda_codec *codec, hda_nid_t fg,
  * Returns 0 if successful, or a negative error code.
  */
 int /*__devinit*/ snd_hda_codec_new(struct hda_bus *bus, unsigned int codec_addr,
-				    int do_init, struct hda_codec **codecp)
+				    struct hda_codec **codecp)
 {
 	struct hda_codec *codec;
 	char component[31];
@@ -978,11 +978,6 @@ int /*__devinit*/ snd_hda_codec_new(struct hda_bus *bus, unsigned int codec_addr
 			    codec->afg ? codec->afg : codec->mfg,
 			    AC_PWRST_D0);
 
-	if (do_init) {
-		err = snd_hda_codec_configure(codec);
-		if (err < 0)
-			goto error;
-	}
 	snd_hda_codec_proc_new(codec);
 
 	snd_hda_create_hwdep(codec);
@@ -1036,6 +1031,7 @@ int snd_hda_codec_configure(struct hda_codec *codec)
 		err = init_unsol_queue(codec->bus);
 	return err;
 }
+EXPORT_SYMBOL_HDA(snd_hda_codec_configure);
 
 /**
  * snd_hda_codec_setup_stream - set up the codec for streaming
@@ -2567,7 +2563,7 @@ unsigned int snd_hda_calc_stream_format(unsigned int rate,
 	case 20:
 	case 24:
 	case 32:
-		if (maxbps >= 32)
+		if (maxbps >= 32 || format == SNDRV_PCM_FORMAT_FLOAT_LE)
 			val |= 0x40;
 		else if (maxbps >= 24)
 			val |= 0x30;
@@ -2694,11 +2690,12 @@ static int snd_hda_query_supported_pcm(struct hda_codec *codec, hda_nid_t nid,
 					bps = 20;
 			}
 		}
-		else if (streams == AC_SUPFMT_FLOAT32) {
-			/* should be exclusive */
+		if (streams & AC_SUPFMT_FLOAT32) {
 			formats |= SNDRV_PCM_FMTBIT_FLOAT_LE;
-			bps = 32;
-		} else if (streams == AC_SUPFMT_AC3) {
+			if (!bps)
+				bps = 32;
+		}
+		if (streams == AC_SUPFMT_AC3) {
 			/* should be exclusive */
 			/* temporary hack: we have still no proper support
 			 * for the direct AC3 stream...

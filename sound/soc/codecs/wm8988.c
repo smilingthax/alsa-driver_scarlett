@@ -902,7 +902,7 @@ static int wm8988_register(struct wm8988_priv *wm8988)
 	ret = wm8988_reset(codec);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to issue reset\n");
-		return ret;
+		goto err;
 	}
 
 	/* set the update bits (we always update left then right) */
@@ -926,18 +926,20 @@ static int wm8988_register(struct wm8988_priv *wm8988)
 	ret = snd_soc_register_codec(codec);
 	if (ret != 0) {
 		dev_err(codec->dev, "Failed to register codec: %d\n", ret);
-		return ret;
+		goto err;
 	}
 
 	ret = snd_soc_register_dai(&wm8988_dai);
 	if (ret != 0) {
 		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
 		snd_soc_unregister_codec(codec);
-		return ret;
+		goto err_codec;
 	}
 
 	return 0;
 
+err_codec:
+	snd_soc_unregister_codec(codec);
 err:
 	kfree(wm8988);
 	return ret;
@@ -981,6 +983,21 @@ static int wm8988_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int wm8988_i2c_suspend(struct i2c_client *client, pm_message_t msg)
+{
+	return snd_soc_suspend_device(&client->dev);
+}
+
+static int wm8988_i2c_resume(struct i2c_client *client)
+{
+	return snd_soc_resume_device(&client->dev);
+}
+#else
+#define wm8988_i2c_suspend NULL
+#define wm8988_i2c_resume NULL
+#endif
+
 static const struct i2c_device_id wm8988_i2c_id[] = {
 	{ "wm8988", 0 },
 	{ }
@@ -994,6 +1011,8 @@ static struct i2c_driver wm8988_i2c_driver = {
 	},
 	.probe = wm8988_i2c_probe,
 	.remove = wm8988_i2c_remove,
+	.suspend = wm8988_i2c_suspend,
+	.resume = wm8988_i2c_resume,
 	.id_table = wm8988_i2c_id,
 };
 #endif
@@ -1051,6 +1070,21 @@ static int __devexit wm8988_spi_remove(struct spi_device *spi)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int wm8988_spi_suspend(struct spi_device *spi, pm_message_t msg)
+{
+	return snd_soc_suspend_device(&spi->dev);
+}
+
+static int wm8988_spi_resume(struct spi_device *spi)
+{
+	return snd_soc_resume_device(&spi->dev);
+}
+#else
+#define wm8988_spi_suspend NULL
+#define wm8988_spi_resume NULL
+#endif
+
 static struct spi_driver wm8988_spi_driver = {
 	.driver = {
 		.name	= "wm8988",
@@ -1059,6 +1093,8 @@ static struct spi_driver wm8988_spi_driver = {
 	},
 	.probe		= wm8988_spi_probe,
 	.remove		= __devexit_p(wm8988_spi_remove),
+	.suspend	= wm8988_spi_suspend,
+	.resume		= wm8988_spi_resume,
 };
 #endif
 

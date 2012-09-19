@@ -810,7 +810,8 @@ static int wm8960_register(struct wm8960_priv *wm8960)
 
 	if (wm8960_codec) {
 		dev_err(codec->dev, "Another WM8960 is registered\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto err;
 	}
 
 	if (!pdata) {
@@ -843,7 +844,7 @@ static int wm8960_register(struct wm8960_priv *wm8960)
 	ret = wm8960_reset(codec);
 	if (ret < 0) {
 		dev_err(codec->dev, "Failed to issue reset\n");
-		return ret;
+		goto err;
 	}
 
 	wm8960_dai.dev = codec->dev;
@@ -877,17 +878,22 @@ static int wm8960_register(struct wm8960_priv *wm8960)
 	ret = snd_soc_register_codec(codec);
 	if (ret != 0) {
 		dev_err(codec->dev, "Failed to register codec: %d\n", ret);
-		return ret;
+		goto err;
 	}
 
 	ret = snd_soc_register_dai(&wm8960_dai);
 	if (ret != 0) {
 		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
-		snd_soc_unregister_codec(codec);
-		return ret;
+		goto err_codec;
 	}
 
 	return 0;
+
+err_codec:
+	snd_soc_unregister_codec(codec);
+err:
+	kfree(wm8960);
+	return ret;
 }
 
 static void wm8960_unregister(struct wm8960_priv *wm8960)
@@ -927,6 +933,21 @@ static __devexit int wm8960_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int wm8960_i2c_suspend(struct i2c_client *client, pm_message_t msg)
+{
+	return snd_soc_suspend_device(&client->dev);
+}
+
+static int wm8960_i2c_resume(struct i2c_client *client)
+{
+	return snd_soc_resume_device(&client->dev);
+}
+#else
+#define wm8960_i2c_suspend NULL
+#define wm8960_i2c_resume NULL
+#endif
+
 static const struct i2c_device_id wm8960_i2c_id[] = {
 	{ "wm8960", 0 },
 	{ }
@@ -940,6 +961,8 @@ static struct i2c_driver wm8960_i2c_driver = {
 	},
 	.probe =    wm8960_i2c_probe,
 	.remove =   __devexit_p(wm8960_i2c_remove),
+	.suspend =  wm8960_i2c_suspend,
+	.resume =   wm8960_i2c_resume,
 	.id_table = wm8960_i2c_id,
 };
 
