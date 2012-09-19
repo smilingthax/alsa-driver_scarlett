@@ -1976,18 +1976,20 @@ void snd_pcm_tick_prepare(snd_pcm_substream_t *substream)
 void snd_pcm_tick_elapsed(snd_pcm_substream_t *substream)
 {
 	snd_pcm_runtime_t *runtime;
+	unsigned long flags;
+	
 	snd_assert(substream != NULL, return);
 	runtime = substream->runtime;
 	snd_assert(runtime != NULL, return);
 
-	spin_lock_irq(&runtime->lock);
+	spin_lock_irqsave(&runtime->lock, flags);
 	if (!snd_pcm_running(substream) ||
 	    snd_pcm_update_hw_ptr(substream) < 0)
 		goto _end;
 	if (runtime->sleep_min)
 		snd_pcm_tick_prepare(substream);
  _end:
-	spin_unlock_irq(&runtime->lock);
+	spin_unlock_irqrestore(&runtime->lock, flags);
 }
 
 /**
@@ -2004,6 +2006,8 @@ void snd_pcm_tick_elapsed(snd_pcm_substream_t *substream)
 void snd_pcm_period_elapsed(snd_pcm_substream_t *substream)
 {
 	snd_pcm_runtime_t *runtime;
+	unsigned long flags;
+
 	snd_assert(substream != NULL, return);
 	runtime = substream->runtime;
 	snd_assert(runtime != NULL, return);
@@ -2011,7 +2015,7 @@ void snd_pcm_period_elapsed(snd_pcm_substream_t *substream)
 	if (runtime->transfer_ack_begin)
 		runtime->transfer_ack_begin(substream);
 
-	spin_lock(&runtime->lock);
+	spin_lock_irqsave(&runtime->lock, flags);
 	if (!snd_pcm_running(substream) ||
 	    snd_pcm_update_hw_ptr_interrupt(substream) < 0)
 		goto _end;
@@ -2021,7 +2025,7 @@ void snd_pcm_period_elapsed(snd_pcm_substream_t *substream)
 	if (runtime->sleep_min)
 		snd_pcm_tick_prepare(substream);
  _end:
-	spin_unlock(&runtime->lock);
+	spin_unlock_irqrestore(&runtime->lock, flags);
 	if (runtime->transfer_ack_end)
 		runtime->transfer_ack_end(substream);
 	kill_fasync(&runtime->fasync, SIGIO, POLL_IN);
