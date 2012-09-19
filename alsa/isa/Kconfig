@@ -8,8 +8,11 @@ config SND_PC98_CS4232
 	select SND_MPU401_UART
 	select SND_PCM
 	help
-	  Say 'Y' or 'M' to include support for NEC PC-9801/PC-9821 on-board
-	  soundchip based on CS4232.
+	  Say Y to include support for the on-board sound chip (CS4232)
+	  in NEC PC-9801/PC-8921 PCs.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-pc98-cs4232.
 
 config SND_MSND_PINNACLE
 	tristate "Turtle Beach MultiSound Pinnacle/Fiji driver"
@@ -17,7 +20,10 @@ config SND_MSND_PINNACLE
 	select SND_RAWMIDI
 	select SND_PCM
 	help
-	  Say 'Y' or 'M' to include support for Turtle Beach MultiSound
-	  Pinnacle/Fiji soundcards.
+	  Say Y to include support for Turtle Beach MultiSound Pinnacle/
+	  Fiji soundcards.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-msnd-pinnacle.
 
 endmenu

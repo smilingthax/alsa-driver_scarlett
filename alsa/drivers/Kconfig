@@ -5,5 +5,15 @@ config SND_SERIALMIDI
 	depends on SND
 	select SND_RAWMIDI
 	help
-	  Say 'Y' or 'M' to include support for serial MIDI adapters.
+	  If you want to use MIDI adapters connected to a standard
+	  serial port, say Y here and read
+	  <file:Documentation/sound/alsa/serialmidi.txt>.
+
+	  For multi-port devices, this driver supports port selection
+	  with the Roland SoundCanvas protocol and for Midiator
+	  MS-124T/W devices; many other devices are SoundCanvas
+	  compatible.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-serialmidi.
 
