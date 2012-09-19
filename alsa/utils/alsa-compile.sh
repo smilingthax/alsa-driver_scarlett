@@ -347,7 +347,7 @@ install_package() {
 	openSUSE)
 		test "$pkg" == "alsa-lib-devel" && pkg="alsa-devel"
 		;;
-	Fedora|RHEL)
+	Fedora|RHEL|CentOS|Scientific)
 		test "$pkg" == "lsb" && pkg="redhat-lsb"
 		;;
 	Debian|Ubuntu)
@@ -367,7 +367,7 @@ install_package() {
 	openSUSE)
 		zypper install $pkg
 		;;
-	Fedora|RHEL)
+	Fedora|RHEL|CentOS|Scientific)
 		yum install -y $pkg
 		;;
 	Debian|Ubuntu)
@@ -411,7 +411,7 @@ check_kernel_source() {
 			install_package kernel-source
 		fi
 		;;
-	Fedora|RHEL)
+	Fedora|RHEL|CentOS|Scientific)
 		if uname --kernel-release | grep -q '\.PAE$'; then
 			local kernel_devel=kernel-PAE-devel
 		else
