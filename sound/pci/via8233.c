@@ -361,7 +361,7 @@ static void snd_via8233_setup_periods(via8233_t *chip, viadev_t *viadev,
 		unsigned int slots;
 		int fmt = (runtime->format == SNDRV_PCM_FORMAT_S16_LE) ? VIA_REG_MULTPLAY_FMT_16BIT : VIA_REG_MULTPLAY_FMT_8BIT;
 		fmt |= runtime->channels << 4;
-		outb(fmt, VIA_REG_MULTPLAY_FORMAT);
+		outb(fmt, chip->port + VIA_REG_MULTPLAY_FORMAT);
 		/* set sample number to slot 3, 4, 7, 8, 6, 9 */
 		switch (runtime->channels) {
 		case 1: slots = (1<<0); break;
@@ -371,7 +371,7 @@ static void snd_via8233_setup_periods(via8233_t *chip, viadev_t *viadev,
 		default: slots = 0;
 		}
 		/* STOP index is never reached */
-		outl(0xff000000 | slots, VIA_REG_MULTPLAY_STOP_IDX);
+		outl(0xff000000 | slots, chip->port + VIA_REG_MULTPLAY_STOP_IDX);
 	} else {
 		outl((runtime->format == SNDRV_PCM_FORMAT_S16_LE ? VIA_REG_TYPE_16BIT : 0) |
 		     (runtime->channels > 1 ? VIA_REG_TYPE_STEREO : 0) |
