@@ -490,6 +490,10 @@ dnl Check for PCI support...
 CHECK_KERNEL_CONFIG(CONFIG_PCI, [PCI support in kernel])
 AC_SUBST(CONFIG_PCI)
 
+dnl Check for ACPI bus driver...
+CHECK_KERNEL_CONFIG(CONFIG_ACPI_BUS, [ACPI bus driver])
+AC_SUBST(CONFIG_ACPI_BUS)
+
 dnl Check for SGI/MIPS (HAL2) support...
 AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
 CONFIG_SGI=""
