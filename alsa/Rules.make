@@ -4,7 +4,7 @@
 # It's a stripped and modified version of /usr/src/linux/Rules.make. [--jk]
 #
 
-MODCURDIR = $(subst $(TOPDIR)/,,$(shell /bin/pwd))
+MODCURDIR = $(subst $(TREETOPDIR)/,,$(shell /bin/pwd))
 
 #
 # False targets.

@@ -114,6 +114,19 @@ AC_SUBST(ksublevel)
 AC_SUBST(kextraversion)
 AC_MSG_RESULT($kaversion)
 
+dnl Check for linux/pm.h...
+AC_MSG_CHECKING(for kernel linux/pm.h)
+if test -f $CONFIG_SND_KERNELDIR/include/linux/pm.h; then
+  AC_MSG_RESULT("yes")
+else
+  AC_MSG_RESULT("no")
+  if test ! -f include/linux/pm.h; then
+    echo "Creating a dummy pm.h..."
+    mkdir -p include/linux
+    touch include/linux/pm.h
+  fi
+fi
+
 dnl Check for modversions...
 AC_MSG_CHECKING(for kernel module symbol versions)
 modversion=n
