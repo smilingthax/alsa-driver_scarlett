@@ -275,6 +275,17 @@ config SND_CS5535AUDIO
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-cs5535audio.
 
+config SND_CTXFI
+	tristate "Creative Sound Blaster X-Fi"
+	depends on X86
+	select SND_PCM
+	help
+	  If you want to use soundcards based on Creative Sound Blastr X-Fi
+	  boards with 20k1 or 20k2 chips, say Y here.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-ctxfi.
+
 config SND_DARLA20
 	tristate "(Echoaudio) Darla20"
 	select FW_LOADER
@@ -532,6 +543,9 @@ config SND_HDSP
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-hdsp.
 
+comment "Don't forget to add built-in firmwares for HDSP driver"
+	depends on SND_HDSP=y
+
 config SND_HDSPM
 	tristate "RME Hammerfall DSP MADI"
 	select SND_HWDEP
@@ -621,6 +635,16 @@ config SND_KORG1212
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-korg1212.
+
+config SND_LX6464ES
+	tristate "Digigram LX6464ES"
+	select SND_PCM
+	help
+	  Say Y here to include support for Digigram LX6464ES boards.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-lx6464es.
+
 
 config SND_MAESTRO3
 	tristate "ESS Allegro/Maestro3"

@@ -98,6 +98,7 @@ struct snd_pcm_ops {
 #define SNDRV_PCM_IOCTL1_INFO		1
 #define SNDRV_PCM_IOCTL1_CHANNEL_INFO	2
 #define SNDRV_PCM_IOCTL1_GSTATE		3
+#define SNDRV_PCM_IOCTL1_FIFO_SIZE	4
 
 #define SNDRV_PCM_TRIGGER_STOP		0
 #define SNDRV_PCM_TRIGGER_START		1
@@ -270,6 +271,7 @@ struct snd_pcm_runtime {
 	snd_pcm_uframes_t hw_ptr_base;	/* Position at buffer restart */
 	snd_pcm_uframes_t hw_ptr_interrupt; /* Position at interrupt time */
 	unsigned long hw_ptr_jiffies;	/* Time when hw_ptr is updated */
+	snd_pcm_sframes_t delay;	/* extra delay; typically FIFO size */
 
 	/* -- HW params -- */
 	snd_pcm_access_t access;	/* access mode */
