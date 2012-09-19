@@ -873,17 +873,9 @@ static int snd_pcm_resume(snd_pcm_substream_t *substream)
 	int res;
 
 	snd_power_lock(card);
-	while (snd_power_get_state(card) != SNDRV_CTL_POWER_D0) {
-		if (substream->ffile->f_flags & O_NONBLOCK) {
-			res = -EAGAIN;
-			goto _power_unlock;
-		}
-		snd_power_wait(card);
+	if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) >= 0) {
+		_SND_PCM_ACTION(resume, substream, 0, res, 1);
 	}
-
-	_SND_PCM_ACTION(resume, substream, 0, res, 1);
-
-       _power_unlock:
 	snd_power_unlock(card);
 	return res;
 }
@@ -914,21 +906,15 @@ static int snd_pcm_xrun(snd_pcm_substream_t *substream)
 		result = snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
 		break;
 	case SNDRV_PCM_STATE_SUSPENDED:
-		while (snd_power_get_state(card) != SNDRV_CTL_POWER_D0) {
-			if (substream->ffile->f_flags & O_NONBLOCK) {
-				result = -EAGAIN;
-				goto _end;
-			}
-			spin_unlock_irq(&runtime->lock);
-			snd_power_wait(card);
-			spin_lock_irq(&runtime->lock);
-		}
+		spin_unlock_irq(&runtime->lock);
+		if ((result = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) < 0)
+			goto _end_nospin;
 		goto _xrun_recovery;
 	default:
 		result = -EBADFD;
 	}
-       _end:
 	spin_unlock_irq(&runtime->lock);
+       _end_nospin:
 	snd_power_unlock(card);
 	return result;
 }
@@ -1018,19 +1004,11 @@ int snd_pcm_prepare(snd_pcm_substream_t *substream)
 	snd_card_t *card = substream->pcm->card;
 
 	snd_power_lock(card);
-	while (snd_power_get_state(card) != SNDRV_CTL_POWER_D0) {
-		if (substream->ffile->f_flags & O_NONBLOCK) {
-			res = -EAGAIN;
-			goto _power_unlock;
-		}
-		snd_power_wait(card);
+	if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) >= 0) {
+		spin_lock_irq(&substream->runtime->lock);
+		_SND_PCM_ACTION(prepare, substream, 0, res, 0);
+		spin_unlock_irq(&substream->runtime->lock);
 	}
-
-	spin_lock_irq(&substream->runtime->lock);
-	_SND_PCM_ACTION(prepare, substream, 0, res, 0);
-	spin_unlock_irq(&substream->runtime->lock);
-
-       _power_unlock:
 	snd_power_unlock(card);
 	return res;
 }
@@ -1088,14 +1066,10 @@ static int snd_pcm_playback_drain(snd_pcm_substream_t * substream)
 	case SNDRV_PCM_STATE_DRAINING:
 		break;
 	case SNDRV_PCM_STATE_SUSPENDED:
-		while (snd_power_get_state(card) != SNDRV_CTL_POWER_D0) {
-			if (substream->ffile->f_flags & O_NONBLOCK) {
-				result = -EAGAIN;
-				goto _end;
-			}
-			spin_unlock_irq(&runtime->lock);
-			snd_power_wait(card);
+		spin_unlock_irq(&runtime->lock);
+		if ((result = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) < 0) {
 			spin_lock_irq(&runtime->lock);
+			goto _end;
 		}
 		goto _xrun_recovery;
 	case SNDRV_PCM_STATE_OPEN:
@@ -1211,22 +1185,16 @@ static int snd_pcm_playback_drop(snd_pcm_substream_t *substream)
 		snd_pcm_change_state(substream, SNDRV_PCM_STATE_SETUP);
 		break;
 	case SNDRV_PCM_STATE_SUSPENDED:
-		while (snd_power_get_state(card) != SNDRV_CTL_POWER_D0) {
-			if (substream->ffile->f_flags & O_NONBLOCK) {
-				res = -EAGAIN;
-				goto _end;
-			}
-			spin_unlock_irq(&runtime->lock);
-			snd_power_wait(card);
-			spin_lock_irq(&runtime->lock);
-		}
+		spin_unlock_irq(&runtime->lock);
+		if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) < 0)
+			goto _end_nospin;
 		goto _xrun_recovery;
 	default:
 		break; 
 	}
 	runtime->control->appl_ptr = runtime->status->hw_ptr;
-       _end:
 	spin_unlock_irq(&runtime->lock);
+       _end_nospin:
 	snd_power_unlock(card);
 	return res;
 }
@@ -1266,21 +1234,15 @@ static int snd_pcm_capture_drain(snd_pcm_substream_t * substream)
 				     SNDRV_PCM_STATE_DRAINING : SNDRV_PCM_STATE_SETUP);
 		break;
 	case SNDRV_PCM_STATE_SUSPENDED:
-		while (snd_power_get_state(card) != SNDRV_CTL_POWER_D0) {
-			if (substream->ffile->f_flags & O_NONBLOCK) {
-				res = -EAGAIN;
-				goto _end;
-			}
-			spin_unlock_irq(&runtime->lock);
-			snd_power_wait(card);
-			spin_lock_irq(&runtime->lock);
-		}
+		spin_unlock_irq(&runtime->lock);
+		if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) < 0)
+			goto _end_nospin;
 		goto _xrun_recovery;
 	default: 
 		break; 
 	}
-       _end:
 	spin_unlock_irq(&runtime->lock);
+       _end_nospin:
 	snd_power_unlock(card);
 	return res;
 }
@@ -1305,15 +1267,9 @@ static int snd_pcm_capture_drop(snd_pcm_substream_t * substream)
 		snd_pcm_stop(substream, SNDRV_PCM_STATE_SETUP);
 		break;
 	case SNDRV_PCM_STATE_SUSPENDED:
-		while (snd_power_get_state(card) != SNDRV_CTL_POWER_D0) {
-			if (substream->ffile->f_flags & O_NONBLOCK) {
-				res = -EAGAIN;
-				goto _end;
-			}
-			spin_unlock_irq(&runtime->lock);
-			snd_power_wait(card);
-			spin_lock_irq(&runtime->lock);
-		}
+		spin_unlock_irq(&runtime->lock);
+		if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) < 0)
+			goto _end_nospin;
 		/* Fall through */
 	case SNDRV_PCM_STATE_PREPARED:
 	case SNDRV_PCM_STATE_DRAINING:
@@ -1324,8 +1280,8 @@ static int snd_pcm_capture_drop(snd_pcm_substream_t * substream)
 		break; 
 	}
 	runtime->control->appl_ptr = runtime->status->hw_ptr;
-       _end: 
 	spin_unlock_irq(&runtime->lock);
+       _end_nospin:
 	snd_power_unlock(card);
 	return res;
 }

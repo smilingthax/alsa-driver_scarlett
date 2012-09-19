@@ -184,7 +184,7 @@ static inline void snd_power_unlock(snd_card_t *card)
 	up(&card->power_lock);
 }
 
-void snd_power_wait(snd_card_t *card);
+int snd_power_wait(snd_card_t *card, unsigned int power_state, struct file *file);
 
 static inline unsigned int snd_power_get_state(snd_card_t *card)
 {
