@@ -41,6 +41,7 @@
 #include <sound/driver.h>
 #include <linux/bitops.h>
 #include <linux/init.h>
+#include <linux/interrupt.h>
 #include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/string.h>
@@ -129,8 +130,6 @@ struct snd_urb_ctx {
 	snd_usb_substream_t *subs;
 	int index;	/* index for urb array */
 	int packets;	/* number of packets per urb */
-	int transfer;	/* transferred size */
-	char *buf;	/* buffer for capture */
 };
 
 struct snd_urb_ops {
@@ -165,12 +164,11 @@ struct snd_usb_substream {
 	unsigned int curframesize;	/* current packet size in frames (for capture) */
 	unsigned int fill_max: 1;	/* fill max packet size always */
 	unsigned int fmt_type;		/* USB audio format type (1-3) */
+	unsigned int packs_per_ms;	/* packets per millisecond (for playback) */
 
 	unsigned int running: 1;	/* running status */
 
-	unsigned int hwptr;			/* free frame position in the buffer (only for playback) */
 	unsigned int hwptr_done;			/* processed frame position in the buffer */
-	unsigned int transfer_sched;		/* scheduled frames since last period (for playback) */
 	unsigned int transfer_done;		/* processed frames since last period update */
 	unsigned long active_mask;	/* bitmask of active urbs */
 	unsigned long unlink_mask;	/* bitmask of unlinked urbs */
@@ -179,12 +177,12 @@ struct snd_usb_substream {
 	snd_urb_ctx_t dataurb[MAX_URBS];	/* data urb table */
 	snd_urb_ctx_t syncurb[SYNC_URBS];	/* sync urb table */
 	char syncbuf[SYNC_URBS * 4];	/* sync buffer; it's so small - let's get static */
-	char *tmpbuf;			/* temporary buffer for playback */
 
 	u64 formats;			/* format bitmasks (all or'ed) */
 	unsigned int num_formats;		/* number of supported audio formats (list) */
 	struct list_head fmt_list;	/* format list */
 	spinlock_t lock;
+	struct tasklet_struct start_period_elapsed;	/* for start trigger */
 
 	struct snd_urb_ops ops;		/* callbacks (must be filled at init) */
 };
@@ -311,27 +309,17 @@ static int prepare_capture_urb(snd_usb_substream_t *subs,
 			       struct urb *urb)
 {
 	int i, offs;
-	unsigned long flags;
 	snd_urb_ctx_t *ctx = (snd_urb_ctx_t *)urb->context;
 
 	offs = 0;
 	urb->dev = ctx->subs->dev; /* we need to set this at each time */
-	urb->number_of_packets = 0;
-	spin_lock_irqsave(&subs->lock, flags);
 	for (i = 0; i < ctx->packets; i++) {
 		urb->iso_frame_desc[i].offset = offs;
 		urb->iso_frame_desc[i].length = subs->curpacksize;
 		offs += subs->curpacksize;
-		urb->number_of_packets++;
-		subs->transfer_sched += subs->curframesize;
-		if (subs->transfer_sched >= runtime->period_size) {
-			subs->transfer_sched -= runtime->period_size;
-			break;
-		}
 	}
-	spin_unlock_irqrestore(&subs->lock, flags);
-	urb->transfer_buffer = ctx->buf;
 	urb->transfer_buffer_length = offs;
+	urb->number_of_packets = ctx->packets;
 #if 0 // for check
 	if (! urb->bandwidth) {
 		int bustime;
@@ -359,6 +347,7 @@ static int retire_capture_urb(snd_usb_substream_t *subs,
 	unsigned char *cp;
 	int i;
 	unsigned int stride, len, oldptr;
+	int period_elapsed = 0;
 
 	stride = runtime->frame_bits >> 3;
 
@@ -378,6 +367,10 @@ static int retire_capture_urb(snd_usb_substream_t *subs,
 		if (subs->hwptr_done >= runtime->buffer_size)
 			subs->hwptr_done -= runtime->buffer_size;
 		subs->transfer_done += len;
+		if (subs->transfer_done >= runtime->period_size) {
+			subs->transfer_done -= runtime->period_size;
+			period_elapsed = 1;
+		}
 		spin_unlock_irqrestore(&subs->lock, flags);
 		/* copy a data chunk */
 		if (oldptr + len > runtime->buffer_size) {
@@ -388,15 +381,9 @@ static int retire_capture_urb(snd_usb_substream_t *subs,
 		} else {
 			memcpy(runtime->dma_area + oldptr * stride, cp, len * stride);
 		}
-		/* update the pointer, call callback if necessary */
-		spin_lock_irqsave(&subs->lock, flags);
-		if (subs->transfer_done >= runtime->period_size) {
-			subs->transfer_done -= runtime->period_size;
-			spin_unlock_irqrestore(&subs->lock, flags);
-			snd_pcm_period_elapsed(subs->pcm_substream);
-		} else
-			spin_unlock_irqrestore(&subs->lock, flags);
 	}
+	if (period_elapsed)
+		snd_pcm_period_elapsed(subs->pcm_substream);
 	return 0;
 }
 
@@ -492,12 +479,10 @@ static int retire_playback_sync_urb_hs(snd_usb_substream_t *subs,
 /*
  * prepare urb for playback data pipe
  *
- * we copy the data directly from the pcm buffer.
- * the current position to be copied is held in hwptr field.
- * since a urb can handle only a single linear buffer, if the total
- * transferred area overflows the buffer boundary, we cannot send
- * it directly from the buffer.  thus the data is once copied to
- * a temporary buffer and urb points to that.
+ * Since a URB can handle only a single linear buffer, we must use double
+ * buffering when the data to be transferred overflows the buffer boundary.
+ * To avoid inconsistencies when updating hwptr_done, we use double buffering
+ * for all URBs.
  */
 static int prepare_playback_urb(snd_usb_substream_t *subs,
 				snd_pcm_runtime_t *runtime,
@@ -506,6 +491,7 @@ static int prepare_playback_urb(snd_usb_substream_t *subs,
 	int i, stride, offs;
 	unsigned int counts;
 	unsigned long flags;
+	int period_elapsed = 0;
 	snd_urb_ctx_t *ctx = (snd_urb_ctx_t *)urb->context;
 
 	stride = runtime->frame_bits >> 3;
@@ -530,78 +516,83 @@ static int prepare_playback_urb(snd_usb_substream_t *subs,
 		urb->iso_frame_desc[i].length = counts * stride;
 		offs += counts;
 		urb->number_of_packets++;
-		subs->transfer_sched += counts;
-		if (subs->transfer_sched >= runtime->period_size) {
-			subs->transfer_sched -= runtime->period_size;
+		subs->transfer_done += counts;
+		if (subs->transfer_done >= runtime->period_size) {
+			subs->transfer_done -= runtime->period_size;
+			period_elapsed = 1;
 			if (subs->fmt_type == USB_FORMAT_TYPE_II) {
-				if (subs->transfer_sched > 0) {
-					/* FIXME: fill-max mode is not supported yet */
-					offs -= subs->transfer_sched;
-					counts -= subs->transfer_sched;
-					urb->iso_frame_desc[i].length = counts * stride;
-					subs->transfer_sched = 0;
+				if (subs->transfer_done > 0) {
+					/* FIXME: fill-max mode is not
+					 * supported yet */
+					offs -= subs->transfer_done;
+					counts -= subs->transfer_done;
+					urb->iso_frame_desc[i].length =
+						counts * stride;
+					subs->transfer_done = 0;
 				}
 				i++;
 				if (i < ctx->packets) {
 					/* add a transfer delimiter */
-					urb->iso_frame_desc[i].offset = offs * stride;
+					urb->iso_frame_desc[i].offset =
+						offs * stride;
 					urb->iso_frame_desc[i].length = 0;
 					urb->number_of_packets++;
 				}
+				break;
 			}
-			break;
  		}
+		/* finish at the frame boundary at/after the period boundary */
+		if (period_elapsed &&
+		    (i & (subs->packs_per_ms - 1)) == subs->packs_per_ms - 1)
+			break;
 	}
-	if (subs->hwptr + offs > runtime->buffer_size) {
-		/* err, the transferred area goes over buffer boundary.
-		 * copy the data to the temp buffer.
-		 */
-		int len;
-		len = runtime->buffer_size - subs->hwptr;
-		urb->transfer_buffer = subs->tmpbuf;
-		memcpy(subs->tmpbuf, runtime->dma_area + subs->hwptr * stride, len * stride);
-		memcpy(subs->tmpbuf + len * stride, runtime->dma_area, (offs - len) * stride);
-		subs->hwptr += offs;
-		subs->hwptr -= runtime->buffer_size;
+	if (subs->hwptr_done + offs > runtime->buffer_size) {
+		/* err, the transferred area goes over buffer boundary. */
+		unsigned int len = runtime->buffer_size - subs->hwptr_done;
+		memcpy(urb->transfer_buffer,
+		       runtime->dma_area + subs->hwptr_done * stride,
+		       len * stride);
+		memcpy(urb->transfer_buffer + len * stride,
+		       runtime->dma_area,
+		       (offs - len) * stride);
 	} else {
-		/* set the buffer pointer */
-		urb->transfer_buffer = runtime->dma_area + subs->hwptr * stride;
-		subs->hwptr += offs;
-		if (subs->hwptr == runtime->buffer_size)
-			subs->hwptr = 0;
+		memcpy(urb->transfer_buffer,
+		       runtime->dma_area + subs->hwptr_done * stride,
+		       offs * stride);
 	}
+	subs->hwptr_done += offs;
+	if (subs->hwptr_done >= runtime->buffer_size)
+		subs->hwptr_done -= runtime->buffer_size;
 	spin_unlock_irqrestore(&subs->lock, flags);
 	urb->transfer_buffer_length = offs * stride;
-	ctx->transfer = offs;
-
+	if (period_elapsed) {
+		if (likely(subs->running))
+			snd_pcm_period_elapsed(subs->pcm_substream);
+		else
+			tasklet_hi_schedule(&subs->start_period_elapsed);
+	}
 	return 0;
 }
 
 /*
  * process after playback data complete
- *
- * update the current position and call callback if a period is processed.
+ * - nothing to do
  */
 static int retire_playback_urb(snd_usb_substream_t *subs,
 			       snd_pcm_runtime_t *runtime,
 			       struct urb *urb)
 {
-	unsigned long flags;
-	snd_urb_ctx_t *ctx = (snd_urb_ctx_t *)urb->context;
-
-	spin_lock_irqsave(&subs->lock, flags);
-	subs->transfer_done += ctx->transfer;
-	subs->hwptr_done += ctx->transfer;
-	ctx->transfer = 0;
-	if (subs->hwptr_done >= runtime->buffer_size)
-		subs->hwptr_done -= runtime->buffer_size;
-	if (subs->transfer_done >= runtime->period_size) {
-		subs->transfer_done -= runtime->period_size;
-		spin_unlock_irqrestore(&subs->lock, flags);
-		snd_pcm_period_elapsed(subs->pcm_substream);
-	} else
-		spin_unlock_irqrestore(&subs->lock, flags);
 	return 0;
+}
+
+/*
+ * Delay the snd_pcm_period_elapsed() call until after the start trigger
+ * callback so that we're not longer in the substream's lock.
+ */
+static void start_period_elapsed(unsigned long data)
+{
+	snd_usb_substream_t *subs = (snd_usb_substream_t *)data;
+	snd_pcm_period_elapsed(subs->pcm_substream);
 }
 
 
@@ -824,8 +815,14 @@ static int wait_clear_urbs(snd_usb_substream_t *subs)
  */
 static snd_pcm_uframes_t snd_usb_pcm_pointer(snd_pcm_substream_t *substream)
 {
-	snd_usb_substream_t *subs = (snd_usb_substream_t *)substream->runtime->private_data;
-	return subs->hwptr_done;
+	snd_usb_substream_t *subs;
+	snd_pcm_uframes_t hwptr_done;
+	
+	subs = (snd_usb_substream_t *)substream->runtime->private_data;
+	spin_lock(&subs->lock);
+	hwptr_done = subs->hwptr_done;
+	spin_unlock(&subs->lock);
+	return hwptr_done;
 }
 
 
@@ -858,11 +855,10 @@ static int snd_usb_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 static void release_urb_ctx(snd_urb_ctx_t *u)
 {
 	if (u->urb) {
+		kfree(u->urb->transfer_buffer);
 		usb_free_urb(u->urb);
 		u->urb = NULL;
 	}
-	kfree(u->buf);
-	u->buf = NULL;
 }
 
 /*
@@ -880,8 +876,6 @@ static void release_substream_urbs(snd_usb_substream_t *subs, int force)
 		release_urb_ctx(&subs->dataurb[i]);
 	for (i = 0; i < SYNC_URBS; i++)
 		release_urb_ctx(&subs->syncurb[i]);
-	kfree(subs->tmpbuf);
-	subs->tmpbuf = NULL;
 	subs->nurbs = 0;
 }
 
@@ -924,6 +918,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, unsigned int period_by
 		packs_per_ms = 8 >> subs->datainterval;
 	else
 		packs_per_ms = 1;
+	subs->packs_per_ms = packs_per_ms;
 
 	if (is_playback) {
 		urb_packs = nrpacks;
@@ -933,24 +928,15 @@ static int init_substream_urbs(snd_usb_substream_t *subs, unsigned int period_by
 		urb_packs = 1;
 	urb_packs *= packs_per_ms;
 
-	/* allocate a temporary buffer for playback */
-	if (is_playback) {
-		subs->tmpbuf = kmalloc(maxsize * urb_packs, GFP_KERNEL);
-		if (! subs->tmpbuf) {
-			snd_printk(KERN_ERR "cannot malloc tmpbuf\n");
-			return -ENOMEM;
-		}
-	}
-
 	/* decide how many packets to be used */
 	if (is_playback) {
 		unsigned int minsize;
 		/* determine how small a packet can be */
 		minsize = (subs->freqn >> (16 - subs->datainterval))
 			  * (frame_bits >> 3);
-		/* with sync from device, assume it can be 25% lower */
+		/* with sync from device, assume it can be 12% lower */
 		if (subs->syncpipe)
-			minsize -= minsize >> 2;
+			minsize -= minsize >> 3;
 		minsize = max(minsize, 1u);
 		total_packs = (period_bytes + minsize - 1) / minsize;
 		/* round up to multiple of packs_per_ms */
@@ -999,27 +985,22 @@ static int init_substream_urbs(snd_usb_substream_t *subs, unsigned int period_by
 		snd_urb_ctx_t *u = &subs->dataurb[i];
 		u->index = i;
 		u->subs = subs;
-		u->transfer = 0;
 		u->packets = npacks[i];
 		if (subs->fmt_type == USB_FORMAT_TYPE_II)
 			u->packets++; /* for transfer delimiter */
-		if (! is_playback) {
-			/* allocate a capture buffer per urb */
-			u->buf = kmalloc(maxsize * u->packets, GFP_KERNEL);
-			if (! u->buf) {
-				release_substream_urbs(subs, 0);
-				return -ENOMEM;
-			}
-		}
 		u->urb = usb_alloc_urb(u->packets, GFP_KERNEL);
 		if (! u->urb) {
 			release_substream_urbs(subs, 0);
 			return -ENOMEM;
 		}
-		u->urb->dev = subs->dev;
+		u->urb->transfer_buffer = kmalloc(maxsize * u->packets,
+						  GFP_KERNEL);
+		if (! u->urb->transfer_buffer) {
+			release_substream_urbs(subs, 0);
+			return -ENOMEM;
+		}
 		u->urb->pipe = subs->datapipe;
 		u->urb->transfer_flags = URB_ISO_ASAP;
-		u->urb->number_of_packets = u->packets;
 		u->urb->interval = 1 << subs->datainterval;
 		u->urb->context = u;
 		u->urb->complete = snd_usb_complete_callback(snd_complete_urb);
@@ -1039,7 +1020,6 @@ static int init_substream_urbs(snd_usb_substream_t *subs, unsigned int period_by
 			}
 			u->urb->transfer_buffer = subs->syncbuf + i * 4;
 			u->urb->transfer_buffer_length = 4;
-			u->urb->dev = subs->dev;
 			u->urb->pipe = subs->syncpipe;
 			u->urb->transfer_flags = URB_ISO_ASAP;
 			u->urb->number_of_packets = 1;
@@ -1396,9 +1376,7 @@ static int snd_usb_pcm_prepare(snd_pcm_substream_t *substream)
 	subs->curframesize = bytes_to_frames(runtime, subs->curpacksize);
 
 	/* reset the pointer */
-	subs->hwptr = 0;
 	subs->hwptr_done = 0;
-	subs->transfer_sched = 0;
 	subs->transfer_done = 0;
 	subs->phase = 0;
 
@@ -2045,6 +2023,9 @@ static void init_substream(snd_usb_stream_t *as, int stream, struct audioformat 
 
 	INIT_LIST_HEAD(&subs->fmt_list);
 	spin_lock_init(&subs->lock);
+	if (stream == SNDRV_PCM_STREAM_PLAYBACK)
+		tasklet_init(&subs->start_period_elapsed, start_period_elapsed,
+			     (unsigned long)subs);
 
 	subs->stream = as;
 	subs->direction = stream;
