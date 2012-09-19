@@ -24,7 +24,7 @@
  *
  *  FINALLY: A credit to the developers Tom and Jordan 
  *           at Cirrus for have helping me out with the DSP, however we
- *           still dont have sufficient documentation and technical
+ *           still don't have sufficient documentation and technical
  *           references to be able to implement all fancy feutures
  *           supported by the cs46xx DSP's. 
  *           Benny <benny@hostmobility.com>
@@ -1891,7 +1891,8 @@ static int snd_cs46xx_iec958_put(snd_kcontrol_t *kcontrol,
 		res = (change != chip->dsp_spos_instance->spdif_status_in);
 		break;
 	default:
-		snd_assert(0, return -EINVAL);
+		res = -EINVAL;
+		snd_assert(0, (void)0);
 	}
 
 	return res;
@@ -2315,7 +2316,7 @@ static snd_kcontrol_new_t snd_hercules_controls[] __devinitdata = {
 
 static void snd_cs46xx_sec_codec_reset (ac97_t * ac97)
 {
-	signed long end_time;
+	unsigned long end_time;
 	int err;
 
 	/* reset to defaults */
