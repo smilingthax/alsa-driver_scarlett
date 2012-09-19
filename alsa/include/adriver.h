@@ -427,6 +427,10 @@ typedef void irqreturn_t;
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
+#ifndef ALIGN
+#define ALIGN(x,a) (((x)+(a)-1)&~((a)-1))
+#endif
+
 #ifndef BUG_ON
 #define BUG_ON(x) /* nothing */
 #endif
