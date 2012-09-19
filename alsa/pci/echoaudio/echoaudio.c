@@ -1733,7 +1733,7 @@ static __devinit int snd_echo_create(snd_card_t *card, struct pci_dev *pci, echo
 	chip = kcalloc(1, sizeof(echoaudio_t), GFP_KERNEL);
 	if (!chip)
 		return -ENOMEM;
-	DE_INIT(("chip=%x\n", (int)chip));
+	DE_INIT(("chip=%p\n", chip));
 
 	spin_lock_init(&chip->lock);
 	chip->card = card;
@@ -1759,7 +1759,7 @@ static __devinit int snd_echo_create(snd_card_t *card, struct pci_dev *pci, echo
 		return -EBUSY;
 	}
 	chip->irq = pci->irq;
-	DE_INIT(("pci=%x irq=%d subdev=%04x Init hardware...\n", (int)chip->pci, chip->irq, chip->pci->subsystem_device));
+	DE_INIT(("pci=%p irq=%d subdev=%04x Init hardware...\n", chip->pci, chip->irq, chip->pci->subsystem_device));
 
 	/* Create the DSP comm page - this is the area of memory used for most
 	of the communication with the DSP, which accesses it via bus mastering */

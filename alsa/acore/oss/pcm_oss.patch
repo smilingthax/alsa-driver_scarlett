@@ -1,6 +1,34 @@
---- pcm_oss.c	2004-04-07 17:00:25.224626911 +0200
-+++ pcm_oss.c	2004-04-07 18:37:14.779726129 +0200
-@@ -2213,7 +2213,11 @@
+--- ../../alsa-kernel/core/oss/pcm_oss.c	2005-01-20 16:21:56.079218949 +0100
++++ pcm_oss.c	2005-01-20 17:03:57.470478179 +0100
+@@ -2072,13 +2072,26 @@
+ 	return -EINVAL;
+ }
+ 
+-#ifdef CONFIG_COMPAT
++#if defined(CONFIG_COMPAT) && defined(CONFIG_SND_HAVE_NEW_IOCTL)
+ /* all compatible */
+ #define snd_pcm_oss_ioctl_compat	snd_pcm_oss_ioctl
+ #else
+ #define snd_pcm_oss_ioctl_compat	NULL
+ #endif
+ 
++#ifndef CONFIG_SND_HAVE_NEW_IOCTL
++/* need to unlock BKL to allow preemption */
++static int snd_pcm_oss_ioctl_old(struct inode *inode, struct file * file,
++				 unsigned int cmd, unsigned long arg)
++{
++	int err;
++	unlock_kernel();
++	err = snd_pcm_oss_ioctl(file, cmd, arg);
++	lock_kernel();
++	return err;
++}
++#endif
++
+ static ssize_t snd_pcm_oss_read(struct file *file, char __user *buf, size_t count, loff_t *offset)
+ {
+ 	snd_pcm_oss_file_t *pcm_oss_file;
+@@ -2225,7 +2238,11 @@
  	if (runtime->oss.plugin_first != NULL)
  		return -EIO;
  
@@ -12,7 +40,7 @@
  		return -EINVAL;
  
  	err = snd_pcm_mmap_data(substream, file, area);
-@@ -2387,7 +2391,9 @@
+@@ -2399,14 +2416,20 @@
  
  static struct file_operations snd_pcm_oss_f_reg =
  {
@@ -22,7 +50,18 @@
  	.read =		snd_pcm_oss_read,
  	.write =	snd_pcm_oss_write,
  	.open =		snd_pcm_oss_open,
-@@ -2512,3 +2518,5 @@
+ 	.release =	snd_pcm_oss_release,
+ 	.poll =		snd_pcm_oss_poll,
++#ifdef CONFIG_SND_HAVE_NEW_IOCTL
+ 	.unlocked_ioctl =	snd_pcm_oss_ioctl,
+ 	.compat_ioctl =	snd_pcm_oss_ioctl_compat,
++#else
++	.ioctl =	snd_pcm_oss_ioctl_old,
++#endif
+ 	.mmap =		snd_pcm_oss_mmap,
+ };
+ 
+@@ -2525,3 +2548,5 @@
  
  module_init(alsa_pcm_oss_init)
  module_exit(alsa_pcm_oss_exit)

@@ -1,6 +1,6 @@
---- timer.c	2003-05-30 15:33:01.000000000 +0200
-+++ timer.c.old	2003-05-30 15:32:56.000000000 +0200
-@@ -969,7 +969,7 @@
+--- ../alsa-kernel/core/timer.c	2005-01-20 17:01:36.315804918 +0100
++++ timer.c	2005-01-20 17:01:52.043871398 +0100
+@@ -995,7 +995,7 @@
  static struct _snd_timer_hardware snd_timer_system =
  {
  	.flags =	SNDRV_TIMER_HW_FIRST | SNDRV_TIMER_HW_TASKLET,
@@ -9,8 +9,30 @@
  	.ticks =	10000000L,
  	.start =	snd_timer_s_start,
  	.stop =		snd_timer_s_stop
-@@ -1733,7 +1733,9 @@
+@@ -1791,21 +1791,40 @@
+ 	return mask;
+ }
  
+-#ifdef CONFIG_COMPAT
++#if defined(CONFIG_COMPAT) && defined(CONFIG_SND_HAVE_NEW_IOCTL)
+ #include "timer_compat.c"
+ #else
+ #define snd_timer_user_ioctl_compat	NULL
+ #endif
+ 
++#ifndef CONFIG_SND_HAVE_NEW_IOCTL
++/* need to unlock BKL to allow preemption */
++static int snd_timer_user_ioctl_old(struct inode *inode, struct file * file,
++				    unsigned int cmd, unsigned long arg)
++{
++	int err;
++	unlock_kernel();
++	err = snd_timer_user_ioctl(file, cmd, arg);
++	lock_kernel();
++	return err;
++}
++#endif
++
  static struct file_operations snd_timer_f_ops =
  {
 +#ifndef LINUX_2_2
@@ -19,7 +41,17 @@
  	.read =		snd_timer_user_read,
  	.open =		snd_timer_user_open,
  	.release =	snd_timer_user_release,
-@@ -1779,6 +1781,7 @@
+ 	.poll =		snd_timer_user_poll,
++#ifdef CONFIG_SND_HAVE_NEW_IOCTL
+ 	.unlocked_ioctl =	snd_timer_user_ioctl,
+ 	.compat_ioctl =	snd_timer_user_ioctl_compat,
++#else
++	.ioctl =	snd_timer_user_ioctl_old,
++#endif
+ 	.fasync = 	snd_timer_user_fasync,
+ };
+ 
+@@ -1826,6 +1845,7 @@
  	int err;
  	snd_info_entry_t *entry;
  

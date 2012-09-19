@@ -1,6 +1,33 @@
---- seq_oss.c	2003-05-31 13:09:58.000000000 +0200
-+++ seq_oss.c.old	2003-05-31 13:10:49.000000000 +0200
-@@ -194,7 +194,9 @@
+--- ../../../alsa-kernel/core/seq/oss/seq_oss.c	2005-01-20 16:21:56.113212624 +0100
++++ seq_oss.c	2005-01-20 17:07:37.445453736 +0100
+@@ -186,12 +186,25 @@
+ 	return snd_seq_oss_ioctl(dp, cmd, arg);
+ }
+ 
+-#ifdef CONFIG_COMPAT
++#if defined(CONFIG_COMPAT) && defined(CONFIG_SND_HAVE_NEW_IOCTL)
+ #define odev_ioctl_compat	odev_ioctl
+ #else
+ #define odev_ioctl_compat	NULL
+ #endif
+ 
++#ifndef CONFIG_SND_HAVE_NEW_IOCTL
++/* need to unlock BKL to allow preemption */
++static int odev_ioctl_old(struct inode *inode, struct file * file,
++			  unsigned int cmd, unsigned long arg)
++{
++	int err;
++	unlock_kernel();
++	err = odev_ioctl(file, cmd, arg);
++	lock_kernel();
++	return err;
++}
++#endif
++
+ static unsigned int
+ odev_poll(struct file *file, poll_table * wait)
+ {
+@@ -207,14 +220,20 @@
  
  static struct file_operations seq_oss_f_ops =
  {
@@ -10,7 +37,18 @@
  	.read =		odev_read,
  	.write =	odev_write,
  	.open =		odev_open,
-@@ -301,3 +303,5 @@
+ 	.release =	odev_release,
+ 	.poll =		odev_poll,
++#ifdef CONFIG_SND_HAVE_NEW_IOCTL
+ 	.unlocked_ioctl =	odev_ioctl,
+ 	.compat_ioctl =	odev_ioctl_compat,
++#else
++	.ioctl =	odev_ioctl_old,
++#endif
+ };
+ 
+ static snd_minor_t seq_oss_reg = {
+@@ -315,3 +334,5 @@
  	info_entry = NULL;
  #endif
  }

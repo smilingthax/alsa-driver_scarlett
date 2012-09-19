@@ -1,0 +1,3 @@
+# for backward compatibility
+config SND_BIT32_EMUL
+	tristate

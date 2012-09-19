@@ -1163,9 +1163,7 @@ AC_SUBST(CONFIG_SPARC64)
 AC_SUBST(CONFIG_SBUS)
 AC_SUBST(CONFIG_ISA)
 AC_SUBST(CONFIG_PARISC)
-AC_SUBST(CONFIG_SND_BIT32_EMUL)
 test "$CONFIG_ISA" = "y" && AC_DEFINE(CONFIG_SND_ISA)
-test "$CONFIG_SND_BIT32_EMUL" = "m" && AC_DEFINE(CONFIG_SND_BIT32_EMUL_MODULE)
 
 dnl Check for SMP...
 CHECK_KERNEL_CONFIG(CONFIG_SMP, [SMP])
@@ -1924,6 +1922,40 @@ if test "$CONFIG_USB" != "y"; then
   CONFIG_USB=$CONFIG_USB_MODULE
 fi
 AC_SUBST(CONFIG_USB)
+
+dnl New unlocked/compat_ioctl
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  AC_MSG_CHECKING(for new unlocked/comapt_ioctl)
+  new_ioctl="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/fs.h>
+],[
+  struct file_operations ops;
+  ops.unlocked_ioctl = NULL;
+  ops.compat_ioctl = NULL;
+],
+    AC_MSG_RESULT("yes");new_ioctl="1",
+    AC_MSG_RESULT("no");new_ioctl="0",
+    AC_MSG_RESULT("unknown");new_ioctl="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_HAVE_NEW_IOCTL=$new_ioctl
+  dnl AC_SUBST(CONFIG_SND_HAVE_NEW_IOCTL)
+  if test "$CONFIG_SND_HAVE_NEW_IOCTL" = "1"; then
+    AC_DEFINE(CONFIG_SND_HAVE_NEW_IOCTL)
+    CONFIG_SND_BIT32_EMUL=    
+  fi
+fi
+
+AC_SUBST(CONFIG_SND_BIT32_EMUL)
+test "$CONFIG_SND_BIT32_EMUL" = "m" && AC_DEFINE(CONFIG_SND_BIT32_EMUL_MODULE)
 
 dnl PCMCIA stuff
 AC_ARG_WITH(pcmcia,

@@ -24,7 +24,7 @@ size_t hack_copy_in_user(void __user *to, const void __user *from, size_t size)
 #define copy_in_user hack_copy_in_user
 #endif /* SPARC64 && < 2.6.8 */
 
-#include "../../alsa-kernel/core/ioctl32/ioctl32.c"
+#include "ioctl32_new.c"
 
 #endif /* 2.6.0 */
 
