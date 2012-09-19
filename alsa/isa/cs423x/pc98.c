@@ -1,6 +1,6 @@
 /*
  *  Driver for CS4232 on NEC PC9800 series
- *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
  *                   Osamu Tomita <tomita@cinet.co.jp>
  *                   Takashi Iwai <tiwai@suse.de>
  *                   Hideaki Okubo <okubo@msh.biglobe.ne.jp>

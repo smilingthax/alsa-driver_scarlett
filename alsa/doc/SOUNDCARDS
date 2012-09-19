@@ -8,7 +8,7 @@ IF: Supported interfaces (MIXER,PCM,SYNTH,SYNTH_MIDI,SEQ,OPL,MIDI,EMUL,HWDEP)
 MA: Maintainer
 CO: Coder
 
-This file is maintained by Jaroslav Kysela <perex@suse.cz>.
+This file is maintained by Jaroslav Kysela <perex@perex.cz>.
 Note: OPL -> Raw (native) OPL
 Note: MIDI -> external MIDI port
 Note: EMUL -> MIDI emulation
@@ -25,65 +25,65 @@ SC: STB Sound Rage 32
 SC: UltraSound 32-Pro (STB)
 SC: MED3210
 IF: MIXER,PCM,MIDI,SYNTH
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: Gravis UltraSound MAX
 IF: MIXER,PCM,MIDI,SYNTH
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: Gravis UltraSound Extreme
 SC: Synergy ViperMax
 IF: MIXER,PCM,MIDI,SYNTH
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: Gravis UltraSound Classic/ACE
 IF: MIXER,PCM,SYNTH
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: ESS AudioDrive ESx688
 IF: MIXER,PCM,MIDI(1688)
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: SoundBlaster 1.0/2.0/Pro
 IF: MIXER (Pro only),PCM,MIDI
-CO: Jaroslav Kysela <perex@suse.cz>
+CO: Jaroslav Kysela <perex@perex.cz>
 MA: Chris Butler <chrisb@sandy.force9.co.uk>
 
 ID: SoundBlaster 16/AWE
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: Yamaha OPL3-SA2/SA3
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: S3 SonicVibes PCI
 SC: Schubert 32 PCI (PINE)
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: Ensoniq AudioPCI (ES1370,ES1371)
 SC: SoundBlaster PCI 64
 SC: SoundBlaster PCI 128
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: Cirrus Logic / Crystal Semiconductors CS4232/CS4232A
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: Cirrus Logic / Crystal Semiconductors CS4235/CS4236/CS4236B/CS4237B/CS4238B/CS4239
 SC: Turtle Beach Malibu
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: Cirrus Logic / Crystal Semiconductors CS4281
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: Cirrus Logic / Crystal Semiconductors CS4610/CS4612/CS4614/CS4615/CS4622/CS4624/CS4280
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: ESS Solo-1 ES1938
 IF: MIXER,PCM
@@ -113,12 +113,12 @@ SC: Shark  Predator4D-PCI
 SC: Jaton  SonicWave 4D
 SC: Hoontech SoundTrack Digital 4DWave NX
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: ForteMedia FM801
 SC: DT-0398
 IF: MIXER,PCM,MIDI
-MA: perex@suse.cz
+MA: perex@perex.cz
 
 ID: SGI Indy (HAL2)
 IF: PCM
@@ -165,7 +165,7 @@ SC: Sound Blaster Live!
 SC: Sound Blaster PCI 512
 SC: E-mu APS
 IF: MIXER,PCM,MIDI,SYNTH_MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: RME Digi9652 (Hammerfall, Hammerfall light)
 IF: PCM
@@ -173,7 +173,7 @@ MA: Paul Barton-Davis <pbd@op.net>
 
 ID: Intel i810/i820/i830/i840/MX440
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>
 
 ID: ESS Maestro 1/2/2E
 IF: MIXER,PCM
@@ -181,4 +181,4 @@ MA: Matze Braun <MatzeBraun@gmx.de>
 
 ID: VIA 82C686A (South Bridge)
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@suse.cz>
+MA: Jaroslav Kysela <perex@perex.cz>

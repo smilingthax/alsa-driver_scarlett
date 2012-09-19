@@ -12,7 +12,7 @@
    queued.  seq_midi.c and seq_midi_emul.c don't need to process
    this event.
 
-19990615	Jaroslav Kysela <perex@suse.cz>
+19990615	Jaroslav Kysela <perex@perex.cz>
  - Changed threshold_output name to output_room.
 
 19990616	Steve Ratcliffe <steve@parabola.demon.co.uk>

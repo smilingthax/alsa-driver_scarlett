@@ -25,7 +25,7 @@ BuildRequires:	initscripts
 - simplify %%install section
 - updated dependencies
 
-* Tue Nov 20 2001 Jaroslav Kysela <perex@suse.cz>
+* Tue Nov 20 2001 Jaroslav Kysela <perex@perex.cz>
 
 - changed BuildRoot to /var/tmp
 

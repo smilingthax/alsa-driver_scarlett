@@ -6,7 +6,7 @@
 # This script requires @prefix@/sbin/alsactl and @prefix@/bin/aconnect
 # programs from the alsa-utils package.
 #
-# Copyright (c) by Jaroslav Kysela <perex@suse.cz> 
+# Copyright (c) by Jaroslav Kysela <perex@perex.cz> 
 #
 #
 #  This program is free software; you can redistribute it and/or modify

@@ -1,6 +1,6 @@
 /*
  *  Utility to find module dependencies from Modules.dep
- *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
  *		     Anders Semb Hermansen <ahermans@vf.telia.no>,
  *		     Martin Dahl <dahlm@vf.telia.no>,
  *
@@ -1103,7 +1103,7 @@ static void output_acinclude(void)
 	
 	printf("dnl ALSA soundcard configuration\n");
 	printf("dnl Find out which cards to compile driver for\n");
-	printf("dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>,\n");
+	printf("dnl Copyright (c) by Jaroslav Kysela <perex@perex.cz>,\n");
 	printf("dnl                  Anders Semb Hermansen <ahermans@vf.telia.no>\n\n");
 
 	printf("AC_DEFUN([ALSA_TOPLEVEL_INIT], [\n");
@@ -1327,7 +1327,7 @@ static void output_makeconf(void)
 	char *text;
 	
 	printf("# Soundcard configuration for ALSA driver\n");
-	printf("# Copyright (c) by Jaroslav Kysela <perex@suse.cz>,\n");
+	printf("# Copyright (c) by Jaroslav Kysela <perex@perex.cz>,\n");
 	printf("#                  Anders Semb Hermansen <ahermans@vf.telia.no>\n\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
@@ -1343,7 +1343,7 @@ static void output_include(void)
 	char *text;
 	
 	printf("/* Soundcard configuration for ALSA driver */\n");
-	printf("/* Copyright (c) by Jaroslav Kysela <perex@suse.cz>, */\n");
+	printf("/* Copyright (c) by Jaroslav Kysela <perex@perex.cz>, */\n");
 	printf("/*                  Anders Semb Hermansen <ahermans@vf.telia.no> */\n\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);

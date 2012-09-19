@@ -1,6 +1,6 @@
 /*
  *  Plug & Play 2.5 layer compatibility
- *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -84,7 +84,7 @@ typedef u32 pm_message_t;
 #define module_exit(x)      void cleanup_module(void) { x(); }
 #endif
 
-MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
 MODULE_DESCRIPTION("Plug & Play 2.5 compatible layer");
 #ifdef MODULE_LICENSE
 MODULE_LICENSE("GPL");

@@ -4,7 +4,7 @@
 +#define __NO_VERSION__
  /*
   *  Initialization routines
-  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+  *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
 @@ -222,11 +223,19 @@
  	return POLLERR | POLLNVAL;
  }

@@ -8,7 +8,7 @@
 +static int device_mode = S_IFCHR | S_IRUGO | S_IWUGO;
 +#endif
  
- MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
  MODULE_DESCRIPTION("Advanced Linux Sound Architecture driver for soundcards.");
 @@ -49,6 +52,10 @@
  MODULE_PARM_DESC(major, "Major # for sound driver.");

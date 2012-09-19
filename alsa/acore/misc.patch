@@ -4,7 +4,7 @@
 +#define __NO_VERSION__
  /*
   *  Misc and compatibility things
-  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+  *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
 @@ -30,7 +31,7 @@
  {
  	if (res) {

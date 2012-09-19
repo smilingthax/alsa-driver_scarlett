@@ -1,6 +1,6 @@
 /*
  *  Generic driver for serial MIDI adapters
- *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -46,7 +46,7 @@
 
 EXPORT_NO_SYMBOLS;
 
-MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
 MODULE_DESCRIPTION("Serial MIDI");
 MODULE_LICENSE("GPL");
 

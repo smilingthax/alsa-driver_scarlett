@@ -6,7 +6,7 @@
 # This script requires @prefix@/sbin/alsactl program from
 # alsa-utils package.
 #
-# Copyright (c) by Jaroslav Kysela <perex@suse.cz> 
+# Copyright (c) by Jaroslav Kysela <perex@perex.cz> 
 # Modified for being POSIX-complaint by Christian Kurz <shorty@debian.org>
 #
 #  This program is free software; you can redistribute it and/or modify

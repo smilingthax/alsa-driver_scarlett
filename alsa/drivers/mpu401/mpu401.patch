@@ -8,7 +8,7 @@
 +#define IORESOURCE_DISABLED 0	/* ugly hack */
 +#endif
 +
- MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
  MODULE_DESCRIPTION("MPU-401 UART");
  MODULE_LICENSE("GPL");
 @@ -43,6 +47,9 @@

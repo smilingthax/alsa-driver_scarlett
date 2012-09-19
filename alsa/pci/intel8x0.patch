@@ -9,7 +9,7 @@
 +#endif
 +#include "pci_iomap_compat.c"
  
- MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
  MODULE_DESCRIPTION("Intel 82801AA,82901AB,i810,i820,i830,i840,i845,MX440; SiS 7012; Ali 5455");
 @@ -698,7 +701,7 @@
  	iputbyte(chip, port + ichdev->roff_sr, ICH_FIFOE | ICH_BCIS | ICH_LVBCI);
