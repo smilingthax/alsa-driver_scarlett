@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/usx2y/usx2yhwdeppcm.c	2006-10-10 15:35:36.000000000 +0200
-+++ usx2yhwdeppcm.c	2006-10-10 15:54:46.000000000 +0200
+--- ../../alsa-kernel/usb/usx2y/usx2yhwdeppcm.c	2007-12-13 16:15:37.000000000 +0100
++++ usx2yhwdeppcm.c	2007-12-13 16:19:15.000000000 +0100
 @@ -1,3 +1,21 @@
 +#include <linux/config.h>
 +#include <linux/version.h>
@@ -111,52 +111,71 @@
  							usX2Y->wait_iso_frame = urb->start_frame;
  					}
  					urb->transfer_flags = 0;
-@@ -683,23 +730,43 @@
+@@ -683,6 +730,7 @@
  }
  
  
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24)
+ static int snd_usX2Y_hwdep_pcm_vm_fault(struct vm_area_struct *area,
+ 					struct vm_fault *vmf)
+ {
+@@ -695,12 +743,55 @@
+ 	get_page(vmf->page);
+ 	return 0;
+ }
++#else /* 2.6.24 */
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- static struct page * snd_usX2Y_hwdep_pcm_vm_nopage(struct vm_area_struct *area, unsigned long address, int *type)
++static struct page * snd_usX2Y_hwdep_pcm_vm_nopage(struct vm_area_struct *area, unsigned long address, int *type)
 +#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 +static struct page * snd_usX2Y_hwdep_pcm_vm_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
 +#else
 +static unsigned long snd_usX2Y_hwdep_pcm_vm_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
 +#endif
- {
- 	unsigned long offset;
- 	struct page *page;
- 	void *vaddr;
- 
++{
++	unsigned long offset;
++	struct page *page;
++	void *vaddr;
++
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 25)
- 	offset = area->vm_pgoff << PAGE_SHIFT;
++	offset = area->vm_pgoff << PAGE_SHIFT;
 +#else
 +	offset = area->vm_offset;
 +#endif
- 	offset += address - area->vm_start;
- 	snd_assert((offset % PAGE_SIZE) == 0, return NOPAGE_OOM);
- 	vaddr = (char*)((struct usX2Ydev *)area->vm_private_data)->hwdep_pcm_shm + offset;
- 	page = virt_to_page(vaddr);
--	get_page(page);
++	offset += address - area->vm_start;
++	snd_assert((offset % PAGE_SIZE) == 0, return NOPAGE_OOM);
++	vaddr = (char*)((struct usX2Ydev *)area->vm_private_data)->hwdep_pcm_shm + offset;
++	page = virt_to_page(vaddr);
 +#ifndef CONFIG_SND_REMOVE_PAGE_RESERVE
 +	if (!PageReserved(page))
 +#endif
 + 	get_page(page);
  
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- 	if (type)
- 		*type = VM_FAULT_MINOR;
++	if (type)
++		*type = VM_FAULT_MINOR;
 +#endif
- 
++
 +#ifndef LINUX_2_2
- 	return page;
++	return page;
 +#else
 +#undef page_address
 +	return page_address(page);
 +#endif
- }
++}
++#endif /* >= 2.6.24 */
+ 
+ static struct vm_operations_struct snd_usX2Y_hwdep_pcm_vm_ops = {
+ 	.open = snd_usX2Y_hwdep_pcm_vm_open,
+ 	.close = snd_usX2Y_hwdep_pcm_vm_close,
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24)
+ 	.fault = snd_usX2Y_hwdep_pcm_vm_fault,
++#else
++	.nopage = snd_usX2Y_hwdep_pcm_vm_nopage,
++#endif
+ };
  
  
-@@ -728,8 +795,14 @@
+@@ -722,8 +813,14 @@
  		return -ENODEV;
  	}
  	area->vm_ops = &snd_usX2Y_hwdep_pcm_vm_ops;
