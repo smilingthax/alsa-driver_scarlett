@@ -663,10 +663,12 @@ static int snd_via82xx_pcm_trigger(snd_pcm_substream_t * substream, int cmd)
 		val = 0;
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
 		val |= VIA_REG_CTRL_START;
 		viadev->running = 1;
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
 		val = VIA_REG_CTRL_TERMINATE;
 		viadev->running = 0;
 		break;
@@ -929,12 +931,12 @@ static int snd_via8233_playback_prepare(snd_pcm_substream_t *substream)
 
 	if ((rate_changed = via_lock_rate(&chip->rates[0], ac97_rate)) < 0)
 		return rate_changed;
-	if (rate_changed) {
+	if (rate_changed)
 		snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE,
 				  chip->no_vra ? 48000 : runtime->rate);
-		snd_ac97_set_rate(chip->ac97, AC97_SPDIF,
-				  chip->no_vra ? 48000 : runtime->rate);
-	}
+	if (chip->spdif_on && viadev->reg_offset == 0x30)
+		snd_ac97_set_rate(chip->ac97, AC97_SPDIF, runtime->rate);
+
 	if (runtime->rate == 48000)
 		rbits = 0xfffff;
 	else
@@ -1035,7 +1037,7 @@ static snd_pcm_hardware_t snd_via82xx_hw =
 	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
 				 SNDRV_PCM_INFO_MMAP_VALID |
-				 SNDRV_PCM_INFO_RESUME |
+				 /* SNDRV_PCM_INFO_RESUME | */
 				 SNDRV_PCM_INFO_PAUSE),
 	.formats =		SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE,
 	.rates =		SNDRV_PCM_RATE_48000,
