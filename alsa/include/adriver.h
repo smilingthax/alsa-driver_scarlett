@@ -1188,9 +1188,14 @@ static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
 #define OPL3_HW_OPL3_PC98	0x0305	/* PC9800 */
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 17)
+#include <linux/interrupt.h>
+#ifndef IRQF_SHARED
 #include <linux/signal.h>
-#ifndef SA_PROBEIRQ
-#define SA_PROBEIRQ		0 /* dummy */
+#define IRQF_SHARED			SA_SHIRQ
+#define IRQF_DISABLED			SA_INTERRUPT
+#define IRQF_SAMPLE_RANDOM		SA_SAMPLE_RANDOM
+#define IRQF_PERCPU			SA_PERCPU
+#define IRQF_PROBE_SHARED		0 /* dummy */
 #endif
 #endif
 
