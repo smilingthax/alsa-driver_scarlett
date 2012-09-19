@@ -241,7 +241,10 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 9)
+#include <linux/interrupt.h>
+#ifndef in_atomic
 #define in_atomic()	in_interrupt()
+#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
@@ -702,6 +705,16 @@ static inline void *class_get_devdata(struct class_device *dev) { return NULL; }
 #include <linux/device.h>
 #define class_device_create(cls,prt,devnum,args...) class_device_create(cls,devnum,##args)
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
+#include <linux/sysfs.h>
+#ifndef __ATTR
+#define __ATTR(_name,_mode,_show,_store) { \
+	.attr = {.name = __stringify(_name), .mode = _mode, .owner = THIS_MODULE },	\
+	.show	= _show,					\
+	.store	= _store,					\
+}
+#endif /* __ATTR */
+#endif /* < 2.6.8 */
 #endif
 
 /* msleep */
@@ -1258,8 +1271,11 @@ static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
 
 /* MSI */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
-static inline int pci_enable_msi(struct pci_dev *dev) { return -1; }
-static inline void pci_disable_msi(struct pci_dev *dev) {}
+static inline int snd_pci_enable_msi(struct pci_dev *dev) { return -1; }
+#undef pci_enable_msi
+#define pci_enable_msi(dev) snd_pci_enable_msi(dev)
+#undef pci_disable_msi
+#define pci_disable_msi(dev)
 #endif
 
 /* SEEK_XXX */
