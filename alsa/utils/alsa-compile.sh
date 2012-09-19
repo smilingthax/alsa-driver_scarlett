@@ -711,7 +711,7 @@ parse_modules() {
 
 # Echo the list of loaded sound modules
 current_modules() {
-	lsmod | cut -d ' ' -f 1 | grep -E "^(snd[_-]|snd$)"
+	lsmod | cut -d ' ' -f 1 | grep -E "^(snd[_-]|snd$|ac97_bus$)"
 }
 
 # Remove kernel modules, using two phases
