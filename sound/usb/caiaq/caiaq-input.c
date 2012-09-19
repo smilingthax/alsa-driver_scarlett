@@ -30,8 +30,6 @@
 #include "caiaq-device.h"
 #include "caiaq-input.h"
 
-#ifdef CONFIG_SND_USB_CAIAQ_INPUT
-
 static unsigned short keycode_ak1[] =  { KEY_C, KEY_B, KEY_A };
 static unsigned short keycode_rk2[] =  { KEY_1, KEY_2, KEY_3, KEY_4,
 					 KEY_5, KEY_6, KEY_7 };
@@ -164,6 +162,7 @@ static void snd_caiaq_input_read_analog(struct snd_usb_caiaqdev *dev,
 		input_sync(input_dev);
 		break;
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_KORECONTROLLER):
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_KORECONTROLLER2):
 		input_report_abs(input_dev, ABS_X, (buf[0] << 8) | buf[1]);
 		input_report_abs(input_dev, ABS_Y, (buf[2] << 8) | buf[3]);
 		input_report_abs(input_dev, ABS_Z, (buf[4] << 8) | buf[5]);
@@ -185,6 +184,7 @@ static void snd_caiaq_input_read_erp(struct snd_usb_caiaqdev *dev,
 		input_sync(input_dev);
 		break;
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_KORECONTROLLER):
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_KORECONTROLLER2):
 		i = decode_erp(buf[7], buf[5]);
 		input_report_abs(input_dev, ABS_HAT0X, i);
 		i = decode_erp(buf[12], buf[14]);
@@ -225,7 +225,9 @@ static void snd_caiaq_input_read_io(struct snd_usb_caiaqdev *dev,
 				 buf[i / 8] & (1 << (i % 8)));
 
 	if (dev->chip.usb_id ==
-	    USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_KORECONTROLLER))
+		USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_KORECONTROLLER) ||
+	    dev->chip.usb_id ==
+		USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_KORECONTROLLER2))
 		input_report_abs(dev->input_dev, ABS_MISC, 255 - buf[4]);
 
 	input_sync(input_dev);
@@ -304,6 +306,7 @@ int snd_usb_caiaq_input_init(struct snd_usb_caiaqdev *dev)
 		snd_usb_caiaq_set_auto_msg(dev, 1, 0, 5);
 		break;
 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_KORECONTROLLER):
+	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_KORECONTROLLER2):
 		input->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
 		input->absbit[0] = BIT_MASK(ABS_HAT0X) | BIT_MASK(ABS_HAT0Y) |
 				   BIT_MASK(ABS_HAT1X) | BIT_MASK(ABS_HAT1Y) |
@@ -358,6 +361,4 @@ void snd_usb_caiaq_input_free(struct snd_usb_caiaqdev *dev)
 	input_unregister_device(dev->input_dev);
 	dev->input_dev = NULL;
 }
-
-#endif /* CONFIG_SND_USB_CAIAQ_INPUT */
 
