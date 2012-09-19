@@ -937,9 +937,10 @@
 #define SERACC_CHIP_TYPE_MASK                  0x00000001
 #define SERACC_CHIP_TYPE_1_03                  0x00000000
 #define SERACC_CHIP_TYPE_2_0                   0x00000001
-#define SERACC_TWO_CODECS                       0x00000002
-#define SERACC_MDM                              0x00000004
-#define SERACC_HSP                              0x00000008
+#define SERACC_TWO_CODECS                      0x00000002
+#define SERACC_MDM                             0x00000004
+#define SERACC_HSP                             0x00000008
+#define SERACC_ODT                             0x00000010 /* only CS4630 */
 #endif
 
 /*
@@ -1639,6 +1640,26 @@
 
 typedef struct _snd_cs46xx cs46xx_t;
 
+typedef struct _snd_cs46xx_pcm_t {
+	unsigned char *hw_area;
+	dma_addr_t hw_addr;	/* PCI bus address, not accessible */
+	unsigned long hw_size;
+  
+	unsigned int ctl;
+	unsigned int shift;	/* Shift count to trasform frames in bytes */
+	unsigned int sw_bufsize;
+	unsigned int sw_data;	/* Offset to next dst (or src) in sw ring buffer */
+	unsigned int sw_io;
+	int sw_ready;		/* Bytes ready to be transferred to/from hw */
+	unsigned int hw_data;	/* Offset to next dst (or src) in hw ring buffer */
+	unsigned int hw_io;	/* Ring buffer hw pointer */
+	int hw_ready;		/* Bytes ready for play (or captured) in hw ring buffer */
+	size_t appl_ptr;	/* Last seen appl_ptr */
+	snd_pcm_substream_t *substream;
+
+	pcm_channel_descriptor_t * pcm_channel;
+} cs46xx_pcm_t;
+
 typedef struct {
 	char name[24];
 	unsigned long base;
@@ -1681,7 +1702,7 @@ struct _snd_cs46xx {
 		int hw_ready;		/* Bytes ready for play (or captured) in hw ring buffer */
 		size_t appl_ptr;	/* Last seen appl_ptr */
 		snd_pcm_substream_t *substream;
-	} play, capt;
+	} capt;
 
 
 	int nr_ac97_codecs;
@@ -1713,7 +1734,12 @@ struct _snd_cs46xx {
 	struct pm_dev *pm_dev;
 #endif
 
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
 	dsp_spos_instance_t * dsp_spos_instance;
+#else /* for compatibility */
+	cs46xx_pcm_t *playback_pcm;
+	unsigned int play_ctl;
+#endif
 };
 
 int snd_cs46xx_create(snd_card_t *card,

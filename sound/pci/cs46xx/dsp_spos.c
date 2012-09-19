@@ -126,7 +126,7 @@ static int shadow_and_reallocate_code (cs46xx_t * chip,u32 * data,u32 size, u32 
 	u32 mop_operands,mop_type,wide_op;
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 
-	snd_assert( ((size % 2) == 0), return 0);
+	snd_assert( ((size % 2) == 0), return -EINVAL);
   
 	while (i < size) {
 		loval = data[i++];
@@ -203,6 +203,20 @@ static segment_desc_t * get_segment_desc (dsp_module_desc_t * module, int seg_ty
 	return NULL;
 };
 
+static int find_free_symbol_index (dsp_spos_instance_t * ins)
+{
+	int index = ins->symbol_table.nsymbols,i;
+
+	for (i = ins->symbol_table.highest_frag_index; i < ins->symbol_table.nsymbols; ++i) {
+		if (ins->symbol_table.symbols[i].deleted) {
+			index = i;
+			break;
+		}
+	}
+
+	return index;
+}
+
 static int add_symbols (cs46xx_t * chip, dsp_module_desc_t * module)
 {
 	int i;
@@ -229,6 +243,10 @@ static int add_symbols (cs46xx_t * chip, dsp_module_desc_t * module)
 			ins->symbol_table.symbols[ins->symbol_table.nsymbols] = module->symbol_table.symbols[i];
 			ins->symbol_table.symbols[ins->symbol_table.nsymbols].address += ((ins->code.offset / 2) - module->overlay_begin_address);
 			ins->symbol_table.symbols[ins->symbol_table.nsymbols].module = module;
+			ins->symbol_table.symbols[ins->symbol_table.nsymbols].deleted = 0;
+
+			if (ins->symbol_table.nsymbols > ins->symbol_table.highest_frag_index) 
+				ins->symbol_table.highest_frag_index = ins->symbol_table.nsymbols;
 
 			ins->symbol_table.nsymbols++;
 		} else {
@@ -240,29 +258,40 @@ static int add_symbols (cs46xx_t * chip, dsp_module_desc_t * module)
 	return 0;
 }
 
-static int add_symbol (cs46xx_t * chip, char * symbol_name, u32 address, int type)
+static symbol_entry_t * add_symbol (cs46xx_t * chip, char * symbol_name, u32 address, int type)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+	symbol_entry_t * symbol = NULL;
+	int index;
 
 	if (ins->symbol_table.nsymbols == (DSP_MAX_SYMBOLS - 1)) {
 		snd_printk(KERN_ERR "dsp_spos: symbol table is full\n");
-		return -ENOMEM;
+		return NULL;
 	}
   
 	if (cs46xx_dsp_lookup_symbol(chip,
 				     symbol_name,
 				     type) != NULL) {
 		snd_printk(KERN_ERR "dsp_spos: symbol <%s> duplicated\n", symbol_name);
-		return -EBUSY;
+		return NULL;
 	}
 
-	strcpy (ins->symbol_table.symbols[ins->symbol_table.nsymbols].symbol_name,symbol_name);
-	ins->symbol_table.symbols[ins->symbol_table.nsymbols].address = address;
-	ins->symbol_table.symbols[ins->symbol_table.nsymbols].symbol_type = type;
-	ins->symbol_table.symbols[ins->symbol_table.nsymbols].module = NULL;
+	index = find_free_symbol_index (ins);
 
-	ins->symbol_table.nsymbols++;
-	return 0;
+	strcpy (ins->symbol_table.symbols[index].symbol_name, symbol_name);
+	ins->symbol_table.symbols[index].address = address;
+	ins->symbol_table.symbols[index].symbol_type = type;
+	ins->symbol_table.symbols[index].module = NULL;
+	ins->symbol_table.symbols[index].deleted = 0;
+	symbol = (ins->symbol_table.symbols + index);
+
+	if (index > ins->symbol_table.highest_frag_index) 
+		ins->symbol_table.highest_frag_index = index;
+
+	if (index == ins->symbol_table.nsymbols)
+		ins->symbol_table.nsymbols++; /* no frag. in list */
+
+	return symbol;
 }
 
 dsp_spos_instance_t *  cs46xx_dsp_spos_create (cs46xx_t * chip)
@@ -273,9 +302,13 @@ dsp_spos_instance_t *  cs46xx_dsp_spos_create (cs46xx_t * chip)
 		return NULL;
 	memset(ins, 0, sizeof(*ins));
 
+	init_MUTEX(&ins->scb_mutex);
+	init_MUTEX(&ins->pcm_mutex);
+
 	/* better to use vmalloc for this big table */
 	ins->symbol_table.nsymbols = 0;
 	ins->symbol_table.symbols = vmalloc(sizeof(symbol_entry_t) * DSP_MAX_SYMBOLS);
+	ins->symbol_table.highest_frag_index = 0;
 
 	if (ins->symbol_table.symbols == NULL) {
 		cs46xx_dsp_spos_destroy(ins);
@@ -302,16 +335,22 @@ dsp_spos_instance_t *  cs46xx_dsp_spos_create (cs46xx_t * chip)
 		return NULL;
 	}
 
-	ins->spdif_status_out = 0;
-	ins->spdif_status_in = 0;
-	ins->the_null_scb = NULL;
-
 	return ins;
 }
 
 void  cs46xx_dsp_spos_destroy (dsp_spos_instance_t * ins)
 {
+	int i;
+
 	snd_assert(ins != NULL, return);
+
+	down(&ins->scb_mutex);
+	for (i = 0; i < ins->nscb; ++i) {
+		if (ins->scbs[i].deleted) continue;
+
+		cs46xx_dsp_proc_free_scb_desc ( (ins->scbs + i) );
+	}
+	up(&ins->scb_mutex);
 
 	if (ins->code.data)
 		kfree(ins->code.data);
@@ -440,6 +479,10 @@ symbol_entry_t * cs46xx_dsp_lookup_symbol (cs46xx_t * chip, char * symbol_name, 
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 
 	for ( i = 0; i < ins->symbol_table.nsymbols; ++i ) {
+
+		if (ins->symbol_table.symbols[i].deleted)
+			continue;
+
 		if (!strcmp(ins->symbol_table.symbols[i].symbol_name,symbol_name) &&
 		    ins->symbol_table.symbols[i].symbol_type == symbol_type) {
 			return (ins->symbol_table.symbols + i);
@@ -461,6 +504,10 @@ symbol_entry_t * cs46xx_dsp_lookup_symbol_addr (cs46xx_t * chip, u32 address, in
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 
 	for ( i = 0; i < ins->symbol_table.nsymbols; ++i ) {
+
+		if (ins->symbol_table.symbols[i].deleted)
+			continue;
+
 		if (ins->symbol_table.symbols[i].address == address &&
 		    ins->symbol_table.symbols[i].symbol_type == symbol_type) {
 			return (ins->symbol_table.symbols + i);
@@ -481,6 +528,10 @@ static void cs46xx_dsp_proc_symbol_table_read (snd_info_entry_t *entry, snd_info
 	snd_iprintf(buffer, "SYMBOLS:\n");
 	for ( i = 0; i < ins->symbol_table.nsymbols; ++i ) {
 		char *module_str = "system";
+
+		if (ins->symbol_table.symbols[i].deleted)
+			continue;
+
 		if (ins->symbol_table.symbols[i].module != NULL) {
 			module_str = ins->symbol_table.symbols[i].module->module_name;
 		}
@@ -544,21 +595,13 @@ static void cs46xx_dsp_proc_scb_read (snd_info_entry_t *entry, snd_info_buffer_t
 {
 	cs46xx_t *chip = snd_magic_cast(cs46xx_t, entry->private_data, return);
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
-	int i,j,col;
-	unsigned long dst = chip->region.idx[1].remap_addr + DSP_PARAMETER_BYTE_OFFSET;
+	int i;
 
 	snd_iprintf(buffer, "SCB's:\n");
 	for ( i = 0; i < ins->nscb; ++i) {
-		snd_iprintf(buffer,"\n%04x %s:\n",ins->scbs[i].address,ins->scbs[i].scb_name);
-
-		for (col = 0,j = 0;j < 0x10; j++,col++) {
-			if (col == 4) {
-				snd_iprintf(buffer,"\n");
-				col = 0;
-			}
-			snd_iprintf(buffer,"%08x ",readl(dst + (ins->scbs[i].address + j) * sizeof(u32)));
-		}
-		snd_iprintf(buffer,"\n");
+		if (ins->scbs[i].deleted)
+			continue;
+		snd_iprintf(buffer,"\n%04x %s:\n\n",ins->scbs[i].address,ins->scbs[i].scb_name);
 
 		if (ins->scbs[i].parent_scb_ptr != NULL) {
 			snd_iprintf(buffer,"parent [%s:%04x] ", 
@@ -739,8 +782,27 @@ int cs46xx_dsp_proc_init (snd_card_t * card, cs46xx_t *chip)
 {
 	snd_info_entry_t *entry;
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+	int i;
 
-	if ((entry = snd_info_create_card_entry(card, "dsp_spos_symbols", card->proc_root)) != NULL) {
+	ins->snd_card = card;
+
+	if ((entry = snd_info_create_card_entry(card, "dsp", card->proc_root)) != NULL) {
+		entry->content = SNDRV_INFO_CONTENT_TEXT;
+		entry->mode = S_IFDIR | S_IRUGO | S_IXUGO;
+		entry->c.text.read_size = 512;
+      
+		if (snd_info_register(entry) < 0) {
+			snd_info_free_entry(entry);
+			entry = NULL;
+		}
+	}
+
+	ins->proc_dsp_dir = entry;
+
+	if (!ins->proc_dsp_dir)
+		return -ENOMEM;
+
+	if ((entry = snd_info_create_card_entry(card, "spos_symbols", ins->proc_dsp_dir)) != NULL) {
 		entry->content = SNDRV_INFO_CONTENT_TEXT;
 		entry->private_data = chip;
 		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
@@ -752,8 +814,8 @@ int cs46xx_dsp_proc_init (snd_card_t * card, cs46xx_t *chip)
 		}
 	}
 	ins->proc_sym_info_entry = entry;
-
-	if ((entry = snd_info_create_card_entry(card, "dsp_spos_modules", card->proc_root)) != NULL) {
+    
+	if ((entry = snd_info_create_card_entry(card, "spos_modules", ins->proc_dsp_dir)) != NULL) {
 		entry->content = SNDRV_INFO_CONTENT_TEXT;
 		entry->private_data = chip;
 		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
@@ -766,7 +828,7 @@ int cs46xx_dsp_proc_init (snd_card_t * card, cs46xx_t *chip)
 	}
 	ins->proc_modules_info_entry = entry;
 
-	if ((entry = snd_info_create_card_entry(card, "dsp_parameter", card->proc_root)) != NULL) {
+	if ((entry = snd_info_create_card_entry(card, "parameter", ins->proc_dsp_dir)) != NULL) {
 		entry->content = SNDRV_INFO_CONTENT_TEXT;
 		entry->private_data = chip;
 		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
@@ -779,7 +841,7 @@ int cs46xx_dsp_proc_init (snd_card_t * card, cs46xx_t *chip)
 	}
 	ins->proc_parameter_dump_info_entry = entry;
 
-	if ((entry = snd_info_create_card_entry(card, "dsp_sample", card->proc_root)) != NULL) {
+	if ((entry = snd_info_create_card_entry(card, "sample", ins->proc_dsp_dir)) != NULL) {
 		entry->content = SNDRV_INFO_CONTENT_TEXT;
 		entry->private_data = chip;
 		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
@@ -792,7 +854,7 @@ int cs46xx_dsp_proc_init (snd_card_t * card, cs46xx_t *chip)
 	}
 	ins->proc_sample_dump_info_entry = entry;
 
-	if ((entry = snd_info_create_card_entry(card, "dsp_task_tree", card->proc_root)) != NULL) {
+	if ((entry = snd_info_create_card_entry(card, "task_tree", ins->proc_dsp_dir)) != NULL) {
 		entry->content = SNDRV_INFO_CONTENT_TEXT;
 		entry->private_data = chip;
 		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
@@ -805,7 +867,7 @@ int cs46xx_dsp_proc_init (snd_card_t * card, cs46xx_t *chip)
 	}
 	ins->proc_task_info_entry = entry;
 
-	if ((entry = snd_info_create_card_entry(card, "dsp_scb", card->proc_root)) != NULL) {
+	if ((entry = snd_info_create_card_entry(card, "scb_info", ins->proc_dsp_dir)) != NULL) {
 		entry->content = SNDRV_INFO_CONTENT_TEXT;
 		entry->private_data = chip;
 		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
@@ -817,42 +879,62 @@ int cs46xx_dsp_proc_init (snd_card_t * card, cs46xx_t *chip)
 		}
 	}
 	ins->proc_scb_info_entry = entry;
-    
+
+	/* register/update SCB's entries on proc */
+	for (i = 0; i < ins->nscb; ++i) {
+		if (ins->scbs[i].deleted) continue;
+
+		cs46xx_dsp_proc_register_scb_desc (chip, (ins->scbs + i));
+	}
+
 	return 0;
 }
 
 int cs46xx_dsp_proc_done (cs46xx_t *chip)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+	int i;
 
 	if (ins->proc_sym_info_entry) {
 		snd_info_unregister(ins->proc_sym_info_entry);
 		ins->proc_sym_info_entry = NULL;
 	}
-
+  
 	if (ins->proc_modules_info_entry) {
 		snd_info_unregister(ins->proc_modules_info_entry);
 		ins->proc_modules_info_entry = NULL;
 	}
-
+ 
 	if (ins->proc_parameter_dump_info_entry) {
 		snd_info_unregister(ins->proc_parameter_dump_info_entry);
 		ins->proc_parameter_dump_info_entry = NULL;
 	}
-
+  
 	if (ins->proc_sample_dump_info_entry) {
 		snd_info_unregister(ins->proc_sample_dump_info_entry);
 		ins->proc_sample_dump_info_entry = NULL;
 	}
-
+  
 	if (ins->proc_scb_info_entry) {
 		snd_info_unregister(ins->proc_scb_info_entry);
 		ins->proc_scb_info_entry = NULL;
 	}
-
+  
 	if (ins->proc_task_info_entry) {
 		snd_info_unregister(ins->proc_task_info_entry);
 		ins->proc_task_info_entry = NULL;
+	}
+
+	down(&ins->scb_mutex);
+	for (i = 0; i < ins->nscb; ++i) {
+		if (ins->scbs[i].deleted) continue;
+		cs46xx_dsp_proc_free_scb_desc ( (ins->scbs + i) );
+	}
+	up(&ins->scb_mutex);
+
+	if (ins->proc_dsp_dir) {
+		snd_info_unregister (ins->proc_dsp_dir);
+		ins->proc_dsp_dir = NULL;
 	}
 
 	return 0;
@@ -886,23 +968,48 @@ static void _dsp_create_scb (cs46xx_t *chip,u32 * scb_data, u32  dest)
 	}
 }
 
+static int find_free_scb_index (dsp_spos_instance_t * ins)
+{
+	int index = ins->nscb, i;
+
+	for (i = ins->scb_highest_frag_index; i < ins->nscb; ++i) {
+		if (ins->scbs[i].deleted) {
+			index = i;
+			break;
+		}
+	}
+
+	return index;
+}
+
 static dsp_scb_descriptor_t * _map_scb (cs46xx_t *chip,char * name,u32 dest)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 	dsp_scb_descriptor_t * desc = NULL;
+	int index;
 
 	if (ins->nscb == DSP_MAX_SCB_DESC - 1) {
 		snd_printk(KERN_ERR "dsp_spos: got no place for other SCB\n");
 		return NULL;
 	}
 
-	strcpy(ins->scbs[ins->nscb].scb_name,name);
-	ins->scbs[ins->nscb].address = dest;
-	ins->scbs[ins->nscb].index = ins->nscb;
-	desc = (ins->scbs + ins->nscb);
-	add_symbol (chip,name,dest,SYMBOL_PARAMETER);
+	index = find_free_scb_index (ins);
 
-	ins->nscb++;
+	strcpy(ins->scbs[index].scb_name, name);
+	ins->scbs[index].address = dest;
+	ins->scbs[index].index = index;
+	ins->scbs[index].proc_info = NULL;
+	ins->scbs[index].ref_count = 1;
+	ins->scbs[index].deleted = 0;
+
+	desc = (ins->scbs + index);
+	ins->scbs[index].scb_symbol = add_symbol (chip, name, dest, SYMBOL_PARAMETER);
+
+	if (index > ins->scb_highest_frag_index)
+		ins->scb_highest_frag_index = index;
+
+	if (index == ins->nscb)
+		ins->nscb++;
 
 	return desc;
 }
@@ -982,6 +1089,7 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 	dsp_scb_descriptor_t * asynch_rx_scb;
 	dsp_scb_descriptor_t * sec_codec_out_scb;
 	dsp_scb_descriptor_t * magic_snoop_scb;
+	dsp_scb_descriptor_t * sec_magic_snoop_scb;
 
 	spos_control_block_t sposcb = {
 		/* 0 */ HFG_TREE_SCB,HFG_STACK,
@@ -1207,53 +1315,44 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 	//debug_scb = 1;
 	/* create timing master SCB */
 	timing_master_scb = cs46xx_dsp_create_timing_master_scb(chip);
-	snd_assert(timing_master_scb, return -EIO);
 
 	/* create the CODEC output task */
 	codec_out_scb = cs46xx_dsp_create_codec_out_scb(chip,"CodecOutSCB_I",0x0010,0x0000,
 							MASTERMIX_SCB_ADDR,
 							CODECOUT_SCB_ADDR,timing_master_scb,
 							SCB_ON_PARENT_SUBLIST_SCB);
-	snd_assert(codec_out_scb, return -EIO);
 
+	if (!codec_out_scb) goto _fail_end;
 	/* create the master mix SCB */
 	master_mix_scb = cs46xx_dsp_create_mix_only_scb(chip,"MasterMixSCB",
 							MIX_SAMPLE_BUF1,MASTERMIX_SCB_ADDR,
 							codec_out_scb,
 							SCB_ON_PARENT_SUBLIST_SCB);
-	snd_assert(master_mix_scb, return -EIO);
+	ins->master_mix_scb = master_mix_scb;
 
-	/* The asynch. transfer task */
-	asynch_tx_scb = cs46xx_dsp_create_asynch_fg_tx_scb(chip,"AsynchFGTxSCB",ASYNCTX_SCB_ADDR,
-							   SPDIFO_SCB_INST,
-							   SPDIFO_IP_OUTPUT_BUFFER1,
-							   master_mix_scb,
-							   SCB_ON_PARENT_SUBLIST_SCB);
-	snd_assert(asynch_tx_scb, return -EIO);
-  
+	if (!master_mix_scb) goto _fail_end;
+#if 0
 	/* the sample rate converter SCB */
 	src_task_scb = cs46xx_dsp_create_src_task_scb(chip,"SrcTaskSCB_I",
 						      SRC_OUTPUT_BUF1,
 						      SRC_DELAY_BUF1,SRCTASK_SCB_ADDR,
 						      asynch_tx_scb,
+
 						      SCB_ON_PARENT_SUBLIST_SCB);
-	snd_assert(src_task_scb, return -EIO);
-  
 	/* create the PCM reader SCB */
 	pcm_reader_scb = cs46xx_dsp_create_pcm_reader_scb(chip,"PCMReaderSCB_I",
 							  PCM_READER_BUF1,PCMREADER_SCB_ADDR,
-							  0, /* virtual channel 0-31 */
+							  0, /* playback how hw addr */
 							  src_task_scb,
 							  SCB_ON_PARENT_SUBLIST_SCB);
-	snd_assert(pcm_reader_scb, return -EIO);
+#endif
 
 	/* create codec in */
-	codec_in_scb = cs46xx_dsp_create_codec_out_scb(chip,"CodecInSCB",0x0010,0x00A0,
+	codec_in_scb = cs46xx_dsp_create_codec_in_scb(chip,"CodecInSCB",0x0010,0x00A0,
 						       MIX_SAMPLE_BUF1,
 						       CODECIN_SCB_ADDR,codec_out_scb,
 						       SCB_ON_PARENT_NEXT_SCB);
-
-	snd_assert(codec_in_scb, return -EIO);
+	if (!codec_in_scb) goto _fail_end;
   
 	/* create write back scb */
 	write_back_scb = cs46xx_dsp_create_mix_to_ostream_scb(chip,"WriteBackSCB",
@@ -1261,7 +1360,7 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 							      WRITEBACK_SCB_ADDR,
 							      timing_master_scb,
 							      SCB_ON_PARENT_NEXT_SCB);
-	snd_assert(write_back_scb, return -EIO);
+	if (!write_back_scb) goto _fail_end;
 
 	{
 		mix2_ostream_spb_t mix2_ostream_spb = {
@@ -1280,7 +1379,7 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 								VARIDECIMATE_SCB_ADDR,
 								write_back_scb,
 								SCB_ON_PARENT_SUBLIST_SCB);
-	snd_assert(vari_decimate_scb, return -EIO);
+	if (!vari_decimate_scb) goto _fail_end;
 
 
 	/* pcm input */
@@ -1288,7 +1387,7 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 								       PCMSERIALIN_SCB_ADDR,
 								       codec_in_scb, vari_decimate_scb,
 								       SCB_ON_PARENT_SUBLIST_SCB);
-	snd_assert(pcm_serial_input_task, return -EIO);
+	if (!pcm_serial_input_task) goto _fail_end;
   
 
 #if 0  /* asynch. receive task */
@@ -1298,7 +1397,7 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 							   SPDIFI_IP_OUTPUT_BUFFER1,
 							   master_mix_scb,
 							   SCB_ON_PARENT_NEXT_SCB);
-	snd_assert(asynch_rx_scb, return -EIO);
+	if (!asynch_rx_scb) goto _fail_end;
 #endif
 
 
@@ -1306,26 +1405,58 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 	sec_codec_out_scb = cs46xx_dsp_create_codec_out_scb(chip,"CodecOutSCB_II",0x0010,0x0040,
 							    OUTPUTSNOOP_SCB_ADDR,
 							    SEC_CODECOUT_SCB_ADDR,codec_in_scb,
-							    SCB_ON_PARENT_SUBLIST_SCB);
-	snd_assert(sec_codec_out_scb, return -EIO);
-  
-	/* SP IO access */
-	cs46xx_dsp_create_spio_write_scb(chip,"SPIOWriteSCB",SPIOWRITE_SCB_ADDR,
-					 sec_codec_out_scb,
-					 SCB_ON_PARENT_NEXT_SCB);
-  
+							    SCB_ON_PARENT_NEXT_SCB);
+	if (!sec_codec_out_scb) goto _fail_end;
 
 	/* the magic snooper */
-	magic_snoop_scb = cs46xx_dsp_create_magic_snoop_scb (chip,"MagicSnoopSCB",OUTPUTSNOOP_SCB_ADDR,
-							     MIX_SAMPLE_BUF1,
-							     master_mix_scb,
+	magic_snoop_scb = cs46xx_dsp_create_magic_snoop_scb (chip,"MagicSnoopSCB_I",OUTPUTSNOOP_SCB_ADDR,
+							     OUTPUT_SNOOP_BUFFER,
+							     codec_out_scb,
 							     sec_codec_out_scb,
 							     SCB_ON_PARENT_SUBLIST_SCB);
-	snd_assert(magic_snoop_scb, return -EIO);
+	if (!magic_snoop_scb) goto _fail_end;
+
+	/* The asynch. transfer task */
+	asynch_tx_scb = cs46xx_dsp_create_asynch_fg_tx_scb(chip,"AsynchFGTxSCB",ASYNCTX_SCB_ADDR,
+							   SPDIFO_SCB_INST,
+							   SPDIFO_IP_OUTPUT_BUFFER1,
+							   magic_snoop_scb,
+							   SCB_ON_PARENT_NEXT_SCB);
+
+	if (!asynch_tx_scb) goto _fail_end;
+
+	/* pcm input */
+	pcm_serial_input_task = cs46xx_dsp_create_pcm_serial_input_scb(chip,"PCMSerialInput_II",
+								       PCMSERIALINII_SCB_ADDR,
+								       magic_snoop_scb,asynch_tx_scb,
+								       SCB_ON_PARENT_SUBLIST_SCB);
+  
+	if (!pcm_serial_input_task) goto _fail_end;
+
+	/* SP IO access */
+	if (!cs46xx_dsp_create_spio_write_scb(chip,"SPIOWriteSCB",SPIOWRITE_SCB_ADDR,
+					      asynch_tx_scb,
+					      SCB_ON_PARENT_NEXT_SCB))
+		goto _fail_end;
+
+
+	/* the magic snooper */
+#if 0
+	sec_magic_snoop_scb = cs46xx_dsp_create_magic_snoop_scb (chip,"MagicSnoopSCB_II",OUTPUTSNOOPII_SCB_ADDR,
+								 MIX_SAMPLE_BUF1,
+								 master_mix_scb,
+								 asynch_tx_scb,
+								 SCB_ON_PARENT_SUBLIST_SCB);
+	if (!sec_magic_scb) goto _fail_end;
+#endif
 
 	//debug_scb = 0;
 	cs46xx_dsp_async_init(chip,timing_master_scb);
 	return 0;
+
+ _fail_end:
+	snd_printk(KERN_ERR "dsp_spos: failed to setup SCB's in DSP\n");
+	return -EINVAL;
 }
 
 int cs46xx_dsp_async_init (cs46xx_t *chip, dsp_scb_descriptor_t * fg_entry)
@@ -1363,7 +1494,7 @@ int cs46xx_dsp_async_init (cs46xx_t *chip, dsp_scb_descriptor_t * fg_entry)
 				/* 3 */ 0, //DSP_SPOS_UUUU, 
 				/* 4 */ 0, //DSP_SPOS_UUUU,
 			},
-			/* 5 */ 0x00000086,
+			/* 5 */ 0x00000085,
 			/* 6 */ ( SPDIFO_IP_OUTPUT_BUFFER1 << 0x10 )  |  0xFFFC,
 			/* 7 */ 0,0, // DSP_SPOS_UU,1, //DSP_SPOS_DC,DSP_SPOS_UU, 
 			/* 8 */ 0, //DSP_SPOS_UUUU,      
@@ -1416,7 +1547,7 @@ int cs46xx_dsp_async_init (cs46xx_t *chip, dsp_scb_descriptor_t * fg_entry)
 			/* A */ s16_async_codec_input_task->address,
 			HFG_TREE_SCB + AsyncCIOFIFOPointer,
               
-			/* B */ 0x00000086,
+			/* B */ RSCONFIG_SAMPLE_16STEREO + RSCONFIG_MODULO_64,
 			/* C */ (ASYNC_IP_OUTPUT_BUFFER1 << 0x10),  /*(ASYNC_IP_OUTPUT_BUFFER1 << 0x10) | 0xFFFC,*/
       
 #ifdef UseASER1Input
@@ -1496,18 +1627,20 @@ int cs46xx_dsp_enable_spdif_out (cs46xx_t *chip)
 	/* Async MASTER ENABLE */
 	snd_cs46xx_pokeBA0(chip, BA0_ASER_MASTER, 0x1 );
 
+#if 0
 	/* reset buffers */
 	snd_cs46xx_poke (chip, (SPDIFO_SCB_INST + 6) << 2,(SPDIFO_IP_OUTPUT_BUFFER1 << 0x10)  |  0xFFFC);
 	snd_cs46xx_poke (chip, (ASYNCTX_SCB_ADDR + 12) << 2, (SPDIFO_IP_OUTPUT_BUFFER1) << 0x10);
 
 	/* insert the foreground asynch tranfer task */
 	snd_cs46xx_poke (chip, (MASTERMIX_SCB_ADDR + 9) << 2, ASYNCTX_SCB_ADDR << 0x10 /*| ASYNCRX_SCB_ADDR*/);
+#endif
 
 	/* SPDIF output MASTER ENABLE */
 	cs46xx_poke_via_dsp (chip,SP_SPDOUT_CONTROL, 0x80000000);
 
 	/* right and left validate bit 
-	   NOTE: 0x80000000 and you got SCMC protection on stream 
+	   NOTE: 0x80000000 and enables the SCMC protection on stream 
 	*/
 	cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12));
 
@@ -1521,8 +1654,10 @@ int  cs46xx_dsp_disable_spdif_out (cs46xx_t *chip)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 
+#if 0
 	/* unlink the foreground asynch tranfer task */
 	snd_cs46xx_poke (chip, (MASTERMIX_SCB_ADDR + 9) << 2, SRCTASK_SCB_ADDR << 0x10 /* | ASYNCRX_SCB_ADDR*/);
+#endif
 
 	/* Async MASTER DISABLE */
 	snd_cs46xx_pokeBA0(chip, BA0_ASER_MASTER, 0x0 );
