@@ -347,7 +347,7 @@ struct snd_stru_cmipci_pcm {
 	unsigned int offset;	/* physical address of the buffer */
 	unsigned int fmt;	/* format bits */
 	int ch;			/* channel (0/1) */
-	int is_dac;		/* is dac? */
+	unsigned int is_dac;		/* is dac? */
 	int bytes_per_frame;
 	int shift;
 	int ac3_shift;	/* extra shift: 1 on soft ac3 mode */
@@ -388,6 +388,9 @@ struct snd_stru_cmipci {
 	unsigned int can_ac3_sw: 1;
 	unsigned int can_ac3_hw: 1;
 	unsigned int can_multi_ch: 1;
+
+	unsigned int spdif_playback_avail: 1;	/* spdif ready? */
+	unsigned int spdif_playback_enabled: 1;	/* spdif switch enabled? */
 	int spdif_counter;	/* for software AC3 */
 
 	unsigned int dig_status;
@@ -1133,11 +1136,13 @@ static void setup_spdif_playback(cmipci_t *cm, snd_pcm_substream_t *subs, int up
 		save_mixer_state(cm);
 
 	spin_lock_irqsave(&cm->reg_lock, flags);
+	cm->spdif_playback_avail = up;
 	if (up) {
 		/* they are controlled via "IEC958 Output Switch" */
 		/* snd_cmipci_set_bit(cm, CM_REG_LEGACY_CTRL, CM_ENSPDOUT); */
 		/* snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_SPDO2DAC); */
-		snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_PLAYBACK_SPDF);
+		if (cm->spdif_playback_enabled)
+			snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_PLAYBACK_SPDF);
 		setup_ac3(cm, do_ac3, rate);
 
 		if (rate == 48000)
@@ -2020,7 +2025,7 @@ static snd_kcontrol_new_t snd_cmipci_mixers[] __devinitdata = {
 	CMIPCI_DOUBLE("Mic Capture Switch", SB_DSP4_INPUT_LEFT, SB_DSP4_INPUT_RIGHT, 0, 0, 1, 0, 0),
 	CMIPCI_SB_VOL_MONO("PC Speaker Playback Volume", SB_DSP4_SPEAKER_DEV, 6, 3),
 	CMIPCI_MIXER_VOL_STEREO("Aux Playback Volume", CM_REG_AUX_VOL, 4, 0, 15),
-	CMIPCI_MIXER_SW_STEREO("Aux Playback Switch", CM_REG_MIXER2, CM_VAUXLM_SHIFT, CM_VAUXRM_SHIFT, 0),
+	CMIPCI_MIXER_SW_STEREO("Aux Playback Switch", CM_REG_MIXER2, CM_VAUXLM_SHIFT, CM_VAUXRM_SHIFT, 1),
 	CMIPCI_MIXER_SW_STEREO("Aux Capture Switch", CM_REG_MIXER2, CM_RAUXLEN_SHIFT, CM_RAUXREN_SHIFT, 0),
 	CMIPCI_MIXER_SW_MONO("Mic Boost", CM_REG_MIXER2, CM_MICGAINZ_SHIFT, 1),
 	CMIPCI_MIXER_VOL_MONO("Mic Capture Volume", CM_REG_MIXER2, CM_VADMIC_SHIFT, 7),
@@ -2179,9 +2184,20 @@ static int snd_cmipci_spdout_enable_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_v
 
 static int snd_cmipci_spdout_enable_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
+	cmipci_t *chip = snd_kcontrol_chip(kcontrol);
 	int changed;
 	changed = _snd_cmipci_uswitch_put(kcontrol, ucontrol, &cmipci_switch_arg_spdif_enable);
 	changed |= _snd_cmipci_uswitch_put(kcontrol, ucontrol, &cmipci_switch_arg_spdo2dac);
+	if (changed) {
+		if (ucontrol->value.integer.value[0]) {
+			if (chip->spdif_playback_avail)
+				snd_cmipci_set_bit(chip, CM_REG_FUNCTRL1, CM_PLAYBACK_SPDF);
+		} else {
+			if (chip->spdif_playback_avail)
+				snd_cmipci_clear_bit(chip, CM_REG_FUNCTRL1, CM_PLAYBACK_SPDF);
+		}
+	}
+	chip->spdif_playback_enabled = ucontrol->value.integer.value[0];
 	return changed;
 }
 

@@ -24,6 +24,7 @@
 #include <linux/init.h>
 #include <linux/vmalloc.h>
 #include <linux/time.h>
+#include <linux/smp_lock.h>
 #include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/info.h>
@@ -162,11 +163,11 @@ static loff_t snd_info_entry_llseek(struct file *file, loff_t offset, int orig)
 {
 	snd_info_private_data_t *data;
 	struct snd_info_entry *entry;
-	int ret;
+	loff_t ret;
 
 	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
 	entry = data->entry;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 5)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 3)
 	lock_kernel();
 #endif
 	switch (entry->content) {
@@ -197,7 +198,7 @@ static loff_t snd_info_entry_llseek(struct file *file, loff_t offset, int orig)
 	}
 	ret = -ENXIO;
 out:
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 5)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 3)
 	unlock_kernel();
 #endif
 	return ret;

@@ -1901,24 +1901,16 @@ static int __init snd_rme9652_initialize_memory(rme9652_t *rme9652)
 
 	/* Align to bus-space 64K boundary */
 
-	cb_bus = cb_addr;
-	cb_bus = (cb_bus + 0xFFFF) & ~0xFFFFl;
-
-	pb_bus = pb_addr;
-	pb_bus = (pb_bus + 0xFFFF) & ~0xFFFFl;
+	cb_bus = (cb_addr + 0xFFFF) & ~0xFFFFl;
+	pb_bus = (pb_addr + 0xFFFF) & ~0xFFFFl;
 
 	/* Tell the card where it is */
 
 	rme9652_write(rme9652, RME9652_rec_buffer, cb_bus);
 	rme9652_write(rme9652, RME9652_play_buffer, pb_bus);
 
-#if 0 // not all architectures have this macro
-	rme9652->capture_buffer = bus_to_virt(cb_bus);
-	rme9652->playback_buffer = bus_to_virt(pb_bus);
-#else
-	rme9652->capture_buffer += cb_bus - cb_addr;
-	rme9652->playback_buffer += pb_bus - pb_addr;
-#endif
+	rme9652->capture_buffer = cb + (cb_bus - cb_addr);
+	rme9652->playback_buffer = pb + (pb_bus - pb_addr);
 
 	return 0;
 }
