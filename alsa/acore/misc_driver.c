@@ -1,6 +1,146 @@
+#include <sound/driver.h>
 #include <linux/smp_lock.h>
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
+#include <sound/core.h>
+
+/*
+ * platform_device wrapper
+ */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+static LIST_HEAD(snd_driver_list);
+
+struct bus_type snd_platform_bus_type;
+
+/* for platform_device only! */
+int snd_compat_driver_register(struct device_driver *driver)
+{
+	list_add(&driver->list, &snd_driver_list);
+	init_list_head(&driver->device_list);
+	return 0;
+}
+
+void snd_compat_driver_unregister(struct device_driver *driver)
+{
+	struct list_head *p, *n;
+
+	list_del(&driver->list);
+	list_for_each_safe(p, n, &driver->device_list) {
+		struct platform_devce *dev = list_entry(p, struct platform_device, list);
+		list_del(p);
+		if (driver->remove)
+			driver->remove((struct device *)dev);
+		kfree(dev);
+	}
+}
+
+static int snd_device_pm_callback(struct pm_dev *dev, pm_request_t rqst, void *data)
+{
+	struct device *dev = data;
+	switch (rqst) {
+	case PM_SUSPEND:
+		if (dev->driver->suspend)
+			dev->driver->suspend(dev, PMSG_SUSPEND);
+		break;
+	case PM_RESUME:
+		if (dev->driver->resume)
+			dev->driver->resume(dev);
+		break;
+	}
+	return 0;
+}
+
+struct platform_device *
+snd_platform_device_register_simple(const char *name, int id,
+				    struct resource *res, int nres)
+{
+	struct list_head *p;
+	struct platform_device *dev;
+
+	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+	if (! dev)
+		return -ENOMEM;
+
+	list_for_each(p, &snd_driver_list) {
+		struct device_driver *driver = list_entry(p, struct device_driver, list);
+		if (! strcmp(driver->name, name)) {
+			dev->name = name;
+			dev->id = id;
+			dev->dev.driver = driver;
+			err = driver->probe((struct device *)dev);
+			if (err < 0) {
+				kfree(dev);
+				return ERR_PTR(err);
+			}
+#ifdef CONFIG_PM
+			dev->dev.pm_dev = pm_register(PM_UNKNOWN_DEV, 0,
+						      snd_device_pm_callback);
+			if (dev->dev.pm_dev)
+				dev->dev.pm_dev->data = dev;
+#endif
+			list_add(&dev->list, &driver->device_list);
+			return dev;
+		}
+	}
+	kfree(dev);
+	return ERR_PTR(-ENODEV);
+}
+#endif /* < 2.6.0 */
+
+
+/*
+ * pci_save/restore_config wrapper
+ */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+#ifdef CONFIG_PCI
+#ifndef CONFIG_HAVE_NEW_PCI_SAVE_STATE
+#ifdef CONFIG_HAVE_PCI_SAVED_CONFIG
+void snd_pci_compat_save_state(struct pci_dev *pci)
+{
+	snd_pci_orig_save_state(pci, pci->saved_config_space);
+}
+void snd_pci_compat_restore_state(struct pci_dev *pci)
+{
+	snd_pci_orig_restore_state(pci, pci->saved_config_space);
+}
+#else /* !CONFIG_HAVE_PCI_SAVED_CONFIG */
+struct saved_config_tbl {
+	struct pci_dev *pci;
+	u32 config[16];
+};
+statuc struct saved_config_tbl saved_tbl[16];
+
+void snd_pci_compat_save_state(struct pci_dev *pci)
+{
+	int i;
+	/* FIXME: mutex needed for race? */
+	for (i = 0; i < ARRAY_SIZE(saved_tbl); i++) {
+		if (! saved_tbl[i].pci) {
+			saved_tbl[i].pci = pci;
+			snd_pci_orig_save_state(pci, saved_tbl[i].config);
+			return;
+		}
+	}
+	printk(KERN_DEBUG "snd: no pci config space found!\n");
+}
+
+void snd_pci_compat_restore_state(struct pci_dev *pci)
+{
+	int i;
+	/* FIXME: mutex needed for race? */
+	for (i = 0; i < ARRAY_SIZE(saved_tbl); i++) {
+		if (saved_tbl[i].pci == pci) {
+			saved_tbl[i].pci = NULL;
+			snd_pci_orig_restore_state(pci, saved_tbl[i].config);
+			return;
+		}
+	}
+	printk(KERN_DEBUG "snd: no saved pci config!\n");
+}
+#endif /* CONFIG_HAVE_PCI_SAVED_CONFIG */
+#endif /* ! CONFIG_HAVE_NEW_PCI_SAVE_STATE */
+#endif
+#endif /* >= 2.4.0 */
 
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
@@ -73,7 +213,7 @@ static int pci_compat_pm_callback(struct pm_dev *pdev, pm_request_t rqst, void *
 		pci_for_each_dev(dev) {
 			struct pci_driver *drv = snd_pci_compat_get_pci_driver(dev);
 			if (drv && drv->suspend)
-				drv->suspend(dev, 0);
+				drv->suspend(dev, PMSG_SUSPEND);
 		}
 		break;
 	case PM_RESUME:
@@ -111,11 +251,31 @@ static int snd_apm_callback(apm_event_t ev)
 	default:
 		return 0;
 	}
-	for (entry = pm_devs.next; entry != &pm_devs; entry = entry->next) {
+	list_for_each(entry, &pm_devs) {
 		struct pm_dev *dev = list_entry(entry, struct pm_dev, entry);
 		if ((status = pm_send(dev, rqst, data)))
 			return status;
 	}
+	/* platform_device */
+	list_for_each(entry, &snd_driver_list) {
+		struct device_driver *driver = list_entry(p, struct device_driver, entry);
+		struct list_head *p;
+		if (rqst == PM_SUSPEND) {
+			if (! driver->suspend)
+				continue;
+		} else {
+			if (! driver->resume)
+				continue;
+		}
+		list_for_each(p, &driver->device_list) {
+			struct platform_devce *dev = list_entry(p, struct platform_device, list);
+			if (rqst == PM_SUSPEND)
+				driver->suspend((struct device *)dev, PMSG_SUSPEND);
+			else
+				driver->resume((struct device *)dev);
+		}
+	}
+
 	return 0;
 }
 
@@ -494,6 +654,165 @@ struct workqueue_struct *snd_compat_create_workqueue2(const char *name)
 	return create_workqueue(name, 0);
 }
 
+#endif
+
+
+/*
+ * PnP suspend/resume wrapper
+ */
+#if defined(CONFIG_PNP) && defined(CONFIG_PM)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+#ifndef CONFIG_HAVE_PNP_SUSPEND
+
+#include <linux/pm.h>
+
+struct snd_pnp_pm_devs {
+	void *dev;
+	void *driver;
+	struct pm_dev *pm;
+};
+
+static struct snd_pnp_pm_devs snd_pm_devs[16]; /* FIXME */
+
+static void register_pnp_pm_callback(void *dev, void *driver, pm_callback callback)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(snd_pm_devs); i++) {
+		if (snd_pm_devs[i].dev)
+			continue;
+		snd_pm_devs[i].pm = pm_register(PM_ISA_DEV, 0, callback);
+		if (snd_pm_devs[i].pm) {
+			snd_pm_devs[i].dev = dev;
+			snd_pm_devs[i].driver = driver;
+			snd_pm_devs[i].pm->data = &snd_pm_devs[i];
+		}
+		return;
+	}
+}
+
+static void unregister_pnp_pm_callback(void *dev)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(snd_pm_devs); i++) {
+		if (snd_pm_devs[i].dev == dev) {
+			snd_pm_devs[i].dev = NULL;
+			snd_pm_devs[i].driver = NULL;
+			if (snd_pm_devs[i].pm) {
+				pm_unregister(snd_pm_devs[i].pm);
+				snd_pm_devs[i].pm = NULL;
+			}
+			return;
+		}
+	}
+}
+
+static int snd_pnp_dev_pm_callback(struct pm_dev *dev, pm_request_t req, void *data)
+{
+	struct snd_pnp_pm_devs *pm = dev->data;
+	struct pnp_dev *pdev = pm->dev;
+	struct snd_pnp_driver *driver = pm->driver;
+
+	switch (req) {
+	case PM_SUSPEND:
+		driver->suspend(pdev, PMSG_SUSPEND);
+		break;
+	case PM_RESUME:
+		driver->resume(pdev);
+		break;
+	}
+	return 0;
+}
+
+static int snd_pnp_dev_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
+{
+	struct snd_pnp_driver *driver = (struct snd_pnp_driver *)dev->driver;
+	int err = driver->probe(dev, dev_id);
+	if (err >= 0)
+		register_pnp_pm_callback(dev, driver, snd_pnp_dev_pm_callback);
+	return err;
+}
+
+static void snd_pnp_dev_remove(struct pnp_dev *dev)
+{
+	struct snd_pnp_driver *driver = (struct snd_pnp_driver *)dev->driver;
+	unregister_pnp_pm_callback(dev);
+	driver->remove(dev);
+}
+
+#undef pnp_register_driver
+
+int snd_pnp_register_driver(struct snd_pnp_driver *driver)
+{
+	driver->real_driver.name = driver->name;
+	driver->real_driver.id_table = driver->id_table;
+	driver->real_driver.flags = driver->flags;
+	if (driver->suspend || driver->resume) {
+		driver->real_driver.probe = snd_pnp_dev_probe;
+		driver->real_driver.remove = snd_pnp_dev_remove;
+	} else {
+		driver->real_driver.probe = driver->probe;
+		driver->real_driver.remove = driver->remove;
+	}
+	return pnp_register_driver(&driver->real_driver);
+}
+
+/*
+ * for card
+ */
+static int snd_pnp_card_pm_callback(struct pm_dev *dev, pm_request_t req, void *data)
+{
+	struct snd_pnp_pm_devs *pm = dev->data;
+	struct pnp_card_link *pdev = pm->dev;
+	struct snd_pnp_card_driver *driver = pm->driver;
+
+	switch (req) {
+	case PM_SUSPEND:
+		driver->suspend(pdev, PMSG_SUSPEND);
+		break;
+	case PM_RESUME:
+		driver->resume(pdev);
+		break;
+	}
+	return 0;
+}
+
+static int snd_pnp_card_probe(struct pnp_card_link *dev, const struct pnp_card_device_id *dev_id)
+{
+	struct snd_pnp_card_driver *driver = (struct snd_pnp_card_driver *)dev->driver;
+	int err = driver->probe(dev, dev_id);
+	if (err >= 0)
+		register_pnp_pm_callback(dev, driver, snd_pnp_card_pm_callback);
+	return err;
+}
+
+static void snd_pnp_card_remove(struct pnp_card_link *dev)
+{
+	struct snd_pnp_card_driver *driver = (struct snd_pnp_card_driver *)dev->driver;
+	unregister_pnp_pm_callback(dev);
+	driver->remove(dev);
+}
+
+#undef pnp_register_card_driver
+
+int snd_pnp_register_card_driver(struct snd_pnp_card_driver *driver)
+{
+	driver->real_driver.name = driver->name;
+	driver->real_driver.id_table = driver->id_table;
+	driver->real_driver.flags = driver->flags;
+	if (driver->suspend || driver->resume) {
+		driver->real_driver.probe = snd_pnp_card_probe;
+		driver->real_driver.remove = snd_pnp_card_remove;
+	} else {
+		driver->real_driver.probe = driver->probe;
+		driver->real_driver.remove = driver->remove;
+	}
+	return pnp_register_card_driver(&driver->real_driver);
+}
+
+#endif
+#endif
 #endif
 
 // vim: ft=c

@@ -1125,31 +1125,33 @@ static void riptide_handleirq(unsigned long dev_id)
 }
 
 #ifdef CONFIG_PM
-static int riptide_suspend(struct snd_card *card, pm_message_t state)
+static int riptide_suspend(struct pci_dev *pci, pm_message_t state)
 {
-	struct snd_riptide *chip = card->pm_private_data;
+	struct snd_card *card = pci_get_drvdata(pci);
+	struct snd_riptide *chip = card->private_data;
 
 	chip->in_suspend = 1;
-	if (chip->pcm)
-		snd_pcm_suspend_all(chip->pcm);
-	if (chip->ac97)
-		snd_ac97_suspend(chip->ac97);
-	pci_set_power_state(chip->pci, PCI_D3hot);
-	pci_disable_device(chip->pci);
+	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
+	snd_pcm_suspend_all(chip->pcm);
+	snd_ac97_suspend(chip->ac97);
+	pci_set_power_state(pci, PCI_D3hot);
+	pci_disable_device(pci);
+	pci_save_state(pci);
 	return 0;
 }
 
-static int riptide_resume(struct snd_card *card)
+static int riptide_resume(struct pci_dev *pci)
 {
-	struct snd_riptide *chip = card->pm_private_data;
+	struct snd_card *card = pci_get_drvdata(pci);
+	struct snd_riptide *chip = card->private_data;
 
-	pci_enable_device(chip->pci);
-	pci_set_power_state(chip->pci, PCI_D0);
-	pci_set_master(chip->pci);
+	pci_restore_state(pci);
+	pci_enable_device(pci);
+	pci_set_power_state(pci, PCI_D0);
+	pci_set_master(pci);
 	snd_riptide_initialize(chip);
-
-	if (chip->ac97)
-		snd_ac97_resume(chip->ac97);
+	snd_ac97_resume(chip->ac97);
+	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
 	chip->in_suspend = 0;
 	return 0;
 }
@@ -1833,8 +1835,6 @@ snd_riptide_create(struct snd_card *card, struct pci_dev *pci, struct snd_riptid
 		return err;
 	}
 
-	snd_card_set_pm_callback(card, riptide_suspend, riptide_resume, chip);
-
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0) {
 		snd_riptide_free(chip);
 		return err;
@@ -2020,6 +2020,7 @@ snd_card_riptide_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 		snd_card_free(card);
 		return err;
 	}
+	card->private_data = chip;
 	if ((err = snd_riptide_pcm(chip, 0, NULL)) < 0) {
 		snd_card_free(card);
 		return err;
@@ -2098,7 +2099,10 @@ static struct pci_driver driver = {
 	.id_table = snd_riptide_ids,
 	.probe = snd_card_riptide_probe,
 	.remove = __devexit_p(snd_card_riptide_remove),
-	SND_PCI_PM_CALLBACKS
+#ifdef CONFIG_PM
+	.suspend = riptide_suspend,
+	.resume = riptide_resume,
+#endif
 };
 
 #ifdef SUPPORT_JOYSTICK

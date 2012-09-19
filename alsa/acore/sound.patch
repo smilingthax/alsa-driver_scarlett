@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/sound.c	2005-11-14 15:43:24.000000000 +0100
-+++ sound.c	2005-11-14 15:48:58.000000000 +0100
+--- ../alsa-kernel/core/sound.c	2005-11-04 23:48:30.000000000 +0100
++++ sound.c	2005-11-06 12:57:10.000000000 +0100
 @@ -64,7 +64,15 @@
  
  static DECLARE_MUTEX(sound_mutex);
@@ -38,7 +38,7 @@
  
  	up(&sound_mutex);
  	return 0;
-@@ -263,7 +277,11 @@
+@@ -263,7 +281,11 @@
  
  	if (strncmp(mptr->name, "controlC", 8) || card->number >= cards_limit) /* created in sound.c */
  		devfs_remove("snd/%s", mptr->name);
@@ -50,7 +50,7 @@
  
  	list_del(&mptr->list);
  	up(&sound_mutex);
-@@ -328,9 +346,24 @@
+@@ -328,6 +350,19 @@
   *  INIT PART
   */
  
@@ -67,15 +67,10 @@
 +#define snd_memory_info_done()
 +#endif
 +
- #ifdef CONFIG_SND_GENERIC_DRIVER
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- extern struct platform_driver snd_generic_driver;
- #endif
-+#endif
- 
  static int __init alsa_sound_init(void)
  {
-@@ -353,17 +386,24 @@
+ 	short controlnum;
+@@ -349,14 +384,19 @@
  	if (snd_info_init() < 0) {
  		unregister_chrdev(major, "alsa");
  		devfs_remove("snd");
@@ -84,11 +79,6 @@
  	}
 +	snd_memory_info_init();
  	snd_info_minor_register();
- #ifdef CONFIG_SND_GENERIC_DRIVER
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- 	platform_driver_register(&snd_generic_driver);
- #endif
-+#endif
  	for (controlnum = 0; controlnum < cards_limit; controlnum++)
  		devfs_mk_cdev(MKDEV(major, controlnum<<5), S_IFCHR | device_mode, "snd/controlC%d", controlnum);
  #ifndef MODULE
@@ -100,14 +90,9 @@
  	return 0;
  }
  
-@@ -375,13 +415,20 @@
+@@ -368,10 +408,15 @@
  		devfs_remove("snd/controlC%d", controlnum);
  
- #ifdef CONFIG_SND_GENERIC_DRIVER
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- 	platform_driver_unregister(&snd_generic_driver);
- #endif
-+#endif
  	snd_info_minor_unregister();
 +	snd_memory_info_done();
  	snd_info_done();
@@ -121,7 +106,7 @@
  }
  
  module_init(alsa_sound_init)
-@@ -483,3 +530,5 @@
+@@ -462,3 +507,5 @@
  #if defined(CONFIG_SND_DEBUG) && defined(CONFIG_SND_VERBOSE_PRINTK)
  EXPORT_SYMBOL(snd_verbose_printd);
  #endif

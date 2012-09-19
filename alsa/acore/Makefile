@@ -12,7 +12,7 @@ export-objs := sound.o pcm.o pcm_lib.o rawmidi.o timer.o hwdep.o memalloc.o
 
 include $(SND_TOPDIR)/alsa-kernel/core/Makefile
 
-snd-objs += wrappers.o
+snd-objs += wrappers.o misc_driver.o
 ifeq ($(CONFIG_SND_DEBUG_MEMORY),y)
 snd-objs += memory_debug.o
 endif
@@ -33,4 +33,4 @@ rawmidi.c: rawmidi.patch $(SND_TOPDIR)/alsa-kernel/core/rawmidi.c
 sound.c: sound.patch $(SND_TOPDIR)/alsa-kernel/core/sound.c
 timer.c: timer.patch $(SND_TOPDIR)/alsa-kernel/core/timer.c
 memalloc.c: memalloc.patch memalloc.inc memalloc.inc1 $(SND_TOPDIR)/alsa-kernel/core/memalloc.c
-misc.c: misc.patch misc.inc $(SND_TOPDIR)/alsa-kernel/core/misc.c
+misc.c: misc.patch $(SND_TOPDIR)/alsa-kernel/core/misc.c
