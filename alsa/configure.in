@@ -743,6 +743,8 @@ int main(void)
 CFLAGS=$ac_save_CFLAGS
 CONFIG_SND_RTCTIMER=$rtcsup
 AC_SUBST(CONFIG_SND_RTCTIMER)
+CONFIG_RTC=$CONFIG_SND_RTCTIMER
+AC_SUBST(CONFIG_RTC)
 
 dnl Check for which cards to compile driver for...
 ALSA_TOPLEVEL_INIT
