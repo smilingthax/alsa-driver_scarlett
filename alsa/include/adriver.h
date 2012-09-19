@@ -511,5 +511,13 @@ void snd_card_pci_resume(struct pci_dev *dev);
 #endif
 #endif
 
+/* kcalloc */
+#ifndef CONFIG_HAVE_KCALLOC
+#ifndef CONFIG_SND_DEBUG_MEMORY
+void *snd_compat_kcalloc(size_t n, size_t size, int gfp_flags);
+#define kcalloc(n,s,f) snd_compat_kcalloc(n,s,f)
+#endif
+#endif
+
 
 #endif /* __SOUND_LOCAL_DRIVER_H */

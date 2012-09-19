@@ -1296,6 +1296,30 @@ if test "$CONFIG_HAVE_VIDEO_GET_DRVDATA" = "1"; then
 fi
 fi
 
+dnl Check for kcalloc()
+AC_MSG_CHECKING(for kcalloc)
+kcalloc="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/slab.h"
+],[
+  void * (*func)(size_t, size_t, int);
+  func = kcalloc;
+],
+    AC_MSG_RESULT("yes");kcalloc="1",
+    AC_MSG_RESULT("no");kcalloc="0",
+    AC_MSG_RESULT("unknown");kcalloc="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_KCALLOC=$kcalloc
+dnl AC_SUBST(CONFIG_HAVE_KCALLOC)
+if test "$CONFIG_HAVE_KCALLOC" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_KCALLOC)
+fi
+
 dnl check only on 2.2 kernel..
 if test $kpatchlevel -le 2; then
 
