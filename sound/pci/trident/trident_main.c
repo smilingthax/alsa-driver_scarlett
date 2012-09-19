@@ -2041,6 +2041,20 @@ static snd_pcm_ops_t snd_trident_playback_ops = {
 	.pointer =	snd_trident_playback_pointer,
 };
 
+static snd_pcm_ops_t snd_trident_nx_playback_ops = {
+	.open =		snd_trident_playback_open,
+	.close =	snd_trident_playback_close,
+	.ioctl =	snd_trident_ioctl,
+	.hw_params =	snd_trident_hw_params,
+	.hw_free =	snd_trident_hw_free,
+	.prepare =	snd_trident_playback_prepare,
+	.trigger =	snd_trident_trigger,
+	.pointer =	snd_trident_playback_pointer,
+	.copy =		snd_pcm_sgbuf_ops_copy_playback,
+	.silence =	snd_pcm_sgbuf_ops_silence,
+	.page =		snd_pcm_sgbuf_ops_page,
+};
+
 static snd_pcm_ops_t snd_trident_capture_ops = {
 	.open =		snd_trident_capture_open,
 	.close =	snd_trident_capture_close,
@@ -2050,6 +2064,20 @@ static snd_pcm_ops_t snd_trident_capture_ops = {
 	.prepare =	snd_trident_capture_prepare,
 	.trigger =	snd_trident_trigger,
 	.pointer =	snd_trident_capture_pointer,
+};
+
+static snd_pcm_ops_t snd_trident_nx_capture_ops = {
+	.open =		snd_trident_capture_open,
+	.close =	snd_trident_capture_close,
+	.ioctl =	snd_trident_ioctl,
+	.hw_params =	snd_trident_capture_hw_params,
+	.hw_free =	snd_trident_hw_free,
+	.prepare =	snd_trident_capture_prepare,
+	.trigger =	snd_trident_trigger,
+	.pointer =	snd_trident_capture_pointer,
+	.copy =		snd_pcm_sgbuf_ops_copy_capture,
+	.silence =	snd_pcm_sgbuf_ops_silence,
+	.page =		snd_pcm_sgbuf_ops_page,
 };
 
 static snd_pcm_ops_t snd_trident_si7018_capture_ops = {
@@ -2074,6 +2102,20 @@ static snd_pcm_ops_t snd_trident_foldback_ops = {
 	.pointer =	snd_trident_playback_pointer,
 };
 
+static snd_pcm_ops_t snd_trident_nx_foldback_ops = {
+	.open =		snd_trident_foldback_open,
+	.close =	snd_trident_foldback_close,
+	.ioctl =	snd_trident_ioctl,
+	.hw_params =	snd_trident_hw_params,
+	.hw_free =	snd_trident_hw_free,
+	.prepare =	snd_trident_foldback_prepare,
+	.trigger =	snd_trident_trigger,
+	.pointer =	snd_trident_playback_pointer,
+	.copy =		snd_pcm_sgbuf_ops_copy_capture,
+	.silence =	snd_pcm_sgbuf_ops_silence,
+	.page =		snd_pcm_sgbuf_ops_page,
+};
+
 static snd_pcm_ops_t snd_trident_spdif_ops = {
 	.open =		snd_trident_spdif_open,
 	.close =	snd_trident_spdif_close,
@@ -2083,6 +2125,20 @@ static snd_pcm_ops_t snd_trident_spdif_ops = {
 	.prepare =	snd_trident_spdif_prepare,
 	.trigger =	snd_trident_trigger,
 	.pointer =	snd_trident_spdif_pointer,
+};
+
+static snd_pcm_ops_t snd_trident_nx_spdif_ops = {
+	.open =		snd_trident_spdif_open,
+	.close =	snd_trident_spdif_close,
+	.ioctl =	snd_trident_ioctl,
+	.hw_params =	snd_trident_spdif_hw_params,
+	.hw_free =	snd_trident_hw_free,
+	.prepare =	snd_trident_spdif_prepare,
+	.trigger =	snd_trident_trigger,
+	.pointer =	snd_trident_spdif_pointer,
+	.copy =		snd_pcm_sgbuf_ops_copy_playback,
+	.silence =	snd_pcm_sgbuf_ops_silence,
+	.page =		snd_pcm_sgbuf_ops_page,
 };
 
 static snd_pcm_ops_t snd_trident_spdif_7018_ops = {
@@ -2154,11 +2210,16 @@ int __devinit snd_trident_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm
 	pcm->private_data = trident;
 	pcm->private_free = snd_trident_pcm_free;
 
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_playback_ops);
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
+	if (trident->tlb.entries) {
+		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_nx_playback_ops);
+		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_trident_nx_capture_ops);
+	} else {
+		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_playback_ops);
+		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
 				trident->device != TRIDENT_DEVICE_ID_SI7018 ?
-					&snd_trident_capture_ops :
-					&snd_trident_si7018_capture_ops);
+				&snd_trident_capture_ops :
+				&snd_trident_si7018_capture_ops);
+	}
 
 	pcm->info_flags = 0;
 	pcm->dev_subclass = SNDRV_PCM_SUBCLASS_GENERIC_MIX;
@@ -2200,7 +2261,10 @@ int __devinit snd_trident_foldback_pcm(trident_t * trident, int device, snd_pcm_
 
 	foldback->private_data = trident;
 	foldback->private_free = snd_trident_foldback_pcm_free;
-	snd_pcm_set_ops(foldback, SNDRV_PCM_STREAM_CAPTURE, &snd_trident_foldback_ops);
+	if (trident->tlb.entries)
+		snd_pcm_set_ops(foldback, SNDRV_PCM_STREAM_CAPTURE, &snd_trident_nx_foldback_ops);
+	else
+		snd_pcm_set_ops(foldback, SNDRV_PCM_STREAM_CAPTURE, &snd_trident_foldback_ops);
 	foldback->info_flags = 0;
 	strcpy(foldback->name, "Trident 4DWave");
 	substream = foldback->streams[SNDRV_PCM_STREAM_CAPTURE].substream;
@@ -2246,7 +2310,9 @@ int __devinit snd_trident_spdif_pcm(trident_t * trident, int device, snd_pcm_t *
 
 	spdif->private_data = trident;
 	spdif->private_free = snd_trident_spdif_pcm_free;
-	if (trident->device != TRIDENT_DEVICE_ID_SI7018) {
+	if (trident->tlb.entries) {
+		snd_pcm_set_ops(spdif, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_nx_spdif_ops);
+	} else if (trident->device != TRIDENT_DEVICE_ID_SI7018) {
 		snd_pcm_set_ops(spdif, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_spdif_ops);
 	} else {
 		snd_pcm_set_ops(spdif, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_spdif_7018_ops);

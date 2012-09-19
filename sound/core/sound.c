@@ -442,6 +442,7 @@ EXPORT_SYMBOL(snd_malloc_isa_pages_fallback);
 #ifdef CONFIG_PCI
 EXPORT_SYMBOL(snd_malloc_pci_pages);
 EXPORT_SYMBOL(snd_malloc_pci_pages_fallback);
+EXPORT_SYMBOL(snd_malloc_pci_page);
 EXPORT_SYMBOL(snd_free_pci_pages);
 #endif
 #ifdef CONFIG_SBUS

@@ -1,7 +1,7 @@
 /*
  *   ALSA driver for RME Digi32, Digi32/8 and Digi32 PRO audio interfaces
  *
- *	Copyright (c) 2002 Martin Langer <martin-langer@gmx.de>
+ *	Copyright (c) 2002, 2003 Martin Langer <martin-langer@gmx.de>
  *
  *      Thanks to :        Anders Torger <torger@ludd.luth.se>,
  *                         Henk Hesselink <henk@anda.nl>
@@ -70,6 +70,7 @@
 #include <sound/asoundef.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
+#include <sound/info.h>
 
 #include <asm/io.h>
 
@@ -255,8 +256,6 @@ static snd_pcm_uframes_t
 snd_rme32_capture_pointer(snd_pcm_substream_t * substream);
 
 static void snd_rme32_proc_init(rme32_t * rme32);
-
-static void snd_rme32_proc_done(rme32_t * rme32);
 
 static int snd_rme32_create_switches(snd_card_t * card, rme32_t * rme32);
 
@@ -560,18 +559,22 @@ static int snd_rme32_setclockmode(rme32_t * rme32, int mode)
 {
 	switch (mode) {
 	case RME32_CLOCKMODE_SLAVE:
+		/* AutoSync */
 		rme32->wcreg = (rme32->wcreg & ~RME32_WCR_FREQ_0) & 
 			~RME32_WCR_FREQ_1;
 		break;
 	case RME32_CLOCKMODE_MASTER_32:
+		/* Internal 32.0kHz */
 		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) & 
 			~RME32_WCR_FREQ_1;
 		break;
 	case RME32_CLOCKMODE_MASTER_44:
+		/* Internal 44.1kHz */
 		rme32->wcreg = (rme32->wcreg & ~RME32_WCR_FREQ_0) | 
 			RME32_WCR_FREQ_1;
 		break;
 	case RME32_CLOCKMODE_MASTER_48:
+		/* Internal 48.0kHz */
 		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) | 
 			RME32_WCR_FREQ_1;
 		break;
@@ -1462,9 +1465,9 @@ snd_rme32_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 			    snd_rme32_playback_getrate(rme32));
 	}
 	if (rme32->wcreg & RME32_RCR_KMODE) {
-		snd_iprintf(buffer, "  clock mode: slave\n");
+		snd_iprintf(buffer, "  sample clock source: AutoSync\n");
 	} else {
-		snd_iprintf(buffer, "  clock mode: master\n");
+		snd_iprintf(buffer, "  sample clock source: Internal\n");
 	}
 	if (rme32->wcreg & RME32_WCR_PRO) {
 		snd_iprintf(buffer, "  format: AES/EBU (professional)\n");
@@ -1626,7 +1629,10 @@ static int
 snd_rme32_info_clockmode_control(snd_kcontrol_t * kcontrol,
 				 snd_ctl_elem_info_t * uinfo)
 {
-	static char *texts[4] = { "Slave", "Master (32.0 kHz)", "Master (44.1 kHz)", "Master (48.0 kHz)" };
+	static char *texts[4] = { "AutoSync", 
+				  "Internal 32.0kHz", 
+				  "Internal 44.1kHz", 
+				  "Internal 48.0kHz" };
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	uinfo->count = 1;
@@ -1823,7 +1829,7 @@ static snd_kcontrol_new_t snd_rme32_controls[] = {
 	},
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
-		.name =	"Clock Mode",
+		.name =	"Sample Clock Source",
 		.info =	snd_rme32_info_clockmode_control,
 		.get =	snd_rme32_get_clockmode_control,
 		.put =	snd_rme32_put_clockmode_control
