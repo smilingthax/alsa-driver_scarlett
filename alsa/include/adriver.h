@@ -2035,6 +2035,7 @@ request_irq_with_irqf_check(unsigned int irq, irq_handler_t handler,
 		flags |= IRQF_DISABLED;
 	return request_irq(irq, handler, flags, name, dev);
 }
+#undef request_irq
 #define request_irq(irq, fn, flags, name, dev_id) \
 	request_irq_with_irqf_check(irq, fn, flags, name, dev_id)
 #endif
