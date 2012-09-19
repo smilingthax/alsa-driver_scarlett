@@ -1049,7 +1049,7 @@ static int __devinit pcxhr_probe(struct pci_dev *pci, const struct pci_device_id
 		if (index[dev] < 0)	idx = index[dev];
 		else			idx = index[dev] + i;
 
-		snprintf(tmpid, sizeof(tmpid), "%s-%d", id[dev], i);
+		snprintf(tmpid, sizeof(tmpid), "%s-%d", id[dev] ? id[dev] : "PCXHR", i);
 		card = snd_card_new(idx, tmpid, THIS_MODULE, 0);
 
 		if (! card) {
