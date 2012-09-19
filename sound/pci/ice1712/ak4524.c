@@ -218,14 +218,17 @@ void __devinit snd_ice1712_ak4524_init(ice1712_t *ice)
 #define AK_GET_CHIP(val)		(((val) >> 8) & 0xff)
 #define AK_GET_ADDR(val)		((val) & 0xff)
 #define AK_GET_SHIFT(val)		(((val) >> 16) & 0xff)
-#define AK_COMPOSE(chip,addr,shift)	(((chip) << 8) | (addr) | ((shift) << 16))
+#define AK_GET_MASK(val)		(((val) >> 24) & 0xff)
+#define AK_COMPOSE(chip,addr,shift,mask) (((chip) << 8) | (addr) | ((shift) << 16) | ((mask) << 24))
 
 static int snd_ice1712_ak4524_volume_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
 {
+	unsigned int mask = AK_GET_MASK(kcontrol->private_value);
+
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 1;
 	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = 127;
+	uinfo->value.integer.max = mask;
 	return 0;
 }
 
@@ -234,7 +237,8 @@ static int snd_ice1712_ak4524_volume_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
 	int chip = AK_GET_CHIP(kcontrol->private_value);
 	int addr = AK_GET_ADDR(kcontrol->private_value);
-	ucontrol->value.integer.value[0] = ice->ak4524.images[chip][addr];
+	unsigned int mask = AK_GET_MASK(kcontrol->private_value);
+	ucontrol->value.integer.value[0] = mask - ice->ak4524.images[chip][addr];
 	return 0;
 }
 
@@ -243,7 +247,8 @@ static int snd_ice1712_ak4524_volume_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
 	int chip = AK_GET_CHIP(kcontrol->private_value);
 	int addr = AK_GET_ADDR(kcontrol->private_value);
-	unsigned char nval = ucontrol->value.integer.value[0];
+	unsigned int mask = AK_GET_MASK(kcontrol->private_value);
+	unsigned char nval = mask - (ucontrol->value.integer.value[0] % (mask+1));
 	int change = ice->ak4524.images[chip][addr] != nval;
 	if (change)
 		snd_ice1712_ak4524_write(ice, chip, addr, nval);
@@ -341,14 +346,14 @@ int __devinit snd_ice1712_ak4524_build_controls(ice1712_t *ice)
 		ctl.put = snd_ice1712_ak4524_volume_put;
 		switch (ak->type) {
 		case SND_AK4524:
-			ctl.private_value = AK_COMPOSE(idx/2, (idx%2) + 6, 0); /* register 6 & 7 */
+			ctl.private_value = AK_COMPOSE(idx/2, (idx%2) + 6, 0, 127); /* register 6 & 7 */
 			break;
 		case SND_AK4528:
-			ctl.private_value = AK_COMPOSE(idx/2, (idx%2) + 4, 0); /* register 4 & 5 */
+			ctl.private_value = AK_COMPOSE(idx/2, (idx%2) + 4, 0, 127); /* register 4 & 5 */
 			break;
 		case SND_AK4529: {
 			int val = idx < 6 ? idx + 2 : (idx - 6) + 0xb; /* registers 2-7 and b,c */
-			ctl.private_value = AK_COMPOSE(0, val, 0);
+			ctl.private_value = AK_COMPOSE(0, val, 0, 255);
 			break;
 		}
 		}
@@ -366,7 +371,7 @@ int __devinit snd_ice1712_ak4524_build_controls(ice1712_t *ice)
 		ctl.access = SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE;
 		ctl.get = snd_ice1712_ak4524_volume_get;
 		ctl.put = snd_ice1712_ak4524_volume_put;
-		ctl.private_value = AK_COMPOSE(idx/2, (idx%2) + 4, 0); /* register 4 & 5 */
+		ctl.private_value = AK_COMPOSE(idx/2, (idx%2) + 4, 0, 127); /* register 4 & 5 */
 		ctl.private_data = ice;
 		if ((err = snd_ctl_add(ice->card, snd_ctl_new(&ctl))) < 0)
 			return err;
@@ -378,7 +383,7 @@ int __devinit snd_ice1712_ak4524_build_controls(ice1712_t *ice)
 		ctl.access = SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE;
 		ctl.get = snd_ice1712_ak4524_ipga_gain_get;
 		ctl.put = snd_ice1712_ak4524_ipga_gain_put;
-		ctl.private_value = AK_COMPOSE(idx/2, (idx%2) + 4, 0); /* register 4 & 5 */
+		ctl.private_value = AK_COMPOSE(idx/2, (idx%2) + 4, 0, 0); /* register 4 & 5 */
 		ctl.private_data = ice;
 		if ((err = snd_ctl_add(ice->card, snd_ctl_new(&ctl))) < 0)
 			return err;
@@ -396,11 +401,11 @@ int __devinit snd_ice1712_ak4524_build_controls(ice1712_t *ice)
 		switch (ak->type) {
 		case SND_AK4524:
 		case SND_AK4528:
-			ctl.private_value = AK_COMPOSE(idx, 3, 0); /* register 3 */
+			ctl.private_value = AK_COMPOSE(idx, 3, 0, 0); /* register 3 */
 			break;
 		case SND_AK4529: {
 			int shift = idx == 3 ? 6 : (2 - idx) * 2;
-			ctl.private_value = AK_COMPOSE(0, 8, shift); /* register 8 with shift */
+			ctl.private_value = AK_COMPOSE(0, 8, shift, 0); /* register 8 with shift */
 			break;
 		}
 		}
