@@ -2424,6 +2424,7 @@ static int es1968_suspend(snd_card_t *card, unsigned int state)
 		return 0;
 
 	snd_pcm_suspend_all(chip->pcm);
+	snd_ac97_suspend(chip->ac97);
 	snd_es1968_bob_stop(chip);
 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
 	return 0;
@@ -2743,22 +2744,11 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_es1968_init(void)
 {
-	int err;
-
-        if ((err = pci_module_init(&driver)) < 0) {
-#ifdef MODULE
-		printk(KERN_ERR "ESS Maestro soundcard not found or device busy\n");
-#endif
-		return err;
-	}
-	return 0;
+	return pci_module_init(&driver);
 }
 
 static void __exit alsa_card_es1968_exit(void)
 {
-#if 0 // do we really need this?
-	unregister_reboot_notifier(&snd_es1968_nb);
-#endif
 	pci_unregister_driver(&driver);
 }
 

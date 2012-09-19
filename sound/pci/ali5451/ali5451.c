@@ -1905,14 +1905,18 @@ static int __devinit snd_ali_mixer(ali_t * codec)
 }
 
 #ifdef CONFIG_PM
-static void ali_suspend(ali_t *chip)
+static int ali_suspend(snd_card_t *card, unsigned int state)
 {
+	ali_t *chip = snd_magic_cast(ali_t, card->pm_private_data, return -EINVAL);
 	ali_image_t *im;
 	int i, j;
 
 	im = chip->image;
 	if (! im)
-		return;
+		return 0;
+
+	snd_pcm_suspend_all(chip->pcm);
+	snd_ac97_suspend(chip->ac97);
 
 	spin_lock_irq(&chip->reg_lock);
 	
@@ -1939,16 +1943,18 @@ static void ali_suspend(ali_t *chip)
 	outl(0xffffffff, ALI_REG(chip, ALI_STOP));
 
 	spin_unlock_irq(&chip->reg_lock);
+	return 0;
 }
 
-static void ali_resume(ali_t *chip)
+static int ali_resume(snd_card_t *card, unsigned int state)
 {
+	ali_t *chip = snd_magic_cast(ali_t, card->pm_private_data, return -EINVAL);
 	ali_image_t *im;
 	int i, j;
 
 	im = chip->image;
 	if (! im)
-		return;
+		return 0;
 
 	pci_enable_device(chip->pci);
 
@@ -1966,27 +1972,15 @@ static void ali_resume(ali_t *chip)
 		outl(im->regs[i], ALI_REG(chip, i*4));
 	}
 	
-	snd_ac97_resume(chip->ac97);
-	
 	// start HW channel
 	outl(im->regs[ALI_START >> 2], ALI_REG(chip, ALI_START));
 	// restore IRQ enable bits
 	outl(im->regs[ALI_MISCINT >> 2], ALI_REG(chip, ALI_MISCINT));
 	
 	spin_unlock_irq(&chip->reg_lock);
-	return;
-}
 
-static int snd_ali_suspend(struct pci_dev *dev, u32 state)
-{
-	ali_t *chip = snd_magic_cast(ali_t, pci_get_drvdata(dev), return -ENXIO);
-	ali_suspend(chip);
-	return 0;
-}
-static int snd_ali_resume(struct pci_dev *dev)
-{
-	ali_t *chip = snd_magic_cast(ali_t, pci_get_drvdata(dev), return -ENXIO);
-	ali_resume(chip);
+	snd_ac97_resume(chip->ac97);
+	
 	return 0;
 }
 #endif /* CONFIG_PM */
@@ -2202,7 +2196,9 @@ static int __devinit snd_ali_create(snd_card_t * card,
 #ifdef CONFIG_PM
 	codec->image = kmalloc(sizeof(*codec->image), GFP_KERNEL);
 	if (! codec->image)
-		snd_printk("can't allocate apm buffer\n");
+		snd_printk(KERN_WARNING "can't allocate apm buffer\n");
+	else
+		snd_card_set_pm_callback(card, ali_suspend, ali_resume, codec);
 #endif
 
 	snd_ali_enable_address_interrupt(codec);
@@ -2278,23 +2274,12 @@ static struct pci_driver driver = {
 	.id_table = snd_ali_ids,
 	.probe = snd_ali_probe,
 	.remove = __devexit_p(snd_ali_remove),
-#ifdef CONFIG_PM
-	.suspend = snd_ali_suspend,
-	.resume = snd_ali_resume,
-#endif
+	SND_PCI_PM_CALLBACKS
 };                                
 
 static int __init alsa_card_ali_init(void)
 {
-	int err;
-
-	if ((err = pci_module_init(&driver)) < 0) {
-#ifdef MODULE
-		printk(KERN_ERR "ALi pci audio not found or device busy.\n");
-#endif
-		return err;
-	}
-	return 0;
+	return pci_module_init(&driver);
 }
 
 static void __exit alsa_card_ali_exit(void)

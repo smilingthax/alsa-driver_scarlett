@@ -2046,6 +2046,11 @@ static int cs4281_suspend(snd_card_t *card, unsigned int state)
 
 	snd_pcm_suspend_all(chip->pcm);
 
+	if (chip->ac97)
+		snd_ac97_suspend(chip->ac97);
+	if (chip->ac97_secondary)
+		snd_ac97_suspend(chip->ac97_secondary);
+
 	ulCLK = snd_cs4281_peekBA0(chip, BA0_CLKCR1);
 	ulCLK |= CLKCR1_CKRA;
 	snd_cs4281_pokeBA0(chip, BA0_CLKCR1, ulCLK);
@@ -2121,15 +2126,7 @@ static struct pci_driver driver = {
 	
 static int __init alsa_card_cs4281_init(void)
 {
-	int err;
-
-	if ((err = pci_module_init(&driver)) < 0) {
-#ifdef MODULE
-		printk(KERN_ERR "CS4281 soundcard not found or device busy\n");
-#endif
-		return err;
-	}
-	return 0;
+	return pci_module_init(&driver);
 }
 
 static void __exit alsa_card_cs4281_exit(void)

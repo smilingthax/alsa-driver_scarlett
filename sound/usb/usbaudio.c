@@ -1147,7 +1147,7 @@ static int init_usb_pitch(struct usb_device *dev, int iface,
 	/* if endpoint has pitch control, enable it */
 	if (fmt->attributes & EP_CS_ATTR_PITCH_CONTROL) {
 		data[0] = 1;
-		if ((err = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), SET_CUR,
+		if ((err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev, 0), SET_CUR,
 					   USB_TYPE_CLASS|USB_RECIP_ENDPOINT|USB_DIR_OUT, 
 					   PITCH_CONTROL << 8, ep, data, 1, HZ)) < 0) {
 			snd_printk(KERN_ERR "%d:%d:%d: cannot set enable PITCH\n",
@@ -1173,14 +1173,14 @@ static int init_usb_sample_rate(struct usb_device *dev, int iface,
 		data[0] = rate;
 		data[1] = rate >> 8;
 		data[2] = rate >> 16;
-		if ((err = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), SET_CUR,
+		if ((err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev, 0), SET_CUR,
 					   USB_TYPE_CLASS|USB_RECIP_ENDPOINT|USB_DIR_OUT, 
 					   SAMPLING_FREQ_CONTROL << 8, ep, data, 3, HZ)) < 0) {
 			snd_printk(KERN_ERR "%d:%d:%d: cannot set freq %d to ep 0x%x\n",
 				   dev->devnum, iface, fmt->altsetting, rate, ep);
 			return err;
 		}
-		if ((err = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), GET_CUR,
+		if ((err = snd_usb_ctl_msg(dev, usb_rcvctrlpipe(dev, 0), GET_CUR,
 					   USB_TYPE_CLASS|USB_RECIP_ENDPOINT|USB_DIR_IN,
 					   SAMPLING_FREQ_CONTROL << 8, ep, data, 3, HZ)) < 0) {
 			snd_printk(KERN_ERR "%d:%d:%d: cannot get freq at ep 0x%x\n",
@@ -1883,6 +1883,32 @@ void *snd_usb_find_csint_desc(void *buffer, int buflen, void *after, u8 dsubtype
 			return p;
 	}
 	return NULL;
+}
+
+/*
+ * Wrapper for usb_control_msg().
+ * Allocates a temp buffer to prevent dmaing from/to the stack.
+ */
+int snd_usb_ctl_msg(struct usb_device *dev, unsigned int pipe, __u8 request,
+		    __u8 requesttype, __u16 value, __u16 index, void *data,
+		    __u16 size, int timeout)
+{
+	int err;
+	void *buf = NULL;
+
+	if (size > 0) {
+		buf = kmalloc(size, GFP_KERNEL);
+		if (!buf)
+			return -ENOMEM;
+		memcpy(buf, data, size);
+	}
+	err = usb_control_msg(dev, pipe, request, requesttype,
+			      value, index, buf, size, timeout);
+	if (size > 0) {
+		memcpy(data, buf, size);
+		kfree(buf);
+	}
+	return err;
 }
 
 
@@ -2716,6 +2742,83 @@ static int create_standard_interface_quirk(snd_usb_audio_t *chip,
 	return 0;
 }
 
+/*
+ * Create a stream for an Edirol UA-700 interface.  The only way
+ * to detect the sample rate is by looking at wMaxPacketSize.
+ */
+static int create_ua700_quirk(snd_usb_audio_t *chip, struct usb_interface *iface)
+{
+	static const struct audioformat ua700_format = {
+		.format = SNDRV_PCM_FORMAT_S24_3LE,
+		.channels = 2,
+		.fmt_type = USB_FORMAT_TYPE_I,
+		.altsetting = 1,
+		.altset_idx = 1,
+		.rates = SNDRV_PCM_RATE_CONTINUOUS,
+	};
+	struct usb_host_interface *alts;
+	struct usb_interface_descriptor *altsd;
+	struct audioformat *fp;
+	int stream, err;
+
+	/* both PCM and MIDI interfaces have 2 altsettings */
+	if (iface->num_altsetting != 2)
+		return -ENXIO;
+	alts = &iface->altsetting[1];
+	altsd = get_iface_desc(alts);
+
+	if (altsd->bNumEndpoints == 2) {
+		static const snd_usb_midi_endpoint_info_t ep = {
+			.out_cables = 0x0003,
+			.in_cables  = 0x0003
+		};
+		static const snd_usb_audio_quirk_t quirk = {
+			.type = QUIRK_MIDI_FIXED_ENDPOINT,
+			.data = &ep
+		};
+		return snd_usb_create_midi_interface(chip, iface, &quirk);
+	}
+
+	if (altsd->bNumEndpoints != 1)
+		return -ENXIO;
+
+	fp = kmalloc(sizeof(*fp), GFP_KERNEL);
+	if (!fp)
+		return -ENOMEM;
+	memcpy(fp, &ua700_format, sizeof(*fp));
+
+	fp->iface = altsd->bInterfaceNumber;
+	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
+	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
+	fp->maxpacksize = get_endpoint(alts, 0)->wMaxPacketSize;
+
+	switch (fp->maxpacksize) {
+	case 0x120:
+		fp->rate_max = fp->rate_min = 44100;
+		break;
+	case 0x138:
+		fp->rate_max = fp->rate_min = 48000;
+		break;
+	case 0x258:
+		fp->rate_max = fp->rate_min = 96000;
+		break;
+	default:
+		snd_printk(KERN_ERR "unknown sample rate\n");
+		kfree(fp);
+		return -ENXIO;
+	}
+
+	stream = (fp->endpoint & USB_DIR_IN)
+		? SNDRV_PCM_STREAM_CAPTURE : SNDRV_PCM_STREAM_PLAYBACK;
+	err = add_audio_endpoint(chip, stream, fp);
+	if (err < 0) {
+		kfree(fp);
+		return err;
+	}
+	usb_set_interface(chip->dev, fp->iface, 0);
+	return 0;
+}
+
 static int snd_usb_create_quirk(snd_usb_audio_t *chip,
 				struct usb_interface *iface,
 				const snd_usb_audio_quirk_t *quirk);
@@ -2763,7 +2866,7 @@ static int snd_usb_extigy_boot_quirk(struct usb_device *dev, struct usb_interfac
 	    get_cfg_desc(config)->wTotalLength == EXTIGY_FIRMWARE_SIZE_NEW) {
 		snd_printdd("sending Extigy boot sequence...\n");
 		/* Send message to force it to reconnect with full interface. */
-		err = usb_control_msg(dev, usb_sndctrlpipe(dev,0),
+		err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev,0),
 				      0x10, 0x43, 0x0001, 0x000a, NULL, 0, HZ);
 		if (err < 0) snd_printdd("error sending boot message: %d\n", err);
 		err = usb_get_descriptor(dev, USB_DT_DEVICE, 0,
@@ -2803,6 +2906,8 @@ static int snd_usb_create_quirk(snd_usb_audio_t *chip,
 	case QUIRK_AUDIO_STANDARD_INTERFACE:
 	case QUIRK_MIDI_STANDARD_INTERFACE:
 		return create_standard_interface_quirk(chip, iface, quirk);
+	case QUIRK_AUDIO_EDIROL_UA700:
+		return create_ua700_quirk(chip, iface);
 	default:
 		snd_printd(KERN_ERR "invalid quirk type %d\n", quirk->type);
 		return -ENXIO;
