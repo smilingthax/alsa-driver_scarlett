@@ -3,8 +3,8 @@
 # alsasound     This shell script takes care of starting and stopping
 #               the ALSA sound driver.
 #
-# This script requires /usr/sbin/alsactl and /usr/bin/aconnect programs
-# from the alsa-utils package.
+# This script requires @prefix@/sbin/alsactl and @prefix@/bin/aconnect
+# programs from the alsa-utils package.
 #
 # Copyright (c) by Jaroslav Kysela <perex@suse.cz> 
 #
@@ -64,9 +64,9 @@ link=${base#*[SK][0-9][0-9]}
 test $link = $base && START_ALSA=yes
 test "$START_ALSA" = yes || exit 0
 
-alsactl=/usr/sbin/alsactl
+alsactl=@prefix@/sbin/alsactl
 asoundcfg=/etc/asound.state
-aconnect=/usr/bin/aconnect
+aconnect=@prefix@/bin/aconnect
 alsascrdir=/etc/alsa.d
 if [ -x /sbin/lsmod ]; then
   lsmod=/sbin/lsmod
