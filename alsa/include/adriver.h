@@ -583,6 +583,17 @@ static inline void class_simple_device_remove(int devnum) { return; }
 #define dump_stack()
 #endif
 
+#ifndef CONFIG_HAVE_PCI_DEV_PRESENT
+#include <linux/pci.h>
+#ifndef PCI_DEVICE
+#define PCI_DEVICE(vend,dev) \
+	.vendor = (vend), .device = (dev), \
+	.subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID
+#endif
+int snd_pci_dev_present(const struct pci_device_id *ids);
+#define pci_dev_present(x) snd_pci_dev_present(x)
+#endif
+
 /* power management compatibility layer */
 #ifdef CONFIG_PM
 #ifdef PCI_OLD_SUSPEND

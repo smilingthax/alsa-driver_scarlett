@@ -35,3 +35,6 @@ EXPORT_SYMBOL(snd_compat_devfs_mk_cdev);
 EXPORT_SYMBOL(snd_compat_kcalloc);
 #endif
 #endif
+#ifndef CONFIG_HAVE_PCI_DEV_PRESENT
+EXPORT_SYMBOL(snd_pci_dev_present);
+#endif

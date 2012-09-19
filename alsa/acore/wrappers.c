@@ -4,6 +4,19 @@
 #include <linux/version.h>
 #include <linux/config.h>
 
+#ifndef CONFIG_HAVE_PCI_DEV_PRESENT
+#include <linux/pci.h>
+int snd_pci_dev_present(const struct pci_device_id *ids)
+{
+	while (ids->vendor || ids->subvendor) {
+		if (pci_find_device(ids->vendor, ids->subvendor, NULL))
+			return 1;
+		ids++;
+	}
+	return 0;
+}
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
 #define MODVERSIONS
