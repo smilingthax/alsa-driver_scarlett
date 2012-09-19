@@ -1,4 +1,4 @@
-/*
+q/*
  *  linux/include/linux/l3/uda1341.h
  *
  * Philips UDA1341 mixer device driver for ALSA
@@ -15,7 +15,7 @@
  *                           features support
  */
 
-/* $Id: uda1341.h,v 1.6 2002/04/12 20:06:31 perex Exp $ */
+/* $Id: uda1341.h,v 1.7 2002/04/16 09:06:45 perex Exp $ */
 
 #define UDA1341_ALSA_NAME "snd-uda1341"
 
@@ -156,7 +156,19 @@ const char *ig_small_value[] = {
 	"-3.0", "-2.5", "-2.0", "-1.5", "-1.0", "-0.5",
 };
 
-//this was computed as peak_value[i] = pow((63-i)*1.42,1.013)
+/*
+ * this was computed as peak_value[i] = pow((63-i)*1.42,1.013)
+ *
+ * UDA1341 datasheet on page 21: Peak value (dB) = (Peak level - 63.5)*5*log2
+ * There is an tabel with these values [level]=value: [3]=-90.31, [7]=-84.29
+ * [61]=-2.78, [62] = -1.48, [63] = 0.0
+ * I tried to compute it, but using but even using logarithm with base either 10 or 2
+ * i was'n able to get values in the table from the formula. So I constructed another
+ * formula (see above) to interpolate the values as good as possible. If there is some
+ * mistake, please contact me on tomas.kasparek@seznam.cz. Thanks.
+ * UDA1341TS datasheet is available at:
+ *   http://www-us9.semiconductors.com/acrobat/datasheets/UDA1341TS_3.pdf 
+ */
 const char *peak_value[] = {
 	"-INF dB", "N.A.", "N.A", "90.31 dB", "N.A.", "N.A.", "N.A.", "-84.29 dB",
 	"-82.65 dB", "-81.13 dB", "-79.61 dB", "-78.09 dB", "-76.57 dB", "-75.05 dB", "-73.53 dB",
@@ -197,7 +209,7 @@ enum uda1341_config {
 };
 
 enum write_through {
-	//used in update_bits (write_cfg) to avoid l3_write - just upadte local copy of regs.
+	//used in update_bits (write_cfg) to avoid l3_write - just update local copy of regs.
 	REGS_ONLY=0,
 	//update local regs and write value to uda1341 - do l3_write
 	FLUSH,

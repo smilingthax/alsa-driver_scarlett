@@ -13,9 +13,10 @@
  * 2002-03-28   Tomas Kasparek  basic mixer is working (volume, bass, treble)
  * 2002-03-30   Tomas Kasparek  Proc filesystem support, complete mixer and DSP
  *                              features support
+ * 2002-04-12	Tomas Kasparek	Proc interface update, code cleanup
  */
 
-/* $Id: uda1341.c,v 1.6 2002/04/12 20:06:30 perex Exp $ */
+/* $Id: uda1341.c,v 1.7 2002/04/16 09:06:45 perex Exp $ */
 
 #include <sound/driver.h>
 #include <linux/module.h>
@@ -88,6 +89,28 @@ const char *uda1341_reg_names[] = {
 	"ext 4",
 	"ext 5",
 	"ext 6",
+};
+
+const int uda1341_enum_items[] = {
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		2, //peak - before/after
+		4, //deemp - none/32/44.1/48
+		0,
+		4, //filter - flat/min/min/max
+		0, 0, 0,
+		4, //mixer - differ/line/mic/mixer
+		0, 0, 0, 0, 0,
+};
+
+const char ** uda1341_enum_names[] = {
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	peak_names, //peak - before/after
+	deemp_names, //deemp - none/32/44.1/48
+	NULL,
+	filter_names, //filter - flat/min/min/max
+	NULL, NULL, NULL,
+	mixer_names, //mixer - differ/line/mic/mixer
+	NULL, NULL, NULL, NULL, NULL,
 };
 
 typedef int uda1341_cfg[CMD_LAST];
@@ -304,12 +327,11 @@ static void snd_uda1341_proc_read(snd_info_entry_t *entry,
 
 	snd_iprintf(buffer, "%s\n\n", uda->card->longname);
 
-	// for information about computed values see UDA1341TS datasheet page 15 - 21
+	// for information about computed values see UDA1341TS datasheet pages 15 - 21
 	snd_iprintf(buffer, "DAC power           : %s\n", uda->cfg[CMD_DAC] ? "on" : "off");
 	snd_iprintf(buffer, "ADC power           : %s\n", uda->cfg[CMD_ADC] ? "on" : "off");
  	snd_iprintf(buffer, "Clock frequency     : %s\n", fs_names[uda->cfg[CMD_FS]]);
 	snd_iprintf(buffer, "Data format         : %s\n\n", format_names[uda->cfg[CMD_FORMAT]]);
-
 
 	snd_iprintf(buffer, "Filter mode         : %s\n", filter_names[uda->cfg[CMD_FILTER]]);
 	snd_iprintf(buffer, "Mixer mode          : %s\n", mixer_names[uda->cfg[CMD_MIXER]]);
@@ -496,6 +518,68 @@ static int snd_uda1341_put_single(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_
 
 /* }}} */
 
+/* {{{ UDA1341 enum functions */
+
+#define UDA1341_ENUM(xname, where, reg, shift, mask, invert) \
+{ iface: SNDRV_CTL_ELEM_IFACE_MIXER, name: xname, info: snd_uda1341_info_enum, \
+  get: snd_uda1341_get_enum, put: snd_uda1341_put_enum, \
+  private_value: where | reg << 5 | (shift << 9) | (mask << 12) | (invert << 18) \
+}
+
+static int snd_uda1341_info_enum(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+{
+	int where = kcontrol->private_value & 31;
+	const char **texts;
+	
+	DEBUG_NAME(KERN_DEBUG "info_enum where: %d\n", where);
+
+	// this register we dont handle this way
+	if (!uda1341_enum_items[where])
+		return -EINVAL;
+
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = uda1341_enum_items[where];
+
+	if (uinfo->value.enumerated.item >= uda1341_enum_items[where])
+		uinfo->value.enumerated.item = uda1341_enum_items[where] - 1;
+
+	texts = uda1341_enum_names[where];
+	strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
+	return 0;
+}
+
+static int snd_uda1341_get_enum(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	struct l3_client *clnt = snd_kcontrol_chip(kcontrol);
+	uda1341_t *uda = clnt->driver_data;
+	int where = kcontrol->private_value & 31;        
+        
+	DEBUG_NAME(KERN_DEBUG "get_enum where: %d (val: %d)\n", where, uda->cfg[where]);
+        
+	ucontrol->value.enumerated.item[0] = uda->cfg[where];	
+	return 0;
+}
+
+static int snd_uda1341_put_enum(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	struct l3_client *clnt = snd_kcontrol_chip(kcontrol);
+	uda1341_t *uda = clnt->driver_data;
+	int where = kcontrol->private_value & 31;        
+	int reg = (kcontrol->private_value >> 5) & 15;
+	int shift = (kcontrol->private_value >> 9) & 7;
+	int mask = (kcontrol->private_value >> 12) & 63;
+
+	uda->cfg[where] = (ucontrol->value.enumerated.item[0] & mask);
+	
+	DEBUG(KERN_DEBUG "put_enum where: %d reg: %d mask: %d shift: %d val: %d\n",
+	      where, reg, mask, shift, uda->cfg[where]);
+        
+	return snd_uda1341_update_bits(clnt, reg, mask, shift, uda->cfg[where], FLUSH);
+}
+
+/* }}} */
+
 /* {{{ UDA1341 2regs functions */
 
 #define UDA1341_2REGS(xname, where, reg_1, reg_2, shift_1, shift_2, mask_1, mask_2, invert) \
@@ -603,13 +687,13 @@ static snd_kcontrol_new_t snd_uda1341_controls[] = {
 	UDA1341_SINGLE("AGC Time Constant", CMD_AGC_TIME, ext6, 2, 7, 0),
 	UDA1341_SINGLE("AGC Time Constant Switch", CMD_AGC, ext4, 4, 1, 0),
 
-	UDA1341_SINGLE("DAC Power", CMD_DAC, stat1, 0, 1, 0),//enum??
-	UDA1341_SINGLE("ADC Power", CMD_ADC, stat1, 1, 1, 0),//enum??
+	UDA1341_SINGLE("DAC Power", CMD_DAC, stat1, 0, 1, 0),
+	UDA1341_SINGLE("ADC Power", CMD_ADC, stat1, 1, 1, 0),
 
-	UDA1341_SINGLE("Peak detection", CMD_PEAK, data0_2, 5, 1, 0),//enum
-	UDA1341_SINGLE("De-emphasis", CMD_DEEMP, data0_2, 3, 3, 0),//enum
-	UDA1341_SINGLE("Mixer mode", CMD_MIXER, ext2, 0, 3, 0),//enum
-	UDA1341_SINGLE("Filter mode", CMD_FILTER, data0_2, 0, 3, 0),//enum
+	UDA1341_ENUM("Peak detection", CMD_PEAK, data0_2, 5, 1, 0),
+	UDA1341_ENUM("De-emphasis", CMD_DEEMP, data0_2, 3, 3, 0),
+	UDA1341_ENUM("Mixer mode", CMD_MIXER, ext2, 0, 3, 0),
+	UDA1341_ENUM("Filter mode", CMD_FILTER, data0_2, 0, 3, 0),
 
 	UDA1341_2REGS("Gain Input Amplifier Gain (channel 2)", CMD_IG, ext4, ext5, 0, 0, 3, 31, 0),
 };
