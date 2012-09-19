@@ -444,6 +444,11 @@ case "$1" in
     insert snd-ymfpci$SUFF
     restore ymfpci.conf
     ;;
+  ctxfi)
+    basic
+    insert snd-ctxfi$SUFF
+    restore ctxfi.conf
+    ;;
   dummy)
     basic
     insert snd-dummy$SUFF enable=1,1 pcm_devs=4,4
@@ -460,6 +465,7 @@ case "$1" in
     ;;
   usb)
     basic
+    insert snd-usb-lib$SUFF
     insert snd-usb-audio$SUFF
     ;;
   vxpocket2)

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.58
+SCRIPT_VERSION=0.4.59
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -439,6 +439,9 @@ cat /proc/asound/card*/codec\#* > $TEMPDIR/alsa-hda-intel.tmp 2> /dev/null
 cat /proc/asound/card*/codec97\#0/ac97\#0-0 > $TEMPDIR/alsa-ac97.tmp 2> /dev/null
 cat /proc/asound/card*/codec97\#0/ac97\#0-0+regs > $TEMPDIR/alsa-ac97-regs.tmp 2> /dev/null
 
+#Check for USB mixer setup
+cat /proc/asound/card*/usbmixer > $TEMPDIR/alsa-usbmixer.tmp 2> /dev/null
+
 #Fetch the info, and put it in $FILE in a nice readable format.
 if [[ -z $PASTEBIN ]]; then
 echo "upload=true&script=true&cardinfo=" > $FILE
@@ -596,6 +599,17 @@ then
 	echo "" >> $FILE
 fi
 
+if [ -s "$TEMPDIR/alsa-usbmixer.tmp" ]
+then
+        echo "!!USB Mixer information" >> $FILE
+        echo "!!---------------------------" >> $FILE
+        echo "--startcollapse--" >> $FILE
+        echo "" >> $FILE
+        cat $TEMPDIR/alsa-usbmixer.tmp >> $FILE
+        echo "--endcollapse--" >> $FILE
+	echo "" >> $FILE
+	echo "" >> $FILE
+fi
 
 #If no command line options are specified, then run as though --with-all was specified
 if [[ -z "$1" ]]
