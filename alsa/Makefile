@@ -290,17 +290,31 @@ cvsclean: gitclean
 pack: $(ALSAKERNELFILE) mrproper
 	chmod 755 utils/alsasound
 	# big note: use always '--bzip2 -p' where -p is fake argument
-	# it seems that some older tar has wrong getopt list
+	# it seems that an older tar has wrong getopt list
 	{ \
-		cd .. ; \
-		rm -rf alsa-driver/alsa-kernel ; \
-		mv alsa-kmirror alsa-driver/alsa-kernel ; \
-		mv alsa-driver alsa-driver-$(CONFIG_SND_VERSION) ; \
+		rm -rf alsa-kernel || exit 1 ; \
+		top=$$(pwd)/.. ; \
+		cd $$top/.. || exit 1 ; \
+		dst=alsa-driver-$(CONFIG_SND_VERSION) ; \
+		mkdir $$dst || exit 1 ; \
+		mkdir $$dst/alsa-kernel || exit 1 ; \
+		cp -a $$top/* $$dst/alsa-kernel || exit 1 ; \
+		mv $$dst/alsa-kernel/alsa/* $$dst || exit 1 ; \
+		mv $$dst/alsa-kernel/include/sound $$dst/alsa-kernel/include1 || exit 1 ; \
+		rm -rf $$dst/alsa-kernel/include || exit 1; \
+		mv $$dst/alsa-kernel/include1 $$dst/alsa-kernel/include || exit 1 ; \
+		mv $$dst/alsa-kernel/Documentation/sound/alsa $$dst/alsa-kernel/Documentation1 || exit 1 ; \
+		mv $$dst/alsa-kernel/Documentation/DocBook/* $$dst/alsa-kernel/Documentation1 || exit 1 ; \
+		rm -rf $$dst/alsa-kernel/Documentation || exit 1 ; \
+		mv $$dst/alsa-kernel/Documentation1 $$dst/alsa-kernel/Documentation || exit 1 ; \
+		mv $$dst/alsa-kernel/sound $$dst/alsa-kernel/sound1 || exit 1 ; \
+		mv $$dst/alsa-kernel/sound1/* $$dst/alsa-kernel || exit 1 ; \
+		rm -rf $$dst/alsa-kernel/alsa || exit 1 ; \
 		tar --exclude=CVS --exclude=kchanges --exclude=.cvsignore \
-                    --exclude='.hg*' --exclude=.gitignore \
+                    --exclude='.hg*' --exclude='.git*' --exclude='*~' \
                     --owner=$(IGROUP) --group=$(IUSER) -cv --bzip2 -p \
-                    -f alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION) ; \
-		mv alsa-driver-$(CONFIG_SND_VERSION) alsa-driver ; \
+                    -f $$dst.tar.bz2 $$dst || exit 1 ; \
+                rm -rf $$dst || exit 1 ; \
 	}
 
 .PHONY: uninstall
