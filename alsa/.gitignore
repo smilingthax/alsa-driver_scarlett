@@ -137,10 +137,8 @@ usb/quirks.c
 usb/caiaq/audio.c
 usb/caiaq/device.c
 usb/caiaq/input.c
-usb/usx2y/usX2Yhwdep.c
 usb/usx2y/usbusx2y.c
 usb/usx2y/usbusx2yaudio.c
-usb/usx2y/usx2yhwdeppcm.c
 utils/alsa-driver.spec
 utils/alsasound
 utils/alsasound.posix

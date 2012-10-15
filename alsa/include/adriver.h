@@ -1710,4 +1710,26 @@ static inline int pci_dev_run_wake(struct pci_dev *dev) { return 1; }
 #endif
 #endif
 
+/* VM_DONTDUMP and VM_DONTEXPAND definitions */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 7, 0)
+#include <linux/mm.h>
+#ifndef VM_DONTDUMP
+#ifdef VM_RESERVED
+#define VM_DONTDUMP VM_RESERVED
+#else
+#define VM_DONTDUMP 0
+#endif /* VM_RESERVED */
+#endif /* !VM_DONTDUMP */
+#ifndef VM_DONTEXPAND
+#define VM_DONTEXPAND 0
+#endif /* !VM_DONTEXPAND */
+#endif /* < 3.7.0 */
+
+/* fget_light() & fput_light() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 7, 0)
+#include <linux/file.h>
+#define fget_light(fd, fput_needed)	fget(fd)
+#define fput_light(fd, fput_needed)	fput(fd)
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
