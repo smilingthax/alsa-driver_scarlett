@@ -265,6 +265,7 @@ struct fsi_priv {
 
 	int chan_num:16;
 	int clk_master:1;
+	int clk_cpg:1;
 	int spdif:1;
 
 	long rate;
@@ -1780,7 +1781,6 @@ static int fsi_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 {
 	struct fsi_priv *fsi = fsi_get_priv_frm_dai(dai);
 	set_rate_func set_rate = fsi_get_info_set_rate(fsi);
-	u32 flags = fsi_get_info_flags(fsi);
 	int ret;
 
 	/* set master/slave audio interface */
@@ -1803,16 +1803,12 @@ static int fsi_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		if (set_rate)
 			dev_warn(dai->dev, "set_rate will be removed soon\n");
 
-		switch (flags & SH_FSI_CLK_MASK) {
-		case SH_FSI_CLK_EXTERNAL:
-			fsi_clk_init(dai->dev, fsi, 1, 1, 0,
-				     fsi_clk_set_rate_external);
-			break;
-		case SH_FSI_CLK_CPG:
+		if (fsi->clk_cpg)
 			fsi_clk_init(dai->dev, fsi, 0, 1, 1,
 				     fsi_clk_set_rate_cpg);
-			break;
-		}
+		else
+			fsi_clk_init(dai->dev, fsi, 1, 1, 0,
+				     fsi_clk_set_rate_external);
 	}
 
 	/* set format */
@@ -1990,6 +1986,9 @@ static void fsi_port_info_init(struct fsi_priv *fsi,
 {
 	if (info->flags & SH_FSI_FMT_SPDIF)
 		fsi->spdif = 1;
+
+	if (info->flags & SH_FSI_CLK_CPG)
+		fsi->clk_cpg = 1;
 }
 
 static void fsi_handler_init(struct fsi_priv *fsi,
