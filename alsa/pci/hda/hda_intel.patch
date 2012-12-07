@@ -1,5 +1,5 @@
---- ../../alsa-kernel/pci/hda/hda_intel.c	2012-11-22 17:40:53.000000000 +0100
-+++ hda_intel.c	2012-11-27 10:01:49.000000000 +0100
+--- ../../alsa-kernel/pci/hda/hda_intel.c	2012-12-07 07:55:19.000000000 +0100
++++ hda_intel.c	2012-12-07 08:50:44.000000000 +0100
 @@ -1,3 +1,4 @@
 +#include "hda_intel_hack.c"
  /*
@@ -13,9 +13,9 @@
  #include <linux/clocksource.h>
 +#endif
  #include <linux/time.h>
+ #include <linux/completion.h>
  
- #ifdef CONFIG_X86
-@@ -423,8 +426,10 @@
+@@ -424,8 +427,10 @@
  	unsigned int wc_marked:1;
  	unsigned int no_period_wakeup:1;
  
@@ -26,7 +26,7 @@
  };
  
  /* CORB/RIRB */
-@@ -665,10 +670,21 @@
+@@ -659,10 +664,21 @@
  		return;
  	if (addr && size) {
  		int pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
@@ -48,7 +48,7 @@
  	}
  }
  
-@@ -1764,6 +1780,7 @@
+@@ -1759,6 +1775,7 @@
  	azx_dev->opened = 0;
  }
  
@@ -56,7 +56,7 @@
  static cycle_t azx_cc_read(const struct cyclecounter *cc)
  {
  	struct azx_dev *azx_dev = container_of(cc, struct azx_dev, azx_cc);
-@@ -1821,6 +1838,9 @@
+@@ -1816,6 +1833,9 @@
  
  	return 0;
  }
@@ -66,7 +66,7 @@
  
  static struct snd_pcm_hardware azx_pcm_hw = {
  	.info =			(SNDRV_PCM_INFO_MMAP |
-@@ -2161,6 +2181,7 @@
+@@ -2156,6 +2176,7 @@
  			azx_readl(chip, OLD_SSYNC) & ~sbits);
  	else
  		azx_writel(chip, SSYNC, azx_readl(chip, SSYNC) & ~sbits);
@@ -74,7 +74,7 @@
  	if (start) {
  		azx_timecounter_init(substream, 0, 0);
  		if (nsync > 1) {
-@@ -2177,6 +2198,7 @@
+@@ -2172,6 +2193,7 @@
  			}
  		}
  	}
@@ -82,7 +82,7 @@
  	spin_unlock(&chip->reg_lock);
  	return 0;
  }
-@@ -2399,7 +2421,11 @@
+@@ -2394,7 +2416,11 @@
  	struct azx_pcm *apcm = snd_pcm_substream_chip(substream);
  	struct azx *chip = apcm->chip;
  	if (!azx_snoop(chip))
@@ -95,7 +95,7 @@
  }
  #else
 @@ -2935,6 +2961,7 @@
- static bool __devinit check_hdmi_disabled(struct pci_dev *pci)
+ static bool check_hdmi_disabled(struct pci_dev *pci)
  {
  	bool vga_inactive = false;
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)
@@ -133,7 +133,7 @@
 +};
 +#endif
 +
- static void __devinit check_msi(struct azx *chip)
+ static void check_msi(struct azx *chip)
  {
  	const struct snd_pci_quirk *q;
 @@ -3070,7 +3110,11 @@
@@ -174,7 +174,7 @@
  				snoop = false;
  		}
  		break;
-@@ -3264,7 +3318,7 @@
+@@ -3246,7 +3300,7 @@
  					 PCI_DEVICE_ID_ATI_SBX00_SMBUS,
  					 NULL);
  		if (p_smbus) {
