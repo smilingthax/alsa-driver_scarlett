@@ -104,6 +104,7 @@ enum {
 	STAC_92HD83XXX_HP_LED,
 	STAC_92HD83XXX_HP_INV_LED,
 	STAC_92HD83XXX_HP_MIC_LED,
+	STAC_92HD83XXX_HEADSET_JACK,
 	STAC_92HD83XXX_MODELS
 };
 
@@ -204,6 +205,7 @@ struct sigmatel_spec {
 	unsigned int check_volume_offset:1;
 	unsigned int auto_mic:1;
 	unsigned int linear_tone_beep:1;
+	unsigned int headset_jack:1; /* 4-pin headset jack (hp + mono mic) */
 
 	/* gpio lines */
 	unsigned int eapd_mask;
@@ -1684,6 +1686,7 @@ static const char * const stac92hd83xxx_models[STAC_92HD83XXX_MODELS] = {
 	[STAC_92HD83XXX_HP_LED] = "hp-led",
 	[STAC_92HD83XXX_HP_INV_LED] = "hp-inv-led",
 	[STAC_92HD83XXX_HP_MIC_LED] = "hp-mic-led",
+	[STAC_92HD83XXX_HEADSET_JACK] = "headset-jack",
 };
 
 static const struct snd_pci_quirk stac92hd83xxx_cfg_tbl[] = {
@@ -1694,6 +1697,24 @@ static const struct snd_pci_quirk stac92hd83xxx_cfg_tbl[] = {
 		      "DFI LanParty", STAC_92HD83XXX_REF),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02ba,
 		      "unknown Dell", STAC_DELL_S14),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0532,
+		      "Dell Latitude E6230", STAC_92HD83XXX_HEADSET_JACK),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0533,
+		      "Dell Latitude E6330", STAC_92HD83XXX_HEADSET_JACK),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0534,
+		      "Dell Latitude E6430", STAC_92HD83XXX_HEADSET_JACK),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0535,
+		      "Dell Latitude E6530", STAC_92HD83XXX_HEADSET_JACK),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x053c,
+		      "Dell Latitude E5430", STAC_92HD83XXX_HEADSET_JACK),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x053d,
+		      "Dell Latitude E5530", STAC_92HD83XXX_HEADSET_JACK),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0549,
+		      "Dell Latitude E5430", STAC_92HD83XXX_HEADSET_JACK),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x057d,
+		      "Dell Latitude E6430s", STAC_92HD83XXX_HEADSET_JACK),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0584,
+		      "Dell Latitude E6430U", STAC_92HD83XXX_HEADSET_JACK),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x1028,
 		      "Dell Vostro 3500", STAC_DELL_VOSTRO_3500),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1656,
@@ -1742,6 +1763,8 @@ static const struct snd_pci_quirk stac92hd83xxx_cfg_tbl[] = {
 			  "HP", STAC_HP_ZEPHYR),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x3660,
 			  "HP Mini", STAC_92HD83XXX_HP_LED),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x144E,
+			  "HP Pavilion dv5", STAC_92HD83XXX_HP_INV_LED),
 	{} /* terminator */
 };
 
@@ -2855,6 +2878,9 @@ static inline int stac92xx_add_jack_mode_control(struct hda_codec *codec,
 	char name[22];
 
 	if (snd_hda_get_input_pin_attr(def_conf) != INPUT_PIN_ATTR_INT) {
+		if (spec->headset_jack && snd_hda_get_input_pin_attr(def_conf)
+			!= INPUT_PIN_ATTR_DOCK)
+			return 0;
 		if (snd_hda_get_default_vref(codec, nid) == AC_PINCTL_VREF_GRD
 			&& nid == spec->line_switch)
 			control = STAC_CTL_WIDGET_IO_SWITCH;
@@ -4212,6 +4238,9 @@ static int stac_add_event(struct hda_codec *codec, hda_nid_t nid,
 	return 0;
 }
 
+static void handle_unsol_event(struct hda_codec *codec,
+			       struct hda_jack_tbl *event);
+
 /* check if given nid is a valid pin and no other events are assigned
  * to it.  If OK, assign the event, set the unsol flag, and returns 1.
  * Otherwise, returns zero.
@@ -4229,6 +4258,7 @@ static int enable_pin_detect(struct hda_codec *codec, hda_nid_t nid,
 	if (event->action && event->action != type)
 		return 0;
 	event->action = type;
+	event->callback = handle_unsol_event;
 	snd_hda_jack_detect_enable(codec, nid, 0);
 	return 1;
 }
@@ -4867,20 +4897,6 @@ static void stac_issue_unsol_event(struct hda_codec *codec, hda_nid_t nid)
 	handle_unsol_event(codec, event);
 }
 
-static void stac92xx_unsol_event(struct hda_codec *codec, unsigned int res)
-{
-	struct hda_jack_tbl *event;
-	int tag;
-
-	tag = (res >> 26) & 0x7f;
-	event = snd_hda_jack_tbl_get_from_tag(codec, tag);
-	if (!event)
-		return;
-	event->jack_dirty = 1;
-	handle_unsol_event(codec, event);
-	snd_hda_jack_report_sync(codec);
-}
-
 static int hp_blike_system(u32 subsystem_id);
 
 static void set_hp_led_gpio(struct hda_codec *codec)
@@ -5131,7 +5147,7 @@ static const struct hda_codec_ops stac92xx_patch_ops = {
 	.build_pcms = stac92xx_build_pcms,
 	.init = stac92xx_init,
 	.free = stac92xx_free,
-	.unsol_event = stac92xx_unsol_event,
+	.unsol_event = snd_hda_jack_unsol_event,
 #ifdef CONFIG_PM
 	.suspend = stac92xx_suspend,
 	.resume = stac92xx_resume,
@@ -5635,6 +5651,9 @@ again:
 		break;
 	case STAC_92HD83XXX_HP_MIC_LED:
 		spec->mic_mute_led_gpio = 0x08; /* GPIO3 */
+		break;
+	case STAC_92HD83XXX_HEADSET_JACK:
+		spec->headset_jack = 1;
 		break;
 	}
 
