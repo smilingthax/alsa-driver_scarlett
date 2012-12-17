@@ -1,6 +1,6 @@
---- ../../alsa-kernel/include/pcm.h	2011-11-08 07:59:19.946461474 +0100
-+++ pcm.h	2011-11-08 08:30:47.618696246 +0100
-@@ -278,10 +278,15 @@
+--- ../../alsa-kernel/include/pcm.h	2012-10-23 16:14:36.000000000 +0200
++++ pcm.h	2012-10-25 00:44:04.000000000 +0200
+@@ -280,10 +280,18 @@
  	snd_pcm_uframes_t avail_max;
  	snd_pcm_uframes_t hw_ptr_base;	/* Position at buffer restart */
  	snd_pcm_uframes_t hw_ptr_interrupt; /* Position at interrupt time */
@@ -12,12 +12,14 @@
 +#endif
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 31)
  	snd_pcm_sframes_t delay;	/* extra delay; typically FIFO size */
--
 +#endif
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0)
+ 	u64 hw_ptr_wrap;                /* offset for hw_ptr due to boundary wrap-around */
++#endif
+ 
  	/* -- HW params -- */
  	snd_pcm_access_t access;	/* access mode */
- 	snd_pcm_format_t format;	/* SNDRV_PCM_FORMAT_* */
-@@ -291,6 +296,9 @@
+@@ -294,6 +302,9 @@
  	snd_pcm_uframes_t period_size;	/* period size */
  	unsigned int periods;		/* periods */
  	snd_pcm_uframes_t buffer_size;	/* buffer size */
@@ -27,7 +29,7 @@
  	snd_pcm_uframes_t min_align;	/* Min alignment for the format */
  	size_t byte_align;
  	unsigned int frame_bits;
-@@ -298,11 +306,17 @@
+@@ -301,11 +312,17 @@
  	unsigned int info;
  	unsigned int rate_num;
  	unsigned int rate_den;
@@ -45,7 +47,7 @@
  	snd_pcm_uframes_t start_threshold;
  	snd_pcm_uframes_t stop_threshold;
  	snd_pcm_uframes_t silence_threshold; /* Silence filling happens when
-@@ -320,9 +334,22 @@
+@@ -323,9 +340,22 @@
  	struct snd_pcm_mmap_control *control;
  
  	/* -- locking / scheduling -- */
@@ -68,7 +70,7 @@
  	struct fasync_struct *fasync;
  
  	/* -- private section -- */
-@@ -339,8 +366,9 @@
+@@ -342,8 +372,9 @@
  
  	/* -- timer -- */
  	unsigned int timer_resolution;	/* timer resolution */
@@ -79,7 +81,7 @@
  	/* -- DMA -- */           
  	unsigned char *dma_area;	/* DMA area */
  	dma_addr_t dma_addr;		/* physical bus address (not accessible from main CPU) */
-@@ -353,9 +381,34 @@
+@@ -356,9 +387,37 @@
  	struct snd_pcm_oss_runtime oss;
  #endif
  
@@ -107,6 +109,9 @@
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 37)
 +	unsigned long hw_ptr_buffer_jiffies; /* buffer time in jiffies */
 +#endif
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 7, 0)
++	u64 hw_ptr_wrap;                /* offset for hw_ptr due to boundary wrap-around */
++#endif
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 38)
 +	unsigned int no_period_wakeup: 1;
 +#endif
@@ -114,7 +119,7 @@
  };
  
  struct snd_pcm_group {		/* keep linked substreams */
-@@ -373,7 +426,15 @@
+@@ -376,7 +435,15 @@
  	int number;
  	char name[32];			/* substream name */
  	int stream;			/* stream (direction) */
@@ -130,7 +135,7 @@
  	size_t buffer_bytes_max;	/* limit ring buffer size */
  	struct snd_dma_buffer dma_buffer;
  	unsigned int dma_buf_id;
-@@ -385,6 +446,9 @@
+@@ -388,6 +455,9 @@
          /* -- timer section -- */
  	struct snd_timer *timer;		/* timer */
  	unsigned timer_running: 1;	/* time is running */
@@ -140,7 +145,7 @@
  	/* -- next substream -- */
  	struct snd_pcm_substream *next;
  	/* -- linked substreams -- */
-@@ -397,7 +461,9 @@
+@@ -400,7 +470,9 @@
  	atomic_t mmap_count;
  	unsigned int f_flags;
  	void (*pcm_release)(struct snd_pcm_substream *);
@@ -150,7 +155,7 @@
  #if defined(CONFIG_SND_PCM_OSS) || defined(CONFIG_SND_PCM_OSS_MODULE)
  	/* -- OSS things -- */
  	struct snd_pcm_oss_substream oss;
-@@ -413,6 +479,13 @@
+@@ -416,6 +488,13 @@
  #endif
  	/* misc flags */
  	unsigned int hw_opened: 1;
@@ -164,7 +169,7 @@
  };
  
  #define SUBSTREAM_BUSY(substream) ((substream)->ref_count > 0)
-@@ -491,7 +564,11 @@
+@@ -499,7 +578,11 @@
  int snd_pcm_status(struct snd_pcm_substream *substream,
  		   struct snd_pcm_status *status);
  int snd_pcm_start(struct snd_pcm_substream *substream);

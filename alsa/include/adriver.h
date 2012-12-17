@@ -1545,6 +1545,9 @@ static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
 	return ret;
 }
 
+#define flush_work		flush_work_sync
+#define flush_delayed_work	flush_delayed_work_sync
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 23)
 /* XXX this is a workaround; these are really different, but almost same
  * as used in the usual free/error path

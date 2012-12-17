@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/caiaq/device.c	2011-10-19 17:32:45.314228109 +0200
-+++ device.c	2011-11-08 08:38:43.436915004 +0100
+--- ../../alsa-kernel/usb/caiaq/device.c	2012-12-07 07:55:19.000000000 +0100
++++ device.c	2012-12-07 08:52:39.000000000 +0100
 @@ -1,3 +1,5 @@
 +#include "adriver.h"
 +#include "../usbcompat.h"
@@ -32,6 +32,6 @@
 +#define snd_usb_caiaq_midi_output_done snd_usb_caiaq_midi_output_done_wrapper
 +#endif
 +
- static int __devinit init_card(struct snd_usb_caiaqdev *dev)
+ static int init_card(struct snd_usb_caiaqdev *dev)
  {
  	char *c, usbpath[32];

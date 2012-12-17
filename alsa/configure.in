@@ -203,7 +203,7 @@ CHECK_POSSIBLE_KERNEL_HEADER([INCLUDE_UTSRELEASE_H], [linux/utsrelease.h],
 
 dnl Check for kernel version...
 AC_MSG_CHECKING(for kernel version)
-KERNEL_INC="-I$CONFIG_SND_KERNELDIR/include"
+KERNEL_INC="-I$CONFIG_SND_KERNELDIR/include -I$CONFIG_SND_KERNELDIR/include/uapi"
 MAKE_ADDS=""
 if test -n "$kernelbuild"; then
   kpath=""

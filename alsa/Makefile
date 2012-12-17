@@ -123,6 +123,10 @@ $(ALSAKERNELFILE):
 			done ; \
 			ln -sf $(ALSAKERNELDIR)/include/sound \
 						alsa-kernel/include ; \
+			if test -d $(ALSAKERNELDIR)/include/uapi/sound; then \
+				ln -sf $(ALSAKERNELDIR)/include/uapi/sound \
+							alsa-kernel/uapi ; \
+			fi ; \
 			ln -sf $(ALSAKERNELDIR)/include/trace/events \
 						alsa-kernel/trace_events ; \
 			ln -sf $(ALSAKERNELDIR)/Documentation/sound/alsa \
