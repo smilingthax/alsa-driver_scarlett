@@ -1,11 +1,11 @@
---- ../alsa-kernel/core/sound.c	2011-12-23 10:09:33.000000000 +0100
-+++ sound.c	2012-07-19 14:02:35.000000000 +0200
+--- ../alsa-kernel/core/sound.c	2012-09-05 09:19:31.000000000 +0200
++++ sound.c	2012-10-15 10:58:19.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
   *  Advanced Linux Sound Architecture
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -290,8 +291,18 @@
+@@ -289,8 +290,18 @@
  		return minor;
  	}
  	snd_minors[minor] = preg;
@@ -24,7 +24,7 @@
  	if (IS_ERR(preg->dev)) {
  		snd_minors[minor] = NULL;
  		mutex_unlock(&sound_mutex);
-@@ -299,6 +310,22 @@
+@@ -298,6 +309,22 @@
  		kfree(preg);
  		return minor;
  	}
@@ -47,7 +47,7 @@
  
  	mutex_unlock(&sound_mutex);
  	return 0;
-@@ -346,7 +373,13 @@
+@@ -345,7 +372,13 @@
  		return -EINVAL;
  	}
  
@@ -61,7 +61,7 @@
  
  	kfree(snd_minors[minor]);
  	snd_minors[minor] = NULL;
-@@ -359,16 +392,28 @@
+@@ -358,16 +391,28 @@
  int snd_add_device_sysfs_file(int type, struct snd_card *card, int dev,
  			      struct device_attribute *attr)
  {
@@ -91,7 +91,7 @@
  }
  
  EXPORT_SYMBOL(snd_add_device_sysfs_file);
-@@ -454,6 +499,19 @@
+@@ -453,6 +498,19 @@
   *  INIT PART
   */
  
@@ -111,7 +111,7 @@
  static int __init alsa_sound_init(void)
  {
  	snd_major = major;
-@@ -464,8 +522,10 @@
+@@ -463,8 +521,10 @@
  	}
  	if (snd_info_init() < 0) {
  		unregister_chrdev(major, "alsa");
@@ -121,8 +121,8 @@
 +	snd_memory_info_init();
  	snd_info_minor_register();
  #ifndef MODULE
- 	printk(KERN_INFO "Advanced Linux Sound Architecture Driver Version " CONFIG_SND_VERSION CONFIG_SND_DATE ".\n");
-@@ -476,9 +536,13 @@
+ 	printk(KERN_INFO "Advanced Linux Sound Architecture Driver Initialized.\n");
+@@ -475,9 +535,13 @@
  static void __exit alsa_sound_exit(void)
  {
  	snd_info_minor_unregister();
