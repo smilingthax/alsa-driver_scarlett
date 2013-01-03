@@ -144,12 +144,18 @@ AC_DEFUN([CHECK_REQUIRED_KERNEL_HEADER], [
       found="$s$header1"
       break
     fi
-    if test -z "$kernelbuild" -o ! -s $kernelbuild/include/$s$header1; then
-      if test -n "$header2"; then
-        if test -s $CONFIG_SND_KERNELDIR/include/$s$header2; then
-          found="$s$header2"
-          break
-        fi
+    if test -n "$kernelbuild" -a -s $kernelbuild/include/$s$header1; then
+      found="$s$header1"
+      break
+    fi
+    if test -n "$header2"; then
+      if test -s $CONFIG_SND_KERNELDIR/include/$s$header2; then
+	found="$s$header2"
+	break
+      fi
+      if test -n "$kernelbuild" -a -s $kernelbuild/include/$s$header2; then
+	found="$s$header2"
+	break
       fi
     fi
   done
