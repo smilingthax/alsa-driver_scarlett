@@ -135,65 +135,73 @@ CONFIG_SND_KERNELBUILD="$kernelbuild"
 AC_MSG_RESULT($kernelbuild)
 
 AC_DEFUN([CHECK_REQUIRED_KERNEL_HEADER], [
-  $1="$2"
-  AC_MSG_CHECKING(for kernel $2 $3)
-  if ! test -s $CONFIG_SND_KERNELDIR/include/$2; then
-    if test -z "$kernelbuild" -o ! -s $kernelbuild/include/$2; then
-      if test -n "$3"; then
-	$1="$3"
-	if ! test -s $CONFIG_SND_KERNELDIR/include/$3; then
-	  if test -z "$kernelbuild" -o ! -s $kernelbuild/include/$3; then
-	    AC_MSG_RESULT(no)
-	    cat << EOF
-The file $CONFIG_SND_KERNELDIR/include/$2 does not exist.
-The file $CONFIG_SND_KERNELDIR/include/$3 does not exist.
-Please install the package with full kernel sources for your distribution
-or use --with-kernel=dir option to specify another directory with kernel
-sources (default is $DEFAULT_KERNEL_DIR).
-EOF
-	    exit 1
-	  fi
-	fi
-      else
-        AC_MSG_RESULT(no)
-        cat << EOF
-The file $CONFIG_SND_KERNELDIR/include/$1 does not exist.
-Please install the package with full kernel sources for your distribution
-or use --with-kernel=dir option to specify another directory with kernel
-sources (default is $DEFAULT_KERNEL_DIR).
-EOF
-        exit 1
+  found=""
+  header1="$2"
+  header2="$3"
+  AC_MSG_CHECKING(for kernel $header1 $header2)
+  for s in "" uapi/ generated/ generated/uapi/; do
+    if test -s $CONFIG_SND_KERNELDIR/include/$s$header1; then
+      found="$s$header1"
+      break
+    fi
+    if test -z "$kernelbuild" -o ! -s $kernelbuild/include/$s$header1; then
+      if test -n "$header2"; then
+        if test -s $CONFIG_SND_KERNELDIR/include/$s$header2; then
+          found="$s$header2"
+          break
+        fi
       fi
     fi
+  done
+  if test -n "$found"; then
+    AC_MSG_RESULT($found)
+    $1="$found"
+  else
+    AC_MSG_RESULT(no)
+    echo "The include file $header1 does not exist."
+    if test -n "$header2"; then
+      echo "The include file $header2 does not exist."
+    fi
+    cat << EOF
+Please install the package with full kernel sources for your distribution
+or use --with-kernel=dir option to specify another directory with kernel
+sources (default is $DEFAULT_KERNEL_DIR).
+EOF
+    exit 1
   fi
-  AC_MSG_RESULT($$1)
 ])
 CHECK_REQUIRED_KERNEL_HEADER([INCLUDE_VERSION_H], [linux/version.h])
 CHECK_REQUIRED_KERNEL_HEADER([INCLUDE_AUTOCONF_H], [linux/autoconf.h],
 			     [generated/autoconf.h])
 
 AC_DEFUN([CHECK_POSSIBLE_KERNEL_HEADER], [
-  $1=""
-  AC_MSG_CHECKING(for kernel $2 $3)
-  if test -r $CONFIG_SND_KERNELDIR/include/$2; then
-    $1="$2"
-  else
-    if test -n "$kernelbuild" -a -f $kernelbuild/include/$2; then
-      $1="$2"
-    else
-      if test -n "$3"; then
-	if test -r $CONFIG_SND_KERNELDIR/include/$3; then
-	  $1="$3"
-        else
-	  if test -n "$kernelbuild" -a -f $kernelbuild/include/$3; then
-	    $1="$3"
-	  fi
-	fi
+  found=""
+  header1="$2"
+  header2="$3"
+  AC_MSG_CHECKING(for kernel $header1 $header2)
+  for s in "" uapi/ generated/ generated/uapi/; do
+    if test -r $CONFIG_SND_KERNELDIR/include/$s$header1; then
+      found="$s$header1"
+      break
+    fi
+    if test -n "$kernelbuild" -a -f $kernelbuild/include/$s$header1; then
+      found="$s$header1"
+      break
+    fi
+    if test -n "$header2"; then
+      if test -r $CONFIG_SND_KERNELDIR/include/$s$header2; then
+	found="$s$header2"
+	break
+      fi
+      if test -n "$kernelbuild" -a -f $kernelbuild/include/$s$header2; then
+	found="$s$header2"
+	break
       fi
     fi
-  fi
-  if ! test -z "$$1"; then
-    AC_MSG_RESULT($$1)
+  done
+  if ! test -z "$found"; then
+    AC_MSG_RESULT($found)
+    $1="$found"
   else
     AC_MSG_RESULT(no)
   fi
