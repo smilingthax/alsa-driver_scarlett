@@ -842,7 +842,7 @@ struct hda_codec {
 	struct hda_cache_rec amp_cache;	/* cache for amp access */
 	struct hda_cache_rec cmd_cache;	/* cache for other commands */
 
-	struct snd_array conn_lists;	/* connection-list array */
+	struct list_head conn_list;	/* linked-list of connection-list */
 
 	struct mutex spdif_mutex;
 	struct mutex control_mutex;
@@ -955,6 +955,8 @@ snd_hda_get_num_conns(struct hda_codec *codec, hda_nid_t nid)
 }
 int snd_hda_get_raw_connections(struct hda_codec *codec, hda_nid_t nid,
 			    hda_nid_t *conn_list, int max_conns);
+int snd_hda_get_conn_list(struct hda_codec *codec, hda_nid_t nid,
+			  const hda_nid_t **listp);
 int snd_hda_override_conn_list(struct hda_codec *codec, hda_nid_t nid, int nums,
 			  const hda_nid_t *list);
 int snd_hda_get_conn_index(struct hda_codec *codec, hda_nid_t mux,
