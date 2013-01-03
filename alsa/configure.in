@@ -463,16 +463,22 @@ fi
 dnl compiler version check
 
 AC_DEFUN([CHECK_KERNEL_HEADER], [
-  AC_MSG_CHECKING(for kernel $1)
-  if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" -o -f "$kernelbuild/arch/$ARCHDIR/include/$1" \) ; then
-    KERNDIR=$kernelbuild
-  else
-    KERNDIR=$CONFIG_SND_KERNELDIR
-  fi
+  h=$1
+  AC_MSG_CHECKING(for kernel $h)
   if test -n "$3"; then
     eval $3=""
   fi
-  if test -f "$KERNDIR/include/$1" -o -f "$KERNDIR/include2/$1" -o -f "$KERNDIR/arch/$ARCHDIR/include/$1"; then
+  found=
+  for k in $kernelbuild $CONFIG_SND_KERNELDIR; do
+    KERNDIR=$k
+    for s in "" uapi/ generated/ generated/uapi/; do
+      if test -f "$k/include/$s$h" -o -f "$k/include2/$s$h" -o -f "$k/arch/$ARCHDIR/include/$s$h"; then
+        found=yes
+	break
+      fi
+    done
+  done
+  if test -n "$found"; then
     AC_MSG_RESULT(yes)
     if test -f include/$1; then
       echo "Removing a dummy $1."
@@ -1308,7 +1314,7 @@ if test $kvernum -gt 206027; then
 	;;
     esac
     for d in $CONFIG_SND_KERNELDIR $CONFIG_SND_KERNELBUILD; do
-    	for i in arch/$checkarch/include arch/$checkarch/include/generated; do
+    	for i in include/generated/uapi arch/$checkarch/include arch/$checkarch/include/generated arch/$checkarch/include/generated/uapi; do
 	    if test -d $d/$i; then
 	        KERNEL_INC="$KERNEL_INC -I$d/$i"
 	    fi
