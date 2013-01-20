@@ -36,6 +36,7 @@
 #include "pcm.h"
 #include "clock.h"
 #include "stream.h"
+#include "scarlettmixer.h"
 
 /*
  * handle the quirks for the contained interfaces
@@ -477,6 +478,17 @@ static int create_uaxx_quirk(struct snd_usb_audio *chip,
 }
 
 /*
+ * Create a mixer for the Focurrite Scalett
+ */
+static int create_scarlett_mixer_quirk(struct snd_usb_audio *chip,
+				       struct usb_interface *iface,
+				       struct usb_driver *driver,
+				       const struct snd_usb_audio_quirk *quirk)
+{
+	return scarlett_mixer_create(chip, iface, driver, quirk);
+}
+
+/*
  * Create a standard mixer for the specified interface.
  */
 static int create_standard_mixer_quirk(struct snd_usb_audio *chip,
@@ -527,6 +539,7 @@ int snd_usb_create_quirk(struct snd_usb_audio *chip,
 		[QUIRK_AUDIO_EDIROL_UAXX] = create_uaxx_quirk,
 		[QUIRK_AUDIO_ALIGN_TRANSFER] = create_align_transfer_quirk,
 		[QUIRK_AUDIO_STANDARD_MIXER] = create_standard_mixer_quirk,
+		[QUIRK_SCARLETT_MIXER_INTERFACE] = create_scarlett_mixer_quirk,
 	};
 
 	if (quirk->type < QUIRK_TYPE_COUNT) {

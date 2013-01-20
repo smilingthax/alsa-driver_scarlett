@@ -3073,7 +3073,7 @@ YAMAHA_DEVICE(0x7010, "UB99"),
 			{
 				/* InterfaceSubClass 1 (Control Device) */
 				.ifnum = 0,
-				.type = QUIRK_IGNORE_INTERFACE
+				.type = QUIRK_SCARLETT_MIXER_INTERFACE
 			},
 			{
 				.ifnum = 1,

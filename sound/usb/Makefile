@@ -12,6 +12,7 @@ snd-usb-audio-objs := 	card.o \
 			pcm.o \
 			proc.o \
 			quirks.o \
+			scarlettmixer.o \
 			stream.o
 
 snd-usbmidi-lib-objs := midi.o
