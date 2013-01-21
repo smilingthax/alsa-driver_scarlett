@@ -31,6 +31,18 @@
  * Hence the top parts of this file is a 1:1 copy of select static functions
  * from mixer.c to implement the interface.
  * Suggestions how to avoid this code duplication are very welcome.
+ *
+ * eventually this should either be integrated as quirk into mixer_quirks.c
+ * or become a standalone module.
+ *
+ * This source hardcodes the URBs for the Scarlett,
+ * Auto-detection via UAC2 is not feasible to properly discover the vast majority
+ * of features. It's related to both Linux/ALSA's UAC2 as well as Focusrite's
+ * implementation of it. Eventually quirks may be sufficient but right now
+ * it's a major headache to work arount these things.
+ *
+ * NB. Neither the OSX nor the win driver provided by Focusrite performs
+ * discovery, they seem to operate the same as this driver.
  */
 
 /* Mixer Interface for the Focusrite Scarlett 18i6 audio interface.
@@ -1040,6 +1052,7 @@ static int s18i6_first_time_reset(struct usb_mixer_interface *mixer)
 	unsigned char buf[2];
 	/* routes and mute registers do not represent the actual state of the
 	 * device after power-cycles.
+	 *
 	 * However, after they have been set once, the values can be re-read
 	 * between USB re-connects if the sound-card itself remains powered-on.
 	 *
@@ -1060,7 +1073,7 @@ static int s18i6_first_time_reset(struct usb_mixer_interface *mixer)
 
 	snd_printk(KERN_INFO "Scarlett 18i6: initializing 18i6 mixer after device power-cycle.\n");
 
-	// mark chip as initialized
+	/* mark chip as initialized */
 	buf[0] = 0x01;
 	set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0106, 0x0a00, buf, 2);
 
