@@ -1194,13 +1194,13 @@ static int s18i6_create_controls(struct usb_mixer_interface *mixer)
 	S18ADD(0x0a, 0x02, USB_MIXER_S16, 12, 2, "Att Phones Volume");
 
 	/* output bus routing */
-	S18ADD(0x33, 0x00, USB_MIXER_U8, 0, 1, "Bus Monitor L");
-	S18ADD(0x33, 0x00, USB_MIXER_U8, 1, 1, "BUS Monitor R");
+	S18ADD(0x33, 0x00, USB_MIXER_U8,  0, 1, "Bus Monitor L");
+	S18ADD(0x33, 0x00, USB_MIXER_U8,  1, 1, "Bus Monitor R");
 
-	S18ADD(0x33, 0x00, USB_MIXER_U8, 2, 1, "Bus Phones L");
-	S18ADD(0x33, 0x00, USB_MIXER_U8, 4, 1, "Bus Phones R");
+	S18ADD(0x33, 0x00, USB_MIXER_U8,  2, 1, "Bus Phones L");
+	S18ADD(0x33, 0x00, USB_MIXER_U8,  4, 1, "Bus Phones R");
 
-	S18ADD(0x33, 0x00, USB_MIXER_U8, 8, 1, "Bus SPDIF L");
+	S18ADD(0x33, 0x00, USB_MIXER_U8,  8, 1, "Bus SPDIF L");
 	S18ADD(0x33, 0x00, USB_MIXER_U8, 16, 1, "Bus SPDIF R");
 
 	/* mixer source selection */
