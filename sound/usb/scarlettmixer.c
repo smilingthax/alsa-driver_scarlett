@@ -649,8 +649,8 @@ static int s18i6_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *u
 		static const char *texts[31] = {
 			"Off", // 'off' == 0xff
 			"DAW1", "DAW2", "DAW3", "DAW4", "DAW5", "DAW6",
-			"ANALG1", "ANALG2", "ANALG3", "ANALG4",
-			"ANALG5", "ANALG6", "ANALG7", "ANALG8",
+			"Analog1", "Analog2", "Analog3", "Analog4",
+			"Analog5", "Analog6", "Analog7", "Analog8",
 			"SPDIF1", "SPDIF2",
 			"ADAT1", "ADAT2", "ADAT3", "ADAT4",
 			"ADAT5", "ADAT6", "ADAT7", "ADAT8",
