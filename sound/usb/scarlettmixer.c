@@ -984,7 +984,7 @@ static struct snd_kcontrol_new usb_s18i6_peakmeter_ctl = {
 };
 #endif
 
-static const DECLARE_TLV_DB_SCALE(db_scale_s18i6_gain, -12800, 100, 0);
+static const DECLARE_TLV_DB_SCALE(db_scale_s18i6_gain, -12800, 100, 1);
 
 static struct snd_kcontrol_new usb_s18i6_volume_ctl = {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
