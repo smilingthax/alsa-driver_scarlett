@@ -123,6 +123,9 @@
  *
  */
 
+#define WITH_METER
+#define WITH_LOGSCALEMETER
+
 /*****************************************************************************/
 /*************** some unmodified static functions from mixer.c ***************/
 
@@ -856,6 +859,51 @@ static int s18i6_func_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 	return 0;
 }
 
+#ifdef WITH_METER
+#ifdef WITH_LOGSCALEMETER
+
+/* approx ( 20.0 * log10(x) ) for 16bit
+ * map 0..65535 to range 0..194 // -97.0..0dB in .5dB steps */
+static int sig_to_db(const int sig16bit) {
+	int i;
+	const int dbtbl[148] = {
+		13, 14, 15, 16, 16, 17, 18, 20, 21, 22, 23, 25, 26, 28, 29, 31, 33, 35,
+		37, 39, 41, 44, 46, 49, 52, 55, 58, 62, 66, 69, 74, 78, 83, 87, 93, 98,
+		104, 110, 117, 123, 131, 139, 147, 155, 165, 174, 185, 196, 207, 220,
+		233, 246, 261, 276, 293, 310, 328, 348, 369, 390, 414, 438, 464, 491,
+		521, 551, 584, 619, 655, 694, 735, 779, 825, 874, 926, 981, 1039, 1100,
+		1165, 1234, 1308, 1385, 1467, 1554, 1646, 1744, 1847, 1957, 2072, 2195,
+		2325, 2463, 2609, 2764, 2927, 3101, 3285, 3479, 3685, 3904, 4135, 4380,
+		4640, 4915, 5206, 5514, 5841, 6187, 6554, 6942, 7353, 7789, 8250, 8739,
+		9257, 9806, 10387, 11002, 11654, 12345, 13076, 13851, 14672, 15541,
+		16462, 17437, 18471, 19565, 20724, 21952, 23253, 24631, 26090, 27636,
+		29274, 31008, 32846, 34792, 36854, 39037, 41350, 43801, 46396, 49145,
+		52057, 55142, 58409, 61870
+	};
+
+	if (sig16bit < 13) {
+		switch (sig16bit) {
+			case  0: return 0;
+			case  1: return 1;  // -96.0dB
+			case  2: return 13; // -90.5dB
+			case  3: return 20; // -87.0dB
+			case  4: return 26; // -84.0dB
+			case  5: return 29; // -82.5dB
+			case  6: return 32; // -81.0dB
+			case  7: return 35; // -79.5dB
+			case  8: return 37; // -78.5dB
+			case  9: return 39; // -77.5dB
+			case 10: return 41; // -76.5dB
+			case 11: return 43; // -75.5dB
+			case 12: return 45; // -74.5dB
+		}
+	}
+	for (i = 0 ; i < 148; ++i) {
+		if (sig16bit <= dbtbl[i]) return 46+i;
+	}
+	return 194;
+}
+#endif
 
 static int s18i6_peak_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
@@ -877,16 +925,11 @@ static int s18i6_peak_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 	}
 
 	for (i = 0; i < cval->channels; ++i) {
-#ifdef LOGSCALEPEAK /* this won't ever fly -- but you get the idea :) */
-		int v = snd_usb_combine_bytes(&buf[2*i], sizeof(__u16));
-		if (v>0) {
-			float db = 20.0 * log10(v / 65536.0);
-			ucontrol->value.integer.value[i] = db;
-		} else {
-			ucontrol->value.integer.value[i] = -97;
-		}
+		const int v = snd_usb_combine_bytes(&buf[2*i], sizeof(__u16));
+#ifdef WITH_LOGSCALEMETER /* this won't fly -- but you get the idea :) */
+		ucontrol->value.integer.value[i] = sig_to_db(v);
 #else
-		ucontrol->value.integer.value[i] = snd_usb_combine_bytes(&buf[2*i], sizeof(__u16));
+		ucontrol->value.integer.value[i] = v;
 #endif
 	}
 	return 0;
@@ -911,15 +954,20 @@ static int s18i6_peak_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_in
 	}
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+#ifdef WITH_LOGSCALEMETER
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 194;
+#else
 	uinfo->value.integer.min = 0;
 	uinfo->value.integer.max = 0xffff;
+#endif
 	uinfo->value.integer.step = 1;
 	return 0;
 }
 
 
-#ifdef LOGSCALEPEAK
-static const DECLARE_TLV_DB_SCALE(db_scale_s18i6_peak, -9632, 100, 0);
+#ifdef WITH_LOGSCALEMETER
+static const DECLARE_TLV_DB_SCALE(db_scale_s18i6_peak, -9700, 50, 1);
 #endif
 
 static struct snd_kcontrol_new usb_s18i6_peakmeter_ctl = {
@@ -927,13 +975,14 @@ static struct snd_kcontrol_new usb_s18i6_peakmeter_ctl = {
 	.name = "",
 	.info = s18i6_peak_info,
 	.get =  s18i6_peak_get,
-#ifdef LOGSCALEPEAK
+#ifdef WITH_LOGSCALEMETER
 	.access = SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_TLV_READ,
 	.tlv = { .p = db_scale_s18i6_peak }
 #else
 	.access = SNDRV_CTL_ELEM_ACCESS_READ,
 #endif
 };
+#endif
 
 static const DECLARE_TLV_DB_SCALE(db_scale_s18i6_gain, -12800, 100, 0);
 
@@ -1007,6 +1056,7 @@ static int s18i6_add_func(struct usb_mixer_interface *mixer, int func_id, char *
 }
 
 
+#ifdef WITH_METER
 static int s18i6_add_peak_meter(struct usb_mixer_interface *mixer, int wValue, int chn, char *name)
 {
 	struct usb_mixer_elem_info *cval;
@@ -1040,6 +1090,9 @@ static int s18i6_add_peak_meter(struct usb_mixer_interface *mixer, int wValue, i
 	kctl->private_free = usb_mixer_elem_free;
 
 	sprintf(kctl->id.name, "%s", name);
+#ifdef WITH_LOGSCALEMETER
+	strlcat(kctl->id.name, " Volume", sizeof(kctl->id.name));
+#endif
 
 	snd_printdd(KERN_INFO "[%d] MU [%s] ch = %d, val = %d/%d\n",
 				cval->id, kctl->id.name, cval->channels, cval->min, cval->max);
@@ -1048,6 +1101,7 @@ static int s18i6_add_peak_meter(struct usb_mixer_interface *mixer, int wValue, i
 
 	return 0;
 }
+#endif
 
 static int s18i6_first_time_reset(struct usb_mixer_interface *mixer)
 {
@@ -1187,9 +1241,9 @@ static int s18i6_create_controls(struct usb_mixer_interface *mixer)
 	S18ADD(0x01, 0x09, USB_MIXER_BOOLEAN, 1, 1, "Impedance 1")
 	S18ADD(0x01, 0x09, USB_MIXER_BOOLEAN, 2, 1, "Impedance 2");
 
-	S18ADD(0x0a, 0x01, USB_MIXER_U8,  3, 2, "Mute Monitor");
-	S18ADD(0x0a, 0x01, USB_MIXER_U8, 12, 2, "Mute Phones");
-	S18ADD(0x0a, 0x01, USB_MIXER_U8,  0, 1, "Mute Master");
+	S18ADD(0x0a, 0x01, USB_MIXER_U8,  3, 2, "Mute Monitor Switch");
+	S18ADD(0x0a, 0x01, USB_MIXER_U8, 12, 2, "Mute Phones Switch");
+	S18ADD(0x0a, 0x01, USB_MIXER_U8,  0, 1, "Mute Master Switch");
 
 	/* bus attenuation */
 	S18ADD(0x0a, 0x02, USB_MIXER_S16,  0, 1, "Att Master Volume");
@@ -1226,9 +1280,11 @@ static int s18i6_create_controls(struct usb_mixer_interface *mixer)
 		}
 	}
 
+#ifdef WITH_METER
 	s18i6_add_peak_meter(mixer, 0x0000, 18, "Mtr Input");
 	s18i6_add_peak_meter(mixer, 0x0001,  6, "Mtr Mix");
 	s18i6_add_peak_meter(mixer, 0x0003,  6, "Mtr DAW");
+#endif
 
 	s18i6_add_func(mixer, 1, "Save to HW");
 
