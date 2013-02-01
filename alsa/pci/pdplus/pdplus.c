@@ -177,6 +177,13 @@
 #include <sound/info.h>
 #include <sound/asoundef.h>
 
+#ifndef __devinit
+#define __devinit
+#define __devinitdata
+#define __devexit
+#define __devexit_p(p)	p
+#endif
+
 /* ********************************************************************** */
 
 #ifndef DEBUG

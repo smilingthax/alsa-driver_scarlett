@@ -68,7 +68,7 @@ include/autoconf-extra.h
 include/config.h
 include/config1.h
 include/config1.h.in
-include/kconfig.h
+include/alsa-kconfig.h
 include/asm/
 include/pcmcia/
 include/trace/
