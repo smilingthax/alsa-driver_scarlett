@@ -1,5 +1,5 @@
---- ../../alsa-kernel/pci/hda/hda_intel.c	2013-02-01 07:28:33.000000000 +0100
-+++ hda_intel.c	2013-02-01 09:36:47.000000000 +0100
+--- ../../alsa-kernel/pci/hda/hda_intel.c	2013-02-01 15:53:02.000000000 +0100
++++ hda_intel.c	2013-02-04 10:38:27.000000000 +0100
 @@ -1,3 +1,4 @@
 +#include "hda_intel_hack.c"
  /*
@@ -38,39 +38,39 @@
 +
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25) && \
 +	LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
-+static void set_pages_array_wc(struct page **pages, int pages)
++static void set_pages_array_wc(struct page **pages, int num_pages)
 +{
-+	for (i = 0; i < pages; i++)
++	for (i = 0; i < num_pages; i++)
 +		set_pages_wc(pages[i], 1);
 +}
 +
-+static void set_pages_array_wb(struct page **pages, int pages)
++static void set_pages_array_wb(struct page **pages, int num_pages)
 +{
-+	for (i = 0; i < pages; i++)
++	for (i = 0; i < num_pages; i++)
 +		set_pages_wb(pages[i], 1);
 +}
 +#endif /* >= 2.6.25 && < 2.6.23 */
 +
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 25)
-+static void set_memory_wc(unsigned long addr, int pages)
++static void set_memory_wc(unsigned long addr, int num_pages)
 +{
-+	change_page_attr(virt_to_page(addr), pages, PAGE_KERNEL_NOCACHE);
++	change_page_attr(virt_to_page(addr), num_pages, PAGE_KERNEL_NOCACHE);
 +	global_flush_tlb();
 +}
-+static void set_memory_wb(unsigned long addr, int pages)
++static void set_memory_wb(unsigned long addr, int num_pages)
 +{
-+	change_page_attr(virt_to_page(addr), pages, PAGE_KERNEL);
++	change_page_attr(virt_to_page(addr), num_pages, PAGE_KERNEL);
 +	global_flush_tlb();
 +}
-+static void set_pages_array_wc(struct page **pages, int pages)
++static void set_pages_array_wc(struct page **pages, int num_pages)
 +{
-+	for (i = 0; i < pages; i++)
++	for (i = 0; i < num_pages; i++)
 +		change_page_attr(pages[i], 1, PAGE_KERNEL_NOCACHE);
 +}
 +
-+static void set_pages_array_wb(struct page **pages, int pages)
++static void set_pages_array_wb(struct page **pages, int num_pages)
 +{
-+	for (i = 0; i < pages; i++)
++	for (i = 0; i < num_pages; i++)
 +		change_page_attr(pages[i], 1, PAGE_KERNEL);
 +}
 +#endif /* < 2.6.25 */
