@@ -1,0 +1,29 @@
+--- ../alsa-kernel/core/info.c	2012-09-04 11:39:35.761858131 +0200
++++ info.c	2012-09-04 13:03:53.282726986 +0200
+@@ -506,9 +518,26 @@
+ 	return -ENOTTY;
+ }
+ 
++#ifndef CONFIG_SND_HAVE_NEW_IOCTL
++/* need to unlock BKL to allow preemption */
++static int snd_info_entry_ioctl_old(struct inode *inode, struct file * file,
++				    unsigned int cmd, unsigned long arg)
++{
++	int err;
++	unlock_kernel();
++	err = snd_info_entry_ioctl(file, cmd, arg);
++	lock_kernel();
++	return err;
++}
++#endif
++
+ static int snd_info_entry_mmap(struct file *file, struct vm_area_struct *vma)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
+ 	struct inode *inode = file->f_path.dentry->d_inode;
++#else
++	struct inode *inode = file->f_dentry->d_inode;
++#endif
+ 	struct snd_info_private_data *data;
+ 	struct snd_info_entry *entry;
+ 
