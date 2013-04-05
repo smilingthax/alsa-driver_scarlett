@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/info.c	2013-03-04 09:58:34.512643731 +0100
-+++ info.c	2013-03-04 10:00:29.640248917 +0100
+--- ../alsa-kernel/core/info.c	2013-04-03 16:11:07.985692489 +0200
++++ info.c	2013-04-05 08:52:32.059723420 +0200
 @@ -1,3 +1,7 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -14,13 +14,13 @@
  	nsize = PAGE_ALIGN(nsize);
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22) || \
 +	defined(CONFIG_SND_DEBUG_MEMORY)
-+	nbuf = kmalloc(nsize, GFP_KERNEL);
++	nbuf = kzalloc(nsize, GFP_KERNEL);
 +	if (!nbuf)
 +		return -ENOMEM;
 +	memcpy(nbuf, buffer->buffer, buffer->len);
 +	kfree(buffer->buffer);
 +#else	
- 	nbuf = krealloc(buffer->buffer, nsize, GFP_KERNEL);
+ 	nbuf = krealloc(buffer->buffer, nsize, GFP_KERNEL | __GFP_ZERO);
  	if (! nbuf)
  		return -ENOMEM;
 -
@@ -69,7 +69,7 @@
  	.mmap =			snd_info_entry_mmap,
  	.open =			snd_info_entry_open,
  	.release =		snd_info_entry_release,
-@@ -985,9 +1020,20 @@
+@@ -980,9 +1015,20 @@
  
  static void snd_info_version_read(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
  {
