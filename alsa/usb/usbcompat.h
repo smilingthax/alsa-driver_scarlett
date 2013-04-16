@@ -107,4 +107,14 @@ static inline void usb_autopm_put_interface(struct usb_interface *intf)
 }
 #endif /* < 2.6.20 */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 33)
+static inline int usb_autopm_get_interface_no_resume(struct usb_interface *intf)
+{
+	return 0;
+}
+static inline void usb_autopm_put_interface_no_suspend(struct usb_interface *intf)
+{
+}
+#endif
+
 #endif /* __ALSA_USBCOMPAT_H */
