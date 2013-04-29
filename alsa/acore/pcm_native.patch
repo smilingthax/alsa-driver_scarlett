@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/pcm_native.c	2013-04-03 16:11:07.994692601 +0200
-+++ pcm_native.c	2013-04-05 09:05:39.151061839 +0200
+--- ../alsa-kernel/core/pcm_native.c	2013-04-29 11:45:03.285944327 +0200
++++ pcm_native.c	2013-04-29 17:48:07.418941728 +0200
 @@ -1,3 +1,11 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -37,11 +37,11 @@
  	snd_pcm_set_state(substream, SNDRV_PCM_STATE_SETUP);
  
 +#ifdef CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC
-+	if (pm_qos_request_active(&substream->latency_pm_qos_req))
-+		pm_qos_remove_request(&substream->latency_pm_qos_req);
-+	if ((usecs = period_to_usecs(runtime)) >= 0)
-+		pm_qos_add_request(&substream->latency_pm_qos_req,
-+				   PM_QOS_CPU_DMA_LATENCY, usecs);
+ 	if (pm_qos_request_active(&substream->latency_pm_qos_req))
+ 		pm_qos_remove_request(&substream->latency_pm_qos_req);
+ 	if ((usecs = period_to_usecs(runtime)) >= 0)
+ 		pm_qos_add_request(&substream->latency_pm_qos_req,
+ 				   PM_QOS_CPU_DMA_LATENCY, usecs);
 +#elif defined(CONFIG_SND_HAVE_PM_QOS_REQUEST_LIST)
 +	if (substream->latency_pm_qos_req) {
 +		pm_qos_remove_request(substream->latency_pm_qos_req);
@@ -51,11 +51,11 @@
 +		substream->latency_pm_qos_req = pm_qos_add_request(
 +				   PM_QOS_CPU_DMA_LATENCY, usecs);
 +#elif defined(CONFIG_SND_HAVE_PM_QOS_REQUEST)
- 	if (pm_qos_request_active(&substream->latency_pm_qos_req))
- 		pm_qos_remove_request(&substream->latency_pm_qos_req);
- 	if ((usecs = period_to_usecs(runtime)) >= 0)
- 		pm_qos_add_request(&substream->latency_pm_qos_req,
- 				   PM_QOS_CPU_DMA_LATENCY, usecs);
++	if (pm_qos_request_active(&substream->latency_pm_qos_req))
++		pm_qos_remove_request(&substream->latency_pm_qos_req);
++	if ((usecs = period_to_usecs(runtime)) >= 0)
++		pm_qos_add_request(&substream->latency_pm_qos_req,
++				   PM_QOS_CPU_DMA_LATENCY, usecs);
 +#else
 +	pm_qos_remove_requirement(PM_QOS_CPU_DMA_LATENCY,
 +				  substream->latency_id);
@@ -71,12 +71,12 @@
  		result = substream->ops->hw_free(substream);
  	snd_pcm_set_state(substream, SNDRV_PCM_STATE_OPEN);
 +#ifdef CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC
- 	pm_qos_remove_request(&substream->latency_pm_qos_req);
++	pm_qos_remove_request(&substream->latency_pm_qos_req);
 +#elif defined(CONFIG_SND_HAVE_PM_QOS_REQUEST_LIST)
 +	pm_qos_remove_request(substream->latency_pm_qos_req);
 +	substream->latency_pm_qos_req = NULL;
 +#elif defined(CONFIG_SND_HAVE_PM_QOS_REQUEST)
-+	pm_qos_remove_request(&substream->latency_pm_qos_req);
+ 	pm_qos_remove_request(&substream->latency_pm_qos_req);
 +#else
 +	pm_qos_remove_requirement(PM_QOS_CPU_DMA_LATENCY,
 +				  substream->latency_id);
@@ -115,16 +115,16 @@
  		substream->hw_opened = 0;
  	}
 +#ifdef CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC
-+	if (pm_qos_request_active(&substream->latency_pm_qos_req))
-+		pm_qos_remove_request(&substream->latency_pm_qos_req);
+ 	if (pm_qos_request_active(&substream->latency_pm_qos_req))
+ 		pm_qos_remove_request(&substream->latency_pm_qos_req);
 +#elif defined(CONFIG_SND_HAVE_PM_QOS_REQUEST_LIST)
 +	if (substream->latency_pm_qos_req) {
 +		pm_qos_remove_request(substream->latency_pm_qos_req);
 +		substream->latency_pm_qos_req = NULL;
 +	}
 +#elif defined(CONFIG_SND_HAVE_PM_QOS_REQUEST)
- 	if (pm_qos_request_active(&substream->latency_pm_qos_req))
- 		pm_qos_remove_request(&substream->latency_pm_qos_req);
++	if (pm_qos_request_active(&substream->latency_pm_qos_req))
++		pm_qos_remove_request(&substream->latency_pm_qos_req);
 +#else
 +	pm_qos_remove_requirement(PM_QOS_CPU_DMA_LATENCY,
 +				  substream->latency_id);
@@ -411,17 +411,25 @@
  };
  
  #ifndef ARCH_HAS_DMA_MMAP_COHERENT
-@@ -3241,11 +3456,23 @@
+@@ -3238,7 +3453,35 @@
+ 	struct snd_pcm_runtime *runtime = substream->runtime;;
+ 
  	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
- 	area->vm_flags |= VM_IO;
- 	size = area->vm_end - area->vm_start;
--	offset = area->vm_pgoff << PAGE_SHIFT;
++#ifdef CONFIG_HAVE_VM_IOMAP_MEMORY
+ 	return vm_iomap_memory(area, runtime->dma_addr, runtime->dma_bytes);
++#else
++	{
++	long size;
++	unsigned long offset;
++
++	area->vm_flags |= VM_IO;
++	size = area->vm_end - area->vm_start;
 +  	offset = get_vm_area_offset(area);
 +#ifdef CONFIG_HAVE_IO_REMAP_PFN_RANGE
- 	if (io_remap_pfn_range(area, area->vm_start,
- 				(substream->runtime->dma_addr + offset) >> PAGE_SHIFT,
- 				size, area->vm_page_prot))
- 		return -EAGAIN;
++	if (io_remap_pfn_range(area, area->vm_start,
++				(substream->runtime->dma_addr + offset) >> PAGE_SHIFT,
++				size, area->vm_page_prot))
++		return -EAGAIN;
 +#elif defined(CONFIG_OLD_IO_REMAP_PAGE_RANGE)
 +	if (io_remap_page_range(area->vm_start,
 +				substream->runtime->dma_addr + offset,
@@ -433,10 +441,13 @@
 +				size, area->vm_page_prot))
 +		return -EAGAIN;
 +#endif
- 	return 0;
++	return 0;
++	}
++#endif
  }
  
-@@ -3280,7 +3507,7 @@
+ EXPORT_SYMBOL(snd_pcm_lib_mmap_iomem);
+@@ -3272,7 +3515,7 @@
  	    runtime->access == SNDRV_PCM_ACCESS_RW_NONINTERLEAVED)
  		return -EINVAL;
  	size = area->vm_end - area->vm_start;
@@ -445,7 +456,7 @@
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
  	if ((size_t)size > dma_bytes)
  		return -EINVAL;
-@@ -3311,7 +3538,7 @@
+@@ -3303,7 +3546,7 @@
  	if (PCM_RUNTIME_CHECK(substream))
  		return -ENXIO;
  
@@ -454,7 +465,7 @@
  	switch (offset) {
  	case SNDRV_PCM_MMAP_OFFSET_STATUS:
  		if (pcm_file->no_compat_mmap)
-@@ -3344,12 +3571,34 @@
+@@ -3336,12 +3579,34 @@
  /*
   * ioctl32 compat
   */
@@ -490,7 +501,7 @@
  /*
   *  To be removed helpers to keep binary compatibility
   */
-@@ -3490,29 +3739,49 @@
+@@ -3482,29 +3747,49 @@
  	{
  		.owner =		THIS_MODULE,
  		.write =		snd_pcm_write,
