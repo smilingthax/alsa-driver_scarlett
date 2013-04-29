@@ -1,5 +1,5 @@
---- ../alsa-kernel/usb/endpoint.c	2012-11-22 17:40:53.000000000 +0100
-+++ endpoint.c	2012-11-23 17:56:12.000000000 +0100
+--- ../alsa-kernel/usb/endpoint.c	2013-04-29 11:45:04.798944327 +0200
++++ endpoint.c	2013-04-29 17:57:42.657941659 +0200
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "usbaudio.inc"
@@ -18,7 +18,7 @@
  {
  	struct snd_urb_ctx *ctx = urb->context;
  	struct snd_usb_endpoint *ep = ctx->ep;
-@@ -532,6 +538,9 @@
+@@ -530,6 +536,9 @@
  		if (test_bit(i, &ep->active_mask)) {
  			if (!test_and_set_bit(i, &ep->unlink_mask)) {
  				struct urb *u = ep->urb[i].urb;
@@ -28,3 +28,27 @@
  				usb_unlink_urb(u);
  			}
  		}
+@@ -684,7 +693,11 @@
+ 		if (!u->urb->transfer_buffer)
+ 			goto out_of_memory;
+ 		u->urb->pipe = ep->pipe;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
++		u->urb->transfer_flags = URB_ISO_ASAP | URB_NO_TRANSFER_DMA_MAP;
++#else
+ 		u->urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++#endif
+ 		u->urb->interval = 1 << ep->datainterval;
+ 		u->urb->context = u;
+ 		u->urb->complete = snd_complete_urb;
+@@ -723,7 +736,11 @@
+ 		u->urb->transfer_dma = ep->sync_dma + i * 4;
+ 		u->urb->transfer_buffer_length = 4;
+ 		u->urb->pipe = ep->pipe;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
++		u->urb->transfer_flags = URB_ISO_ASAP | URB_NO_TRANSFER_DMA_MAP;
++#else
+ 		u->urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++#endif
+ 		u->urb->number_of_packets = 1;
+ 		u->urb->interval = 1 << ep->syncinterval;
+ 		u->urb->context = u;

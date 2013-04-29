@@ -1,0 +1,18 @@
+--- ../../alsa-kernel/usb/6fire/pcm.c	2013-04-29 11:45:04.780944327 +0200
++++ pcm.c	2013-04-29 17:52:54.287941694 +0200
+@@ -1,3 +1,5 @@
++#include "adriver.h"
++#include "../usbcompat.h"
+ /*
+  * Linux driver for TerraTec DMX 6Fire USB
+  *
+@@ -575,6 +577,9 @@
+ 	urb->instance.pipe = in ? usb_rcvisocpipe(chip->dev, ep)
+ 			: usb_sndisocpipe(chip->dev, ep);
+ 	urb->instance.interval = 1;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
++	urb->instance.transfer_flags = URB_ISO_ASAP;
++#endif
+ 	urb->instance.complete = handler;
+ 	urb->instance.context = urb;
+ 	urb->instance.number_of_packets = PCM_N_PACKETS_PER_URB;

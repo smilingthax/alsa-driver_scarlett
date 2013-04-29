@@ -1,0 +1,19 @@
+--- ../../alsa-kernel/usb/misc/ua101.c	2013-04-29 11:45:04.806944327 +0200
++++ ua101.c	2013-04-29 17:59:40.027941645 +0200
+@@ -1,3 +1,4 @@
++#include "../usbaudio.inc"
+ /*
+  * Edirol UA-101/UA-1000 driver
+  * Copyright (c) Clemens Ladisch <clemens@ladisch.de>
+@@ -1120,7 +1121,11 @@
+ 			usb_init_urb(&urb->urb);
+ 			urb->urb.dev = ua->dev;
+ 			urb->urb.pipe = stream->usb_pipe;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
++			urb->urb.transfer_flags = URB_ISO_ASAP | URB_NO_TRANSFER_DMA_MAP;
++#else
+ 			urb->urb.transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++#endif
+ 			urb->urb.transfer_buffer = addr;
+ 			urb->urb.transfer_dma = dma;
+ 			urb->urb.transfer_buffer_length = max_packet_size;

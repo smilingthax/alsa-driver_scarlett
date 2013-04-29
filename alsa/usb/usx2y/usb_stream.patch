@@ -1,0 +1,17 @@
+--- ../../alsa-kernel/usb/usx2y/usb_stream.c	2013-04-29 11:45:04.811944327 +0200
++++ usb_stream.c	2013-04-29 18:01:30.920941632 +0200
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  * Copyright (C) 2007, 2008 Karsten Wiese <fzu@wemgehoertderstaat.de>
+  *
+@@ -69,6 +70,9 @@
+ 	     ++u, transfer += transfer_length) {
+ 		struct urb *urb = urbs[u];
+ 		struct usb_iso_packet_descriptor *desc;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
++		urb->transfer_flags = URB_ISO_ASAP;
++#endif
+ 		urb->transfer_buffer = transfer;
+ 		urb->dev = dev;
+ 		urb->pipe = pipe;
