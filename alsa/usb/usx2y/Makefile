@@ -5,7 +5,7 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-clean-files := usbusx2y.c usbusx2yaudio.c
+clean-files := usbusx2y.c usbusx2yaudio.c usb_stream.c usx2yhwdeppcm.c
 
 include $(SND_TOPDIR)/alsa-kernel/usb/usx2y/Makefile
 
