@@ -29,7 +29,6 @@
 #include <linux/pci.h>
 #include <linux/dmi.h>
 #include <linux/module.h>
-#include <linux/sort.h>
 #include <sound/core.h>
 #include <sound/jack.h>
 #include "hda_codec.h"
@@ -622,7 +621,7 @@ static void alc_inv_dmic_sync_adc(struct hda_codec *codec, int adc_idx)
 		(dir == HDA_OUTPUT ? AC_AMP_SET_OUTPUT : AC_AMP_SET_INPUT);
 
 	/* flush all cached amps at first */
-	snd_hda_codec_flush_amp_cache(codec);
+	snd_hda_codec_flush_cache(codec);
 
 	/* we care only right channel */
 	val = snd_hda_codec_amp_read(codec, nid, 1, dir, 0);
@@ -670,7 +669,8 @@ static void alc_inv_dmic_sync(struct hda_codec *codec, bool force)
 	}
 }
 
-static void alc_inv_dmic_hook(struct hda_codec *codec)
+static void alc_inv_dmic_hook(struct hda_codec *codec,
+			     struct snd_ctl_elem_value *ucontrol)
 {
 	alc_inv_dmic_sync(codec, false);
 }
@@ -1034,6 +1034,7 @@ enum {
 	ALC880_FIXUP_6ST_BASE,
 	ALC880_FIXUP_6ST,
 	ALC880_FIXUP_6ST_DIG,
+	ALC880_FIXUP_6ST_AUTOMUTE,
 };
 
 /* enable the volume-knob widget support on NID 0x21 */
@@ -1294,6 +1295,15 @@ static const struct hda_fixup alc880_fixups[] = {
 		.chained = true,
 		.chain_id = ALC880_FIXUP_6ST_BASE,
 	},
+	[ALC880_FIXUP_6ST_AUTOMUTE] = {
+		.type = HDA_FIXUP_PINS,
+		.v.pins = (const struct hda_pintbl[]) {
+			{ 0x1b, 0x0121401f }, /* HP with jack detect */
+			{ }
+		},
+		.chained_before = true,
+		.chain_id = ALC880_FIXUP_6ST_BASE,
+	},
 };
 
 static const struct snd_pci_quirk alc880_fixup_tbl[] = {
@@ -1308,6 +1318,7 @@ static const struct snd_pci_quirk alc880_fixup_tbl[] = {
 	SND_PCI_QUIRK(0x1584, 0x9077, "Uniwill P53", ALC880_FIXUP_VOL_KNOB),
 	SND_PCI_QUIRK(0x161f, 0x203d, "W810", ALC880_FIXUP_W810),
 	SND_PCI_QUIRK(0x161f, 0x205d, "Medion Rim 2150", ALC880_FIXUP_MEDION_RIM),
+	SND_PCI_QUIRK(0x1631, 0xe011, "PB 13201056", ALC880_FIXUP_6ST_AUTOMUTE),
 	SND_PCI_QUIRK(0x1734, 0x107c, "FSC F1734", ALC880_FIXUP_F1734),
 	SND_PCI_QUIRK(0x1734, 0x1094, "FSC Amilo M1451G", ALC880_FIXUP_FUJITSU),
 	SND_PCI_QUIRK(0x1734, 0x10ac, "FSC AMILO Xi 1526", ALC880_FIXUP_F1734),
@@ -1370,6 +1381,7 @@ static const struct hda_model_fixup alc880_fixup_models[] = {
 	{.id = ALC880_FIXUP_5ST_DIG, .name = "5stack-digout"},
 	{.id = ALC880_FIXUP_6ST, .name = "6stack"},
 	{.id = ALC880_FIXUP_6ST_DIG, .name = "6stack-digout"},
+	{.id = ALC880_FIXUP_6ST_AUTOMUTE, .name = "6stack-automute"},
 	{}
 };
 
@@ -1506,8 +1518,6 @@ static void alc260_fixup_fsc_s7020(struct hda_codec *codec,
 
 	if (action == HDA_FIXUP_ACT_PRE_PROBE)
 		spec->gen.add_out_jack_modes = 1;
-	else if (action == HDA_FIXUP_ACT_PROBE)
-		snd_hda_set_pin_ctl_cache(codec, 0x10, PIN_HP);
 }
 
 static const struct hda_fixup alc260_fixups[] = {
@@ -1597,6 +1607,11 @@ static int patch_alc260(struct hda_codec *codec)
 		return err;
 
 	spec = codec->spec;
+	/* as quite a few machines require HP amp for speaker outputs,
+	 * it's easier to enable it unconditionally; even if it's unneeded,
+	 * it's almost harmless.
+	 */
+	spec->gen.prefer_hp_amp = 1;
 
 	snd_hda_pick_fixup(codec, NULL, alc260_fixup_tbl, alc260_fixups);
 	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
@@ -2147,6 +2162,7 @@ static int alc262_parse_auto_config(struct hda_codec *codec)
  */
 enum {
 	ALC262_FIXUP_FSC_H270,
+	ALC262_FIXUP_FSC_S7110,
 	ALC262_FIXUP_HP_Z200,
 	ALC262_FIXUP_TYAN,
 	ALC262_FIXUP_LENOVO_3000,
@@ -2164,6 +2180,15 @@ static const struct hda_fixup alc262_fixups[] = {
 			{ 0x1b, 0x0121141f }, /* rear HP */
 			{ }
 		}
+	},
+	[ALC262_FIXUP_FSC_S7110] = {
+		.type = HDA_FIXUP_PINS,
+		.v.pins = (const struct hda_pintbl[]) {
+			{ 0x15, 0x90170110 }, /* speaker */
+			{ }
+		},
+		.chained = true,
+		.chain_id = ALC262_FIXUP_BENQ,
 	},
 	[ALC262_FIXUP_HP_Z200] = {
 		.type = HDA_FIXUP_PINS,
@@ -2212,7 +2237,7 @@ static const struct hda_fixup alc262_fixups[] = {
 
 static const struct snd_pci_quirk alc262_fixup_tbl[] = {
 	SND_PCI_QUIRK(0x103c, 0x170b, "HP Z200", ALC262_FIXUP_HP_Z200),
-	SND_PCI_QUIRK(0x10cf, 0x1397, "Fujitsu", ALC262_FIXUP_BENQ),
+	SND_PCI_QUIRK(0x10cf, 0x1397, "Fujitsu Lifebook S7110", ALC262_FIXUP_FSC_S7110),
 	SND_PCI_QUIRK(0x10cf, 0x142d, "Fujitsu Lifebook E8410", ALC262_FIXUP_BENQ),
 	SND_PCI_QUIRK(0x10f1, 0x2915, "Tyan Thunder n6650W", ALC262_FIXUP_TYAN),
 	SND_PCI_QUIRK(0x1734, 0x1147, "FSC Celsius H270", ALC262_FIXUP_FSC_H270),
@@ -2338,6 +2363,7 @@ static const struct hda_model_fixup alc268_fixup_models[] = {
 };
 
 static const struct snd_pci_quirk alc268_fixup_tbl[] = {
+	SND_PCI_QUIRK(0x1025, 0x015b, "Acer AOA 150 (ZG5)", ALC268_FIXUP_INV_DMIC),
 	/* below is codec SSID since multiple Toshiba laptops have the
 	 * same PCI SSID 1179:ff00
 	 */
@@ -2716,12 +2742,13 @@ static void alc271_hp_gate_mic_jack(struct hda_codec *codec,
 {
 	struct alc_spec *spec = codec->spec;
 
-	if (snd_BUG_ON(!spec->gen.am_entry[1].pin ||
-		       !spec->gen.autocfg.hp_pins[0]))
-		return;
-	if (action == HDA_FIXUP_ACT_PROBE)
+	if (action == HDA_FIXUP_ACT_PROBE) {
+		if (snd_BUG_ON(!spec->gen.am_entry[1].pin ||
+			       !spec->gen.autocfg.hp_pins[0]))
+			return;
 		snd_hda_jack_set_gating_jack(codec, spec->gen.am_entry[1].pin,
 					     spec->gen.autocfg.hp_pins[0]);
+	}
 }
 
 enum {
@@ -2933,6 +2960,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
 	SND_PCI_QUIRK(0x104d, 0x9084, "Sony VAIO", ALC275_FIXUP_SONY_HWEQ),
 	SND_PCI_QUIRK_VENDOR(0x104d, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
 	SND_PCI_QUIRK(0x1028, 0x0470, "Dell M101z", ALC269_FIXUP_DELL_M101Z),
+	SND_PCI_QUIRK(0x1025, 0x0740, "Acer AO725", ALC271_FIXUP_HP_GATE_MIC_JACK),
 	SND_PCI_QUIRK(0x1025, 0x0742, "Acer AO756", ALC271_FIXUP_HP_GATE_MIC_JACK),
 	SND_PCI_QUIRK_VENDOR(0x1025, "Acer Aspire", ALC271_FIXUP_DMIC),
 	SND_PCI_QUIRK(0x10cf, 0x1475, "Lifebook", ALC269_FIXUP_LIFEBOOK),

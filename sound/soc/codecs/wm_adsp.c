@@ -103,9 +103,19 @@
 #define ADSP1_START_SHIFT                      0  /* DSP1_START */
 #define ADSP1_START_WIDTH                      1  /* DSP1_START */
 
-#define ADSP2_CONTROL  0
-#define ADSP2_CLOCKING 1
-#define ADSP2_STATUS1  4
+/*
+ * ADSP1 Control 31
+ */
+#define ADSP1_CLK_SEL_MASK                0x0007  /* CLK_SEL_ENA */
+#define ADSP1_CLK_SEL_SHIFT                    0  /* CLK_SEL_ENA */
+#define ADSP1_CLK_SEL_WIDTH                    3  /* CLK_SEL_ENA */
+
+#define ADSP2_CONTROL        0x0
+#define ADSP2_CLOCKING       0x1
+#define ADSP2_STATUS1        0x4
+#define ADSP2_WDMA_CONFIG_1 0x30
+#define ADSP2_WDMA_CONFIG_2 0x31
+#define ADSP2_RDMA_CONFIG_1 0x34
 
 /*
  * ADSP2 Control
@@ -143,10 +153,10 @@
 #define ADSP2_RAM_RDY_SHIFT                    0
 #define ADSP2_RAM_RDY_WIDTH                    1
 
-#define WM_ADSP_NUM_FW 3
+#define WM_ADSP_NUM_FW 4
 
 static const char *wm_adsp_fw_text[WM_ADSP_NUM_FW] = {
-	"MBC/VSS", "Tx", "Rx ANC"
+	"MBC/VSS", "Tx", "Tx Speaker", "Rx ANC"
 };
 
 static struct {
@@ -154,6 +164,7 @@ static struct {
 } wm_adsp_fw[WM_ADSP_NUM_FW] = {
 	{ .file = "mbc-vss" },
 	{ .file = "tx" },
+	{ .file = "tx-spk" },
 	{ .file = "rx-anc" },
 };
 
@@ -410,7 +421,7 @@ static int wm_adsp_load(struct wm_adsp *dsp)
 
 		if (reg) {
 			buf = kmemdup(region->data, le32_to_cpu(region->len),
-				      GFP_KERNEL);
+				      GFP_KERNEL | GFP_DMA);
 			if (!buf) {
 				adsp_err(dsp, "Out of memory\n");
 				return -ENOMEM;
@@ -557,7 +568,7 @@ static int wm_adsp_setup_algs(struct wm_adsp *dsp)
 		adsp_warn(dsp, "Algorithm list end %x 0x%x != 0xbeadead\n",
 			  term, be32_to_cpu(val));
 
-	alg = kzalloc((term - pos) * 2, GFP_KERNEL);
+	alg = kzalloc((term - pos) * 2, GFP_KERNEL | GFP_DMA);
 	if (!alg)
 		return -ENOMEM;
 
@@ -582,27 +593,21 @@ static int wm_adsp_setup_algs(struct wm_adsp *dsp)
 				  be32_to_cpu(adsp1_alg[i].dm),
 				  be32_to_cpu(adsp1_alg[i].zm));
 
-			if (adsp1_alg[i].dm) {
-				region = kzalloc(sizeof(*region), GFP_KERNEL);
-				if (!region)
-					return -ENOMEM;
-				region->type = WMFW_ADSP1_DM;
-				region->alg = be32_to_cpu(adsp1_alg[i].alg.id);
-				region->base = be32_to_cpu(adsp1_alg[i].dm);
-				list_add_tail(&region->list,
-					      &dsp->alg_regions);
-			}
+			region = kzalloc(sizeof(*region), GFP_KERNEL);
+			if (!region)
+				return -ENOMEM;
+			region->type = WMFW_ADSP1_DM;
+			region->alg = be32_to_cpu(adsp1_alg[i].alg.id);
+			region->base = be32_to_cpu(adsp1_alg[i].dm);
+			list_add_tail(&region->list, &dsp->alg_regions);
 
-			if (adsp1_alg[i].zm) {
-				region = kzalloc(sizeof(*region), GFP_KERNEL);
-				if (!region)
-					return -ENOMEM;
-				region->type = WMFW_ADSP1_ZM;
-				region->alg = be32_to_cpu(adsp1_alg[i].alg.id);
-				region->base = be32_to_cpu(adsp1_alg[i].zm);
-				list_add_tail(&region->list,
-					      &dsp->alg_regions);
-			}
+			region = kzalloc(sizeof(*region), GFP_KERNEL);
+			if (!region)
+				return -ENOMEM;
+			region->type = WMFW_ADSP1_ZM;
+			region->alg = be32_to_cpu(adsp1_alg[i].alg.id);
+			region->base = be32_to_cpu(adsp1_alg[i].zm);
+			list_add_tail(&region->list, &dsp->alg_regions);
 			break;
 
 		case WMFW_ADSP2:
@@ -616,38 +621,29 @@ static int wm_adsp_setup_algs(struct wm_adsp *dsp)
 				  be32_to_cpu(adsp2_alg[i].ym),
 				  be32_to_cpu(adsp2_alg[i].zm));
 
-			if (adsp2_alg[i].xm) {
-				region = kzalloc(sizeof(*region), GFP_KERNEL);
-				if (!region)
-					return -ENOMEM;
-				region->type = WMFW_ADSP2_XM;
-				region->alg = be32_to_cpu(adsp2_alg[i].alg.id);
-				region->base = be32_to_cpu(adsp2_alg[i].xm);
-				list_add_tail(&region->list,
-					      &dsp->alg_regions);
-			}
+			region = kzalloc(sizeof(*region), GFP_KERNEL);
+			if (!region)
+				return -ENOMEM;
+			region->type = WMFW_ADSP2_XM;
+			region->alg = be32_to_cpu(adsp2_alg[i].alg.id);
+			region->base = be32_to_cpu(adsp2_alg[i].xm);
+			list_add_tail(&region->list, &dsp->alg_regions);
 
-			if (adsp2_alg[i].ym) {
-				region = kzalloc(sizeof(*region), GFP_KERNEL);
-				if (!region)
-					return -ENOMEM;
-				region->type = WMFW_ADSP2_YM;
-				region->alg = be32_to_cpu(adsp2_alg[i].alg.id);
-				region->base = be32_to_cpu(adsp2_alg[i].ym);
-				list_add_tail(&region->list,
-					      &dsp->alg_regions);
-			}
+			region = kzalloc(sizeof(*region), GFP_KERNEL);
+			if (!region)
+				return -ENOMEM;
+			region->type = WMFW_ADSP2_YM;
+			region->alg = be32_to_cpu(adsp2_alg[i].alg.id);
+			region->base = be32_to_cpu(adsp2_alg[i].ym);
+			list_add_tail(&region->list, &dsp->alg_regions);
 
-			if (adsp2_alg[i].zm) {
-				region = kzalloc(sizeof(*region), GFP_KERNEL);
-				if (!region)
-					return -ENOMEM;
-				region->type = WMFW_ADSP2_ZM;
-				region->alg = be32_to_cpu(adsp2_alg[i].alg.id);
-				region->base = be32_to_cpu(adsp2_alg[i].zm);
-				list_add_tail(&region->list,
-					      &dsp->alg_regions);
-			}
+			region = kzalloc(sizeof(*region), GFP_KERNEL);
+			if (!region)
+				return -ENOMEM;
+			region->type = WMFW_ADSP2_ZM;
+			region->alg = be32_to_cpu(adsp2_alg[i].alg.id);
+			region->base = be32_to_cpu(adsp2_alg[i].zm);
+			list_add_tail(&region->list, &dsp->alg_regions);
 			break;
 		}
 	}
@@ -695,7 +691,17 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
 	hdr = (void*)&firmware->data[0];
 	if (memcmp(hdr->magic, "WMDR", 4) != 0) {
 		adsp_err(dsp, "%s: invalid magic\n", file);
-		return -EINVAL;
+		goto out_fw;
+	}
+
+	switch (be32_to_cpu(hdr->rev) & 0xff) {
+	case 1:
+		break;
+	default:
+		adsp_err(dsp, "%s: Unsupported coefficient file format %d\n",
+			 file, be32_to_cpu(hdr->rev) & 0xff);
+		ret = -EINVAL;
+		goto out_fw;
 	}
 
 	adsp_dbg(dsp, "%s: v%d.%d.%d\n", file,
@@ -710,8 +716,8 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
 	       pos - firmware->size > sizeof(*blk)) {
 		blk = (void*)(&firmware->data[pos]);
 
-		type = be32_to_cpu(blk->type) & 0xff;
-		offset = le32_to_cpu(blk->offset) & 0xffffff;
+		type = le16_to_cpu(blk->type);
+		offset = le16_to_cpu(blk->offset);
 
 		adsp_dbg(dsp, "%s.%d: %x v%d.%d.%d\n",
 			 file, blocks, le32_to_cpu(blk->id),
@@ -724,10 +730,10 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
 		reg = 0;
 		region_name = "Unknown";
 		switch (type) {
-		case WMFW_NAME_TEXT:
-		case WMFW_INFO_TEXT:
+		case (WMFW_NAME_TEXT << 8):
+		case (WMFW_INFO_TEXT << 8):
 			break;
-		case WMFW_ABSOLUTE:
+		case (WMFW_ABSOLUTE << 8):
 			region_name = "register";
 			reg = offset;
 			break;
@@ -751,9 +757,10 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
 					    &dsp->alg_regions, list) {
 				if (le32_to_cpu(blk->id) == alg_region->alg &&
 				    type == alg_region->type) {
-					reg = alg_region->base + offset;
+					reg = alg_region->base;
 					reg = wm_adsp_region_to_reg(mem,
 								    reg);
+					reg += offset;
 				}
 			}
 
@@ -763,18 +770,22 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
 			break;
 
 		default:
-			adsp_err(dsp, "Unknown region type %x\n", type);
+			adsp_err(dsp, "%s.%d: Unknown region type %x at %d\n",
+				 file, blocks, type, pos);
 			break;
 		}
 
 		if (reg) {
 			buf = kmemdup(blk->data, le32_to_cpu(blk->len),
-				      GFP_KERNEL);
+				      GFP_KERNEL | GFP_DMA);
 			if (!buf) {
 				adsp_err(dsp, "Out of memory\n");
 				return -ENOMEM;
 			}
 
+			adsp_dbg(dsp, "%s.%d: Writing %d bytes at %x\n",
+				 file, blocks, le32_to_cpu(blk->len),
+				 reg);
 			ret = regmap_raw_write(regmap, reg, blk->data,
 					       le32_to_cpu(blk->len));
 			if (ret != 0) {
@@ -801,6 +812,14 @@ out:
 	return 0;
 }
 
+int wm_adsp1_init(struct wm_adsp *adsp)
+{
+	INIT_LIST_HEAD(&adsp->alg_regions);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(wm_adsp1_init);
+
 int wm_adsp1_event(struct snd_soc_dapm_widget *w,
 		   struct snd_kcontrol *kcontrol,
 		   int event)
@@ -809,11 +828,37 @@ int wm_adsp1_event(struct snd_soc_dapm_widget *w,
 	struct wm_adsp *dsps = snd_soc_codec_get_drvdata(codec);
 	struct wm_adsp *dsp = &dsps[w->shift];
 	int ret;
+	int val;
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
 		regmap_update_bits(dsp->regmap, dsp->base + ADSP1_CONTROL_30,
 				   ADSP1_SYS_ENA, ADSP1_SYS_ENA);
+
+		/*
+		 * For simplicity set the DSP clock rate to be the
+		 * SYSCLK rate rather than making it configurable.
+		 */
+		if(dsp->sysclk_reg) {
+			ret = regmap_read(dsp->regmap, dsp->sysclk_reg, &val);
+			if (ret != 0) {
+				adsp_err(dsp, "Failed to read SYSCLK state: %d\n",
+				ret);
+				return ret;
+			}
+
+			val = (val & dsp->sysclk_mask)
+				>> dsp->sysclk_shift;
+
+			ret = regmap_update_bits(dsp->regmap,
+						 dsp->base + ADSP1_CONTROL_31,
+						 ADSP1_CLK_SEL_MASK, val);
+			if (ret != 0) {
+				adsp_err(dsp, "Failed to set clock rate: %d\n",
+					 ret);
+				return ret;
+			}
+		}
 
 		ret = wm_adsp_load(dsp);
 		if (ret != 0)
@@ -984,6 +1029,11 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 		regmap_update_bits(dsp->regmap, dsp->base + ADSP2_CONTROL,
 				   ADSP2_SYS_ENA | ADSP2_CORE_ENA |
 				   ADSP2_START, 0);
+
+		/* Make sure DMAs are quiesced */
+		regmap_write(dsp->regmap, dsp->base + ADSP2_WDMA_CONFIG_1, 0);
+		regmap_write(dsp->regmap, dsp->base + ADSP2_WDMA_CONFIG_2, 0);
+		regmap_write(dsp->regmap, dsp->base + ADSP2_RDMA_CONFIG_1, 0);
 
 		if (dsp->dvfs) {
 			ret = regulator_set_voltage(dsp->dvfs, 1200000,

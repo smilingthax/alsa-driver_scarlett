@@ -435,7 +435,7 @@ static void conexant_set_power(struct hda_codec *codec, hda_nid_t fg,
 	/* partial workaround for "azx_get_response timeout" */
 	if (power_state == AC_PWRST_D0)
 		msleep(10);
-	snd_hda_codec_set_power_to_all(codec, fg, power_state, true);
+	snd_hda_codec_set_power_to_all(codec, fg, power_state);
 }
 
 static int conexant_init(struct hda_codec *codec)
@@ -3197,6 +3197,9 @@ static const struct hda_codec_ops cx_auto_patch_ops = {
 	.init = snd_hda_gen_init,
 	.free = snd_hda_gen_free,
 	.unsol_event = snd_hda_jack_unsol_event,
+#ifdef CONFIG_PM
+	.check_power_status = snd_hda_gen_check_power_status,
+#endif
 };
 
 /*
@@ -3348,6 +3351,10 @@ static int patch_conexant_auto(struct hda_codec *codec)
 	case 0x14f15045:
 		codec->single_adc_amp = 1;
 		break;
+	case 0x14f15047:
+		codec->pin_amp_workaround = 1;
+		spec->gen.mixer_nid = 0x19;
+		break;
 	case 0x14f15051:
 		add_cx5051_fake_mutes(codec);
 		codec->pin_amp_workaround = 1;
@@ -3454,6 +3461,12 @@ static const struct hda_codec_preset snd_hda_preset_conexant[] = {
 	  .patch = patch_conexant_auto },
 	{ .id = 0x14f15111, .name = "CX20753/4",
 	  .patch = patch_conexant_auto },
+	{ .id = 0x14f15113, .name = "CX20755",
+	  .patch = patch_conexant_auto },
+	{ .id = 0x14f15114, .name = "CX20756",
+	  .patch = patch_conexant_auto },
+	{ .id = 0x14f15115, .name = "CX20757",
+	  .patch = patch_conexant_auto },
 	{} /* terminator */
 };
 
@@ -3477,6 +3490,9 @@ MODULE_ALIAS("snd-hda-codec-id:14f150b9");
 MODULE_ALIAS("snd-hda-codec-id:14f1510f");
 MODULE_ALIAS("snd-hda-codec-id:14f15110");
 MODULE_ALIAS("snd-hda-codec-id:14f15111");
+MODULE_ALIAS("snd-hda-codec-id:14f15113");
+MODULE_ALIAS("snd-hda-codec-id:14f15114");
+MODULE_ALIAS("snd-hda-codec-id:14f15115");
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Conexant HD-audio codec");

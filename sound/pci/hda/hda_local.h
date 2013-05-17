@@ -139,10 +139,6 @@ int snd_hda_codec_amp_init_stereo(struct hda_codec *codec, hda_nid_t nid,
 				  int dir, int idx, int mask, int val);
 void snd_hda_codec_resume_amp(struct hda_codec *codec);
 
-/* it's alias but a bit clearer meaning */
-#define snd_hda_codec_flush_amp_cache(codec) \
-	snd_hda_codec_resume_amp(codec)
-
 void snd_hda_set_vmaster_tlv(struct hda_codec *codec, hda_nid_t nid, int dir,
 			     unsigned int *tlv);
 struct snd_kcontrol *snd_hda_find_mixer_ctl(struct hda_codec *codec,
@@ -405,7 +401,8 @@ struct hda_model_fixup {
 
 struct hda_fixup {
 	int type;
-	bool chained;
+	bool chained:1;		/* call the chained fixup(s) after this */
+	bool chained_before:1;	/* call the chained fixup(s) before this */
 	int chain_id;
 	union {
 		const struct hda_pintbl *pins;
@@ -659,6 +656,19 @@ struct hda_loopback_check {
 int snd_hda_check_amp_list_power(struct hda_codec *codec,
 				 struct hda_loopback_check *check,
 				 hda_nid_t nid);
+
+/* check whether the actual power state matches with the target state */
+static inline bool
+snd_hda_check_power_state(struct hda_codec *codec, hda_nid_t nid,
+			  unsigned int target_state)
+{
+	unsigned int state = snd_hda_codec_read(codec, nid, 0,
+						AC_VERB_GET_POWER_STATE, 0);
+	if (state & AC_PWRST_ERROR)
+		return true;
+	state = (state >> 4) & 0x0f;
+	return (state != target_state);
+}
 
 /*
  * AMP control callbacks

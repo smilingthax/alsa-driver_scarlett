@@ -474,6 +474,10 @@ int arizona_set_sysclk(struct snd_soc_codec *codec, int clk_id,
 	case 147456000:
 		val |= 6 << ARIZONA_SYSCLK_FREQ_SHIFT;
 		break;
+	case 0:
+		dev_dbg(arizona->dev, "%s cleared\n", name);
+		*clk = freq;
+		return 0;
 	default:
 		return -EINVAL;
 	}
@@ -692,6 +696,9 @@ static int arizona_startup(struct snd_pcm_substream *substream,
 		return 0;
 	}
 
+	if (base_rate == 0)
+		return 0;
+
 	if (base_rate % 8000)
 		constraint = &arizona_44k1_constraint;
 	else
@@ -755,18 +762,28 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
 			     struct snd_soc_dai *dai)
 {
 	struct snd_soc_codec *codec = dai->codec;
+	struct arizona_priv *priv = snd_soc_codec_get_drvdata(codec);
+	struct arizona *arizona = priv->arizona;
 	int base = dai->driver->base;
 	const int *rates;
 	int i, ret;
-	int bclk, lrclk, wl, frame;
+	int chan_limit = arizona->pdata.max_channels_clocked[dai->id - 1];
+	int bclk, lrclk, wl, frame, bclk_target;
 
 	if (params_rate(params) % 8000)
 		rates = &arizona_44k1_bclk_rates[0];
 	else
 		rates = &arizona_48k_bclk_rates[0];
 
+	bclk_target = snd_soc_params_to_bclk(params);
+	if (chan_limit && chan_limit < params_channels(params)) {
+		arizona_aif_dbg(dai, "Limiting to %d channels\n", chan_limit);
+		bclk_target /= params_channels(params);
+		bclk_target *= chan_limit;
+	}
+
 	for (i = 0; i < ARRAY_SIZE(arizona_44k1_bclk_rates); i++) {
-		if (rates[i] >= snd_soc_params_to_bclk(params) &&
+		if (rates[i] >= bclk_target &&
 		    rates[i] % params_rate(params) == 0) {
 			bclk = i;
 			break;
@@ -778,7 +795,7 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	lrclk = snd_soc_params_to_bclk(params) / params_rate(params);
+	lrclk = rates[bclk] / params_rate(params);
 
 	arizona_aif_dbg(dai, "BCLK %dHz LRCLK %dHz\n",
 			rates[bclk], rates[bclk] / lrclk);
@@ -896,17 +913,6 @@ int arizona_init_dai(struct arizona_priv *priv, int id)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(arizona_init_dai);
-
-static irqreturn_t arizona_fll_lock(int irq, void *data)
-{
-	struct arizona_fll *fll = data;
-
-	arizona_fll_dbg(fll, "Lock status changed\n");
-
-	complete(&fll->lock);
-
-	return IRQ_HANDLED;
-}
 
 static irqreturn_t arizona_fll_clock_ok(int irq, void *data)
 {
@@ -1147,7 +1153,6 @@ int arizona_init_fll(struct arizona *arizona, int id, int base, int lock_irq,
 {
 	int ret;
 
-	init_completion(&fll->lock);
 	init_completion(&fll->ok);
 
 	fll->id = id;
@@ -1157,13 +1162,6 @@ int arizona_init_fll(struct arizona *arizona, int id, int base, int lock_irq,
 	snprintf(fll->lock_name, sizeof(fll->lock_name), "FLL%d lock", id);
 	snprintf(fll->clock_ok_name, sizeof(fll->clock_ok_name),
 		 "FLL%d clock OK", id);
-
-	ret = arizona_request_irq(arizona, lock_irq, fll->lock_name,
-				  arizona_fll_lock, fll);
-	if (ret != 0) {
-		dev_err(arizona->dev, "Failed to get FLL%d lock IRQ: %d\n",
-			id, ret);
-	}
 
 	ret = arizona_request_irq(arizona, ok_irq, fll->clock_ok_name,
 				  arizona_fll_clock_ok, fll);

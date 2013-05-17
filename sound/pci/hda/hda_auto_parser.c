@@ -97,6 +97,28 @@ static void reorder_outputs(unsigned int nums, hda_nid_t *pins)
 	}
 }
 
+/* check whether the given pin has a proper pin I/O capability bit */
+static bool check_pincap_validity(struct hda_codec *codec, hda_nid_t pin,
+				  unsigned int dev)
+{
+	unsigned int pincap = snd_hda_query_pin_caps(codec, pin);
+
+	/* some old hardware don't return the proper pincaps */
+	if (!pincap)
+		return true;
+
+	switch (dev) {
+	case AC_JACK_LINE_OUT:
+	case AC_JACK_SPEAKER:
+	case AC_JACK_HP_OUT:
+	case AC_JACK_SPDIF_OUT:
+	case AC_JACK_DIG_OTHER_OUT:
+		return !!(pincap & AC_PINCAP_OUT);
+	default:
+		return !!(pincap & AC_PINCAP_IN);
+	}
+}
+
 /*
  * Parse all pin widgets and store the useful pin nids to cfg
  *
@@ -163,6 +185,9 @@ int snd_hda_parse_pin_defcfg(struct hda_codec *codec,
 			    conn == AC_JACK_PORT_BOTH)
 				dev = AC_JACK_SPEAKER;
 		}
+
+		if (!check_pincap_validity(codec, nid, dev))
+			continue;
 
 		switch (dev) {
 		case AC_JACK_LINE_OUT:
@@ -558,6 +583,9 @@ static int fill_audio_out_name(struct hda_codec *codec, hda_nid_t nid,
 	return 1;
 }
 
+#define is_hdmi_cfg(conf) \
+	(get_defcfg_location(conf) == AC_JACK_LOC_HDMI)
+
 /**
  * snd_hda_get_pin_label - Get a label for the given I/O pin
  *
@@ -578,6 +606,7 @@ int snd_hda_get_pin_label(struct hda_codec *codec, hda_nid_t nid,
 	unsigned int def_conf = snd_hda_codec_get_pincfg(codec, nid);
 	const char *name = NULL;
 	int i;
+	bool hdmi;
 
 	if (indexp)
 		*indexp = 0;
@@ -596,16 +625,18 @@ int snd_hda_get_pin_label(struct hda_codec *codec, hda_nid_t nid,
 					   label, maxlen, indexp);
 	case AC_JACK_SPDIF_OUT:
 	case AC_JACK_DIG_OTHER_OUT:
-		if (get_defcfg_location(def_conf) == AC_JACK_LOC_HDMI)
-			name = "HDMI";
-		else
-			name = "SPDIF";
-		if (cfg && indexp) {
-			i = find_idx_in_nid_list(nid, cfg->dig_out_pins,
-						 cfg->dig_outs);
-			if (i >= 0)
-				*indexp = i;
-		}
+		hdmi = is_hdmi_cfg(def_conf);
+		name = hdmi ? "HDMI" : "SPDIF";
+		if (cfg && indexp)
+			for (i = 0; i < cfg->dig_outs; i++) {
+				hda_nid_t pin = cfg->dig_out_pins[i];
+				unsigned int c;
+				if (pin == nid)
+					break;
+				c = snd_hda_codec_get_pincfg(codec, pin);
+				if (hdmi == is_hdmi_cfg(c))
+					(*indexp)++;
+			}
 		break;
 	default:
 		if (cfg) {
@@ -665,19 +696,15 @@ static void set_pin_targets(struct hda_codec *codec,
 		snd_hda_set_pin_ctl_cache(codec, cfg->nid, cfg->val);
 }
 
-void snd_hda_apply_fixup(struct hda_codec *codec, int action)
+static void apply_fixup(struct hda_codec *codec, int id, int action, int depth)
 {
-	int id = codec->fixup_id;
-#ifdef CONFIG_SND_DEBUG_VERBOSE
 	const char *modelname = codec->fixup_name;
-#endif
-	int depth = 0;
-
-	if (!codec->fixup_list)
-		return;
 
 	while (id >= 0) {
 		const struct hda_fixup *fix = codec->fixup_list + id;
+
+		if (fix->chained_before)
+			apply_fixup(codec, fix->chain_id, action, depth + 1);
 
 		switch (fix->type) {
 		case HDA_FIXUP_PINS:
@@ -718,12 +745,18 @@ void snd_hda_apply_fixup(struct hda_codec *codec, int action)
 				   codec->chip_name, fix->type);
 			break;
 		}
-		if (!fix->chained)
+		if (!fix->chained || fix->chained_before)
 			break;
 		if (++depth > 10)
 			break;
 		id = fix->chain_id;
 	}
+}
+
+void snd_hda_apply_fixup(struct hda_codec *codec, int action)
+{
+	if (codec->fixup_list)
+		apply_fixup(codec, codec->fixup_id, action, 0);
 }
 EXPORT_SYMBOL_HDA(snd_hda_apply_fixup);
 

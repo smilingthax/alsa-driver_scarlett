@@ -1276,6 +1276,8 @@ static bool snd_hda_codec_get_supported_ps(struct hda_codec *codec,
 
 static unsigned int hda_set_power_state(struct hda_codec *codec,
 				unsigned int power_state);
+static unsigned int default_power_filter(struct hda_codec *codec, hda_nid_t nid,
+					 unsigned int power_state);
 
 /**
  * snd_hda_codec_new - create a HDA codec
@@ -1396,6 +1398,7 @@ int snd_hda_codec_new(struct hda_bus *bus,
 #endif
 	codec->epss = snd_hda_codec_get_supported_ps(codec, fg,
 					AC_PWRST_EPSS);
+	codec->power_filter = default_power_filter;
 
 	/* power-up all before initialization */
 	hda_set_power_state(codec, AC_PWRST_D0);
@@ -3637,30 +3640,35 @@ void snd_hda_sequence_write_cache(struct hda_codec *codec,
 }
 EXPORT_SYMBOL_HDA(snd_hda_sequence_write_cache);
 
+/**
+ * snd_hda_codec_flush_cache - Execute all pending (cached) amps / verbs
+ * @codec: HD-audio codec
+ */
+void snd_hda_codec_flush_cache(struct hda_codec *codec)
+{
+	snd_hda_codec_resume_amp(codec);
+	snd_hda_codec_resume_cache(codec);
+}
+EXPORT_SYMBOL_HDA(snd_hda_codec_flush_cache);
+
 void snd_hda_codec_set_power_to_all(struct hda_codec *codec, hda_nid_t fg,
-				    unsigned int power_state,
-				    bool eapd_workaround)
+				    unsigned int power_state)
 {
 	hda_nid_t nid = codec->start_nid;
 	int i;
 
 	for (i = 0; i < codec->num_nodes; i++, nid++) {
 		unsigned int wcaps = get_wcaps(codec, nid);
+		unsigned int state = power_state;
 		if (!(wcaps & AC_WCAP_POWER))
 			continue;
-		/* don't power down the widget if it controls eapd and
-		 * EAPD_BTLENABLE is set.
-		 */
-		if (eapd_workaround && power_state == AC_PWRST_D3 &&
-		    get_wcaps_type(wcaps) == AC_WID_PIN &&
-		    (snd_hda_query_pin_caps(codec, nid) & AC_PINCAP_EAPD)) {
-			int eapd = snd_hda_codec_read(codec, nid, 0,
-						AC_VERB_GET_EAPD_BTLENABLE, 0);
-			if (eapd & 0x02)
+		if (codec->power_filter) {
+			state = codec->power_filter(codec, nid, power_state);
+			if (state != power_state && power_state == AC_PWRST_D3)
 				continue;
 		}
 		snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_POWER_STATE,
-				    power_state);
+				    state);
 	}
 }
 EXPORT_SYMBOL_HDA(snd_hda_codec_set_power_to_all);
@@ -3707,6 +3715,21 @@ static unsigned int hda_sync_power_state(struct hda_codec *codec,
 	return state;
 }
 
+/* don't power down the widget if it controls eapd and EAPD_BTLENABLE is set */
+static unsigned int default_power_filter(struct hda_codec *codec, hda_nid_t nid,
+					 unsigned int power_state)
+{
+	if (power_state == AC_PWRST_D3 &&
+	    get_wcaps_type(get_wcaps(codec, nid)) == AC_WID_PIN &&
+	    (snd_hda_query_pin_caps(codec, nid) & AC_PINCAP_EAPD)) {
+		int eapd = snd_hda_codec_read(codec, nid, 0,
+					      AC_VERB_GET_EAPD_BTLENABLE, 0);
+		if (eapd & 0x02)
+			return AC_PWRST_D0;
+	}
+	return power_state;
+}
+
 /*
  * set power state of the codec, and return the power state
  */
@@ -3732,8 +3755,7 @@ static unsigned int hda_set_power_state(struct hda_codec *codec,
 			snd_hda_codec_read(codec, fg, 0,
 					   AC_VERB_SET_POWER_STATE,
 					   power_state);
-			snd_hda_codec_set_power_to_all(codec, fg, power_state,
-						       true);
+			snd_hda_codec_set_power_to_all(codec, fg, power_state);
 		}
 		state = hda_sync_power_state(codec, fg, power_state);
 		if (!(state & AC_PWRST_ERROR))
@@ -3741,6 +3763,32 @@ static unsigned int hda_set_power_state(struct hda_codec *codec,
 	}
 
 	return state;
+}
+
+/* sync power states of all widgets;
+ * this is called at the end of codec parsing
+ */
+static void sync_power_up_states(struct hda_codec *codec)
+{
+	hda_nid_t nid = codec->start_nid;
+	int i;
+
+	/* don't care if no or standard filter is used */
+	if (!codec->power_filter || codec->power_filter == default_power_filter)
+		return;
+
+	for (i = 0; i < codec->num_nodes; i++, nid++) {
+		unsigned int wcaps = get_wcaps(codec, nid);
+		unsigned int target;
+		if (!(wcaps & AC_WCAP_POWER))
+			continue;
+		target = codec->power_filter(codec, nid, AC_PWRST_D0);
+		if (target == AC_PWRST_D0)
+			continue;
+		if (!snd_hda_check_power_state(codec, nid, target))
+			snd_hda_codec_write(codec, nid, 0,
+					    AC_VERB_SET_POWER_STATE, target);
+	}
 }
 
 #ifdef CONFIG_SND_HDA_HWDEP
@@ -3794,7 +3842,7 @@ static void hda_mark_cmd_cache_dirty(struct hda_codec *codec)
 	}
 	for (i = 0; i < codec->amp_cache.buf.used; i++) {
 		struct hda_amp_info *amp;
-		amp = snd_array_elem(&codec->cmd_cache.buf, i);
+		amp = snd_array_elem(&codec->amp_cache.buf, i);
 		amp->head.dirty = 1;
 	}
 }
@@ -3815,6 +3863,7 @@ static void hda_call_codec_resume(struct hda_codec *codec)
 	hda_set_power_state(codec, AC_PWRST_D0);
 	restore_shutup_pins(codec);
 	hda_exec_init_verbs(codec);
+	snd_hda_jack_set_dirty_all(codec);
 	if (codec->patch_ops.resume)
 		codec->patch_ops.resume(codec);
 	else {
@@ -3826,10 +3875,8 @@ static void hda_call_codec_resume(struct hda_codec *codec)
 
 	if (codec->jackpoll_interval)
 		hda_jackpoll_work(&codec->jackpoll_work.work);
-	else {
-		snd_hda_jack_set_dirty_all(codec);
+	else
 		snd_hda_jack_report_sync(codec);
-	}
 
 	codec->in_pm = 0;
 	snd_hda_power_down(codec); /* flag down before returning */
@@ -3931,6 +3978,7 @@ int snd_hda_codec_build_controls(struct hda_codec *codec)
 		hda_jackpoll_work(&codec->jackpoll_work.work);
 	else
 		snd_hda_jack_report_sync(codec); /* call at the last init point */
+	sync_power_up_states(codec);
 	return 0;
 }
 
