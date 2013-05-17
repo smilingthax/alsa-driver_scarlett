@@ -32,6 +32,7 @@
 #define ARIZONA_CLK_SRC_AIF2BCLK 0x9
 #define ARIZONA_CLK_SRC_AIF3BCLK 0xa
 
+#define ARIZONA_FLL_SRC_NONE      -1
 #define ARIZONA_FLL_SRC_MCLK1      0
 #define ARIZONA_FLL_SRC_MCLK2      1
 #define ARIZONA_FLL_SRC_SLIMCLK    3
@@ -64,6 +65,9 @@ struct arizona_priv {
 	int sysclk;
 	int asyncclk;
 	struct arizona_dai_priv dai[ARIZONA_MAX_DAI];
+
+	int num_inputs;
+	unsigned int in_pending;
 };
 
 #define ARIZONA_NUM_MIXER_INPUTS 99
@@ -198,8 +202,12 @@ struct arizona_fll {
 	unsigned int base;
 	unsigned int vco_mult;
 	struct completion ok;
-	unsigned int fref;
+
 	unsigned int fout;
+	int sync_src;
+	unsigned int sync_freq;
+	int ref_src;
+	unsigned int ref_freq;
 
 	char lock_name[ARIZONA_FLL_NAME_LEN];
 	char clock_ok_name[ARIZONA_FLL_NAME_LEN];
@@ -207,6 +215,8 @@ struct arizona_fll {
 
 extern int arizona_init_fll(struct arizona *arizona, int id, int base,
 			    int lock_irq, int ok_irq, struct arizona_fll *fll);
+extern int arizona_set_fll_refclk(struct arizona_fll *fll, int source,
+				  unsigned int Fref, unsigned int Fout);
 extern int arizona_set_fll(struct arizona_fll *fll, int source,
 			   unsigned int Fref, unsigned int Fout);
 
