@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/caiaq/device.c	2013-03-04 09:58:34.549644247 +0100
-+++ device.c	2013-03-04 10:04:31.982629881 +0100
+--- ../../alsa-kernel/usb/caiaq/device.c	2013-04-03 16:11:08.367697230 +0200
++++ device.c	2013-04-05 09:05:40.283075342 +0200
 @@ -1,3 +1,5 @@
 +#include "adriver.h"
 +#include "../usbcompat.h"
@@ -17,7 +17,7 @@
 +#endif
  {
  	int ret;
- 	struct snd_usb_caiaqdev *cdev = urb->context;
+ 	struct device *dev = &urb->dev->dev;
 @@ -411,6 +417,16 @@
  	return 0;
  }

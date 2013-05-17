@@ -1,24 +1,26 @@
---- ../alsa-kernel/usb/quirks.c	2013-01-14 10:09:28.000000000 +0100
-+++ quirks.c	2013-01-15 08:52:58.000000000 +0100
+--- ../alsa-kernel/usb/quirks.c	2013-04-03 16:11:08.375697330 +0200
++++ quirks.c	2013-04-05 09:00:51.920633481 +0200
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "usbaudio.inc"
  /*
   *   This program is free software; you can redistribute it and/or modify
   *   it under the terms of the GNU General Public License as published by
-@@ -166,7 +168,11 @@
- 	}
+@@ -167,8 +169,13 @@
  	alts = &iface->altsetting[fp->altset_idx];
- 	fp->datainterval = snd_usb_parse_datainterval(chip, alts);
+ 	if (fp->datainterval == 0)
+ 		fp->datainterval = snd_usb_parse_datainterval(chip, alts);
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 	fp->maxpacksize = le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize);
+ 	if (fp->maxpacksize == 0)
+ 		fp->maxpacksize = le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize);
 +#else
-+	fp->maxpacksize = get_endpoint(alts, 0)->wMaxPacketSize;
++	if (fp->maxpacksize == 0)
++		fp->maxpacksize = get_endpoint(alts, 0)->wMaxPacketSize;
 +#endif
  	usb_set_interface(chip->dev, fp->iface, 0);
  	snd_usb_init_pitch(chip, fp->iface, alts, fp);
  	snd_usb_init_sample_rate(chip, fp->iface, alts, fp, fp->rate_max);
-@@ -236,7 +242,11 @@
+@@ -238,7 +245,11 @@
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
  	fp->datainterval = 0;
@@ -30,7 +32,7 @@
  
  	switch (fp->maxpacksize) {
  	case 0x120:
-@@ -338,8 +348,13 @@
+@@ -340,8 +351,13 @@
  	struct usb_host_config *config = dev->actconfig;
  	int err;
  
@@ -44,7 +46,7 @@
  		snd_printdd("sending Extigy boot sequence...\n");
  		/* Send message to force it to reconnect with full interface. */
  		err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev,0),
-@@ -351,8 +366,13 @@
+@@ -353,8 +369,13 @@
  		if (err < 0) snd_printdd("error usb_get_descriptor: %d\n", err);
  		err = usb_reset_configuration(dev);
  		if (err < 0) snd_printdd("error usb_reset_configuration: %d\n", err);
@@ -58,7 +60,7 @@
  		return -ENODEV; /* quit this anyway */
  	}
  	return 0;
-@@ -360,6 +380,8 @@
+@@ -362,6 +383,8 @@
  
  static int snd_usb_audigy2nx_boot_quirk(struct usb_device *dev)
  {
@@ -67,7 +69,7 @@
  	u8 buf = 1;
  
  	snd_usb_ctl_msg(dev, usb_rcvctrlpipe(dev, 0), 0x2a,
-@@ -371,6 +393,7 @@
+@@ -373,6 +396,7 @@
  				1, 2000, NULL, 0);
  		return -ENODEV;
  	}
@@ -75,7 +77,7 @@
  	return 0;
  }
  
-@@ -379,6 +402,10 @@
+@@ -381,6 +405,10 @@
  	int err;
  
  	if (dev->actconfig->desc.bConfigurationValue == 1) {
@@ -86,7 +88,7 @@
  		snd_printk(KERN_INFO "usb-audio: "
  			   "Fast Track Pro switching to config #2\n");
  		/* This function has to be available by the usb core module.
-@@ -394,6 +421,7 @@
+@@ -396,6 +424,7 @@
  		   that will just be destroyed and recreated with a new
  		   configuration */
  		return -ENODEV;
