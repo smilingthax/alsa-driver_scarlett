@@ -741,6 +741,9 @@ struct ca0132_spec {
 	long voicefx_val;
 	long cur_mic_boost;
 
+	struct hda_codec *codec;
+	struct delayed_work unsol_hp_work;
+
 #ifdef ENABLE_TUNING_CONTROLS
 	long cur_ctl_vals[TUNING_CTLS_COUNT];
 #endif
@@ -2298,6 +2301,11 @@ static int dspxfr_one_seg(struct hda_codec *codec,
 	hda_frame_size_words = ((sample_rate_div == 0) ? 0 :
 			(num_chans * sample_rate_mul / sample_rate_div));
 
+	if (hda_frame_size_words == 0) {
+		snd_printdd(KERN_ERR "frmsz zero\n");
+		return -EINVAL;
+	}
+
 	buffer_size_words = min(buffer_size_words,
 				(unsigned int)(UC_RANGE(chip_addx, 1) ?
 				65536 : 32768));
@@ -2308,8 +2316,7 @@ static int dspxfr_one_seg(struct hda_codec *codec,
 		   chip_addx, hda_frame_size_words, num_chans,
 		   sample_rate_mul, sample_rate_div, buffer_size_words);
 
-	if ((buffer_addx == NULL) || (hda_frame_size_words == 0) ||
-	    (buffer_size_words < hda_frame_size_words)) {
+	if (buffer_size_words < hda_frame_size_words) {
 		snd_printdd(KERN_ERR "dspxfr_one_seg:failed\n");
 		return -EINVAL;
 	}
@@ -3223,6 +3230,14 @@ exit:
 	return err < 0 ? err : 0;
 }
 
+static void ca0132_unsol_hp_delayed(struct work_struct *work)
+{
+	struct ca0132_spec *spec = container_of(
+		to_delayed_work(work), struct ca0132_spec, unsol_hp_work);
+	ca0132_select_out(spec->codec);
+	snd_hda_jack_report_sync(spec->codec);
+}
+
 static void ca0132_set_dmic(struct hda_codec *codec, int enable);
 static int ca0132_mic_boost_set(struct hda_codec *codec, long val);
 static int ca0132_effects_set(struct hda_codec *codec, hda_nid_t nid, long val);
@@ -3235,7 +3250,7 @@ static int ca0132_set_vipsource(struct hda_codec *codec, int val)
 	struct ca0132_spec *spec = codec->spec;
 	unsigned int tmp;
 
-	if (!dspload_is_loaded(codec))
+	if (spec->dsp_state != DSP_DOWNLOADED)
 		return 0;
 
 	/* if CrystalVoice if off, vipsource should be 0 */
@@ -4263,11 +4278,12 @@ static void ca0132_refresh_widget_caps(struct hda_codec *codec)
  */
 static void ca0132_setup_defaults(struct hda_codec *codec)
 {
+	struct ca0132_spec *spec = codec->spec;
 	unsigned int tmp;
 	int num_fx;
 	int idx, i;
 
-	if (!dspload_is_loaded(codec))
+	if (spec->dsp_state != DSP_DOWNLOADED)
 		return;
 
 	/* out, in effects + voicefx */
@@ -4347,11 +4363,15 @@ static bool ca0132_download_dsp_images(struct hda_codec *codec)
 		return false;
 
 	dsp_os_image = (struct dsp_image_seg *)(fw_entry->data);
-	dspload_image(codec, dsp_os_image, 0, 0, true, 0);
+	if (dspload_image(codec, dsp_os_image, 0, 0, true, 0)) {
+		pr_err("ca0132 dspload_image failed.\n");
+		goto exit_download;
+	}
+
 	dsp_loaded = dspload_wait_loaded(codec);
 
+exit_download:
 	release_firmware(fw_entry);
-
 
 	return dsp_loaded;
 }
@@ -4363,16 +4383,13 @@ static void ca0132_download_dsp(struct hda_codec *codec)
 #ifndef CONFIG_SND_HDA_CODEC_CA0132_DSP
 	return; /* NOP */
 #endif
-	spec->dsp_state = DSP_DOWNLOAD_INIT;
 
-	if (spec->dsp_state == DSP_DOWNLOAD_INIT) {
-		chipio_enable_clocks(codec);
-		spec->dsp_state = DSP_DOWNLOADING;
-		if (!ca0132_download_dsp_images(codec))
-			spec->dsp_state = DSP_DOWNLOAD_FAILED;
-		else
-			spec->dsp_state = DSP_DOWNLOADED;
-	}
+	chipio_enable_clocks(codec);
+	spec->dsp_state = DSP_DOWNLOADING;
+	if (!ca0132_download_dsp_images(codec))
+		spec->dsp_state = DSP_DOWNLOAD_FAILED;
+	else
+		spec->dsp_state = DSP_DOWNLOADED;
 
 	if (spec->dsp_state == DSP_DOWNLOADED)
 		ca0132_set_dsp_msr(codec, true);
@@ -4393,8 +4410,7 @@ static void ca0132_process_dsp_response(struct hda_codec *codec)
 
 static void ca0132_unsol_event(struct hda_codec *codec, unsigned int res)
 {
-	snd_printdd(KERN_INFO "ca0132_unsol_event: 0x%x\n", res);
-
+	struct ca0132_spec *spec = codec->spec;
 
 	if (((res >> AC_UNSOL_RES_TAG_SHIFT) & 0x3f) == UNSOL_TAG_DSP) {
 		ca0132_process_dsp_response(codec);
@@ -4406,8 +4422,13 @@ static void ca0132_unsol_event(struct hda_codec *codec, unsigned int res)
 
 		switch (res) {
 		case UNSOL_TAG_HP:
-			ca0132_select_out(codec);
-			snd_hda_jack_report_sync(codec);
+			/* Delay enabling the HP amp, to let the mic-detection
+			 * state machine run.
+			 */
+			cancel_delayed_work_sync(&spec->unsol_hp_work);
+			queue_delayed_work(codec->bus->workq,
+					   &spec->unsol_hp_work,
+					   msecs_to_jiffies(500));
 			break;
 		case UNSOL_TAG_AMIC1:
 			ca0132_select_mic(codec);
@@ -4582,6 +4603,7 @@ static void ca0132_free(struct hda_codec *codec)
 {
 	struct ca0132_spec *spec = codec->spec;
 
+	cancel_delayed_work_sync(&spec->unsol_hp_work);
 	snd_hda_power_up(codec);
 	snd_hda_sequence_write(codec, spec->base_exit_verbs);
 	ca0132_exit_chip(codec);
@@ -4647,6 +4669,7 @@ static int patch_ca0132(struct hda_codec *codec)
 	if (!spec)
 		return -ENOMEM;
 	codec->spec = spec;
+	spec->codec = codec;
 
 	spec->num_mixers = 1;
 	spec->mixers[0] = ca0132_mixer;
@@ -4656,6 +4679,8 @@ static int patch_ca0132(struct hda_codec *codec)
 	spec->init_verbs[0] = ca0132_init_verbs0;
 	spec->init_verbs[1] = ca0132_init_verbs1;
 	spec->num_init_verbs = 2;
+
+	INIT_DELAYED_WORK(&spec->unsol_hp_work, ca0132_unsol_hp_delayed);
 
 	ca0132_init_chip(codec);
 

@@ -237,8 +237,6 @@
 #define RXSTATE		BIT(5)
 #define SRMOD_MASK	3
 #define SRMOD_INACTIVE	0
-#define SRMOD_TX	1
-#define SRMOD_RX	2
 
 /*
  * DAVINCI_MCASP_LBCTL_REG - Loop Back Control Register Bits
@@ -687,27 +685,6 @@ static int davinci_hw_common_param(struct davinci_audio_dev *dev, int stream,
 	}
 
 	for (i = 0; i < dev->num_serializer; i++) {
-		if (dev->serial_dir[i] == TX_MODE)
-			tx_ser++;
-		if (dev->serial_dir[i] == RX_MODE)
-			rx_ser++;
-	}
-
-	if (stream == SNDRV_PCM_STREAM_PLAYBACK)
-		ser = tx_ser;
-	else
-		ser = rx_ser;
-
-	if (ser < max_active_serializers) {
-		dev_warn(dev->dev, "stream has more channels (%d) than are "
-			"enabled in mcasp (%d)\n", channels, ser * slots);
-		return -EINVAL;
-	}
-
-	tx_ser = 0;
-	rx_ser = 0;
-
-	for (i = 0; i < dev->num_serializer; i++) {
 		mcasp_set_bits(dev->base + DAVINCI_MCASP_XRSRCTL_REG(i),
 					dev->serial_dir[i]);
 		if (dev->serial_dir[i] == TX_MODE &&
@@ -724,6 +701,17 @@ static int davinci_hw_common_param(struct davinci_audio_dev *dev, int stream,
 			mcasp_mod_bits(dev->base + DAVINCI_MCASP_XRSRCTL_REG(i),
 					SRMOD_INACTIVE, SRMOD_MASK);
 		}
+	}
+
+	if (stream == SNDRV_PCM_STREAM_PLAYBACK)
+		ser = tx_ser;
+	else
+		ser = rx_ser;
+
+	if (ser < max_active_serializers) {
+		dev_warn(dev->dev, "stream has more channels (%d) than are "
+			"enabled in mcasp (%d)\n", channels, ser * slots);
+		return -EINVAL;
 	}
 
 	if (dev->txnumevt && stream == SNDRV_PCM_STREAM_PLAYBACK) {
@@ -1004,6 +992,10 @@ static struct snd_soc_dai_driver davinci_mcasp_dai[] = {
 
 };
 
+static const struct snd_soc_component_driver davinci_mcasp_component = {
+	.name		= "davinci-mcasp",
+};
+
 static const struct of_device_id mcasp_dt_ids[] = {
 	{
 		.compatible = "ti,dm646x-mcasp-audio",
@@ -1220,7 +1212,8 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
 
 	dma_data->channel = res->start;
 	dev_set_drvdata(&pdev->dev, dev);
-	ret = snd_soc_register_dai(&pdev->dev, &davinci_mcasp_dai[pdata->op_mode]);
+	ret = snd_soc_register_component(&pdev->dev, &davinci_mcasp_component,
+					 &davinci_mcasp_dai[pdata->op_mode], 1);
 
 	if (ret != 0)
 		goto err_release_clk;
@@ -1228,13 +1221,13 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
 	ret = davinci_soc_platform_register(&pdev->dev);
 	if (ret) {
 		dev_err(&pdev->dev, "register PCM failed: %d\n", ret);
-		goto err_unregister_dai;
+		goto err_unregister_component;
 	}
 
 	return 0;
 
-err_unregister_dai:
-	snd_soc_unregister_dai(&pdev->dev);
+err_unregister_component:
+	snd_soc_unregister_component(&pdev->dev);
 err_release_clk:
 	pm_runtime_put_sync(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
@@ -1244,7 +1237,7 @@ err_release_clk:
 static int davinci_mcasp_remove(struct platform_device *pdev)
 {
 
-	snd_soc_unregister_dai(&pdev->dev);
+	snd_soc_unregister_component(&pdev->dev);
 	davinci_soc_platform_unregister(&pdev->dev);
 
 	pm_runtime_put_sync(&pdev->dev);

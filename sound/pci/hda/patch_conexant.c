@@ -139,8 +139,12 @@ struct conexant_spec {
 
 
 #ifdef CONFIG_SND_HDA_INPUT_BEEP
-#define set_beep_amp(spec, nid, idx, dir) \
-	((spec)->beep_amp = HDA_COMPOSE_AMP_VAL(nid, 1, idx, dir))
+static inline void set_beep_amp(struct conexant_spec *spec, hda_nid_t nid,
+				int idx, int dir)
+{
+	spec->gen.beep_nid = nid;
+	spec->beep_amp = HDA_COMPOSE_AMP_VAL(nid, 1, idx, dir);
+}
 /* additional beep mixers; the actual parameters are overwritten at build */
 static const struct snd_kcontrol_new cxt_beep_mixer[] = {
 	HDA_CODEC_VOLUME_MONO("Beep Playback Volume", 0, 1, 0, HDA_OUTPUT),
@@ -1142,7 +1146,7 @@ static int patch_cxt5045(struct hda_codec *codec)
 	}
 
 	if (spec->beep_amp)
-		snd_hda_attach_beep_device(codec, spec->beep_amp);
+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
 
 	return 0;
 }
@@ -1921,7 +1925,7 @@ static int patch_cxt5051(struct hda_codec *codec)
 	}
 
 	if (spec->beep_amp)
-		snd_hda_attach_beep_device(codec, spec->beep_amp);
+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
 
 	return 0;
 }
@@ -3099,7 +3103,7 @@ static int patch_cxt5066(struct hda_codec *codec)
 	}
 
 	if (spec->beep_amp)
-		snd_hda_attach_beep_device(codec, spec->beep_amp);
+		snd_hda_attach_beep_device(codec, get_amp_nid_(spec->beep_amp));
 
 	return 0;
 }
@@ -3350,7 +3354,6 @@ static int patch_conexant_auto(struct hda_codec *codec)
 	switch (codec->vendor_id) {
 	case 0x14f15045:
 		codec->single_adc_amp = 1;
-		codec->power_filter = NULL; /* Needs speaker amp to D3 to avoid click */
 		break;
 	case 0x14f15047:
 		codec->pin_amp_workaround = 1;
@@ -3390,8 +3393,6 @@ static int patch_conexant_auto(struct hda_codec *codec)
 		goto error;
 
 	codec->patch_ops = cx_auto_patch_ops;
-	if (spec->beep_amp)
-		snd_hda_attach_beep_device(codec, spec->beep_amp);
 
 	/* Some laptops with Conexant chips show stalls in S3 resume,
 	 * which falls into the single-cmd mode.
