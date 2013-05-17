@@ -227,7 +227,7 @@ withsysfs() {
 			echo "!!-----------" >> $FILE
 			echo "" >> $FILE
 		    fi
-		    for f in init_pin_configs driver_pin_configs user_pin_configs init_verbs; do
+		    for f in init_pin_configs driver_pin_configs user_pin_configs init_verbs hints; do
 			echo "$i/$f:" >> $FILE
 			cat $i/$f >> $FILE
 			echo >> $FILE
