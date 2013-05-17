@@ -1536,6 +1536,7 @@ fi
 
 dnl Check kernel headers for 2.2
 MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
+CHECK_KERNEL_HEADER(linux/kconfig.h)
 CHECK_KERNEL_HEADER(linux/utsrelease.h)
 CHECK_KERNEL_HEADER(linux/compiler.h)
 CHECK_KERNEL_HEADER(linux/pm.h)
@@ -1796,6 +1797,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/kernel.h>
 #include <linux/string.h>
 ],[
@@ -1828,6 +1830,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/kernel.h>
 ],[
   char buf[128];
@@ -1859,6 +1862,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/kernel.h>
 void f(const char *fmt, ...)
 {
@@ -1897,6 +1901,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/kernel.h>
 ],[
   char buf[128];
@@ -1928,6 +1933,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/kernel.h>
 ],[
   unsigned int i;
@@ -1959,6 +1965,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/time.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
@@ -1993,6 +2000,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/time.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
@@ -2028,6 +2036,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/time.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
@@ -2067,6 +2076,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/time.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
@@ -2102,6 +2112,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/time.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
@@ -2137,6 +2148,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/time.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
@@ -2172,6 +2184,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/time.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
@@ -2207,6 +2220,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/kmod.h>
 ],[
 	request_module("abcd", "def", "ixj");
@@ -2237,6 +2251,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
 ],[
@@ -2269,6 +2284,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/pci.h>
 ],[
 	int (*func)();
@@ -2299,6 +2315,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/pci.h>
 ],[
 	int (*func)();
@@ -2329,6 +2346,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/delay.h>
 ],[
   void (*func)(unsigned int);
@@ -2361,6 +2379,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/delay.h>
 ],[
   unsigned long (*func)(unsigned int);
@@ -2393,6 +2412,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/jiffies.h>
 #include <linux/time.h>
 ],[
@@ -2425,6 +2445,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/tty.h>
 ],[
 	struct tty_struct tty;
@@ -2455,6 +2476,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/videodev2.h>
 #include "media/v4l2-dev.h"
 ],[
@@ -2541,6 +2563,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/mm.h>
 ],[
   static pgprot_t p;
@@ -2571,6 +2594,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/slab.h>
 ],[
   void * (*func)(size_t, size_t, int);
@@ -2602,6 +2626,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/string.h>
 ],[
   char * (*func)(const char *, int);
@@ -2629,6 +2654,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
+#include <linux/kconfig.h>
 #include <linux/string.h>
 ],[
   char * (*func)(const char *, int);
@@ -2660,6 +2686,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/slab.h>
 ],[
   void * (*func)(size_t, int);
@@ -2691,6 +2718,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/workqueue.h>
 ],[
     create_workqueue("abcd", 0);
@@ -2721,6 +2749,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/pci.h>
 ],[
   void (*func)(struct pci_dev *, int);
@@ -2752,6 +2781,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/sound.h>
 ],[
   void (*func)(struct file_operations *, int, struct device *);
@@ -2917,6 +2947,7 @@ if test -n "$CONFIG_USB"; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/usb/audio.h>
 ],[
   struct uac1_as_header_descriptor tmp;
@@ -2937,6 +2968,7 @@ if test -n "$CONFIG_USB"; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/usb/audio.h>
 ],[
   struct uac_as_header_descriptor_v2 tmp;
@@ -2965,6 +2997,7 @@ if test -n "$CONFIG_USB"; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/usb/audio-v2.h>
 ],[
   struct struct uac_clock_multiplier_descriptor tmp;
@@ -2999,6 +3032,7 @@ if test -n "$CONFIG_USB"; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/usb.h>
 ],[
   void *(*foo)(struct usb_device *dev, size_t size,
@@ -3033,6 +3067,7 @@ if test $kvernum -ge 206000; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/device.h>
 ],[
   struct class_simple *(*foo)(struct module *, char *) = class_simple_create;
@@ -3066,6 +3101,7 @@ if test $kvernum -ge 206000; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/device.h>
 ],[
   static struct device_driver driver;
@@ -3099,6 +3135,7 @@ if test $kvernum -ge 206000; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/mm.h>
 ],[
   void (*func)(struct vm_area_struct *, pte_t, unsigned long) = print_bad_pte;
@@ -3131,6 +3168,7 @@ if test $kvernum -ge 206000; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/device.h>
 ],[
   struct class_device dev;
@@ -3164,6 +3202,7 @@ if test $kvernum -ge 206000; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/interrupt.h>
 ],[
   irq_handler_t handle = 0;
@@ -3196,6 +3235,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/types.h>
 #include <linux/gfp.h>
 ],[
@@ -3227,6 +3267,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/types.h>
 #include <linux/gfp.h>
 ],[
@@ -3258,6 +3299,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/types.h>
 #include <linux/mm.h>
 ],[
@@ -3297,6 +3339,7 @@ AC_MSG_CHECKING(for init_utsname)
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/utsname.h>
 ],[
   int *x = (int *)init_utsname();
@@ -3332,6 +3375,7 @@ AC_MSG_CHECKING(for is_power_of_2)
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/log2.h>
 ],[
   int a = is_power_of_2(2);
@@ -3368,6 +3412,7 @@ else
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/bitops.h>
 ],[
   unsigned long (*x)(unsigned long);
@@ -3401,6 +3446,7 @@ if test "$CONFIG_PNP_KERNEL" = "y"; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/pnp.h>
 ],[
   struct pnp_driver pnp;
@@ -3434,6 +3480,7 @@ if test $kvernum -ge 206000; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/device.h>
 ],[
   struct device *(*foo)() = device_create_drvdata;
@@ -3465,6 +3512,7 @@ if test $kvernum -ge 206000; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/pm_qos.h>
 ],[
   int (*foo)(int) = pm_qos_request;
@@ -3496,6 +3544,7 @@ if test $kvernum -ge 206000; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/pm_qos_params.h>
 ],[
   struct pm_qos_request_list r;
@@ -3527,6 +3576,7 @@ if test "$CONFIG_SND_HAVE_PM_QOS_REQUEST" = "1"; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/pm_qos_params.h>
 ],[
   struct pm_qos_request_list list;
@@ -3559,6 +3609,7 @@ if test $kvernum -ge 206000; then
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/fs.h>
 ],[
   struct file_operations ops;
@@ -3692,6 +3743,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <asm/cacheflush.h>
 ],[
   int (*func)(struct page **, int);

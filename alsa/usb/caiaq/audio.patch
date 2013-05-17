@@ -1,12 +1,12 @@
---- ../../alsa-kernel/usb/caiaq/audio.c	2009-10-30 12:42:28.000000000 +0100
-+++ audio.c	2009-12-15 22:17:52.000000000 +0100
+--- ../../alsa-kernel/usb/caiaq/audio.c	2013-03-04 09:58:34.547644219 +0100
++++ audio.c	2013-03-04 10:03:35.120836851 +0100
 @@ -1,3 +1,5 @@
 +#include "adriver.h"
 +#include "../usbcompat.h"
  /*
   *   Copyright (c) 2006-2008 Daniel Mack, Karsten Wiese
   *
-@@ -462,7 +464,11 @@
+@@ -626,7 +628,11 @@
  	}
  }
  
@@ -17,8 +17,8 @@
 +#endif
  {
  	struct snd_usb_caiaq_cb_info *info = urb->context;
- 	struct snd_usb_caiaqdev *dev;
-@@ -521,7 +527,11 @@
+ 	struct snd_usb_caiaqdev *cdev;
+@@ -703,7 +709,11 @@
  	usb_submit_urb(urb, GFP_ATOMIC);
  }
  
@@ -29,4 +29,4 @@
 +#endif
  {
  	struct snd_usb_caiaq_cb_info *info = urb->context;
- 	struct snd_usb_caiaqdev *dev = info->dev;
+ 	struct snd_usb_caiaqdev *cdev = info->cdev;
