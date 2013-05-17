@@ -20,7 +20,7 @@ AC_SUBST(AS)
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CONFIG_HEADER(include/config.h include/config1.h include/version.h include/autoconf-extra.h include/kconfig.h)
+AC_CONFIG_HEADER(include/config.h include/config1.h include/version.h include/autoconf-extra.h include/alsa-kconfig.h)
 dnl AC_CHECK_HEADERS(linux/fs.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -1314,7 +1314,7 @@ if test $kvernum -gt 206027; then
 	;;
     esac
     for d in $CONFIG_SND_KERNELDIR $CONFIG_SND_KERNELBUILD; do
-    	for i in include/generated/uapi arch/$checkarch/include arch/$checkarch/include/generated arch/$checkarch/include/generated/uapi; do
+    	for i in include/generated/uapi arch/$checkarch/include arch/$checkarch/include/uapi arch/$checkarch/include/generated arch/$checkarch/include/generated/uapi; do
 	    if test -d $d/$i; then
 	        KERNEL_INC="$KERNEL_INC -I$d/$i"
 	    fi
@@ -1552,6 +1552,7 @@ CHECK_KERNEL_HEADER(media/v4l2-device.h)
 CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
 CHECK_KERNEL_HEADER(linux/highmem.h)
 CHECK_KERNEL_HEADER(linux/ratelimit.h)
+CHECK_KERNEL_HEADER(linux/kconfig.h)
 CHECK_KERNEL_HEADER(linux/workqueue.h)
 if test ! -f include/linux/workqueue.h; then
   if test "x$kversion.$kpatchlevel" = "x2.4" -a \
@@ -2510,6 +2511,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
+#include <linux/kconfig.h>
 #include <linux/mm.h>
 ],[
   static pgprot_t p;
@@ -3675,6 +3677,37 @@ AC_SUBST(CONFIG_HAS_DMA)
 dnl Check for FireWire support
 CHECK_KERNEL_CONFIG(CONFIG_FIREWIRE, [FireWire support])
 AC_SUBST(CONFIG_FIREWIRE)
+
+dnl Check for set_pages_array_wc()
+AC_MSG_CHECKING(for set_pages_array_wc)
+set_pages_array="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <asm/cacheflush.h>
+],[
+  int (*func)(struct page **, int);
+  func = set_pages_array_wc;
+],
+    AC_MSG_RESULT(yes);set_pages_array="1",
+    AC_MSG_RESULT(no);set_pages_array="0",
+    AC_MSG_RESULT(unknown);set_pages_array="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_SET_PAGES_ARRAY=$set_pages_array
+dnl AC_SUBST(CONFIG_HAVE_SET_PAGES_ARRAY)
+if test "$CONFIG_HAVE_SET_PAGES_ARRAY" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_SET_PAGES_ARRAY)
+fi
 
 dnl Check for which cards to compile driver for...
 CONFIG_SOUND=m

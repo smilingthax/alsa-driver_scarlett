@@ -1373,14 +1373,16 @@ static inline struct pid *task_pid(struct task_struct *task)
 	return task->pids[PIDTYPE_PID].pid;
 }
 #endif
-#endif
-#endif
+#endif /* !CONFIG_SND_HAS_REFCOUNTED_STRUCT_PID */
+#endif /* !CONFIG_HAVE_PUT_PID */
 
 #ifndef CONFIG_HAVE_PID_VNR
+#ifndef pid_vnr
 static inline pid_t pid_vnr(struct pid *pid)
 {
 	return pid ? pid->nr : 0;
 }
+#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
