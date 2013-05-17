@@ -138,16 +138,17 @@ static void print_amp_vals(struct snd_info_buffer *buffer,
 	dir = dir == HDA_OUTPUT ? AC_AMP_GET_OUTPUT : AC_AMP_GET_INPUT;
 	for (i = 0; i < indices; i++) {
 		snd_iprintf(buffer, " [");
+		val = snd_hda_codec_read(codec, nid, 0,
+					 AC_VERB_GET_AMP_GAIN_MUTE,
+					 AC_AMP_GET_LEFT | dir | i);
+		snd_iprintf(buffer, "0x%02x", val);
 		if (stereo) {
 			val = snd_hda_codec_read(codec, nid, 0,
 						 AC_VERB_GET_AMP_GAIN_MUTE,
-						 AC_AMP_GET_LEFT | dir | i);
-			snd_iprintf(buffer, "0x%02x ", val);
+						 AC_AMP_GET_RIGHT | dir | i);
+			snd_iprintf(buffer, " 0x%02x", val);
 		}
-		val = snd_hda_codec_read(codec, nid, 0,
-					 AC_VERB_GET_AMP_GAIN_MUTE,
-					 AC_AMP_GET_RIGHT | dir | i);
-		snd_iprintf(buffer, "0x%02x]", val);
+		snd_iprintf(buffer, "]");
 	}
 	snd_iprintf(buffer, "\n");
 }
@@ -603,6 +604,8 @@ static void print_codec_info(struct snd_info_entry *entry,
 	print_amp_caps(buffer, codec, codec->afg, HDA_INPUT);
 	snd_iprintf(buffer, "Default Amp-Out caps: ");
 	print_amp_caps(buffer, codec, codec->afg, HDA_OUTPUT);
+	snd_iprintf(buffer, "State of AFG node 0x%02x:\n", codec->afg);
+	print_power_state(buffer, codec, codec->afg);
 
 	nodes = snd_hda_get_sub_nodes(codec, codec->afg, &nid);
 	if (! nid || nodes < 0) {

@@ -86,6 +86,7 @@ config SND_HDA_PATCH_LOADER
 config SND_HDA_CODEC_REALTEK
 	bool "Build Realtek HD-audio codec support"
 	default y
+	select SND_HDA_GENERIC
 	help
 	  Say Y here to include Realtek HD-audio codec support in
 	  snd-hda-intel driver, such as ALC880.
@@ -98,6 +99,7 @@ config SND_HDA_CODEC_REALTEK
 config SND_HDA_CODEC_ANALOG
 	bool "Build Analog Device HD-audio codec support"
 	default y
+	select SND_HDA_GENERIC
 	help
 	  Say Y here to include Analog Device HD-audio codec support in
 	  snd-hda-intel driver, such as AD1986A.
@@ -122,6 +124,7 @@ config SND_HDA_CODEC_SIGMATEL
 config SND_HDA_CODEC_VIA
 	bool "Build VIA HD-audio codec support"
 	default y
+	select SND_HDA_GENERIC
 	help
 	  Say Y here to include VIA HD-audio codec support in
 	  snd-hda-intel driver, such as VT1708.
@@ -147,8 +150,8 @@ config SND_HDA_CODEC_HDMI
 
 config SND_HDA_CODEC_CIRRUS
 	bool "Build Cirrus Logic codec support"
-	depends on SND_HDA_INTEL
 	default y
+	select SND_HDA_GENERIC
 	help
 	  Say Y here to include Cirrus Logic codec support in
 	  snd-hda-intel driver, such as CS4206.
@@ -161,6 +164,7 @@ config SND_HDA_CODEC_CIRRUS
 config SND_HDA_CODEC_CONEXANT
 	bool "Build Conexant HD-audio codec support"
 	default y
+	select SND_HDA_GENERIC
 	help
 	  Say Y here to include Conexant HD-audio codec support in
 	  snd-hda-intel driver, such as CX20549.
@@ -172,8 +176,8 @@ config SND_HDA_CODEC_CONEXANT
 
 config SND_HDA_CODEC_CA0110
 	bool "Build Creative CA0110-IBG codec support"
-	depends on SND_HDA_INTEL
 	default y
+	select SND_HDA_GENERIC
 	help
 	  Say Y here to include Creative CA0110-IBG codec support in
 	  snd-hda-intel driver, found on some Creative X-Fi cards.
@@ -185,7 +189,6 @@ config SND_HDA_CODEC_CA0110
 
 config SND_HDA_CODEC_CA0132
 	bool "Build Creative CA0132 codec support"
-	depends on SND_HDA_INTEL
 	default y
 	help
 	  Say Y here to include Creative CA0132 codec support in
@@ -199,6 +202,7 @@ config SND_HDA_CODEC_CA0132
 config SND_HDA_CODEC_CMEDIA
 	bool "Build C-Media HD-audio codec support"
 	default y
+	select SND_HDA_GENERIC
 	help
 	  Say Y here to include C-Media HD-audio codec support in
 	  snd-hda-intel driver, such as CMI9880.
@@ -234,5 +238,13 @@ config SND_HDA_POWER_SAVE_DEFAULT
 	help
 	  The default time-out value in seconds for HD-audio automatic
 	  power-save mode.  0 means to disable the power-save mode.
+
+config SND_HDA_DSP_LOADER
+	bool "Enable DSP firmware loader"
+	depends on FW_LOADER
+	default y
+	help
+	  Say Y here to enable the DSP firmware loader, used by certain
+	  codecs (e.g. CA0132) to transfer their DSP binaries to the hardware.
 
 endif

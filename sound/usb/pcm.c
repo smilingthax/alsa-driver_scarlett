@@ -59,7 +59,12 @@ snd_pcm_uframes_t snd_usb_pcm_delay(struct snd_usb_substream *subs,
 
 	/* Approximation based on number of samples per USB frame (ms),
 	   some truncation for 44.1 but the estimate is good enough */
-	est_delay =  subs->last_delay - (frame_diff * rate / 1000);
+	est_delay =  frame_diff * rate / 1000;
+	if (subs->direction == SNDRV_PCM_STREAM_PLAYBACK)
+		est_delay = subs->last_delay - est_delay;
+	else
+		est_delay = subs->last_delay + est_delay;
+
 	if (est_delay < 0)
 		est_delay = 0;
 	return est_delay;
@@ -78,8 +83,7 @@ static snd_pcm_uframes_t snd_usb_pcm_pointer(struct snd_pcm_substream *substream
 		return SNDRV_PCM_POS_XRUN;
 	spin_lock(&subs->lock);
 	hwptr_done = subs->hwptr_done;
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		substream->runtime->delay = snd_usb_pcm_delay(subs,
+	substream->runtime->delay = snd_usb_pcm_delay(subs,
 						substream->runtime->rate);
 	spin_unlock(&subs->lock);
 	return hwptr_done / (substream->runtime->frame_bits >> 3);
@@ -510,6 +514,16 @@ static int configure_sync_endpoint(struct snd_usb_substream *subs)
 	int sync_period_bytes = subs->period_bytes;
 	struct snd_usb_substream *sync_subs =
 		&subs->stream->substream[subs->direction ^ 1];
+
+	if (subs->sync_endpoint->type != SND_USB_ENDPOINT_TYPE_DATA ||
+	    !subs->stream)
+		return snd_usb_endpoint_set_params(subs->sync_endpoint,
+						   subs->pcm_format,
+						   subs->channels,
+						   subs->period_bytes,
+						   subs->cur_rate,
+						   subs->cur_audiofmt,
+						   NULL);
 
 	/* Try to find the best matching audioformat. */
 	list_for_each_entry(fp, &sync_subs->fmt_list, list) {
@@ -1147,6 +1161,10 @@ static void retire_capture_urb(struct snd_usb_substream *subs,
 	int i, period_elapsed = 0;
 	unsigned long flags;
 	unsigned char *cp;
+	int current_frame_number;
+
+	/* read frame number here, update pointer in critical section */
+	current_frame_number = usb_get_current_frame_number(subs->dev);
 
 	stride = runtime->frame_bits >> 3;
 
@@ -1180,6 +1198,15 @@ static void retire_capture_urb(struct snd_usb_substream *subs,
 			subs->transfer_done -= runtime->period_size;
 			period_elapsed = 1;
 		}
+		/* capture delay is by construction limited to one URB,
+		 * reset delays here
+		 */
+		runtime->delay = subs->last_delay = 0;
+
+		/* realign last_frame_number */
+		subs->last_frame_number = current_frame_number;
+		subs->last_frame_number &= 0xFF; /* keep 8 LSBs */
+
 		spin_unlock_irqrestore(&subs->lock, flags);
 		/* copy a data chunk */
 		if (oldptr + bytes > runtime->buffer_size * stride) {
