@@ -3153,6 +3153,38 @@ if test $kvernum -ge 206000; then
   fi
 fi
 
+if test $kvernum -ge 300000; then
+  AC_MSG_CHECKING(for vm_iomap_memory)
+  vm_iomap_memory="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/kconfig.h>
+#include <linux/mm.h>
+],[
+  int (*func)(struct vm_area_struct *, phys_addr_t, unsigned long) = vm_iomap_memory;
+],
+    AC_MSG_RESULT(yes);vm_iomap_memory="1",
+    AC_MSG_RESULT(no);vm_iomap_memory="0",
+    AC_MSG_RESULT(unknown);vm_iomap_memory="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_HAVE_VM_IOMAP_MEMORY=$vm_iomap_memory
+  dnl AC_SUBST(CONFIG_HAVE_VM_IOMAP_MEMORY)
+  if test "$CONFIG_HAVE_VM_IOMAP_MEMORY" = "1"; then
+    AC_DEFINE(CONFIG_HAVE_VM_IOMAP_MEMORY)
+  fi
+fi
+
 dnl nested class_device for 2.6.14+
 if test $kvernum -ge 206000; then
   AC_MSG_CHECKING(for nested class_device)

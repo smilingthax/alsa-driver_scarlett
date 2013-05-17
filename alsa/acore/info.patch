@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/info.c	2013-04-03 16:11:07.985692489 +0200
-+++ info.c	2013-04-05 08:52:32.059723420 +0200
+--- ../alsa-kernel/core/info.c	2013-05-13 10:01:02.042914933 +0200
++++ info.c	2013-05-13 10:18:58.422914805 +0200
 @@ -1,3 +1,7 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -28,7 +28,33 @@
  	buffer->buffer = nbuf;
  	buffer->len = nsize;
  	return 0;
-@@ -494,9 +506,28 @@
+@@ -153,6 +165,25 @@
+ struct snd_info_entry *snd_oss_root;
+ #endif
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
++static void snd_remove_proc_entry(struct proc_dir_entry *parent,
++				  struct proc_dir_entry *de)
++{
++	if (de)
++		remove_proc_entry(de->name, parent);
++}
++
++#define proc_set_size(p, s)	((p)->size = (s))
++
++static void *PDE_DATA(struct inode *inode)
++{
++	struct proc_dir_entry *p = PDE(inode);
++	if (p)
++		return p->data;
++	return NULL;
++}	
++#endif
++
+ static loff_t snd_info_entry_llseek(struct file *file, loff_t offset, int orig)
+ {
+ 	struct snd_info_private_data *data;
+@@ -485,9 +516,28 @@
  	return -ENOTTY;
  }
  
@@ -57,7 +83,7 @@
  	struct snd_info_private_data *data;
  	struct snd_info_entry *entry;
  
-@@ -522,7 +553,11 @@
+@@ -513,7 +563,11 @@
  	.read =			snd_info_entry_read,
  	.write =		snd_info_entry_write,
  	.poll =			snd_info_entry_poll,
@@ -69,7 +95,81 @@
  	.mmap =			snd_info_entry_mmap,
  	.open =			snd_info_entry_open,
  	.release =		snd_info_entry_release,
-@@ -980,9 +1015,20 @@
+@@ -573,7 +627,11 @@
+ #ifdef CONFIG_SND_OSSEMUL
+ 		snd_info_free_entry(snd_oss_root);
+ #endif
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
++		snd_remove_proc_entry(NULL, snd_proc_root);
++#else
+ 		proc_remove(snd_proc_root);
++#endif
+ 	}
+ 	return 0;
+ }
+@@ -635,7 +693,11 @@
+ {
+ 	mutex_lock(&info_mutex);
+ 	if (card->proc_root_link) {
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
++		snd_remove_proc_entry(snd_proc_root, card->proc_root_link);
++#else
+ 		proc_remove(card->proc_root_link);
++#endif
+ 		card->proc_root_link = NULL;
+ 	}
+ 	if (strcmp(card->id, card->proc_root->name))
+@@ -654,7 +716,11 @@
+ 	if (!card)
+ 		return;
+ 	mutex_lock(&info_mutex);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
++	snd_remove_proc_entry(snd_proc_root, card->proc_root_link);
++#else
+ 	proc_remove(card->proc_root_link);
++#endif
+ 	card->proc_root_link = NULL;
+ 	if (card->proc_root)
+ 		snd_info_disconnect(card->proc_root);
+@@ -842,7 +908,11 @@
+ 	list_del_init(&entry->list);
+ 	root = entry->parent == NULL ? snd_proc_root : entry->parent->p;
+ 	snd_BUG_ON(!root);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
++	snd_remove_proc_entry(root, entry->p);
++#else
+ 	proc_remove(entry->p);
++#endif
+ 	entry->p = NULL;
+ }
+ 
+@@ -943,6 +1013,17 @@
+ 		return -ENXIO;
+ 	root = entry->parent == NULL ? snd_proc_root : entry->parent->p;
+ 	mutex_lock(&info_mutex);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
++	p = create_proc_entry(entry->name, entry->mode, root);
++	if (!p) {
++		mutex_unlock(&info_mutex);
++		return -ENOMEM;
++	}
++	if (!S_ISDIR(entry->mode))
++		p->proc_fops = &snd_info_entry_operations;
++	p->size = entry->size;
++	p->data = entry;
++#else
+ 	if (S_ISDIR(entry->mode)) {
+ 		p = proc_mkdir_mode(entry->name, entry->mode, root);
+ 		if (!p) {
+@@ -958,6 +1039,7 @@
+ 		}
+ 		proc_set_size(p, entry->size);
+ 	}
++#endif
+ 	entry->p = p;
+ 	if (entry->parent)
+ 		list_add_tail(&entry->list, &entry->parent->children);
+@@ -975,9 +1057,20 @@
  
  static void snd_info_version_read(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
  {

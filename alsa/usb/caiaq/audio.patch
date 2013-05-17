@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/caiaq/audio.c	2013-03-04 09:58:34.547644219 +0100
-+++ audio.c	2013-03-04 10:03:35.120836851 +0100
+--- ../../alsa-kernel/usb/caiaq/audio.c	2013-04-29 11:45:04.792944327 +0200
++++ audio.c	2013-04-29 17:56:20.670941669 +0200
 @@ -1,3 +1,5 @@
 +#include "adriver.h"
 +#include "../usbcompat.h"
@@ -18,7 +18,23 @@
  {
  	struct snd_usb_caiaq_cb_info *info = urb->context;
  	struct snd_usb_caiaqdev *cdev;
-@@ -703,7 +709,11 @@
+@@ -683,6 +689,9 @@
+ 
+ 	if (send_it) {
+ 		out->number_of_packets = outframe;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
++		out->transfer_flags = URB_ISO_ASAP;
++#endif
+ 		usb_submit_urb(out, GFP_ATOMIC);
+ 	} else {
+ 		struct snd_usb_caiaq_cb_info *oinfo = out->context;
+@@ -698,10 +707,17 @@
+ 	}
+ 
+ 	urb->number_of_packets = FRAMES_PER_URB;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
++	urb->transfer_flags = URB_ISO_ASAP;
++#endif
  	usb_submit_urb(urb, GFP_ATOMIC);
  }
  
@@ -30,3 +46,13 @@
  {
  	struct snd_usb_caiaq_cb_info *info = urb->context;
  	struct snd_usb_caiaqdev *cdev = info->cdev;
+@@ -763,6 +779,9 @@
+ 						* BYTES_PER_FRAME;
+ 		urbs[i]->context = &cdev->data_cb_info[i];
+ 		urbs[i]->interval = 1;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
++		urbs[i]->transfer_flags = URB_ISO_ASAP;
++#endif
+ 		urbs[i]->number_of_packets = FRAMES_PER_URB;
+ 		urbs[i]->complete = (dir == SNDRV_PCM_STREAM_CAPTURE) ?
+ 					read_completed : write_completed;
