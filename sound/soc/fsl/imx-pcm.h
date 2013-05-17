@@ -20,22 +20,16 @@
  */
 #define IMX_SSI_DMABUF_SIZE	(64 * 1024)
 
-struct imx_pcm_dma_params {
-	unsigned long dma_addr;
-	int burstsize;
-	struct imx_dma_data dma_data;
-};
-
 static inline void
-imx_pcm_dma_params_init_data(struct imx_pcm_dma_params *params,
+imx_pcm_dma_params_init_data(struct imx_dma_data *dma_data,
 	int dma, bool shared)
 {
-	params->dma_data.dma_request = dma;
-	params->dma_data.priority = DMA_PRIO_HIGH;
+	dma_data->dma_request = dma;
+	dma_data->priority = DMA_PRIO_HIGH;
 	if (shared)
-		params->dma_data.peripheral_type = IMX_DMATYPE_SSI_SP;
+		dma_data->peripheral_type = IMX_DMATYPE_SSI_SP;
 	else
-		params->dma_data.peripheral_type = IMX_DMATYPE_SSI;
+		dma_data->peripheral_type = IMX_DMATYPE_SSI;
 }
 
 int snd_imx_pcm_mmap(struct snd_pcm_substream *substream,
@@ -45,10 +39,15 @@ void imx_pcm_free(struct snd_pcm *pcm);
 
 #ifdef CONFIG_SND_SOC_IMX_PCM_DMA
 int imx_pcm_dma_init(struct platform_device *pdev);
+void imx_pcm_dma_exit(struct platform_device *pdev);
 #else
 static inline int imx_pcm_dma_init(struct platform_device *pdev)
 {
 	return -ENODEV;
+}
+
+static inline void imx_pcm_dma_exit(struct platform_device *pdev)
+{
 }
 #endif
 

@@ -315,7 +315,7 @@ static int soc_compr_pointer(struct snd_compr_stream *cstream,
 }
 
 static int soc_compr_copy(struct snd_compr_stream *cstream,
-			  const char __user *buf, size_t count)
+			  char __user *buf, size_t count)
 {
 	struct snd_soc_pcm_runtime *rtd = cstream->private_data;
 	struct snd_soc_platform *platform = rtd->platform;
@@ -384,7 +384,14 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
 	/* check client and interface hw capabilities */
 	snprintf(new_name, sizeof(new_name), "%s %s-%d",
 			rtd->dai_link->stream_name, codec_dai->name, num);
-	direction = SND_COMPRESS_PLAYBACK;
+
+	if (codec_dai->driver->playback.channels_min)
+		direction = SND_COMPRESS_PLAYBACK;
+	else if (codec_dai->driver->capture.channels_min)
+		direction = SND_COMPRESS_CAPTURE;
+	else
+		return -EINVAL;
+
 	compr = kzalloc(sizeof(*compr), GFP_KERNEL);
 	if (compr == NULL) {
 		snd_printk(KERN_ERR "Cannot allocate compr\n");

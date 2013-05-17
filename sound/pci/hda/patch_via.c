@@ -856,7 +856,7 @@ static void set_widgets_power_state_vt1708B(struct hda_codec *codec)
 	if (is_8ch) {
 		update_power_state(codec, 0x25, parm);
 		update_power_state(codec, 0x27, parm);
-	} else if (codec->vendor_id == 0x11064397 && spec->gen.indep_hp_enabled)
+	} else if (codec->vendor_id == 0x11064397)
 		update_power_state(codec, 0x25, parm);
 }
 
@@ -1042,7 +1042,6 @@ static const struct hda_verb vt1718S_init_verbs[] = {
 
 static void set_widgets_power_state_vt1718S(struct hda_codec *codec)
 {
-	struct via_spec *spec = codec->spec;
 	int imux_is_smixer;
 	unsigned int parm, parm2;
 	/* MUX6 (1eh) = stereo mixer */
@@ -1079,10 +1078,9 @@ static void set_widgets_power_state_vt1718S(struct hda_codec *codec)
 	/* PW0 (24h), AOW0 (8h) */
 	parm = AC_PWRST_D3;
 	set_pin_power_state(codec, 0x24, &parm);
-	if (!spec->gen.indep_hp_enabled) /* check for redirected HP */
-		set_pin_power_state(codec, 0x28, &parm);
+	set_pin_power_state(codec, 0x28, &parm);
 	update_power_state(codec, 0x8, parm);
-	if (!spec->gen.indep_hp_enabled && parm2 != AC_PWRST_D3)
+	if (parm2 != AC_PWRST_D3)
 		parm = parm2;
 	update_power_state(codec, 0xb, parm);
 	/* MW9 (21h), Mw2 (1ah), AOW0 (8h) */
@@ -1095,14 +1093,12 @@ static void set_widgets_power_state_vt1718S(struct hda_codec *codec)
 		set_pin_power_state(codec, 0x2a, &parm);
 	update_power_state(codec, 0x9, parm);
 
-	if (spec->gen.indep_hp_enabled) {
-		/* PW4 (28h), MW3 (1bh), MUX1(34h), AOW4 (ch) */
-		parm = AC_PWRST_D3;
-		set_pin_power_state(codec, 0x28, &parm);
-		update_power_state(codec, 0x1b, parm);
-		update_power_state(codec, 0x34, parm);
-		update_power_state(codec, 0xc, parm);
-	}
+	/* PW4 (28h), MW3 (1bh), MUX1(34h), AOW4 (ch) */
+	parm = AC_PWRST_D3;
+	set_pin_power_state(codec, 0x28, &parm);
+	update_power_state(codec, 0x1b, parm);
+	update_power_state(codec, 0x34, parm);
+	update_power_state(codec, 0xc, parm);
 }
 
 /* Add a connection to the primary DAC from AA-mixer for some codecs
@@ -1307,7 +1303,7 @@ static void set_widgets_power_state_vt1716S(struct hda_codec *codec)
 		mono_out = 0;
 	else {
 		present = snd_hda_jack_detect(codec, 0x1d);
-		if (!spec->gen.indep_hp_enabled && present)
+		if (present)
 			mono_out = 0;
 		else
 			mono_out = 1;
@@ -1321,9 +1317,7 @@ static void set_widgets_power_state_vt1716S(struct hda_codec *codec)
 	parm = AC_PWRST_D3;
 	set_pin_power_state(codec, 0x1c, &parm);
 	set_pin_power_state(codec, 0x1d, &parm);
-	/* HP Independent Mode, power on AOW3 */
-	if (spec->gen.indep_hp_enabled)
-		update_power_state(codec, 0x25, parm);
+	update_power_state(codec, 0x25, parm);
 
 	/* force to D0 for internal Speaker */
 	/* MW0 (16h), AOW0 (10h) */
@@ -1410,6 +1404,7 @@ static void set_widgets_power_state_vt2002P(struct hda_codec *codec)
 	/* outputs */
 	/* AOW0 (8h)*/
 	update_power_state(codec, 0x8, parm);
+	update_power_state(codec, 0x9, parm);
 
 	if (spec->codec_type == VT1802) {
 		/* PW4 (28h), MW4 (18h), MUX4(38h) */
@@ -1438,9 +1433,6 @@ static void set_widgets_power_state_vt2002P(struct hda_codec *codec)
 		update_power_state(codec, 0x19, parm);
 		update_power_state(codec, 0x35, parm);
 	}
-
-	if (spec->gen.indep_hp_enabled)
-		update_power_state(codec, 0x9, AC_PWRST_D0);
 
 	/* Class-D */
 	/* PW0 (24h), MW0(18h/14h), MUX0(34h) */
@@ -1577,7 +1569,6 @@ static const struct hda_verb vt1812_init_verbs[] = {
 
 static void set_widgets_power_state_vt1812(struct hda_codec *codec)
 {
-	struct via_spec *spec = codec->spec;
 	unsigned int parm;
 	unsigned int present;
 	/* inputs */
@@ -1596,6 +1587,7 @@ static void set_widgets_power_state_vt1812(struct hda_codec *codec)
 	/* outputs */
 	/* AOW0 (8h)*/
 	update_power_state(codec, 0x8, AC_PWRST_D0);
+	update_power_state(codec, 0x9, AC_PWRST_D0);
 
 	/* PW4 (28h), MW4 (18h), MUX4(38h) */
 	parm = AC_PWRST_D3;
@@ -1608,8 +1600,6 @@ static void set_widgets_power_state_vt1812(struct hda_codec *codec)
 	set_pin_power_state(codec, 0x25, &parm);
 	update_power_state(codec, 0x15, parm);
 	update_power_state(codec, 0x35, parm);
-	if (spec->gen.indep_hp_enabled)
-		update_power_state(codec, 0x9, AC_PWRST_D0);
 
 	/* Internal Speaker */
 	/* PW0 (24h), MW0(14h), MUX0(34h) */
@@ -1756,15 +1746,14 @@ static void set_widgets_power_state_vt3476(struct hda_codec *codec)
 	set_pin_power_state(codec, 0x28, &parm);
 	update_power_state(codec, 0x38, parm);
 	update_power_state(codec, 0x18, parm);
-	if (spec->gen.indep_hp_enabled)
-		update_conv_power_state(codec, 0xb, parm, 3);
+	update_conv_power_state(codec, 0xb, parm, 3);
 	parm2 = parm; /* for pin 0x0b */
 
 	/* PW0 (24h), MW0(34h), MW9(3fh), AOW0 (8h) */
 	parm = AC_PWRST_D3;
 	set_pin_power_state(codec, 0x24, &parm);
 	update_power_state(codec, 0x34, parm);
-	if (!spec->gen.indep_hp_enabled && parm2 != AC_PWRST_D3)
+	if (parm2 != AC_PWRST_D3)
 		parm = parm2;
 	update_conv_power_state(codec, 0x8, parm, 0);
 	/* MW9 (21h), Mw2 (1ah), AOW0 (8h) */

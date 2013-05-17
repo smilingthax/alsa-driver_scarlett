@@ -606,6 +606,10 @@ static bool is_active_nid(struct hda_codec *codec, hda_nid_t nid,
 	return false;
 }
 
+/* check whether the NID is referred by any active paths */
+#define is_active_nid_for_any(codec, nid) \
+	is_active_nid(codec, nid, HDA_OUTPUT, 0)
+
 /* get the default amp value for the target state */
 static int get_amp_val_to_activate(struct hda_codec *codec, hda_nid_t nid,
 				   int dir, unsigned int caps, bool enable)
@@ -751,7 +755,7 @@ EXPORT_SYMBOL_HDA(snd_hda_activate_path);
 static void path_power_down_sync(struct hda_codec *codec, struct nid_path *path)
 {
 	struct hda_gen_spec *spec = codec->spec;
-	bool changed;
+	bool changed = false;
 	int i;
 
 	if (!spec->power_down_unused || path->active)
@@ -759,7 +763,8 @@ static void path_power_down_sync(struct hda_codec *codec, struct nid_path *path)
 
 	for (i = 0; i < path->depth; i++) {
 		hda_nid_t nid = path->path[i];
-		if (!snd_hda_check_power_state(codec, nid, AC_PWRST_D3)) {
+		if (!snd_hda_check_power_state(codec, nid, AC_PWRST_D3) &&
+		    !is_active_nid_for_any(codec, nid)) {
 			snd_hda_codec_write(codec, nid, 0,
 					    AC_VERB_SET_POWER_STATE,
 					    AC_PWRST_D3);
@@ -1371,22 +1376,25 @@ static int check_aamix_out_path(struct hda_codec *codec, int path_idx)
 {
 	struct hda_gen_spec *spec = codec->spec;
 	struct nid_path *path;
-	hda_nid_t dac, pin;
+	hda_nid_t path_dac, dac, pin;
 
 	path = snd_hda_get_path_from_idx(codec, path_idx);
 	if (!path || !path->depth ||
 	    is_nid_contained(path, spec->mixer_nid))
 		return 0;
-	dac = path->path[0];
+	path_dac = path->path[0];
+	dac = spec->private_dac_nids[0];
 	pin = path->path[path->depth - 1];
 	path = snd_hda_add_new_path(codec, dac, pin, spec->mixer_nid);
 	if (!path) {
-		if (dac != spec->multiout.dac_nids[0])
-			dac = spec->multiout.dac_nids[0];
+		if (dac != path_dac)
+			dac = path_dac;
 		else if (spec->multiout.hp_out_nid[0])
 			dac = spec->multiout.hp_out_nid[0];
 		else if (spec->multiout.extra_out_nid[0])
 			dac = spec->multiout.extra_out_nid[0];
+		else
+			dac = 0;
 		if (dac)
 			path = snd_hda_add_new_path(codec, dac, pin,
 						    spec->mixer_nid);
@@ -2082,6 +2090,14 @@ get_multiio_path(struct hda_codec *codec, int idx)
 
 static void update_automute_all(struct hda_codec *codec);
 
+/* Default value to be passed as aamix argument for snd_hda_activate_path();
+ * used for output paths
+ */
+static bool aamix_default(struct hda_gen_spec *spec)
+{
+	return !spec->have_aamix_ctl || spec->aamix_mode;
+}
+
 static int set_multi_io(struct hda_codec *codec, int idx, bool output)
 {
 	struct hda_gen_spec *spec = codec->spec;
@@ -2097,11 +2113,11 @@ static int set_multi_io(struct hda_codec *codec, int idx, bool output)
 
 	if (output) {
 		set_pin_target(codec, nid, PIN_OUT, true);
-		snd_hda_activate_path(codec, path, true, true);
+		snd_hda_activate_path(codec, path, true, aamix_default(spec));
 		set_pin_eapd(codec, nid, true);
 	} else {
 		set_pin_eapd(codec, nid, false);
-		snd_hda_activate_path(codec, path, false, true);
+		snd_hda_activate_path(codec, path, false, aamix_default(spec));
 		set_pin_target(codec, nid, spec->multi_io[idx].ctl_in, true);
 		path_power_down_sync(codec, path);
 	}
@@ -2192,8 +2208,8 @@ static void update_aamix_paths(struct hda_codec *codec, bool do_mix,
 		snd_hda_activate_path(codec, mix_path, true, true);
 		path_power_down_sync(codec, nomix_path);
 	} else {
-		snd_hda_activate_path(codec, mix_path, false, true);
-		snd_hda_activate_path(codec, nomix_path, true, true);
+		snd_hda_activate_path(codec, mix_path, false, false);
+		snd_hda_activate_path(codec, nomix_path, true, false);
 		path_power_down_sync(codec, mix_path);
 	}
 }
@@ -2333,6 +2349,7 @@ static int create_hp_mic(struct hda_codec *codec)
 
 	cfg->inputs[cfg->num_inputs].pin = nid;
 	cfg->inputs[cfg->num_inputs].type = AUTO_PIN_MIC;
+	cfg->inputs[cfg->num_inputs].is_headphone_mic = 1;
 	cfg->num_inputs++;
 	spec->hp_mic = 1;
 	spec->hp_mic_pin = nid;
@@ -4145,7 +4162,7 @@ static unsigned int snd_hda_gen_path_power_filter(struct hda_codec *codec,
 		return power_state;
 	if (get_wcaps_type(get_wcaps(codec, nid)) >= AC_WID_POWER)
 		return power_state;
-	if (is_active_nid(codec, nid, HDA_OUTPUT, 0))
+	if (is_active_nid_for_any(codec, nid))
 		return power_state;
 	return AC_PWRST_D3;
 }
@@ -4364,17 +4381,6 @@ int snd_hda_gen_build_controls(struct hda_codec *codec)
 	}
 
 	free_kctls(spec); /* no longer needed */
-
-	if (spec->hp_mic_pin) {
-		int err;
-		int nid = spec->hp_mic_pin;
-		err = snd_hda_jack_add_kctl(codec, nid, "Headphone Mic", 0);
-		if (err < 0)
-			return err;
-		err = snd_hda_jack_detect_enable(codec, nid, 0);
-		if (err < 0)
-			return err;
-	}
 
 	err = snd_hda_jack_add_kctls(codec, &spec->autocfg);
 	if (err < 0)
@@ -4933,7 +4939,8 @@ static void set_output_and_unmute(struct hda_codec *codec, int path_idx)
 		return;
 	pin = path->path[path->depth - 1];
 	restore_pin_ctl(codec, pin);
-	snd_hda_activate_path(codec, path, path->active, true);
+	snd_hda_activate_path(codec, path, path->active,
+			      aamix_default(codec->spec));
 	set_pin_eapd(codec, pin, path->active);
 }
 
@@ -4983,7 +4990,8 @@ static void init_multi_io(struct hda_codec *codec)
 		if (!spec->multi_io[i].ctl_in)
 			spec->multi_io[i].ctl_in =
 				snd_hda_codec_get_pin_target(codec, pin);
-		snd_hda_activate_path(codec, path, path->active, true);
+		snd_hda_activate_path(codec, path, path->active,
+				      aamix_default(spec));
 	}
 }
 

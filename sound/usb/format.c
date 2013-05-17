@@ -136,6 +136,9 @@ static u64 parse_audio_format_i_type(struct snd_usb_audio *chip,
 		snd_printk(KERN_INFO "%d:%u:%d : unsupported format bits %#x\n",
 			   chip->dev->devnum, fp->iface, fp->altsetting, format);
 	}
+
+	pcm_formats |= snd_usb_interface_dsd_format_quirks(chip, fp, sample_bytes);
+
 	return pcm_formats;
 }
 
@@ -280,7 +283,7 @@ static int parse_audio_format_rates_v2(struct snd_usb_audio *chip,
 	struct usb_device *dev = chip->dev;
 	unsigned char tmp[2], *data;
 	int nr_triplets, data_size, ret = 0;
-	int clock = snd_usb_clock_find_source(chip, fp->clock);
+	int clock = snd_usb_clock_find_source(chip, fp->clock, false);
 
 	if (clock < 0) {
 		snd_printk(KERN_ERR "%s(): unable to find clock source (clock %d)\n",
@@ -362,7 +365,8 @@ static int parse_audio_format_i(struct snd_usb_audio *chip,
 {
 	struct usb_interface_descriptor *altsd = get_iface_desc(iface);
 	int protocol = altsd->bInterfaceProtocol;
-	int pcm_format, ret;
+	snd_pcm_format_t pcm_format;
+	int ret;
 
 	if (fmt->bFormatType == UAC_FORMAT_TYPE_III) {
 		/* FIXME: the format type is really IECxxx
@@ -381,7 +385,7 @@ static int parse_audio_format_i(struct snd_usb_audio *chip,
 		default:
 			pcm_format = SNDRV_PCM_FORMAT_S16_LE;
 		}
-		fp->formats = 1uLL << pcm_format;
+		fp->formats = pcm_format_to_bits(pcm_format);
 	} else {
 		fp->formats = parse_audio_format_i_type(chip, fp, format,
 							fmt, protocol);
