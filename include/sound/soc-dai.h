@@ -45,7 +45,7 @@ struct snd_compr_stream;
  * sending or receiving PCM data in a frame. This can be used to save power.
  */
 #define SND_SOC_DAIFMT_CONT		(1 << 4) /* continuous clock */
-#define SND_SOC_DAIFMT_GATED		(2 << 4) /* clock is gated */
+#define SND_SOC_DAIFMT_GATED		(0 << 4) /* clock is gated */
 
 /*
  * DAI hardware signal inversions.
@@ -126,7 +126,8 @@ int snd_soc_dai_set_channel_map(struct snd_soc_dai *dai,
 int snd_soc_dai_set_tristate(struct snd_soc_dai *dai, int tristate);
 
 /* Digital Audio Interface mute */
-int snd_soc_dai_digital_mute(struct snd_soc_dai *dai, int mute);
+int snd_soc_dai_digital_mute(struct snd_soc_dai *dai, int mute,
+			     int direction);
 
 struct snd_soc_dai_ops {
 	/*
@@ -157,6 +158,7 @@ struct snd_soc_dai_ops {
 	 * Called by soc-core to minimise any pops.
 	 */
 	int (*digital_mute)(struct snd_soc_dai *dai, int mute);
+	int (*mute_stream)(struct snd_soc_dai *dai, int mute, int stream);
 
 	/*
 	 * ALSA PCM audio operations - all optional.

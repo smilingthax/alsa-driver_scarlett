@@ -1516,8 +1516,14 @@ static void alc260_fixup_fsc_s7020(struct hda_codec *codec,
 {
 	struct alc_spec *spec = codec->spec;
 
-	if (action == HDA_FIXUP_ACT_PRE_PROBE)
+	switch (action) {
+	case HDA_FIXUP_ACT_PRE_PROBE:
 		spec->gen.add_out_jack_modes = 1;
+		break;
+	case HDA_FIXUP_ACT_PROBE:
+		spec->init_amp = ALC_INIT_NONE;
+		break;
+	}
 }
 
 static const struct hda_fixup alc260_fixups[] = {
@@ -1802,7 +1808,8 @@ static void alc889_fixup_imac91_vref(struct hda_codec *codec,
 }
 
 /* Don't take HP output as primary
- * strangely, the speaker output doesn't work on VAIO Z through DAC 0x05
+ * Strangely, the speaker output doesn't work on Vaio Z and some Vaio
+ * all-in-one desktop PCs (for example VGC-LN51JGB) through DAC 0x05
  */
 static void alc882_fixup_no_primary_hp(struct hda_codec *codec,
 				       const struct hda_fixup *fix, int action)
@@ -2037,6 +2044,7 @@ static const struct snd_pci_quirk alc882_fixup_tbl[] = {
 	SND_PCI_QUIRK(0x1043, 0x835f, "Asus Eee 1601", ALC888_FIXUP_EEE1601),
 	SND_PCI_QUIRK(0x104d, 0x9047, "Sony Vaio TT", ALC889_FIXUP_VAIO_TT),
 	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC882_FIXUP_NO_PRIMARY_HP),
+	SND_PCI_QUIRK(0x104d, 0x9043, "Sony Vaio VGC-LN51JGB", ALC882_FIXUP_NO_PRIMARY_HP),
 
 	/* All Apple entries are in codec SSIDs */
 	SND_PCI_QUIRK(0x106b, 0x00a0, "MacBookPro 3,1", ALC889_FIXUP_MBP_VREF),
@@ -2724,6 +2732,18 @@ static void alc269_fixup_hp_mute_led(struct hda_codec *codec,
 	}
 }
 
+static void alc269_fixup_hp_mute_led_mic1(struct hda_codec *codec,
+				const struct hda_fixup *fix, int action)
+{
+	struct alc_spec *spec = codec->spec;
+	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
+		spec->mute_led_polarity = 0;
+		spec->mute_led_nid = 0x18;
+		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
+		spec->gen.vmaster_mute_enum = 1;
+	}
+}
+
 static void alc269_fixup_hp_mute_led_mic2(struct hda_codec *codec,
 				const struct hda_fixup *fix, int action)
 {
@@ -2769,6 +2789,7 @@ enum {
 	ALC269VB_FIXUP_AMIC,
 	ALC269VB_FIXUP_DMIC,
 	ALC269_FIXUP_HP_MUTE_LED,
+	ALC269_FIXUP_HP_MUTE_LED_MIC1,
 	ALC269_FIXUP_HP_MUTE_LED_MIC2,
 	ALC269_FIXUP_INV_DMIC,
 	ALC269_FIXUP_LENOVO_DOCK,
@@ -2901,6 +2922,10 @@ static const struct hda_fixup alc269_fixups[] = {
 		.type = HDA_FIXUP_FUNC,
 		.v.func = alc269_fixup_hp_mute_led,
 	},
+	[ALC269_FIXUP_HP_MUTE_LED_MIC1] = {
+		.type = HDA_FIXUP_FUNC,
+		.v.func = alc269_fixup_hp_mute_led_mic1,
+	},
 	[ALC269_FIXUP_HP_MUTE_LED_MIC2] = {
 		.type = HDA_FIXUP_FUNC,
 		.v.func = alc269_fixup_hp_mute_led_mic2,
@@ -2945,6 +2970,8 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
 	SND_PCI_QUIRK(0x1025, 0x029b, "Acer 1810TZ", ALC269_FIXUP_INV_DMIC),
 	SND_PCI_QUIRK(0x1025, 0x0349, "Acer AOD260", ALC269_FIXUP_INV_DMIC),
 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
+	SND_PCI_QUIRK(0x103c, 0x1973, "HP Pavilion", ALC269_FIXUP_HP_MUTE_LED_MIC1),
+	SND_PCI_QUIRK(0x103c, 0x1983, "HP Pavilion", ALC269_FIXUP_HP_MUTE_LED_MIC1),
 	SND_PCI_QUIRK_VENDOR(0x103c, "HP", ALC269_FIXUP_HP_MUTE_LED),
 	SND_PCI_QUIRK(0x1043, 0x1427, "Asus Zenbook UX31E", ALC269VB_FIXUP_DMIC),
 	SND_PCI_QUIRK(0x1043, 0x1517, "Asus Zenbook UX31A", ALC269VB_FIXUP_DMIC),

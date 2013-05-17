@@ -382,13 +382,23 @@ static void remove_conn_list(struct hda_codec *codec)
 /* read the connection and add to the cache */
 static int read_and_add_raw_conns(struct hda_codec *codec, hda_nid_t nid)
 {
-	hda_nid_t list[HDA_MAX_CONNECTIONS];
+	hda_nid_t list[32];
+	hda_nid_t *result = list;
 	int len;
 
 	len = snd_hda_get_raw_connections(codec, nid, list, ARRAY_SIZE(list));
-	if (len < 0)
-		return len;
-	return snd_hda_override_conn_list(codec, nid, len, list);
+	if (len == -ENOSPC) {
+		len = snd_hda_get_num_raw_conns(codec, nid);
+		result = kmalloc(sizeof(hda_nid_t) * len, GFP_KERNEL);
+		if (!result)
+			return -ENOMEM;
+		len = snd_hda_get_raw_connections(codec, nid, result, len);
+	}
+	if (len >= 0)
+		len = snd_hda_override_conn_list(codec, nid, len, result);
+	if (result != list)
+		kfree(result);
+	return len;
 }
 
 /**
@@ -466,6 +476,27 @@ int snd_hda_get_connections(struct hda_codec *codec, hda_nid_t nid,
 }
 EXPORT_SYMBOL_HDA(snd_hda_get_connections);
 
+/* return CONNLIST_LEN parameter of the given widget */
+static unsigned int get_num_conns(struct hda_codec *codec, hda_nid_t nid)
+{
+	unsigned int wcaps = get_wcaps(codec, nid);
+	unsigned int parm;
+
+	if (!(wcaps & AC_WCAP_CONN_LIST) &&
+	    get_wcaps_type(wcaps) != AC_WID_VOL_KNB)
+		return 0;
+
+	parm = snd_hda_param_read(codec, nid, AC_PAR_CONNLIST_LEN);
+	if (parm == -1)
+		parm = 0;
+	return parm;
+}
+
+int snd_hda_get_num_raw_conns(struct hda_codec *codec, hda_nid_t nid)
+{
+	return get_num_conns(codec, nid) & AC_CLIST_LENGTH;
+}
+
 /**
  * snd_hda_get_raw_connections - copy connection list without cache
  * @codec: the HDA codec
@@ -483,19 +514,16 @@ int snd_hda_get_raw_connections(struct hda_codec *codec, hda_nid_t nid,
 	unsigned int parm;
 	int i, conn_len, conns;
 	unsigned int shift, num_elems, mask;
-	unsigned int wcaps;
 	hda_nid_t prev_nid;
 	int null_count = 0;
 
 	if (snd_BUG_ON(!conn_list || max_conns <= 0))
 		return -EINVAL;
 
-	wcaps = get_wcaps(codec, nid);
-	if (!(wcaps & AC_WCAP_CONN_LIST) &&
-	    get_wcaps_type(wcaps) != AC_WID_VOL_KNB)
+	parm = get_num_conns(codec, nid);
+	if (!parm)
 		return 0;
 
-	parm = snd_hda_param_read(codec, nid, AC_PAR_CONNLIST_LEN);
 	if (parm & AC_CLIST_LONG) {
 		/* long form */
 		shift = 16;
@@ -552,21 +580,13 @@ int snd_hda_get_raw_connections(struct hda_codec *codec, hda_nid_t nid,
 				continue;
 			}
 			for (n = prev_nid + 1; n <= val; n++) {
-				if (conns >= max_conns) {
-					snd_printk(KERN_ERR "hda_codec: "
-						   "Too many connections %d for NID 0x%x\n",
-						   conns, nid);
-					return -EINVAL;
-				}
+				if (conns >= max_conns)
+					return -ENOSPC;
 				conn_list[conns++] = n;
 			}
 		} else {
-			if (conns >= max_conns) {
-				snd_printk(KERN_ERR "hda_codec: "
-					   "Too many connections %d for NID 0x%x\n",
-					   conns, nid);
-				return -EINVAL;
-			}
+			if (conns >= max_conns)
+				return -ENOSPC;
 			conn_list[conns++] = val;
 		}
 		prev_nid = val;
@@ -1420,6 +1440,30 @@ int snd_hda_codec_new(struct hda_bus *bus,
 	return err;
 }
 EXPORT_SYMBOL_HDA(snd_hda_codec_new);
+
+int snd_hda_codec_update_widgets(struct hda_codec *codec)
+{
+	hda_nid_t fg;
+	int err;
+
+	/* Assume the function group node does not change,
+	 * only the widget nodes may change.
+	 */
+	kfree(codec->wcaps);
+	fg = codec->afg ? codec->afg : codec->mfg;
+	err = read_widget_caps(codec, fg);
+	if (err < 0) {
+		snd_printk(KERN_ERR "hda_codec: cannot malloc\n");
+		return err;
+	}
+
+	snd_array_free(&codec->init_pins);
+	err = read_pin_defaults(codec);
+
+	return err;
+}
+EXPORT_SYMBOL_HDA(snd_hda_codec_update_widgets);
+
 
 /**
  * snd_hda_codec_configure - (Re-)configure the HD-audio codec
@@ -2288,11 +2332,12 @@ struct snd_kcontrol *snd_hda_find_mixer_ctl(struct hda_codec *codec,
 EXPORT_SYMBOL_HDA(snd_hda_find_mixer_ctl);
 
 static int find_empty_mixer_ctl_idx(struct hda_codec *codec, const char *name,
-				    int dev)
+				    int start_idx)
 {
-	int idx;
-	for (idx = 0; idx < 16; idx++) { /* 16 ctlrs should be large enough */
-		if (!find_mixer_ctl(codec, name, dev, idx))
+	int i, idx;
+	/* 16 ctlrs should be large enough */
+	for (i = 0, idx = start_idx; i < 16; i++, idx++) {
+		if (!find_mixer_ctl(codec, name, 0, idx))
 			return idx;
 	}
 	return -EBUSY;
@@ -3261,30 +3306,29 @@ int snd_hda_create_dig_out_ctls(struct hda_codec *codec,
 	int err;
 	struct snd_kcontrol *kctl;
 	struct snd_kcontrol_new *dig_mix;
-	int idx, dev = 0;
-	const int spdif_pcm_dev = 1;
+	int idx = 0;
+	const int spdif_index = 16;
 	struct hda_spdif_out *spdif;
+	struct hda_bus *bus = codec->bus;
 
-	if (codec->primary_dig_out_type == HDA_PCM_TYPE_HDMI &&
+	if (bus->primary_dig_out_type == HDA_PCM_TYPE_HDMI &&
 	    type == HDA_PCM_TYPE_SPDIF) {
-		dev = spdif_pcm_dev;
-	} else if (codec->primary_dig_out_type == HDA_PCM_TYPE_SPDIF &&
+		idx = spdif_index;
+	} else if (bus->primary_dig_out_type == HDA_PCM_TYPE_SPDIF &&
 		   type == HDA_PCM_TYPE_HDMI) {
-		for (idx = 0; idx < codec->spdif_out.used; idx++) {
-			spdif = snd_array_elem(&codec->spdif_out, idx);
-			for (dig_mix = dig_mixes; dig_mix->name; dig_mix++) {
-				kctl = find_mixer_ctl(codec, dig_mix->name, 0, idx);
-				if (!kctl)
-					break;
-				kctl->id.device = spdif_pcm_dev;
-			}
+		/* suppose a single SPDIF device */
+		for (dig_mix = dig_mixes; dig_mix->name; dig_mix++) {
+			kctl = find_mixer_ctl(codec, dig_mix->name, 0, 0);
+			if (!kctl)
+				break;
+			kctl->id.index = spdif_index;
 		}
-		codec->primary_dig_out_type = HDA_PCM_TYPE_HDMI;
+		bus->primary_dig_out_type = HDA_PCM_TYPE_HDMI;
 	}
-	if (!codec->primary_dig_out_type)
-		codec->primary_dig_out_type = type;
+	if (!bus->primary_dig_out_type)
+		bus->primary_dig_out_type = type;
 
-	idx = find_empty_mixer_ctl_idx(codec, "IEC958 Playback Switch", dev);
+	idx = find_empty_mixer_ctl_idx(codec, "IEC958 Playback Switch", idx);
 	if (idx < 0) {
 		printk(KERN_ERR "hda_codec: too many IEC958 outputs\n");
 		return -EBUSY;
@@ -3294,7 +3338,6 @@ int snd_hda_create_dig_out_ctls(struct hda_codec *codec,
 		kctl = snd_ctl_new1(dig_mix, codec);
 		if (!kctl)
 			return -ENOMEM;
-		kctl->id.device = dev;
 		kctl->id.index = idx;
 		kctl->private_value = codec->spdif_out.used - 1;
 		err = snd_hda_ctl_add(codec, associated_nid, kctl);

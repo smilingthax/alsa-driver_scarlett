@@ -121,7 +121,7 @@ static int soc_compr_free(struct snd_compr_stream *cstream)
 		codec_dai->capture_active--;
 	}
 
-	snd_soc_dai_digital_mute(codec_dai, 1);
+	snd_soc_dai_digital_mute(codec_dai, 1, cstream->direction);
 
 	cpu_dai->active--;
 	codec_dai->active--;
@@ -179,10 +179,14 @@ static int soc_compr_trigger(struct snd_compr_stream *cstream, int cmd)
 			goto out;
 	}
 
-	if (cmd == SNDRV_PCM_TRIGGER_START)
-		snd_soc_dai_digital_mute(codec_dai, 0);
-	else if (cmd == SNDRV_PCM_TRIGGER_STOP)
-		snd_soc_dai_digital_mute(codec_dai, 1);
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+		snd_soc_dai_digital_mute(codec_dai, 0, cstream->direction);
+		break;
+	case SNDRV_PCM_TRIGGER_STOP:
+		snd_soc_dai_digital_mute(codec_dai, 1, cstream->direction);
+		break;
+	}
 
 out:
 	mutex_unlock(&rtd->pcm_mutex);
@@ -302,6 +306,22 @@ static int soc_compr_pointer(struct snd_compr_stream *cstream,
 	return 0;
 }
 
+static int soc_compr_copy(struct snd_compr_stream *cstream,
+			  const char __user *buf, size_t count)
+{
+	struct snd_soc_pcm_runtime *rtd = cstream->private_data;
+	struct snd_soc_platform *platform = rtd->platform;
+	int ret = 0;
+
+	mutex_lock_nested(&rtd->pcm_mutex, rtd->pcm_subclass);
+
+	if (platform->driver->compr_ops && platform->driver->compr_ops->copy)
+		ret = platform->driver->compr_ops->copy(cstream, buf, count);
+
+	mutex_unlock(&rtd->pcm_mutex);
+	return ret;
+}
+
 /* ASoC Compress operations */
 static struct snd_compr_ops soc_compr_ops = {
 	.open		= soc_compr_open,
@@ -319,6 +339,7 @@ static struct snd_compr_ops soc_compr_ops = {
 int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
 {
 	struct snd_soc_codec *codec = rtd->codec;
+	struct snd_soc_platform *platform = rtd->platform;
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 	struct snd_compr *compr;
@@ -335,14 +356,25 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
 		return -ENOMEM;
 	}
 
-	compr->ops = &soc_compr_ops;
+	compr->ops = devm_kzalloc(rtd->card->dev, sizeof(soc_compr_ops),
+				  GFP_KERNEL);
+	if (compr->ops == NULL) {
+		dev_err(rtd->card->dev, "Cannot allocate compressed ops\n");
+		ret = -ENOMEM;
+		goto compr_err;
+	}
+	memcpy(compr->ops, &soc_compr_ops, sizeof(soc_compr_ops));
+
+	/* Add copy callback for not memory mapped DSPs */
+	if (platform->driver->compr_ops && platform->driver->compr_ops->copy)
+		compr->ops->copy = soc_compr_copy;
+
 	mutex_init(&compr->lock);
 	ret = snd_compress_new(rtd->card->snd_card, num, direction, compr);
 	if (ret < 0) {
 		pr_err("compress asoc: can't create compress for codec %s\n",
 			codec->name);
-		kfree(compr);
-		return ret;
+		goto compr_err;
 	}
 
 	/* DAPM dai link stream work */
@@ -353,5 +385,9 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
 
 	printk(KERN_INFO "compress asoc: %s <-> %s mapping ok\n", codec_dai->name,
 		cpu_dai->name);
+	return ret;
+
+compr_err:
+	kfree(compr);
 	return ret;
 }

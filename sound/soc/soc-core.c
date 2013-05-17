@@ -3542,12 +3542,20 @@ EXPORT_SYMBOL_GPL(snd_soc_dai_set_tristate);
  * snd_soc_dai_digital_mute - configure DAI system or master clock.
  * @dai: DAI
  * @mute: mute enable
+ * @direction: stream to mute
  *
  * Mutes the DAI DAC.
  */
-int snd_soc_dai_digital_mute(struct snd_soc_dai *dai, int mute)
+int snd_soc_dai_digital_mute(struct snd_soc_dai *dai, int mute,
+			     int direction)
 {
-	if (dai->driver && dai->driver->ops->digital_mute)
+	if (!dai->driver)
+		return -ENOTSUPP;
+
+	if (dai->driver->ops->mute_stream)
+		return dai->driver->ops->mute_stream(dai, mute, direction);
+	else if (direction == SNDRV_PCM_STREAM_PLAYBACK &&
+		 dai->driver->ops->digital_mute)
 		return dai->driver->ops->digital_mute(dai, mute);
 	else
 		return -ENOTSUPP;
@@ -4231,9 +4239,6 @@ unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
 		{ "pdm",	SND_SOC_DAIFMT_PDM},
 		{ "msb",	SND_SOC_DAIFMT_MSB },
 		{ "lsb",	SND_SOC_DAIFMT_LSB },
-	}, of_clock_table[] = {
-		{ "continuous",	SND_SOC_DAIFMT_CONT },
-		{ "gated",	SND_SOC_DAIFMT_GATED },
 	};
 
 	if (!prefix)
@@ -4255,19 +4260,14 @@ unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
 	}
 
 	/*
-	 * check "[prefix]clock-gating = xxx"
+	 * check "[prefix]continuous-clock"
 	 * SND_SOC_DAIFMT_CLOCK_MASK area
 	 */
-	snprintf(prop, sizeof(prop), "%sclock-gating", prefix);
-	ret = of_property_read_string(np, prop, &str);
-	if (ret == 0) {
-		for (i = 0; i < ARRAY_SIZE(of_clock_table); i++) {
-			if (strcmp(str, of_clock_table[i].name) == 0) {
-				format |= of_clock_table[i].val;
-				break;
-			}
-		}
-	}
+	snprintf(prop, sizeof(prop), "%scontinuous-clock", prefix);
+	if (of_get_property(np, prop, NULL))
+		format |= SND_SOC_DAIFMT_CONT;
+	else
+		format |= SND_SOC_DAIFMT_GATED;
 
 	/*
 	 * check "[prefix]bitclock-inversion"
