@@ -305,14 +305,18 @@ pack: $(ALSAKERNELFILE) mrproper
 		cp -a $$top/* $$dst/alsa-kernel || exit 1 ; \
 		mv $$dst/alsa-kernel/alsa/* $$dst || exit 1 ; \
 		mv $$dst/alsa-kernel/include/sound $$dst/alsa-kernel/include1 || exit 1 ; \
+		mv $$dst/alsa-kernel/include/uapi/sound $$dst/alsa-kernel/uapi1 || exit 1 ; \
 		rm -rf $$dst/alsa-kernel/include || exit 1; \
+		rm -rf $$dst/alsa-kernel/uapi || exit 1; \
 		mv $$dst/alsa-kernel/include1 $$dst/alsa-kernel/include || exit 1 ; \
+		mv $$dst/alsa-kernel/uapi1 $$dst/alsa-kernel/uapi || exit 1 ; \
 		mv $$dst/alsa-kernel/Documentation/sound/alsa $$dst/alsa-kernel/Documentation1 || exit 1 ; \
 		mv $$dst/alsa-kernel/Documentation/DocBook/* $$dst/alsa-kernel/Documentation1 || exit 1 ; \
 		rm -rf $$dst/alsa-kernel/Documentation || exit 1 ; \
 		mv $$dst/alsa-kernel/Documentation1 $$dst/alsa-kernel/Documentation || exit 1 ; \
 		mv $$dst/alsa-kernel/sound $$dst/alsa-kernel/sound1 || exit 1 ; \
 		mv $$dst/alsa-kernel/sound1/* $$dst/alsa-kernel || exit 1 ; \
+		rmdir $$dst/alsa-kernel/sound1 || exit 1 ; \
 		rm -rf $$dst/alsa-kernel/alsa || exit 1 ; \
 		tar --exclude=CVS --exclude=kchanges --exclude=.cvsignore \
                     --exclude='.hg*' --exclude='.git*' --exclude='*~' \
