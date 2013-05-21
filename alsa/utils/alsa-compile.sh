@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.2.5
+version=0.2.6
 protocol=
 distrib=unknown
 distribver=0.0
@@ -32,6 +32,7 @@ patches=
 kmodmesg=
 withdebug=
 shell=
+branch=
 
 fuser_prg=fuser
 insmod_prg=insmod
@@ -73,6 +74,7 @@ Operation modes:
   --run program [args]  run a program using fresh alsa-lib
   --with-debug=dbgopt	set debug options to dbgopt (for alsa-driver)
   --shell		run shell in the directory with sources
+  --branch=branch	branch for git clone
 
 Package selection:
   --driver		compile alsa-driver package (default)
@@ -136,7 +138,8 @@ do
 		clean="full"
 		case "$#,$1" in
 		*,*=*)
-			clean=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+			clean=`expr "z$1" : 'z-[^=]*=\(.*\)'`
+			test -z "$clean" && clean="full" ;;
 		1,*)
 			;;
 		*)
@@ -161,11 +164,23 @@ do
 	--git*)
 		case "$#,$1" in
 		*,*=*)
-			url=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+			url=`expr "z$1" : 'z-[^=]*=\(.*\)'`
+			test -z "$url" && url="$gittree" ;;
 		1,*)
 			url="$gittree" ;;
 		*)
 			url="$2"
+			shift ;;
+		esac
+		;;
+	--branch*)
+		case "$#,$1" in
+		*,*=*)
+			branch=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+		1,*)
+			usage ;;
+		*)
+			branch="$2"
 			shift ;;
 		esac
 		;;
@@ -386,7 +401,7 @@ install_package() {
 		RHEL)
 			install_package perl-DBI
 			rm -f $tmpdir/git.rpm
-			ver="1.7.2.2-1.el${distribver:0:1}.rf"
+			ver="1.7.9.6-1.el${distribver:0:1}.rf"
 			wget -O $tmpdir/git.rpm http://packages.sw.be/git/perl-Git-$ver.$(uname -m).rpm
 			if test -s $tmpdir/git.rpm; then
 				rpm -Uvh --nodeps $tmpdir/git.rpm
@@ -661,7 +676,7 @@ download_http_file() {
 # $3 is the branch name
 git_clone() {
 	local branch="master"
-	test -z "$3" && local branch="$3"
+	test -n "$3" && local branch="$3"
 	test -z "$3" -a "$2" = "alsa-driver" && local branch="release"
 	do_cmd git clone -b "$branch" "$1$2.git" "$2"
 }
@@ -673,7 +688,7 @@ do_compile() {
 	alsa-driver)
 		local dbgopt="$withdebug"
 		test -z "$dbgopt" && local dbgopt="full"
-		if ! cd "alsa"; then
+		if ! test -f Rules.make && ! cd "alsa"; then
 			echo >&2 "The alsa directory does not exist."
 			echo >&2 "Compilation of $package failed."
 			echo >&2 "Report this problem to the <alsa-devel@alsa-project.org> mailing list."
@@ -715,7 +730,7 @@ do_compile() {
 		echo >&2 "Report this problem to the <alsa-devel@alsa-project.org> mailing list."
 		exit 1
 	fi
-	if test "$package" = "alsa-driver"; then
+	if ! test -f Rules.make && test "$package" = "alsa-driver"; then
 		cd ..
 	fi
 }
@@ -1334,7 +1349,7 @@ git)
 		echo "Reusing it."
 		echo "Use '$0 --clean=$package' command to refetch and rebuild."
 	else
-		git_clone $url $package
+		git_clone $url $package $branch
 		echo "$package" > $packagedir
 	fi
 	do_cmd cd $package
