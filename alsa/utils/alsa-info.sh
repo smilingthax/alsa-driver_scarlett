@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.61
+SCRIPT_VERSION=0.4.62
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -370,7 +370,7 @@ information about your ALSA installation and sound related hardware.
 
 See '$0 --help' for command line options.
 "
-if [[ -n "$DIALOG" ]]; then
+if [ -n "$DIALOG" ]; then
 	dialog  --backtitle "$BGTITLE" \
 		--title "ALSA-Info script v $SCRIPT_VERSION" \
 		--msgbox "$greeting_message" 20 80
@@ -392,8 +392,7 @@ trap cleanup 0
 
 if [ "$PROCEED" = "yes" ]; then
 
-if [[ -z "$LSPCI" ]] 
-then
+if [ -z "$LSPCI" ]; then
 	echo "This script requires lspci. Please install it, and re-run this script."
 	exit 0
 fi
@@ -404,12 +403,12 @@ KERNEL_VERSION=`uname -r`
 KERNEL_PROCESSOR=`uname -p`
 KERNEL_MACHINE=`uname -m`
 KERNEL_OS=`uname -o`
-[[ `uname -v |grep SMP`  ]] && KERNEL_SMP="Yes" || KERNEL_SMP="No" 
+[[ `uname -v | grep SMP`  ]] && KERNEL_SMP="Yes" || KERNEL_SMP="No" 
 ALSA_DRIVER_VERSION=`cat /proc/asound/version |head -n1|awk {'print $7'} |sed 's/\.$//'`
 get_alsa_library_version
 ALSA_UTILS_VERSION=`amixer -v |awk {'print $3'}`
-VENDOR_ID=`lspci -vn |grep 040[1-3] | awk -F':' '{print $3}'|awk {'print substr($0, 2);}' >$TEMPDIR/vendor_id.tmp`
-DEVICE_ID=`lspci -vn |grep 040[1-3] | awk -F':' '{print $4}'|awk {'print $1'} >$TEMPDIR/device_id.tmp`
+VENDOR_ID=`lspci -vn | grep 040[1-3] | awk -F':' '{print $3}'| awk {'print substr($0, 2);}' >$TEMPDIR/vendor_id.tmp`
+DEVICE_ID=`lspci -vn | grep 040[1-3] | awk -F':' '{print $4}'| awk {'print $1'} >$TEMPDIR/device_id.tmp`
 LAST_CARD=$((`grep "]: " /proc/asound/cards | wc -l` - 1 ))
 
 ESDINST=$(which esd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
@@ -587,8 +586,7 @@ done
 echo "" >> $FILE
 fi
 
-if [ -s "$TEMPDIR/alsa-hda-intel.tmp" ] 
-then
+if [ -s "$TEMPDIR/alsa-hda-intel.tmp" ]; then
 	echo "!!HDA-Intel Codec information" >> $FILE
 	echo "!!---------------------------" >> $FILE
 	echo "--startcollapse--" >> $FILE
@@ -599,8 +597,7 @@ then
 	echo "" >> $FILE
 fi
 
-if [ -s "$TEMPDIR/alsa-ac97.tmp" ]
-then
+if [ -s "$TEMPDIR/alsa-ac97.tmp" ]; then
         echo "!!AC97 Codec information" >> $FILE
         echo "!!----------------------" >> $FILE
         echo "--startcollapse--" >> $FILE
@@ -613,8 +610,7 @@ then
 	echo "" >> $FILE
 fi
 
-if [ -s "$TEMPDIR/alsa-usbmixer.tmp" ]
-then
+if [ -s "$TEMPDIR/alsa-usbmixer.tmp" ]; then
         echo "!!USB Mixer information" >> $FILE
         echo "!!---------------------" >> $FILE
         echo "--startcollapse--" >> $FILE
@@ -626,8 +622,7 @@ then
 fi
 
 #If no command line options are specified, then run as though --with-all was specified
-if [[ -z "$1" ]]
-then
+if [ -z "$1" ]; then
 	update
 	withall
 	pbcheck	
@@ -636,8 +631,7 @@ fi
 fi # proceed
 
 #loop through command line arguments, until none are left.
-if [[ -n "$1" ]]
-then
+if [ -n "$1" ]; then
 	until [ -z "$1" ]
 	do
 	case "$1" in
@@ -767,7 +761,7 @@ if [ "$PROCEED" = "no" ]; then
 fi
 
 if [ "$UPLOAD" = "ask" ]; then
-	if [[ -n "$DIALOG" ]]; then
+	if [ -n "$DIALOG" ]; then
 		dialog --backtitle "$BGTITLE" --title "Information collected" --yes-label " UPLOAD / SHARE " --no-label " SAVE LOCALLY " --defaultno --yesno "\n\nAutomatically upload ALSA information to $WWWSERVICE?" 10 80
 		DIALOG_EXIT_CODE=$?
 		if [ $DIALOG_EXIT_CODE != 0 ]; then
@@ -882,27 +876,26 @@ echo ""
 fi #dialog
 
 #See if tput is available, and use it if it is.	
-if [[ -n "$TPUT" ]]
-then
+if [ -n "$TPUT" ]; then
 	if [[ -z $PASTEBIN ]]; then
 		FINAL_URL=`tput setaf 1; grep "SUCCESS:" $TEMPDIR/wget.tmp | cut -d ' ' -f 2 ; tput sgr0`
 	else
-		FINAL_URL=`tput setaf 1; grep "SUCCESS:" $TEMPDIR/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p';tput sgr0`
+		FINAL_URL=`tput setaf 1; grep "SUCCESS:" $TEMPDIR/wget.tmp | sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p';tput sgr0`
 	fi
 else
 	if [[ -z $PASTEBIN ]]; then
 		FINAL_URL=`grep "SUCCESS:" $TEMPDIR/wget.tmp | cut -d ' ' -f 2`
 	else
-		FINAL_URL=`grep "SUCCESS:" $TEMPDIR/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p'`
+		FINAL_URL=`grep "SUCCESS:" $TEMPDIR/wget.tmp | sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p'`
 	fi
 fi
 
-#Output the URL of the uploaded file.	
+# Output the URL of the uploaded file.	
 echo "Your ALSA information is located at $FINAL_URL"
 echo "Please inform the person helping you."
 echo ""
 
-#We couldnt find a suitable wget, so tell the user to upload manually.
+# We couldnt find a suitable wget, so tell the user to upload manually.
 else
 	mv -f $FILE $NFILE || exit 1
 	KEEP_OUTPUT="yes"
@@ -935,5 +928,3 @@ else
 		fi
 	fi
 fi
-
-
