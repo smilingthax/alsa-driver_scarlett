@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.2.4
+version=0.2.5
 protocol=
 distrib=unknown
 distribver=0.0
@@ -15,7 +15,6 @@ packagedefault=true
 url=
 urldefault=
 gittree="git://git.alsa-project.org/"
-usegit=false
 httpdownloader=
 clean=
 compile=
@@ -32,6 +31,7 @@ runargs=
 patches=
 kmodmesg=
 withdebug=
+shell=
 
 fuser_prg=fuser
 insmod_prg=insmod
@@ -72,6 +72,7 @@ Operation modes:
   --kmodmesg		show ALSA kernel related messages
   --run program [args]  run a program using fresh alsa-lib
   --with-debug=dbgopt	set debug options to dbgopt (for alsa-driver)
+  --shell		run shell in the directory with sources
 
 Package selection:
   --driver		compile alsa-driver package (default)
@@ -254,6 +255,9 @@ do
 		;;
 	--kmodmesg)
 		kmodmesg=true
+		;;
+	--shell)
+		shell=true
 		;;
 	*)
 		test -n "$1" && echo "Unknown parameter '$1'"
@@ -654,17 +658,27 @@ download_http_file() {
 # Create git clone
 # $1 is git url prefix
 # $2 is project name and destination dirname
+# $3 is the branch name
 git_clone() {
-	do_cmd git clone "$1$2.git" "$2"
+	local branch="master"
+	test -z "$3" && local branch="$3"
+	test -z "$3" -a "$2" = "alsa-driver" && local branch="release"
+	do_cmd git clone -b "$branch" "$1$2.git" "$2"
 }
 
 # Compile $package, applying $patches
 do_compile() {
 	local cmd="./gitcompile"
-	case "$package"  in
+	case "$package" in
 	alsa-driver)
 		local dbgopt="$withdebug"
 		test -z "$dbgopt" && local dbgopt="full"
+		if ! cd "alsa"; then
+			echo >&2 "The alsa directory does not exist."
+			echo >&2 "Compilation of $package failed."
+			echo >&2 "Report this problem to the <alsa-devel@alsa-project.org> mailing list."
+			exit 1
+		fi
 		local cmd="./gitcompile --with-debug=$dbgopt --with-isapnp=yes --with-sequencer=yes --with-moddir=updates/alsa"
 		;;
 	esac
@@ -700,6 +714,9 @@ do_compile() {
 		echo >&2 "Compilation of $package failed."
 		echo >&2 "Report this problem to the <alsa-devel@alsa-project.org> mailing list."
 		exit 1
+	fi
+	if test "$package" = "alsa-driver"; then
+		cd ..
 	fi
 }
 
@@ -1171,6 +1188,16 @@ package_switch() {
 	fi
 }
 
+do_shell() {
+	do_cmd cd $tree
+	export PS1="alsa-compile [\u@\h \W]\$ "
+	echo >&2
+	echo >&2 "*** Type 'Ctrl-D' or 'exit' to exit the debug shell ***"
+	echo >&2
+	do_cmd pwd
+	do_cmd /bin/bash
+}
+
 rundir=$(pwd)
 export LC_ALL=C
 export LANGUAGE=C
@@ -1237,6 +1264,11 @@ fi
 if test -n "$kernelmodules" -a -z "$compile" -a -n "$tree" -a -n "$status"; then
 	do_cmd cd $tree
 	kernel_modules
+	exit 0
+fi
+
+if test -n "$shell" -a -z "$compile" -a -n "$tree" -a -n "$status"; then
+	do_shell
 	exit 0
 fi
 
@@ -1372,6 +1404,10 @@ if test -n "$runargs"; then
 		echo >&2 "Unable to find alsa-lib.so."
 		exit 1
 	fi
+fi
+
+if test -n "$shell"; then
+	do_shell
 fi
 
 exit 0
