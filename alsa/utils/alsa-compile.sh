@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.2.6
+version=0.2.7
 protocol=
 distrib=unknown
 distribver=0.0
@@ -33,6 +33,7 @@ kmodmesg=
 withdebug=
 shell=
 branch=
+kernel=
 
 fuser_prg=fuser
 insmod_prg=insmod
@@ -75,6 +76,7 @@ Operation modes:
   --with-debug=dbgopt	set debug options to dbgopt (for alsa-driver)
   --shell		run shell in the directory with sources
   --branch=branch	branch for git clone
+  --kernel=tree		kernel build tree
 
 Package selection:
   --driver		compile alsa-driver package (default)
@@ -181,6 +183,17 @@ do
 			usage ;;
 		*)
 			branch="$2"
+			shift ;;
+		esac
+		;;
+	--kernel*)
+		case "$#,$1" in
+		*,*=*)
+			kernel=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+		1,*)
+			usage ;;
+		*)
+			kernel="$2"
 			shift ;;
 		esac
 		;;
@@ -569,7 +582,7 @@ check_compilation_environment() {
 		echo "File $env has been created."
 	else
 		echo "File $env is cached."
-		. $env
+		. ./$env
 	fi
 	if test -z "$present_tool_git"; then
 		if test "$protocol" = "git"; then
@@ -695,6 +708,9 @@ do_compile() {
 			exit 1
 		fi
 		local cmd="./gitcompile --with-debug=$dbgopt --with-isapnp=yes --with-sequencer=yes --with-moddir=updates/alsa"
+		if test -n "$kernel"; then
+			local cmd="$cmd --with-kernel=\"$kernel\""
+		fi
 		;;
 	esac
 	if test -z "$patches"; then
@@ -1304,12 +1320,15 @@ http|https|ftp|file)
 			if test "${tree:0:1}" = "/"; then
 				tree=${tree:1}
 			fi
-			if test -r "$rundir/$tree/gitcompile"; then
+			if test "${tree:0:1}" != "/"; then
 				tree="$rundir/$tree"
-			elif test -r "$rundir/$tree/../gitcompile"; then
-				tree="$rundir/$tree/.."
-			elif test -r "$rundir/$tree/../$package/gitcompile"; then
-				tree="$rundir/$tree/../$package"
+			fi
+			if test -r "$tree/gitcompile" -o -r "$tree/alsa/gitcompile"; then
+				tree="$tree"
+			elif test -r "$tree/../gitcompile"; then
+				tree="$tree/.."
+			elif test -r "$tree/../$package/gitcompile"; then
+				tree="$tree/../$package"
 			fi
 			if test -d "$tree"; then
 				tree=$(cd "$tree" && pwd)
@@ -1324,7 +1343,7 @@ http|https|ftp|file)
 			tree=$(ls | grep $package)
 		fi
 	fi
-	if ! test -x $tree/gitcompile ; then
+	if ! test -x $tree/gitcompile -o -x $tree/alsa/gitcompile ; then
 		echo >&2 "Fatal: $package tree '$tree' not found."
 		exit 1
 	fi
