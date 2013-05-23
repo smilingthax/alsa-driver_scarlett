@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.2.4
+version=0.2.7
 protocol=
 distrib=unknown
 distribver=0.0
@@ -15,7 +15,6 @@ packagedefault=true
 url=
 urldefault=
 gittree="git://git.alsa-project.org/"
-usegit=false
 httpdownloader=
 clean=
 compile=
@@ -32,6 +31,9 @@ runargs=
 patches=
 kmodmesg=
 withdebug=
+shell=
+branch=
+kernel=
 
 fuser_prg=fuser
 insmod_prg=insmod
@@ -72,6 +74,9 @@ Operation modes:
   --kmodmesg		show ALSA kernel related messages
   --run program [args]  run a program using fresh alsa-lib
   --with-debug=dbgopt	set debug options to dbgopt (for alsa-driver)
+  --shell		run shell in the directory with sources
+  --branch=branch	branch for git clone
+  --kernel=tree		kernel build tree
 
 Package selection:
   --driver		compile alsa-driver package (default)
@@ -135,7 +140,8 @@ do
 		clean="full"
 		case "$#,$1" in
 		*,*=*)
-			clean=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+			clean=`expr "z$1" : 'z-[^=]*=\(.*\)'`
+			test -z "$clean" && clean="full" ;;
 		1,*)
 			;;
 		*)
@@ -160,11 +166,34 @@ do
 	--git*)
 		case "$#,$1" in
 		*,*=*)
-			url=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+			url=`expr "z$1" : 'z-[^=]*=\(.*\)'`
+			test -z "$url" && url="$gittree" ;;
 		1,*)
 			url="$gittree" ;;
 		*)
 			url="$2"
+			shift ;;
+		esac
+		;;
+	--branch*)
+		case "$#,$1" in
+		*,*=*)
+			branch=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+		1,*)
+			usage ;;
+		*)
+			branch="$2"
+			shift ;;
+		esac
+		;;
+	--kernel*)
+		case "$#,$1" in
+		*,*=*)
+			kernel=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+		1,*)
+			usage ;;
+		*)
+			kernel="$2"
 			shift ;;
 		esac
 		;;
@@ -254,6 +283,9 @@ do
 		;;
 	--kmodmesg)
 		kmodmesg=true
+		;;
+	--shell)
+		shell=true
 		;;
 	*)
 		test -n "$1" && echo "Unknown parameter '$1'"
@@ -382,7 +414,7 @@ install_package() {
 		RHEL)
 			install_package perl-DBI
 			rm -f $tmpdir/git.rpm
-			ver="1.7.2.2-1.el${distribver:0:1}.rf"
+			ver="1.7.9.6-1.el${distribver:0:1}.rf"
 			wget -O $tmpdir/git.rpm http://packages.sw.be/git/perl-Git-$ver.$(uname -m).rpm
 			if test -s $tmpdir/git.rpm; then
 				rpm -Uvh --nodeps $tmpdir/git.rpm
@@ -550,7 +582,7 @@ check_compilation_environment() {
 		echo "File $env has been created."
 	else
 		echo "File $env is cached."
-		. $env
+		. ./$env
 	fi
 	if test -z "$present_tool_git"; then
 		if test "$protocol" = "git"; then
@@ -654,18 +686,31 @@ download_http_file() {
 # Create git clone
 # $1 is git url prefix
 # $2 is project name and destination dirname
+# $3 is the branch name
 git_clone() {
-	do_cmd git clone "$1$2.git" "$2"
+	local branch="master"
+	test -n "$3" && local branch="$3"
+	test -z "$3" -a "$2" = "alsa-driver" && local branch="release"
+	do_cmd git clone -b "$branch" "$1$2.git" "$2"
 }
 
 # Compile $package, applying $patches
 do_compile() {
 	local cmd="./gitcompile"
-	case "$package"  in
+	case "$package" in
 	alsa-driver)
 		local dbgopt="$withdebug"
 		test -z "$dbgopt" && local dbgopt="full"
+		if ! test -f Rules.make && ! cd "alsa"; then
+			echo >&2 "The alsa directory does not exist."
+			echo >&2 "Compilation of $package failed."
+			echo >&2 "Report this problem to the <alsa-devel@alsa-project.org> mailing list."
+			exit 1
+		fi
 		local cmd="./gitcompile --with-debug=$dbgopt --with-isapnp=yes --with-sequencer=yes --with-moddir=updates/alsa"
+		if test -n "$kernel"; then
+			local cmd="$cmd --with-kernel=\"$kernel\""
+		fi
 		;;
 	esac
 	if test -z "$patches"; then
@@ -700,6 +745,9 @@ do_compile() {
 		echo >&2 "Compilation of $package failed."
 		echo >&2 "Report this problem to the <alsa-devel@alsa-project.org> mailing list."
 		exit 1
+	fi
+	if ! test -f Rules.make && test "$package" = "alsa-driver"; then
+		cd ..
 	fi
 }
 
@@ -1171,6 +1219,16 @@ package_switch() {
 	fi
 }
 
+do_shell() {
+	do_cmd cd $tree
+	export PS1="alsa-compile [\u@\h \W]\$ "
+	echo >&2
+	echo >&2 "*** Type 'Ctrl-D' or 'exit' to exit the debug shell ***"
+	echo >&2
+	do_cmd pwd
+	do_cmd /bin/bash
+}
+
 rundir=$(pwd)
 export LC_ALL=C
 export LANGUAGE=C
@@ -1240,6 +1298,11 @@ if test -n "$kernelmodules" -a -z "$compile" -a -n "$tree" -a -n "$status"; then
 	exit 0
 fi
 
+if test -n "$shell" -a -z "$compile" -a -n "$tree" -a -n "$status"; then
+	do_shell
+	exit 0
+fi
+
 case "$protocol" in
 http|https|ftp|file)
 	check_compilation_environment
@@ -1257,12 +1320,15 @@ http|https|ftp|file)
 			if test "${tree:0:1}" = "/"; then
 				tree=${tree:1}
 			fi
-			if test -r "$rundir/$tree/gitcompile"; then
+			if test "${tree:0:1}" != "/"; then
 				tree="$rundir/$tree"
-			elif test -r "$rundir/$tree/../gitcompile"; then
-				tree="$rundir/$tree/.."
-			elif test -r "$rundir/$tree/../$package/gitcompile"; then
-				tree="$rundir/$tree/../$package"
+			fi
+			if test -r "$tree/gitcompile" -o -r "$tree/alsa/gitcompile"; then
+				tree="$tree"
+			elif test -r "$tree/../gitcompile"; then
+				tree="$tree/.."
+			elif test -r "$tree/../$package/gitcompile"; then
+				tree="$tree/../$package"
 			fi
 			if test -d "$tree"; then
 				tree=$(cd "$tree" && pwd)
@@ -1277,7 +1343,7 @@ http|https|ftp|file)
 			tree=$(ls | grep $package)
 		fi
 	fi
-	if ! test -x $tree/gitcompile ; then
+	if ! test -x $tree/gitcompile -o -x $tree/alsa/gitcompile ; then
 		echo >&2 "Fatal: $package tree '$tree' not found."
 		exit 1
 	fi
@@ -1302,7 +1368,7 @@ git)
 		echo "Reusing it."
 		echo "Use '$0 --clean=$package' command to refetch and rebuild."
 	else
-		git_clone $url $package
+		git_clone $url $package $branch
 		echo "$package" > $packagedir
 	fi
 	do_cmd cd $package
@@ -1372,6 +1438,10 @@ if test -n "$runargs"; then
 		echo >&2 "Unable to find alsa-lib.so."
 		exit 1
 	fi
+fi
+
+if test -n "$shell"; then
+	do_shell
 fi
 
 exit 0
