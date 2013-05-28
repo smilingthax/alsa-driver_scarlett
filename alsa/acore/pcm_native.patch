@@ -1,19 +1,14 @@
---- ../alsa-kernel/core/pcm_native.c	2013-05-17 10:37:24.257353174 +0200
-+++ pcm_native.c	2013-05-20 10:51:51.267230913 +0200
-@@ -1,3 +1,12 @@
+--- ../alsa-kernel/core/pcm_native.c	2013-05-28 15:43:42.868448165 +0200
++++ pcm_native.c	2013-05-28 16:22:15.339291048 +0200
+@@ -1,3 +1,7 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
 +#include <linux/uio.h>
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
-+#include <linux/compat.h>
-+#define compat_get_timespec	get_compat_timespec
-+#define compat_put_timespec	put_compat_timespec
-+#endif
 +
  /*
   *  Digital Audio (PCM) abstract layer
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -20,12 +29,14 @@
+@@ -20,12 +24,14 @@
   */
  
  #include <linux/mm.h>
@@ -28,7 +23,7 @@
  #include <linux/dma-mapping.h>
  #include <sound/core.h>
  #include <sound/control.h>
-@@ -377,7 +388,10 @@ static void snd_pcm_set_state(struct snd
+@@ -377,7 +383,10 @@
  	snd_pcm_stream_unlock_irq(substream);
  }
  
@@ -40,7 +35,7 @@
  			     struct snd_pcm_hw_params *params)
  {
  	struct snd_pcm_runtime *runtime;
-@@ -462,11 +476,33 @@ static int snd_pcm_hw_params(struct snd_
+@@ -462,11 +471,33 @@
  	snd_pcm_timer_resolution_change(substream);
  	snd_pcm_set_state(substream, SNDRV_PCM_STATE_SETUP);
  
@@ -74,17 +69,17 @@
  	return 0;
   _error:
  	/* hardware might be unusable from this time,
-@@ -521,7 +557,17 @@ static int snd_pcm_hw_free(struct snd_pc
+@@ -521,7 +552,17 @@
  	if (substream->ops->hw_free)
  		result = substream->ops->hw_free(substream);
  	snd_pcm_set_state(substream, SNDRV_PCM_STATE_OPEN);
 +#ifdef CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC
-+	pm_qos_remove_request(&substream->latency_pm_qos_req);
+ 	pm_qos_remove_request(&substream->latency_pm_qos_req);
 +#elif defined(CONFIG_SND_HAVE_PM_QOS_REQUEST_LIST)
 +	pm_qos_remove_request(substream->latency_pm_qos_req);
 +	substream->latency_pm_qos_req = NULL;
 +#elif defined(CONFIG_SND_HAVE_PM_QOS_REQUEST)
- 	pm_qos_remove_request(&substream->latency_pm_qos_req);
++	pm_qos_remove_request(&substream->latency_pm_qos_req);
 +#else
 +	pm_qos_remove_requirement(PM_QOS_CPU_DMA_LATENCY,
 +				  substream->latency_id);
@@ -92,7 +87,7 @@
  	return result;
  }
  
-@@ -956,7 +1002,11 @@ static struct action_ops snd_pcm_action_
+@@ -956,7 +997,11 @@
   *
   * Return: Zero if succesful, or a negative error code.
   */
@@ -104,7 +99,7 @@
  {
  	return snd_pcm_action(&snd_pcm_action_stop, substream, state);
  }
-@@ -1599,7 +1649,13 @@ static struct file *snd_pcm_file_fd(int
+@@ -1599,7 +1644,13 @@
  	file = fget_light(fd, fput_needed);
  	if (!file)
  		return NULL;
@@ -118,21 +113,21 @@
  	if (!S_ISCHR(inode->i_mode) ||
  	    imajor(inode) != snd_major) {
  		fput_light(file, *fput_needed);
-@@ -2048,8 +2104,21 @@ void snd_pcm_release_substream(struct sn
+@@ -2048,8 +2099,21 @@
  		substream->ops->close(substream);
  		substream->hw_opened = 0;
  	}
 +#ifdef CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC
- 	if (pm_qos_request_active(&substream->latency_pm_qos_req))
- 		pm_qos_remove_request(&substream->latency_pm_qos_req);
++	if (pm_qos_request_active(&substream->latency_pm_qos_req))
++		pm_qos_remove_request(&substream->latency_pm_qos_req);
 +#elif defined(CONFIG_SND_HAVE_PM_QOS_REQUEST_LIST)
 +	if (substream->latency_pm_qos_req) {
 +		pm_qos_remove_request(substream->latency_pm_qos_req);
 +		substream->latency_pm_qos_req = NULL;
 +	}
 +#elif defined(CONFIG_SND_HAVE_PM_QOS_REQUEST)
-+	if (pm_qos_request_active(&substream->latency_pm_qos_req))
-+		pm_qos_remove_request(&substream->latency_pm_qos_req);
+ 	if (pm_qos_request_active(&substream->latency_pm_qos_req))
+ 		pm_qos_remove_request(&substream->latency_pm_qos_req);
 +#else
 +	pm_qos_remove_requirement(PM_QOS_CPU_DMA_LATENCY,
 +				  substream->latency_id);
@@ -140,7 +135,7 @@
  	if (substream->pcm_release) {
  		substream->pcm_release(substream);
  		substream->pcm_release = NULL;
-@@ -2869,23 +2938,42 @@ static ssize_t snd_pcm_write(struct file
+@@ -2869,23 +2933,42 @@
  
  	pcm_file = file->private_data;
  	substream = pcm_file->substream;
@@ -190,7 +185,7 @@
  {
  	struct snd_pcm_file *pcm_file;
  	struct snd_pcm_substream *substream;
-@@ -2895,7 +2983,11 @@ static ssize_t snd_pcm_aio_read(struct k
+@@ -2895,7 +2978,11 @@
  	void __user **bufs;
  	snd_pcm_uframes_t frames;
  
@@ -202,7 +197,7 @@
  	substream = pcm_file->substream;
  	if (PCM_RUNTIME_CHECK(substream))
  		return -ENXIO;
-@@ -2919,8 +3011,13 @@ static ssize_t snd_pcm_aio_read(struct k
+@@ -2919,8 +3006,13 @@
  	return result;
  }
  
@@ -216,7 +211,7 @@
  {
  	struct snd_pcm_file *pcm_file;
  	struct snd_pcm_substream *substream;
-@@ -2930,7 +3027,11 @@ static ssize_t snd_pcm_aio_write(struct
+@@ -2930,7 +3022,11 @@
  	void __user **bufs;
  	snd_pcm_uframes_t frames;
  
@@ -228,7 +223,7 @@
  	substream = pcm_file->substream;
  	if (PCM_RUNTIME_CHECK(substream))
  		return -ENXIO;
-@@ -2952,6 +3053,7 @@ static ssize_t snd_pcm_aio_write(struct
+@@ -2952,6 +3048,7 @@
  	kfree(bufs);
  	return result;
  }
@@ -236,7 +231,7 @@
  
  static unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait)
  {
-@@ -3039,6 +3141,19 @@ static unsigned int snd_pcm_capture_poll
+@@ -3039,6 +3136,19 @@
   * mmap support
   */
  
@@ -256,7 +251,7 @@
  /*
   * Only on coherent architectures, we can mmap the status and the control records
   * for effcient data transfer.  On others, we have to use HWSYNC ioctl...
-@@ -3047,6 +3162,7 @@ static unsigned int snd_pcm_capture_poll
+@@ -3047,6 +3157,7 @@
  /*
   * mmap status record
   */
@@ -264,7 +259,7 @@
  static int snd_pcm_mmap_status_fault(struct vm_area_struct *area,
  						struct vm_fault *vmf)
  {
-@@ -3060,10 +3176,35 @@ static int snd_pcm_mmap_status_fault(str
+@@ -3060,10 +3171,35 @@
  	get_page(vmf->page);
  	return 0;
  }
@@ -300,7 +295,7 @@
  };
  
  static int snd_pcm_mmap_status(struct snd_pcm_substream *substream, struct file *file,
-@@ -3084,6 +3225,7 @@ static int snd_pcm_mmap_status(struct sn
+@@ -3084,6 +3220,7 @@
  /*
   * mmap control record
   */
@@ -308,7 +303,7 @@
  static int snd_pcm_mmap_control_fault(struct vm_area_struct *area,
  						struct vm_fault *vmf)
  {
-@@ -3097,10 +3239,36 @@ static int snd_pcm_mmap_control_fault(st
+@@ -3097,10 +3234,36 @@
  	get_page(vmf->page);
  	return 0;
  }
@@ -345,7 +340,7 @@
  };
  
  static int snd_pcm_mmap_control(struct snd_pcm_substream *substream, struct file *file,
-@@ -3154,9 +3322,12 @@ snd_pcm_default_page_ops(struct snd_pcm_
+@@ -3154,9 +3317,12 @@
  	return virt_to_page(vaddr);
  }
  
@@ -358,7 +353,7 @@
  static int snd_pcm_mmap_data_fault(struct vm_area_struct *area,
  						struct vm_fault *vmf)
  {
-@@ -3183,6 +3354,45 @@ static int snd_pcm_mmap_data_fault(struc
+@@ -3183,6 +3349,45 @@
  	vmf->page = page;
  	return 0;
  }
@@ -404,7 +399,7 @@
  
  static const struct vm_operations_struct snd_pcm_vm_ops_data = {
  	.open =		snd_pcm_mmap_data_open,
-@@ -3192,7 +3402,14 @@ static const struct vm_operations_struct
+@@ -3192,7 +3397,14 @@
  static const struct vm_operations_struct snd_pcm_vm_ops_data_fault = {
  	.open =		snd_pcm_mmap_data_open,
  	.close =	snd_pcm_mmap_data_close,
@@ -419,7 +414,7 @@
  };
  
  #ifndef ARCH_HAS_DMA_MMAP_COHERENT
-@@ -3238,7 +3455,35 @@ int snd_pcm_lib_mmap_iomem(struct snd_pc
+@@ -3238,7 +3450,35 @@
  	struct snd_pcm_runtime *runtime = substream->runtime;;
  
  	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
@@ -455,7 +450,7 @@
  }
  
  EXPORT_SYMBOL(snd_pcm_lib_mmap_iomem);
-@@ -3272,7 +3517,7 @@ int snd_pcm_mmap_data(struct snd_pcm_sub
+@@ -3272,7 +3512,7 @@
  	    runtime->access == SNDRV_PCM_ACCESS_RW_NONINTERLEAVED)
  		return -EINVAL;
  	size = area->vm_end - area->vm_start;
@@ -464,7 +459,7 @@
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
  	if ((size_t)size > dma_bytes)
  		return -EINVAL;
-@@ -3303,7 +3548,7 @@ static int snd_pcm_mmap(struct file *fil
+@@ -3303,7 +3543,7 @@
  	if (PCM_RUNTIME_CHECK(substream))
  		return -ENXIO;
  
@@ -473,7 +468,7 @@
  	switch (offset) {
  	case SNDRV_PCM_MMAP_OFFSET_STATUS:
  		if (pcm_file->no_compat_mmap)
-@@ -3336,12 +3581,34 @@ static int snd_pcm_fasync(int fd, struct
+@@ -3336,12 +3576,34 @@
  /*
   * ioctl32 compat
   */
@@ -509,7 +504,7 @@
  /*
   *  To be removed helpers to keep binary compatibility
   */
-@@ -3482,29 +3749,49 @@ const struct file_operations snd_pcm_f_o
+@@ -3482,29 +3744,49 @@
  	{
  		.owner =		THIS_MODULE,
  		.write =		snd_pcm_write,

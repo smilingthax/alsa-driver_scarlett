@@ -1374,6 +1374,11 @@ static inline struct pid *task_pid(struct task_struct *task)
 }
 #endif
 #endif /* !CONFIG_SND_HAS_REFCOUNTED_STRUCT_PID */
+#else /* CONFIG_HAVE_PUT_PID */
+#if defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6, 0)
+#define get_pid(p) (p)
+#define put_pid(p)
+#endif
 #endif /* !CONFIG_HAVE_PUT_PID */
 
 #ifndef CONFIG_HAVE_PID_VNR
