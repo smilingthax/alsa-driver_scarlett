@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.2.7
+version=0.2.8
 protocol=
 distrib=unknown
 distribver=0.0
@@ -834,7 +834,7 @@ parse_modules() {
 		cd ..
 		local pdst="xxxx/lib/modules/$rel"
 		mkdir -p $pdst/modules || exit 1
-		for i in modules/*.*o; do
+		for i in alsa/modules/*.*o; do
 			ln -sf ../../../../../$i $pdst/$i || exit 1
 		done
 		local p=$(pwd)
@@ -854,7 +854,7 @@ parse_modules() {
 	fi
 
 	if ! test -s "$tmpdir/modules.top" ; then
-		for i in modules/*.*o; do
+		for i in alsa/modules/*.*o; do
 			if test -r $i; then
 				local a=$($modinfobin $i | grep "parm:" | grep "enable:")
 				if ! test -z "$a"; then
@@ -921,8 +921,8 @@ my_insmod() {
 			args="$args $args1"
 			xmod="$xmod1"
 		fi
-		if test -r modules/$xmod.ko; then
-			local mod=modules/$xmod.ko
+		if test -r alsa/modules/$xmod.ko; then
+			local mod=alsa/modules/$xmod.ko
 			echo "> insmod $mod $args"
 			if test -n "$nofail"; then
 				$insmod_prg $mod $args 2> /dev/null
@@ -931,8 +931,8 @@ my_insmod() {
 				exit 1
 			fi
 		else
-			if test -r modules/$xmod.o; then
-				local mod=modules/$xmod.o
+			if test -r alsa/modules/$xmod.o; then
+				local mod=alsa/modules/$xmod.o
 				echo "> insmod $mod $args"
 				if test -n "$nofail"; then
 					$insmod_prg $mod.o $args
@@ -1185,7 +1185,7 @@ kernel_modules_list() {
 	parse_modules
 	local topmods=$(cat "$tmpdir/modules.top")
 	for mod in $topmods; do
-		local desc=$($modinfobin -F description modules/$mod.*o)
+		local desc=$($modinfobin -F description alsa/modules/$mod.*o)
 		echo "$mod: $desc"
 	done
 }
