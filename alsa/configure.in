@@ -2860,7 +2860,7 @@ AC_ARG_WITH(max-cards,
   max_cards="$withval", max_cards="32")
 AC_MSG_RESULT(max_cards)
 CONFIG_SND_MAX_CARDS="$max_cards"
-AC_DEFINE(CONFIG_SND_MAX_CARDS)
+AC_SUBST(CONFIG_SND_MAX_CARDS)
 
 dnl Check for sequencer support...
 AC_MSG_CHECKING(for sequencer support)

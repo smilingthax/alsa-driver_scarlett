@@ -192,6 +192,7 @@ static char *no_cards[] = {
 	"%SND",
 	/* options given as configure options */
 	"SND_DYNAMIC_MINORS",
+	"SND_MAX_CARDS",
 	"SND_DEBUG",
 	"SND_DEBUG_MEMORY",
 	"SND_DEBUG_VERBOSE",
