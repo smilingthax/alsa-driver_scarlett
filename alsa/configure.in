@@ -2853,6 +2853,15 @@ else
   AC_MSG_RESULT(no)
 fi
 
+dnl Check for maximum cards...
+AC_MSG_CHECKING(for maximum number of soundcards)
+AC_ARG_WITH(max-cards,
+  [  --with-max-cards=level  set the max number of cards for dynamic minors (32)],
+  max_cards="$withval", max_cards="32")
+AC_MSG_RESULT(max_cards)
+CONFIG_SND_MAX_CARDS="$max_cards"
+AC_DEFINE(CONFIG_SND_MAX_CARDS)
+
 dnl Check for sequencer support...
 AC_MSG_CHECKING(for sequencer support)
 AC_ARG_WITH(sequencer,
