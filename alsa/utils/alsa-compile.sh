@@ -826,7 +826,7 @@ kill_audio_apps() {
 parse_modules() {	
 	if ! test -s "$tmpdir/modules.dep"; then
 		local rel=$(uname -r)
-		cd modules
+		cd alsa/modules
 		for i in snd-dummy.*; do
 			local i1=$(echo $i | sed -e 's/dummy/dummy1/g')
 			ln -sf $i $i1 || exit 1
