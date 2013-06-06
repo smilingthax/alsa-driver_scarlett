@@ -1689,6 +1689,19 @@ module_exit(__driver##_exit);
 #endif
 #endif /* < 3.4 */
 
+/* module_pcmcia_driver() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+#ifdef CONFIG_PCMCIA
+#include <pcmcia/cistpl.h>
+#include <pcmcia/ds.h>
+#ifndef module_pcmcia_driver
+#define module_pcmcia_driver(__pcmcia_driver) \
+	module_driver(__pcmcia_driver, pcmcia_register_driver, \
+		       pcmcia_unregister_driver)
+#endif
+#endif /* CONFIG_PCMCIA */
+#endif /* < 3.10 */
+
 /* some old kernels define info(), and this breaks the build badly */
 #ifdef info
 #undef info
