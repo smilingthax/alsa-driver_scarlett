@@ -12,6 +12,9 @@ elif [ -r /etc/asound/driver_args ]; then
   args="`cat /etc/asound/driver_args`"
 else
   args="--with-debug=full --with-isapnp=yes --with-sequencer=yes"
+  if [ -d /etc/udev -o -f /etc/udev.conf ]; then
+    args="$args --enable-dynamic-minors"
+  fi
 fi
 
 if [ -r /usr/share/aclocal/alsa-lib.m4 ]; then

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.2.8
+version=0.2.9
 protocol=
 distrib=unknown
 distribver=0.0
@@ -826,7 +826,7 @@ kill_audio_apps() {
 parse_modules() {	
 	if ! test -s "$tmpdir/modules.dep"; then
 		local rel=$(uname -r)
-		cd alsa/modules
+		cd modules
 		for i in snd-dummy.*; do
 			local i1=$(echo $i | sed -e 's/dummy/dummy1/g')
 			ln -sf $i $i1 || exit 1
@@ -834,7 +834,7 @@ parse_modules() {
 		cd ..
 		local pdst="xxxx/lib/modules/$rel"
 		mkdir -p $pdst/modules || exit 1
-		for i in alsa/modules/*.*o; do
+		for i in modules/*.*o; do
 			ln -sf ../../../../../$i $pdst/$i || exit 1
 		done
 		local p=$(pwd)
@@ -854,7 +854,7 @@ parse_modules() {
 	fi
 
 	if ! test -s "$tmpdir/modules.top" ; then
-		for i in alsa/modules/*.*o; do
+		for i in modules/*.*o; do
 			if test -r $i; then
 				local a=$($modinfobin $i | grep "parm:" | grep "enable:")
 				if ! test -z "$a"; then
@@ -874,7 +874,7 @@ parse_modules() {
 
 # Echo the list of loaded sound modules
 current_modules() {
-	$lsmod_prg | cut -d ' ' -f 1 | grep -E "^(snd[_-]|snd$|ac97_bus$)"
+	$lsmod_prg | cut -d ' ' -f 1 | grep -E "^(snd[_-]|snd$|ac97_bus$|thinkpad_acpi$)"
 }
 
 # Remove kernel modules, using two phases
@@ -921,8 +921,8 @@ my_insmod() {
 			args="$args $args1"
 			xmod="$xmod1"
 		fi
-		if test -r alsa/modules/$xmod.ko; then
-			local mod=alsa/modules/$xmod.ko
+		if test -r modules/$xmod.ko; then
+			local mod=modules/$xmod.ko
 			echo "> insmod $mod $args"
 			if test -n "$nofail"; then
 				$insmod_prg $mod $args 2> /dev/null
@@ -931,8 +931,8 @@ my_insmod() {
 				exit 1
 			fi
 		else
-			if test -r alsa/modules/$xmod.o; then
-				local mod=alsa/modules/$xmod.o
+			if test -r modules/$xmod.o; then
+				local mod=modules/$xmod.o
 				echo "> insmod $mod $args"
 				if test -n "$nofail"; then
 					$insmod_prg $mod.o $args
@@ -955,6 +955,7 @@ show_kernel_messages() {
 	cat > $tmpdir/run.awk <<EOF
 /Dummy soundcard not found or device busy/ { delete lines }
 	{ lines[length(lines)+1] = \$0 }
+BEGIN	{ lines[0] = "hack" }
 END	{
 		for (x = 2; x <= length(lines); x++)
 			print prefix lines[x]
@@ -1185,7 +1186,7 @@ kernel_modules_list() {
 	parse_modules
 	local topmods=$(cat "$tmpdir/modules.top")
 	for mod in $topmods; do
-		local desc=$($modinfobin -F description alsa/modules/$mod.*o)
+		local desc=$($modinfobin -F description modules/$mod.*o)
 		echo "$mod: $desc"
 	done
 }
@@ -1323,8 +1324,10 @@ http|https|ftp|file)
 			if test "${tree:0:1}" != "/"; then
 				tree="$rundir/$tree"
 			fi
-			if test -r "$tree/gitcompile" -o -r "$tree/alsa/gitcompile"; then
+			if test -r "$tree/gitcompile"; then
 				tree="$tree"
+			elif test -r "$tree/alsa/gitcompile"; then
+				tree="$tree/alsa"
 			elif test -r "$tree/../gitcompile"; then
 				tree="$tree/.."
 			elif test -r "$tree/../$package/gitcompile"; then
@@ -1343,7 +1346,7 @@ http|https|ftp|file)
 			tree=$(ls | grep $package)
 		fi
 	fi
-	if ! test -x $tree/gitcompile -o -x $tree/alsa/gitcompile ; then
+	if ! test -x $tree/gitcompile ; then
 		echo >&2 "Fatal: $package tree '$tree' not found."
 		exit 1
 	fi
