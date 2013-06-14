@@ -3432,10 +3432,11 @@ static int wm8962_probe(struct snd_soc_codec *codec)
 					pdata->gpio_init[i] & 0xffff);
 		}
 
+
 	/* Put the speakers into mono mode? */
 	if (pdata->spk_mono)
-		reg_cache[WM8962_CLASS_D_CONTROL_2]
-			|= WM8962_SPK_MONO;
+		snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_2,
+				WM8962_SPK_MONO_MASK, WM8962_SPK_MONO);
 
 	/* Micbias setup, detection enable and detection
 	 * threasholds. */
