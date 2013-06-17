@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/usx2y/usbusx2yaudio.c	2013-04-29 11:45:04.818944327 +0200
-+++ usbusx2yaudio.c	2013-04-29 18:02:44.341941623 +0200
+--- ../../alsa-kernel/usb/usx2y/usbusx2yaudio.c	2013-06-17 10:53:59.956385632 +0200
++++ usbusx2yaudio.c	2013-06-17 10:51:02.385385654 +0200
 @@ -1,3 +1,5 @@
 +#include "adriver.h"
 +#include "../usbcompat.h"
@@ -135,7 +135,17 @@
  {
  	struct usX2Ydev *usX2Y = urb->context;
  	
-@@ -1018,10 +1064,18 @@
+@@ -695,6 +741,9 @@
+ 			((char*)(usbdata + i))[1] = ra[i].c2;
+ 			usb_fill_bulk_urb(us->urb[i], usX2Y->dev, usb_sndbulkpipe(usX2Y->dev, 4),
+ 					  usbdata + i, 2, i_usX2Y_04Int, usX2Y);
++#ifdef OLD_USB
++			us->urb[i]->transfer_flags = USB_QUEUE_BULK;
++#endif
+ 		}
+ 		us->submitted =	0;
+ 		us->len =	NOOF_SETRATE_URBS;
+@@ -1015,10 +1064,18 @@
  
  	if (0 > (err = usX2Y_audio_stream_new(card, 0xA, 0x8)))
  		return err;
