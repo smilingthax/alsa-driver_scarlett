@@ -398,7 +398,6 @@ static int ep93xx_ac97_probe(struct platform_device *pdev)
 
 fail:
 	ep93xx_ac97_info = NULL;
-	dev_set_drvdata(&pdev->dev, NULL);
 	return ret;
 }
 
@@ -412,7 +411,6 @@ static int ep93xx_ac97_remove(struct platform_device *pdev)
 	ep93xx_ac97_write_reg(info, AC97GCR, 0);
 
 	ep93xx_ac97_info = NULL;
-	dev_set_drvdata(&pdev->dev, NULL);
 
 	return 0;
 }
