@@ -37,6 +37,9 @@
 #include "hda_jack.h"
 #include "hda_generic.h"
 
+/* keep halting ALC5505 DSP, for power saving */
+#define HALT_REALTEK_ALC5505
+
 /* unsol event tags */
 #define ALC_DCVOL_EVENT		0x08
 
@@ -2659,7 +2662,19 @@ static void alc5505_dsp_init(struct hda_codec *codec)
 	alc5505_coef_set(codec, 0x880c, 0x00000004); /* DRAM Function control */
 	alc5505_coef_set(codec, 0x880c, 0x00000003);
 	alc5505_coef_set(codec, 0x880c, 0x00000010);
+
+#ifdef HALT_REALTEK_ALC5505
+	alc5505_dsp_halt(codec);
+#endif
 }
+
+#ifdef HALT_REALTEK_ALC5505
+#define alc5505_dsp_suspend(codec)	/* NOP */
+#define alc5505_dsp_resume(codec)	/* NOP */
+#else
+#define alc5505_dsp_suspend(codec)	alc5505_dsp_halt(codec)
+#define alc5505_dsp_resume(codec)	alc5505_dsp_back_from_halt(codec)
+#endif
 
 #ifdef CONFIG_PM
 static int alc269_suspend(struct hda_codec *codec)
@@ -2667,7 +2682,7 @@ static int alc269_suspend(struct hda_codec *codec)
 	struct alc_spec *spec = codec->spec;
 
 	if (spec->has_alc5505_dsp)
-		alc5505_dsp_halt(codec);
+		alc5505_dsp_suspend(codec);
 	return alc_suspend(codec);
 }
 
@@ -2696,7 +2711,7 @@ static int alc269_resume(struct hda_codec *codec)
 	alc_inv_dmic_sync(codec, true);
 	hda_call_check_power_status(codec, 0x01);
 	if (spec->has_alc5505_dsp)
-		alc5505_dsp_back_from_halt(codec);
+		alc5505_dsp_resume(codec);
 	return 0;
 }
 #endif /* CONFIG_PM */
@@ -3585,6 +3600,8 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
 	SND_PCI_QUIRK(0x1028, 0x05c9, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
 	SND_PCI_QUIRK(0x1028, 0x05ca, "Dell", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
 	SND_PCI_QUIRK(0x1028, 0x05cb, "Dell", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+	SND_PCI_QUIRK(0x1028, 0x05cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+	SND_PCI_QUIRK(0x1028, 0x05cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
 	SND_PCI_QUIRK(0x1028, 0x05de, "Dell", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
 	SND_PCI_QUIRK(0x1028, 0x05e0, "Dell", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
 	SND_PCI_QUIRK(0x1028, 0x05e9, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
@@ -3604,6 +3621,8 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
 	SND_PCI_QUIRK(0x1028, 0x0608, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
 	SND_PCI_QUIRK(0x1028, 0x0609, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
 	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
 	SND_PCI_QUIRK(0x103c, 0x18e6, "HP", ALC269_FIXUP_HP_GPIO_LED),
 	SND_PCI_QUIRK(0x103c, 0x1973, "HP Pavilion", ALC269_FIXUP_HP_MUTE_LED_MIC1),
