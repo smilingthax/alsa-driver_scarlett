@@ -1755,4 +1755,24 @@ static inline int pci_dev_run_wake(struct pci_dev *dev) { return 1; }
 #define fput_light(fd, fput_needed)	fput(fd)
 #endif
 
+/* fdget, fdput */
+#ifndef CONFIG_HAVE_FDPUT
+#include <linux/file.h>
+struct fd {
+	struct file *file;
+	int need_put;
+};
+static inline void fdput(struct fd fd)
+{
+	if (fd.need_put)
+		fput(fd.file);
+}
+static inline struct fd fdget(unsigned int fd)
+{
+	int b;
+	struct file *f = fget_light(fd, &b);
+	return (struct fd){f,b};
+}
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */

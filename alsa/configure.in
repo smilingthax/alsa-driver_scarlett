@@ -3802,6 +3802,38 @@ if test "$CONFIG_HAVE_SET_PAGES_ARRAY" = "1"; then
   AC_DEFINE(CONFIG_HAVE_SET_PAGES_ARRAY)
 fi
 
+dnl Check for fdput()
+AC_MSG_CHECKING(for fdput)
+set_pages_array="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/kconfig.h>
+#include <linux/file.h>
+],[
+  void (*func)(struct fd fd);
+  func = fdput;
+],
+    AC_MSG_RESULT(yes);have_fdput="1",
+    AC_MSG_RESULT(no);have_fdput="0",
+    AC_MSG_RESULT(unknown);have_fdput="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_FDPUT=$have_fdput
+dnl AC_SUBST(CONFIG_HAVE_FDPUT)
+if test "$CONFIG_HAVE_FDPUT" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_FDPUT)
+fi
+
 dnl Check for which cards to compile driver for...
 CONFIG_SOUND=m
 ALSA_TOPLEVEL_SELECT

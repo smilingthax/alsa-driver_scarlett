@@ -102,3 +102,4 @@
 
 /* 3.x kernel */
 #undef CONFIG_VM_IOMAP_MEMORY
+#undef CONFIG_HAVE_FDPUT
