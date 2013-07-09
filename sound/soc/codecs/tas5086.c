@@ -130,7 +130,7 @@ static const struct reg_default tas5086_reg_defaults[] = {
 static int tas5086_register_size(struct device *dev, unsigned int reg)
 {
 	switch (reg) {
-	case TAS5086_DEV_ID ... TAS5086_BKNDERR:
+	case TAS5086_CLOCK_CONTROL ... TAS5086_BKNDERR:
 		return 1;
 	case TAS5086_INPUT_MUX:
 	case TAS5086_PWM_OUTPUT_MUX:
@@ -721,7 +721,7 @@ static int tas5086_probe(struct snd_soc_codec *codec)
 {
 	struct tas5086_private *priv = snd_soc_codec_get_drvdata(codec);
 	int charge_period = 1300000; /* hardware default is 1300 ms */
-	u8 pwm_start = TAS5086_PWM_START_CHANNEL_MASK;
+	u8 pwm_start_mid_z = 0;
 	int i, ret;
 
 	if (of_match_device(of_match_ptr(tas5086_dt_ids), codec->dev)) {
@@ -735,16 +735,19 @@ static int tas5086_probe(struct snd_soc_codec *codec)
 				 "ti,mid-z-channel-%d", i + 1);
 
 			if (of_get_property(of_node, name, NULL) != NULL)
-				pwm_start &= ~(1 << i);
+				pwm_start_mid_z |= 1 << i;
 		}
 	}
 
 	/*
-	 * Configure 'part 2' of the PWM starts to always use MID-Z, and tell
-	 * all configured mid-z channels to start start under 'part 2'.
+	 * If any of the channels is configured to start in Mid-Z mode,
+	 * configure 'part 1' of the PWM starts to use Mid-Z, and tell
+	 * all configured mid-z channels to start start under 'part 1'.
 	 */
-	regmap_write(priv->regmap, TAS5086_PWM_START,
-		     TAS5086_PWM_START_MIDZ_FOR_START_2 | pwm_start);
+	if (pwm_start_mid_z)
+		regmap_write(priv->regmap, TAS5086_PWM_START,
+			     TAS5086_PWM_START_MIDZ_FOR_START_1 |
+				pwm_start_mid_z);
 
 	/* lookup and set split-capacitor charge period */
 	if (charge_period == 0) {
