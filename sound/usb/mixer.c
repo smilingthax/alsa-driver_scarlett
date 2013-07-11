@@ -62,6 +62,7 @@
 #include "helper.h"
 #include "mixer_quirks.h"
 #include "power.h"
+#include "scarlettmixer.h"
 
 #define MAX_ID_ELEMS	256
 
@@ -2212,6 +2213,7 @@ static void snd_usb_mixer_interrupt_v2(struct usb_mixer_interface *mixer,
 				__func__, channel);
 		return;
 	}
+snd_printk(KERN_INFO "scarlett thobi mixer interrupt %x %x %x\n", attribute, value, index); // TODO
 
 	for (info = mixer->id_elems[unitid]; info; info = info->next_id_elem) {
 		if (info->control != control)
@@ -2386,11 +2388,21 @@ int snd_usb_create_mixer(struct snd_usb_audio *chip, int ctrlif,
 		break;
 	}
 
-	if ((err = snd_usb_mixer_controls(mixer)) < 0 ||
-	    (err = snd_usb_mixer_status_create(mixer)) < 0)
-		goto _error;
+	switch (chip->usb_id) {
+	case USB_ID(0x1235, 0x8004): /* Focusrite Scarlett 18i6 */
+	case USB_ID(0x1235, 0x8014): /* Focusrite Scarlett 18i8 */
+		/* don't even try to parse UAC2 descriptors */
+		if ((err = scarlett_mixer_controls(mixer)) < 0)
+			goto _error;
+		break;
+	default:
+		if ((err = snd_usb_mixer_controls(mixer)) < 0 ||
+		    (err = snd_usb_mixer_status_create(mixer)) < 0)
+			goto _error;
 
-	snd_usb_mixer_apply_create_quirk(mixer);
+		snd_usb_mixer_apply_create_quirk(mixer);
+		break;
+	}
 
 	err = snd_device_new(chip->card, SNDRV_DEV_LOWLEVEL, mixer, &dev_ops);
 	if (err < 0)

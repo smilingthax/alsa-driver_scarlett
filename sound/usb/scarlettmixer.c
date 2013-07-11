@@ -1,6 +1,7 @@
 /*
  *   (Tentative) Scarlett 18i6 Driver for ALSA
  *
+ *   Copyright (c) 2013 by Tobias Hoffmann
  *   Copyright (c) 2013 by Robin Gareus <robin@gareus.org>
  *   Copyright (c) 2002 by Takashi Iwai <tiwai@suse.de>
  *
@@ -23,6 +24,12 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
+ */
+
+/*
+ * Rewritten and extended to support more models, e.g. Scarlett 18i8.
+ * TODO? reset_first/ channel init
+ * TODO... test meter?
  */
 
 /*
@@ -50,6 +57,7 @@
  * The protocol was reverse engineered by looking at communication between
  * Scarlett MixControl (v 1.2.128.0) and the Focusrite(R) Scarlett 18i6 (firmware
  * v305) using wireshark and usbmon in January 2013.
+ * Extended in July 2013.
  *
  * this mixer gives complete access to all features of the device:
  *  - change Impedance of inputs (Line-in, Mic / Instrument, Hi-Z)
@@ -63,326 +71,154 @@
  *  (changing the samplerate and buffersize is supported by the PCM interface)
  *
  *
- * USB URB commands overview
+ * USB URB commands overview (bRequest = 0x01 = UAC2_CS_CUR)
  * wIndex
  * 0x01 Analog Input line/instrument impedance switch, wValue=0x0901 + channel, data=Line/Inst (2bytes)
- * 0x0a Master Volume, wValue=0x0200+bus data(2bytes); Bus Mute/Unmute wValue=0x0100+bus, data(2bytes)
- * 0x28 Clock source, wValue=0x0100, data=int,spdif,adat (1byte)
- * 0x29 Set Sample-rate, wValue=0x0100 data=samle-rate(4bytes)
- * 0x32 Assign mixer inputs, wValue=0x0600 + mixer-channel, data=input-to-connect(2bytes)
- * 0x33 Routing table, wValue=bus, data=input-to-connect(2bytes)
- * 0x34 ?? (clear mixer -- force assignment) used during factory-reset
+ *      pad (-10dB) switch, wValue=0x0b01 + channel, data=Off/On (2bytes)
+ *      ?? wValue=0x0803/04, ?? (2bytes)
+ * 0x0a Master Volume, wValue=0x0200+bus[0:all + only 1..4?] data(2bytes)
+ *      Bus Mute/Unmute wValue=0x0100+bus[0:all + only 1..4?], data(2bytes)
+ * 0x28 Clock source, wValue=0x0100, data={1:int,2:spdif,3:adat} (1byte)
+ * 0x29 Set Sample-rate, wValue=0x0100, data=sample-rate(4bytes)
+ * 0x32 Mixer mux, wValue=0x0600 + mixer-channel, data=input-to-connect(2bytes)
+ * 0x33 Output mux, wValue=bus, data=input-to-connect(2bytes)
+ * 0x34 Capture mux, wValue=0...18, data=input-to-connect(2bytes)
  * 0x3c Matrix Mixer gains, wValue=mixer-node  data=gain(2bytes)
+ *      ?? [sometimes](4bytes, e.g 0x000003be 0x000003bf ...03ff)
  *
+ * USB reads: (i.e. actually issued by original software)
+ * 0x01 wValue=0x0901+channel (1byte!!), wValue=0x0b01+channed (1byte!!)
+ * 0x29 wValue=0x0100 sample-rate(4bytes)
+ *      wValue=0x0200 ?? 1byte (only once)
+ * 0x2a wValue=0x0100 ?? 4bytes, sample-rate2 ??
+ *
+ * USB reads with bRequest = 0x03 = UAC2_CS_MEM
+ * 0x3c wValue=0x0002 1byte: sync status (locked=1)
+ *      wValue=0x0000 18*2byte: peak meter (inputs)
+ *      wValue=0x0001 8(?)*2byte: peak meter (mix)
+ *      wValue=0x0003 6*2byte: peak meter (pcm/daw)
+ *
+ * USB write with bRequest = 0x03
+ * 0x3c Save settings to hardware: wValue=0x005a, data=0xa5
  *
  *
  * <ditaa>
- *  /--------------\     18chn
- *  | Hardware  in +--+--------+---------------\
- *  \--------------/  |        |               |
- *                    |        |               v 18chn
- *                    |        |         +-----------+
- *                    |        |         | ALSA PCM  |
- *                    |        |         |   (DAW)   |
- *                    |        |         +-----+--=--+
- *                    |        |               | 6chn
- *                    |        |       /-------+
- *                    |        |       |       |
- *                    |        v       v       |
- *                    |      +-----------+     |
- *                    |      | Mixer     |     |
- *                    |      |    Router |     |
- *                    |      +-----+-----+     |
- *                    |            |           |
- *                    |            | 18chn     |
- *                    |            v           |
- *                    |      +-----------+     |
- *                    |      | Mixer     |     |
- *                    |      |    Matrix |     |
- *                    |      |           |     |
- *                    |      | 18x6 Gain |     |
- *                    |      |   stages  |     |
- *                    |      +-----+-----+     |
- *                    |            |           |
- *                    | 18chn      | 6chn      | 6chn
- *                    v            v           v
- *                  +----------------------------+
- *                  |           Router           |
- *                  +--------------+-------------+
- *                                 |
- *                                 | 6chn (3 stereo pairs)
- *                                 v
- *                  +----------------------------+
- *                  |      Master Gain Ctrl      |
- *                  +--------------+-------------+
- *                                 |
- *  /--------------\     6chn      |
- *  | Hardware out |<--------------/
- *  \--------------/
+ *  /--------------\    18chn            6chn    /--------------\
+ *  | Hardware  in +--+-------\        /------+--+ ALSA PCM out |
+ *  \--------------/  |       |        |      |  \--------------/
+ *                    |       |        |      |
+ *                    |       v        v      |
+ *                    |   +---------------+   |
+ *                    |    \ Matrix  Mux /    |
+ *                    |     +-----+-----+     |
+ *                    |           |           |
+ *                    |           | 18chn     |
+ *                    |           v           |
+ *                    |     +-----------+     |
+ *                    |     | Mixer     |     |
+ *                    |     |    Matrix |     |
+ *                    |     |           |     |
+ *                    |     | 18x6 Gain |     |
+ *                    |     |   stages  |     |
+ *                    |     +-----+-----+     |
+ *                    |           |           |
+ *                    |           |           |
+ *                    | 18chn     | 6chn      | 6chn
+ *                    v           v           v
+ *                    =========================
+ *             +---------------+     +--—------------+
+ *              \ Output  Mux /       \ Capture Mux /
+ *               +-----+-----+         +-----+-----+
+ *                     |                     |
+ *                     | 6chn                |
+ *                     v                     |
+ *              +-------------+              |
+ *              | Master Gain |              |
+ *              +------+------+              |
+ *                     |                     |
+ *                     | 6chn                | 18chn
+ *                     | (3 stereo pairs)    |
+ *  /--------------\   |                     |   /--------------\
+ *  | Hardware out |<--/                     \-->| ALSA PCM  in |
+ *  \--------------/                             \--------------/
  * </ditaa>
  *
  */
 
-#define WITH_METER
-#define WITH_LOGSCALEMETER
-
-/*****************************************************************************/
-/*************** some unmodified static functions from mixer.c ***************/
-
-#include <linux/bitops.h>
-#include <linux/init.h>
-#include <linux/list.h>
 #include <linux/slab.h>
-#include <linux/string.h>
 #include <linux/usb.h>
-#include <linux/usb/audio.h>
 #include <linux/usb/audio-v2.h>
 
 #include <sound/core.h>
 #include <sound/control.h>
-#include <sound/hwdep.h>
-#include <sound/info.h>
 #include <sound/tlv.h>
 
 #include "usbaudio.h"
 #include "mixer.h"
 #include "helper.h"
-#include "mixer_quirks.h"
 #include "power.h"
 
-#define MAX_ID_ELEMS	256
+#include "scarlettmixer.h"
 
-/*
- * convert from the byte/word on usb descriptor to the zero-based integer
- */
-static int convert_signed_value(struct usb_mixer_elem_info *cval, int val)
-{
-	switch (cval->val_type) {
-	case USB_MIXER_BOOLEAN:
-		return !!val;
-	case USB_MIXER_INV_BOOLEAN:
-		return !val;
-	case USB_MIXER_U8:
-		val &= 0xff;
-		break;
-	case USB_MIXER_S8:
-		val &= 0xff;
-		if (val >= 0x80)
-			val -= 0x100;
-		break;
-	case USB_MIXER_U16:
-		val &= 0xffff;
-		break;
-	case USB_MIXER_S16:
-		val &= 0xffff;
-		if (val >= 0x8000)
-			val -= 0x10000;
-		break;
-	}
-	return val;
-}
+//#define WITH_METER
+////#define WITH_LOGSCALEMETER
 
-/*
- * convert from the zero-based int to the byte/word for usb descriptor
- */
-static int convert_bytes_value(struct usb_mixer_elem_info *cval, int val)
-{
-	switch (cval->val_type) {
-	case USB_MIXER_BOOLEAN:
-		return !!val;
-	case USB_MIXER_INV_BOOLEAN:
-		return !val;
-	case USB_MIXER_S8:
-	case USB_MIXER_U8:
-		return val & 0xff;
-	case USB_MIXER_S16:
-	case USB_MIXER_U16:
-		return val & 0xffff;
-	}
-	return 0; /* not reached */
-}
+struct scarlett_enum_info {
+	int start, len;
+	const char **texts;
+};
 
-static int get_relative_value(struct usb_mixer_elem_info *cval, int val)
-{
-	if (! cval->res)
-		cval->res = 1;
-	if (val < cval->min)
-		return 0;
-	else if (val >= cval->max)
-		return (cval->max - cval->min + cval->res - 1) / cval->res;
-	else
-		return (val - cval->min) / cval->res;
-}
+struct scarlett_device_info {
+	int matrix_in;
+	int matrix_out;
+	int input_len;
+	int output_len;
 
-static int get_abs_value(struct usb_mixer_elem_info *cval, int val)
-{
-	if (val < 0)
-		return cval->min;
-	if (! cval->res)
-		cval->res = 1;
-	val *= cval->res;
-	val += cval->min;
-	if (val > cval->max)
-		return cval->max;
-	return val;
-}
+	int pcm_start;
+	int analog_start;
+	int spdif_start;
+	int adat_start;
+	int mix_start;
 
+	struct scarlett_enum_info opt_master;
+	struct scarlett_enum_info opt_matrix;
 
-/*
- * retrieve a mixer value
- */
+	int (*controls_fn)(struct usb_mixer_interface *mixer,
+	                   const struct scarlett_device_info *info);
 
-static int get_ctl_value_v2(struct usb_mixer_elem_info *cval, int request, int validx, int *value_ret)
-{
-	struct snd_usb_audio *chip = cval->mixer->chip;
-	unsigned char buf[2 + 3*sizeof(__u16)]; /* enough space for one range */
-	unsigned char *val;
-	int idx = 0, ret, size;
-	__u8 bRequest;
+	int matrix_mux_init[];
+};
 
-	if (request == UAC_GET_CUR) {
-		bRequest = UAC2_CS_CUR;
-		size = sizeof(__u16);
-	} else {
-		bRequest = UAC2_CS_RANGE;
-		size = sizeof(buf);
-	}
+struct scarlett_mixer_elem_info {
+	struct usb_mixer_interface *mixer;
 
-	memset(buf, 0, sizeof(buf));
+	/* URB command details */
+	int wValue, index;
+	int val_len;
 
-	ret = snd_usb_autoresume(chip) ? -EIO : 0;
-	if (ret)
-		goto error;
+	int count; /* number of channels, using ++wValue */
 
-	down_read(&chip->shutdown_rwsem);
-	if (chip->shutdown)
-		ret = -ENODEV;
-	else {
-		idx = snd_usb_ctrl_intf(chip) | (cval->id << 8);
-		ret = snd_usb_ctl_msg(chip->dev, usb_rcvctrlpipe(chip->dev, 0), bRequest,
-			      USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
-			      validx, idx, buf, size);
-	}
-	up_read(&chip->shutdown_rwsem);
-	snd_usb_autosuspend(chip);
+	const struct scarlett_enum_info *opt;
 
+	int cached;
+	int cache_val[MAX_CHANNELS];
+};
 
-	if (ret < 0) {
-error:
-		snd_printk(KERN_ERR "cannot get ctl value: req = %#x, wValue = %#x, wIndex = %#x, type = %d\n",
-			   request, validx, idx, cval->val_type);
-		return ret;
-	}
-#if 0 // rg debug XXX -- OK i was lying, here's a modification of the original code :)
-	else snd_printk(KERN_ERR "req ctl value: req = %#x, rtype = %#x, wValue = %#x, wIndex = %#x, size = %d\n",
-			request, (USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN), validx, idx, size);
-#endif
-
-	/* FIXME: how should we handle multiple triplets here? */
-
-	switch (request) {
-	case UAC_GET_CUR:
-		val = buf;
-		break;
-	case UAC_GET_MIN:
-		val = buf + sizeof(__u16);
-		break;
-	case UAC_GET_MAX:
-		val = buf + sizeof(__u16) * 2;
-		break;
-	case UAC_GET_RES:
-		val = buf + sizeof(__u16) * 3;
-		break;
-	default:
-		return -EINVAL;
-	}
-
-	*value_ret = convert_signed_value(cval, snd_usb_combine_bytes(val, sizeof(__u16)));
-
-	return 0;
-}
-
-
-/* private_free callback */
-static void usb_mixer_elem_free(struct snd_kcontrol *kctl)
+static void scarlett_mixer_elem_free(struct snd_kcontrol *kctl)
 {
 	kfree(kctl->private_data);
 	kctl->private_data = NULL;
 }
 
-
-static void snd_usb_mixer_free(struct usb_mixer_interface *mixer)
-{
-	kfree(mixer->id_elems);
-	if (mixer->urb) {
-		kfree(mixer->urb->transfer_buffer);
-		usb_free_urb(mixer->urb);
-	}
-	usb_free_urb(mixer->rc_urb);
-	kfree(mixer->rc_setup_packet);
-	kfree(mixer);
-}
-
-static int snd_usb_mixer_dev_free(struct snd_device *device)
-{
-	struct usb_mixer_interface *mixer = device->device_data;
-	snd_usb_mixer_free(mixer);
-	return 0;
-}
-
-static void snd_usb_mixer_dump_cval(struct snd_info_buffer *buffer,
-				    int unitid,
-				    struct usb_mixer_elem_info *cval)
-{
-	static char *val_types[] = {"BOOLEAN", "INV_BOOLEAN",
-				    "S8", "U8", "S16", "U16"};
-	snd_iprintf(buffer, "  Unit: %i\n", unitid);
-	if (cval->elem_id)
-		snd_iprintf(buffer, "    Control: name=\"%s\", index=%i\n",
-				cval->elem_id->name, cval->elem_id->index);
-	snd_iprintf(buffer, "    Info: id=%i, control=%i, cmask=0x%x, "
-			    "channels=%i, type=\"%s\"\n", cval->id,
-			    cval->control, cval->cmask, cval->channels,
-			    val_types[cval->val_type]);
-	snd_iprintf(buffer, "    Volume: min=%i, max=%i, dBmin=%i, dBmax=%i\n",
-			    cval->min, cval->max, cval->dBmin, cval->dBmax);
-}
-
-static void snd_usb_mixer_proc_read(struct snd_info_entry *entry,
-				    struct snd_info_buffer *buffer)
-{
-	struct snd_usb_audio *chip = entry->private_data;
-	struct usb_mixer_interface *mixer;
-	struct usb_mixer_elem_info *cval;
-	int unitid;
-
-	list_for_each_entry(mixer, &chip->mixer_list, list) {
-		snd_iprintf(buffer,
-			"USB Mixer: usb_id=0x%08x, ctrlif=%i, ctlerr=%i\n",
-				chip->usb_id, snd_usb_ctrl_intf(chip),
-				mixer->ignore_ctl_error);
-		snd_iprintf(buffer, "Card: %s\n", chip->card->longname);
-		for (unitid = 0; unitid < MAX_ID_ELEMS; unitid++) {
-			for (cval = mixer->id_elems[unitid]; cval;
-						cval = cval->next_id_elem)
-				snd_usb_mixer_dump_cval(buffer, unitid, cval);
-		}
-	}
-}
-
-
-/****************** END unmodified static code from mixer.c ******************/
-/*****************************************************************************/
-
-
 /***************************** Low Level USB I/O *****************************/
 
+// stripped down/adapted from get_ctl_value_v2
 static int get_ctl_urb2(struct snd_usb_audio *chip,
-		int bRequest, int wValue, int wIndex,
+		int bRequest, int wValue, int index,
 		unsigned char *buf, int size)
 {
 	int ret, idx = 0;
-
+	
 	ret = snd_usb_autoresume(chip);
 	if (ret < 0 && ret != -ENODEV) {
 		ret = -EIO;
@@ -390,13 +226,15 @@ static int get_ctl_urb2(struct snd_usb_audio *chip,
 	}
 
 	down_read(&chip->shutdown_rwsem);
-	if (chip->shutdown)
+	if (chip->shutdown) {
 		ret = -ENODEV;
-	else {
-		idx = snd_usb_ctrl_intf(chip) | wIndex;
-		ret = snd_usb_ctl_msg(chip->dev, usb_rcvctrlpipe(chip->dev, 0), bRequest,
-			      USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
-			      wValue, idx, buf, size);
+	} else {
+		idx = snd_usb_ctrl_intf(chip) | (index << 8);
+		ret = snd_usb_ctl_msg(chip->dev,
+		                      usb_rcvctrlpipe(chip->dev, 0),
+		                      bRequest,
+		                      USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
+		                      wValue, idx, buf, size);
 	}
 	up_read(&chip->shutdown_rwsem);
 	snd_usb_autosuspend(chip);
@@ -404,14 +242,19 @@ static int get_ctl_urb2(struct snd_usb_audio *chip,
 	if (ret < 0) {
 error:
 		snd_printk(KERN_ERR "cannot get ctl value: req = %#x, wValue = %#x, wIndex = %#x, size = %d\n",
-			   bRequest, wValue, idx, size);
+		           bRequest, wValue, idx, size);
 		return ret;
 	}
+#if 0 /* rg debug XXX */
+	snd_printk(KERN_ERR "req ctl value: req = %#x, rtype = %#x, wValue = %#x, wIndex = %#x, size = %d\n",
+	           bRequest, (USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN), wValue, idx, size);
+#endif
 	return 0;
 }
 
+// adopted from snd_usb_mixer_set_ctl_value
 static int set_ctl_urb2(struct snd_usb_audio *chip,
-		int request, int validx, int id,
+		int request, int wValue, int index,
 		unsigned char *buf, int val_len)
 {
 	int idx = 0, err, timeout = 10;
@@ -422,449 +265,163 @@ static int set_ctl_urb2(struct snd_usb_audio *chip,
 	while (timeout-- > 0) {
 		if (chip->shutdown)
 			break;
-		idx = snd_usb_ctrl_intf(chip) | (id);
+		idx = snd_usb_ctrl_intf(chip) | (index << 8);
 		if (snd_usb_ctl_msg(chip->dev,
 				    usb_sndctrlpipe(chip->dev, 0), request,
 				    USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT,
-				    validx, idx, buf, val_len) >= 0) {
+				    wValue, idx, buf, val_len) >= 0) {
 			err = 0;
 			goto out;
 		}
 	}
 	snd_printdd(KERN_ERR "cannot set ctl value: req = %#x, wValue = %#x, wIndex = %#x, len = %d, data = %#x/%#x\n",
-		    request, validx, idx, val_len, buf[0], buf[1]);
+		    request, wValue, idx, val_len, buf[0], buf[1]);
 	err = -EINVAL;
 
  out:
 	up_read(&chip->shutdown_rwsem);
 	snd_usb_autosuspend(chip);
-#if 0 // rg debug XXX
+#if 0 /* rg debug XXX */
 	snd_printk(KERN_ERR "set ctl value: req = %#x, wValue = %#x, wIndex = %#x, len = %d, data = %#x/%#x\n",
-		    request, validx, idx, val_len, buf[0], buf[1]);
+		    request, wValue, idx, val_len, buf[0], buf[1]);
 #endif
 	return err;
 }
 
-static int set_ctl_value(struct usb_mixer_elem_info *cval,
-				int validx, int value_set)
+/***************************** High Level USB *****************************/
+
+static int set_ctl_value(struct scarlett_mixer_elem_info *elem, int channel, int value)
 {
-	struct snd_usb_audio *chip = cval->mixer->chip;
+	struct snd_usb_audio *chip = elem->mixer->chip;
 	unsigned char buf[2];
-	int val_len;
-
-	validx += cval->idx_off;
-
-	if (cval->id == 0x28)
-		val_len = sizeof(__u8);
-	else
-		val_len = sizeof(__u16);
-
-
-	value_set = convert_bytes_value(cval, value_set);
-	buf[0] = value_set & 0xff;
-	buf[1] = (value_set >> 8) & 0xff;
-
-	return set_ctl_urb2(chip, UAC2_CS_CUR, validx, (cval->id << 8), buf, val_len);
-}
-
-
-/**************************** Scarlett 18i6 Mixer ****************************/
-
-#include "scarlettmixer.h"
-#define S18I6_MAX_CHANNELS	18
-
-static inline int s18i6_ctl_urb(struct usb_mixer_elem_info *cval,
-				  int channel, int *value)
-{
-	if (cval->id == 0x33) {
-		/* Scarlett can't be queried for route assigns */
-		*value = 0xfe;
-		return 0;
-	}
-	if (cval->id == 0x3c) {
-		/* Scarlett can't be queried for mixer gains */
-		*value = 0xfe;
-		return 0;
-	}
-
-	if (cval->id == 0x3c) // mixer-matrix volume --- ^^ currently unused
-		return get_ctl_value_v2(cval, UAC_GET_CUR, cval->control, value);
-	else
-		return get_ctl_value_v2(cval, UAC_GET_CUR, ((cval->control << 8) | channel) + cval->idx_off, value);
-}
-
-static int s18i6_get_cur_mix_value(struct usb_mixer_elem_info *cval,
-			     int channel, int index, int *value)
-{
 	int err;
 
-	if (cval->cached & (1 << channel)) {
-		*value = cval->cache_val[index];
-		return 0;
-	}
-	err = s18i6_ctl_urb(cval, channel, value);
-	if (err < 0) {
-		if (!cval->mixer->ignore_ctl_error)
-			snd_printd(KERN_ERR "cannot get current value for control %d ch %d: err = %d\n",
-				   cval->control, channel, err);
-		return err;
+	if (elem->val_len == 2) { /* S16 */
+		buf[0] = value & 0xff;
+		buf[1] = (value >> 8) & 0xff;
+	} else { /* U8 */
+		buf[0] = value & 0xff;
 	}
 
-	if (cval->id == 0x0a && cval->control == 0x01) {
-		/* Scarlett mute */
-		*value = !(*value); // amixer inverse boolean but device U8
-	}
-	if (cval->val_type == USB_MIXER_U8 && (cval->id == 0x33 || cval->id == 0x32)) {
-		/* Scarlett mixer-in and route-source enum quirk */
-		if (*value >= 0x20) { *value = -1; }
-	}
-
-	cval->cached |= 1 << channel;
-	cval->cache_val[index] = *value;
-	return 0;
-}
-
-static int s18i6_set_cur_mix_value(struct usb_mixer_elem_info *cval, int channel,
-			     int index, int value)
-{
-	int err;
-	unsigned int read_only = (channel == 0) ?
-		cval->master_readonly :
-		cval->ch_readonly & (1 << (channel - 1));
-
-	if (read_only) {
-		snd_printdd(KERN_INFO "%s(): channel %d of control %d is read_only\n",
-			    __func__, channel, cval->control);
-		return 0;
-	}
-	if (cval->id == 0x0a && cval->control == 0x01) {
-		value = !(value); // amixer: inverse boolean but device U8
-	}
-
-	if (cval->id == 0x3c) // mixer-matrix volume
-		err = set_ctl_value(cval, cval->control, value);
-	else
-		err = set_ctl_value(cval, (cval->control << 8) | channel, value);
-
-	if (cval->id == 0x0a && cval->control == 0x01) {
-		value = !(value); // amixer: inverse boolean but device U8
-	}
-
+	err = set_ctl_urb2(chip, UAC2_CS_CUR, elem->wValue + channel, elem->index, buf, elem->val_len);
 	if (err < 0)
 		return err;
-	cval->cached |= 1 << channel;
-	cval->cache_val[index] = value;
+
+	elem->cached |= 1 << channel;
+	elem->cache_val[channel] = value;
 	return 0;
 }
 
-
-static int get_s18i6_get_min_max(struct usb_mixer_elem_info *cval, int mark_initialized)
+/*
+  TODO: can't read back any volume (master/mixer), only cache works
+    [?]
+    [return 0xfe for enums???]
+*/
+static int get_ctl_value(struct scarlett_mixer_elem_info *elem, int channel, int *value)
 {
-	cval->min = 0;
-	cval->max = cval->min + 1;
-	cval->res = 1;
-	cval->dBmin = cval->dBmax = 0;
-	cval->initialized = mark_initialized;
+	struct snd_usb_audio *chip = elem->mixer->chip;
+	unsigned char buf[2] = {0, 0};
+	int err, val_len;
 
-	if (cval->val_type == USB_MIXER_BOOLEAN ||
-	    cval->val_type == USB_MIXER_INV_BOOLEAN) {
-		;
-	} else if (cval->id == 0x0a && cval->control == 0x01) {
-		/* mute -- which are actually U8's */
-		;
-	} else if (cval->val_type == USB_MIXER_U8 && cval->id == 0x28) {
-		/* clock source */
-		cval->min = 0x1;
-		cval->max = 0x3;
-	} else if (cval->control == 0x02 && cval->id == 0x0a) {
-		/* bus volume */
-		cval->min = -32768;
-		cval->max = 1536;
-		cval->res = 256;
-		cval->dBmin = -128;
-		cval->dBmax = 6;
-	} else if (cval->id == 0x3c) {
-		int in = (cval->control >> 3) &0xff;
-		int out = (cval->control) &0x07;
-		/* mixer volume */
-		cval->min = -32768;
-		cval->max = 1536;
-		cval->res = 256;
-		cval->dBmin = -128;
-		cval->dBmax = 6;
-
-		/* initialize mixer-matrix -- can not be queried */
-		s18i6_set_cur_mix_value(cval, 0, 0, (out < 2 && (in%2) == out)? 0: -32768);
-
-	} else if (cval->val_type == USB_MIXER_U8 && cval->id == 0x33) {
-		/* bus assignment */
-		cval->min = -1;
-		cval->max = 0x1d;
-
-		/* initialize routes -- can not be queried */
-		switch (cval->cmask) {
-			case 0:
-				s18i6_set_cur_mix_value(cval, 0, 0, 0x18); // Mon L   <- Mix1
-				break;
-			case 1:
-				s18i6_set_cur_mix_value(cval, 1, 0, 0x19); // Mon R   <- Mix2
-				break;
-			case 2:
-				s18i6_set_cur_mix_value(cval, 2, 0, 0x18); // Phon L  <- Mix1
-				break;
-			case 4:
-				s18i6_set_cur_mix_value(cval, 3, 0, 0x19); // Phon R  <- Mix2
-				break;
-			case 8:
-				s18i6_set_cur_mix_value(cval, 4, 0, -1);   // SPDIF L <- off
-				break;
-			case 16:
-				s18i6_set_cur_mix_value(cval, 5, 0, -1);   // SPDIF R <- off
-				break;
-			default:
-				break;
-		}
-
-	} else if (cval->val_type == USB_MIXER_U8 && cval->id == 0x32) {
-		/* mixer assignment */
-		cval->min = -1;
-		cval->max = 0x17;
-	} else {
-		cval->max = 0xffff;
-	}
-	return 0;
-}
-
-
-static int s18i6_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
-{
-	struct usb_mixer_elem_info *cval = kcontrol->private_data;
-
-	if (!cval->initialized) {
-		get_s18i6_get_min_max(cval, 1);
-	}
-
-	if (cval->val_type == USB_MIXER_U8 && (cval->id == 0x33 || cval->id == 0x32)) {
-		/* Mixer Inputs and Route Source */
-		static const char *texts[31] = {
-			"Off", // 'off' == 0xff
-			"DAW1", "DAW2", "DAW3", "DAW4", "DAW5", "DAW6",
-			"Analog1", "Analog2", "Analog3", "Analog4",
-			"Analog5", "Analog6", "Analog7", "Analog8",
-			"SPDIF1", "SPDIF2",
-			"ADAT1", "ADAT2", "ADAT3", "ADAT4",
-			"ADAT5", "ADAT6", "ADAT7", "ADAT8",
-			"Mix1", "Mix2", "Mix3", "Mix4", "Mix5", "Mix6"
-		};
-
-		uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
-		uinfo->count = 1;
-		uinfo->value.enumerated.items = cval->id == 0x33 ? 31 : 25;
-		if (uinfo->value.enumerated.item > uinfo->value.enumerated.items - 1) {
-			uinfo->value.enumerated.item = uinfo->value.enumerated.items - 1;
-		}
-		strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
+	if (elem->cached & (1 << channel)) {
+		*value = elem->cache_val[channel];
 		return 0;
 	}
 
-	if (cval->val_type == USB_MIXER_U8 && cval->id == 0x28) {
-		/* clock select */
-		static const char *texts[3] = {
-				       "Internal",
-				       "S/PDIF",
-				       "ADAT"
-		};
-		uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
-		uinfo->count = 1;
-		uinfo->value.enumerated.items = 3;
-		if (uinfo->value.enumerated.item > uinfo->value.enumerated.items - 1) {
-			uinfo->value.enumerated.item = uinfo->value.enumerated.items - 1;
-		}
-		strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
-		return 0;
+	val_len = elem->val_len;
+	// quirk: write 2bytes, but read 1byte
+	if ( (elem->index == 0x01)||  //  input impedance and input pad switch
+	     ((elem->index == 0x0a)&&(elem->wValue < 0x0200))|| // bus mutes
+	     (elem->index == 0x32)||(elem->index == 0x33) ) { // mux
+		val_len = 1;
 	}
 
-	if (cval->val_type == USB_MIXER_BOOLEAN && cval->id == 0x01) {
-		/* Impedance */
-		static const char *texts[2] = {
-				       "Line",
-				       "Instrument (Hi-Z)"
-		};
-		uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
-		uinfo->count = 1;
-		uinfo->value.enumerated.items = 2;
-		if (uinfo->value.enumerated.item > uinfo->value.enumerated.items - 1) {
-			uinfo->value.enumerated.item = uinfo->value.enumerated.items - 1;
-		}
-		strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
-		return 0;
+	err = get_ctl_urb2(chip, UAC2_CS_CUR, elem->wValue + channel, elem->index, buf, val_len);
+	if (err < 0) {
+		snd_printd(KERN_ERR "cannot get current value for control %x ch %d: err = %d\n",
+			   elem->wValue, channel, err);
+		return err;
 	}
 
-	uinfo->count = cval->channels;
-
-	if (cval->id == 0x0a && cval->control == 0x01) {
-		/* mute */
-		uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
-		uinfo->value.integer.min = 0;
-		uinfo->value.integer.max = 1;
-		return 0;
+	if (val_len == 2) { /* S16 */
+		*value = buf[0] | ((unsigned int)buf[1] << 8);
+		if (*value >= 0x8000)
+			(*value) -= 0x10000;
+	} else { /* U8 */
+		*value = buf[0];
 	}
 
-	if (cval->val_type == USB_MIXER_BOOLEAN ||
-	    cval->val_type == USB_MIXER_INV_BOOLEAN) {
-		uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
-		uinfo->value.integer.min = 0;
-		uinfo->value.integer.max = 1;
-	} else {
-		uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-		uinfo->value.integer.min = 0;
-		uinfo->value.integer.max = (cval->max - cval->min + cval->res - 1) / cval->res;
-	}
+	elem->cached |= 1 << channel;
+	elem->cache_val[channel] = *value;
 
 	return 0;
 }
 
-static int s18i6_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	struct usb_mixer_elem_info *cval = kcontrol->private_data;
-	int c, cnt, val, err;
-	ucontrol->value.integer.value[0] = cval->min;
-	if (cval->cmask) {
-		cnt = 0;
-		for (c = 0; c < S18I6_MAX_CHANNELS; c++) {
-			if (!(cval->cmask & (1 << c)))
-				continue;
-			err = s18i6_get_cur_mix_value(cval, c + 1, cnt, &val);
-			if (err < 0)
-				return cval->mixer->ignore_ctl_error ? 0 : err;
-			val = get_relative_value(cval, val);
-			ucontrol->value.integer.value[cnt] = val;
+/********************** Enum Strings *************************/
+static const char txtOff[] = "Off",
+	txtPcm1[] = "PCM 1", txtPcm2[] = "PCM 2",
+	txtPcm3[] = "PCM 3", txtPcm4[] = "PCM 4",
+	txtPcm5[] = "PCM 5", txtPcm6[] = "PCM 6",
+	txtPcm7[] = "PCM 7", txtPcm8[] = "PCM 8",
+	txtAnlg1[] = "Analog 1", txtAnlg2[] = "Analog 2",
+	txtAnlg3[] = "Analog 3", txtAnlg4[] = "Analog 4",
+	txtAnlg5[] = "Analog 5", txtAnlg6[] = "Analog 6",
+	txtAnlg7[] = "Analog 7", txtAnlg8[] = "Analog 8",
+	txtSpdif1[] = "SPDIF 1", txtSpdif2[] = "SPDIF 2",
+	txtAdat1[] = "ADAT 1", txtAdat2[] = "ADAT 2",
+	txtAdat3[] = "ADAT 3", txtAdat4[] = "ADAT 4",
+	txtAdat5[] = "ADAT 5", txtAdat6[] = "ADAT 6",
+	txtAdat7[] = "ADAT 7", txtAdat8[] = "ADAT 8",
+	txtMix1[] = "Mix A", txtMix2[] = "Mix B",
+	txtMix3[] = "Mix C", txtMix4[] = "Mix D",
+	txtMix5[] = "Mix E", txtMix6[] = "Mix F",
+	txtMix7[] = "Mix G", txtMix8[] = "Mix H";
 
-			if (
-					(cval->val_type == USB_MIXER_BOOLEAN && cval->id == 0x01)
-					|| (cval->val_type == USB_MIXER_U8 && (cval->id == 0x33 || cval->id == 0x32))
-					) {
-				ucontrol->value.enumerated.item[cnt] = val;
-			}
-			if (cval->val_type == USB_MIXER_U8 && (cval->id == 0x33 || cval->id == 0x32)) {
-				ucontrol->value.enumerated.item[cnt] = val;
-			}
-			cnt++;
-		}
-		return 0;
-	} else {
-		/* master channel */
-		err = s18i6_get_cur_mix_value(cval, 0, 0, &val);
-		if (err < 0)
-			return cval->mixer->ignore_ctl_error ? 0 : err;
-		val = get_relative_value(cval, val);
-		ucontrol->value.integer.value[0] = val;
-
-		if (
-				(cval->val_type == USB_MIXER_U8 && cval->id == 0x28)
-				|| (cval->val_type == USB_MIXER_U8 && (cval->id == 0x33 || cval->id == 0x32))
-				){
-			ucontrol->value.enumerated.item[0] = val;
-		}
+static const struct scarlett_enum_info opt_pad = {
+	.start = 0,
+	.len = 2,
+	.texts = (const char *[]){
+		txtOff, "-10dB"
 	}
-	return 0;
-}
+};
 
-static int s18i6_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	struct usb_mixer_elem_info *cval = kcontrol->private_data;
-	int c, cnt, val, oval, err;
-	int changed = 0;
-
-	if (cval->cmask) {
-		cnt = 0;
-		for (c = 0; c < S18I6_MAX_CHANNELS; c++) {
-			if (!(cval->cmask & (1 << c)))
-				continue;
-			err = s18i6_get_cur_mix_value(cval, c + 1, cnt, &oval);
-			if (err < 0)
-				return cval->mixer->ignore_ctl_error ? 0 : err;
-			val = ucontrol->value.integer.value[cnt];
-			val = get_abs_value(cval, val);
-			if (oval != val) {
-				s18i6_set_cur_mix_value(cval, c + 1, cnt, val);
-				changed = 1;
-			}
-			cnt++;
-		}
-	} else {
-		/* master channel */
-		err = s18i6_get_cur_mix_value(cval, 0, 0, &oval);
-		if (err < 0)
-			return cval->mixer->ignore_ctl_error ? 0 : err;
-		val = ucontrol->value.integer.value[0];
-		val = get_abs_value(cval, val);
-		if (val != oval) {
-			s18i6_set_cur_mix_value(cval, 0, 0, val);
-			changed = 1;
-		}
+static const struct scarlett_enum_info opt_impedance = {
+	.start = 0,
+	.len = 2,
+	.texts = (const char *[]){
+		"Line", "Hi-Z"
 	}
-	return changed;
-}
+};
 
-static int s18i6_func_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
-{
-	struct usb_mixer_elem_info *cval = kcontrol->private_data;
-	switch(cval->id) {
-		case 1:
-			{
-				static const char *texts[2] = { "Save", "Save" };
-				uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
-				uinfo->count = 1;
-				uinfo->value.enumerated.items = 2;
-				if (uinfo->value.enumerated.item > uinfo->value.enumerated.items - 1) {
-					uinfo->value.enumerated.item = uinfo->value.enumerated.items - 1;
-				}
-				strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
-			}
-			break;
-		default:
-			uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
-			uinfo->value.integer.min = 0;
-			uinfo->value.integer.max = 1;
-			break;
+static const struct scarlett_enum_info opt_clock = {
+	.start = 1,
+	.len = 3,
+	.texts = (const char *[]){
+		"Internal", "SPDIF", "ADAT"
 	}
-	return 0;
-}
+};
 
-static int s18i6_func_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	ucontrol->value.integer.value[0] = 0;
-	ucontrol->value.enumerated.item[0] = 0;
-	return 0;
-}
-
-static int s18i6_func_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	struct usb_mixer_elem_info *cval = kcontrol->private_data;
-	switch (cval->id) {
-		case 1:
-			{
-				unsigned char buf[2];
-				buf[0] = 0xa5;
-				buf[1] = 0x00;
-				if (!set_ctl_urb2(cval->mixer->chip, UAC2_CS_MEM, 0x005a, 0x3c00, buf, 1))
-					snd_printk(KERN_INFO "Scarlett 18i6: Saved settings to hardware.\n");
-			}
-			break;
-		default:
-			snd_printk(KERN_ERR "Scarlett 18i6: undefined function.\n");
-			break;
+static const struct scarlett_enum_info opt_sync = {
+	.start = 0,
+	.len = 2,
+	.texts = (const char *[]){
+		"No Lock", "Locked"
 	}
-	return 0;
-}
+};
 
-#ifdef WITH_METER
+static const struct scarlett_enum_info opt_save = {
+	.start = 0,
+	.len = 2,
+	.texts = (const char *[]){
+		"---", "Save"
+	}
+};
+
 #ifdef WITH_LOGSCALEMETER
-
 /* approx ( 20.0 * log10(x) ) for 16bit
  * map 0..65535 to range 0..194 // -97.0..0dB in .5dB steps */
-static int sig_to_db(const int sig16bit) {
+static int sig_to_db(const int sig16bit)
+{
 	int i;
 	const int dbtbl[148] = {
 		13, 14, 15, 16, 16, 17, 18, 20, 21, 22, 23, 25, 26, 28, 29, 31, 33, 35,
@@ -905,208 +462,671 @@ static int sig_to_db(const int sig16bit) {
 }
 #endif
 
-static int s18i6_peak_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int scarlett_ctl_switch_info(struct snd_kcontrol *kctl, struct snd_ctl_elem_info *uinfo)
 {
-	struct usb_mixer_elem_info *cval = kcontrol->private_data;
-	struct snd_usb_audio *chip = cval->mixer->chip;
-	int ret, size, i;
-	unsigned char buf[36];
-
-	size = cval->channels * sizeof(__u16);
-	memset(buf, 0, sizeof(buf));
-
-	ret = get_ctl_urb2(chip, UAC2_CS_MEM, cval->control, (cval->id << 8), buf, size);
-
-	if (ret < 0) {
-		for (i = 0; i < cval->channels; ++i) {
-			ucontrol->value.integer.value[i] = 0;
-		}
-		return ret;
-	}
-
-	for (i = 0; i < cval->channels; ++i) {
-		const int v = snd_usb_combine_bytes(&buf[2*i], sizeof(__u16));
-#ifdef WITH_LOGSCALEMETER /* this won't fly -- but you get the idea :) */
-		ucontrol->value.integer.value[i] = sig_to_db(v);
-#else
-		ucontrol->value.integer.value[i] = v;
-#endif
-	}
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	uinfo->count = elem->count;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
 	return 0;
 }
 
-static int s18i6_peak_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
+static int scarlett_ctl_switch_get(struct snd_kcontrol *kctl, struct snd_ctl_elem_value *ucontrol)
 {
-	struct usb_mixer_elem_info *cval = kcontrol->private_data;
-	switch (cval->control) {
-		case 0x0003: // DAW
-			uinfo->count = 6;
-			break;
-		case 0x0001: // MIX
-			uinfo->count = 6;
-			break;
-		case 0x0000: // Inputs
-			uinfo->count = 18;
-			break;
-		default:
-			uinfo->count = 0;
-			break;
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	int i, err, val;
+	
+	for (i = 0; i < elem->count; i++) {
+		err = get_ctl_value(elem, i, &val);
+		if (err < 0)
+			return err;
+		
+		val = !val; // alsa uses 0: on, 1: off
+		ucontrol->value.integer.value[i] = val;
 	}
+	
+	return 0;
+}
 
+static int scarlett_ctl_switch_put(struct snd_kcontrol *kctl, struct snd_ctl_elem_value *ucontrol)
+{
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	int i, changed = 0;
+	int err, oval, val;
+	
+	for (i = 0; i < elem->count; i++) {
+		err = get_ctl_value(elem, i, &oval);
+		if (err < 0)
+			return err;
+		
+		val = ucontrol->value.integer.value[i];
+		val = !val;
+		if (oval != val) {
+			err = set_ctl_value(elem, i, val);
+			if (err < 0)
+				return err;
+			
+			changed = 1;
+		}
+	}
+	
+	return changed;
+}
+
+static int scarlett_ctl_info(struct snd_kcontrol *kctl, struct snd_ctl_elem_info *uinfo)
+{
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = elem->count;
+	uinfo->value.integer.min = -128;
+	uinfo->value.integer.max = (int)kctl->private_value;
+	uinfo->value.integer.step = 1;
+	return 0;
+}
+
+static int scarlett_ctl_get(struct snd_kcontrol *kctl, struct snd_ctl_elem_value *ucontrol)
+{
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	int i, err, val;
+	
+	for (i = 0; i < elem->count; i++) {
+		err = get_ctl_value(elem, i, &val);
+		if (err < 0)
+			return err;
+		
+		val = clamp(val / 256, -128, (int)kctl->private_value);
+		ucontrol->value.integer.value[i] = val;
+	}
+	
+	return 0;
+}
+
+static int scarlett_ctl_put(struct snd_kcontrol *kctl, struct snd_ctl_elem_value *ucontrol)
+{
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	int i, changed = 0;
+	int err, oval, val;
+	
+	for (i = 0; i < elem->count; i++) {
+		err = get_ctl_value(elem, i, &oval);
+		if (err < 0)
+			return err;
+		
+		val = ucontrol->value.integer.value[i];
+		val = val * 256;
+		if (oval != val) {
+			err = set_ctl_value(elem, i, val);
+			if (err < 0)
+				return err;
+			
+			changed = 1;
+		}
+	}
+	
+	return changed;
+}
+
+static int scarlett_ctl_enum_info(struct snd_kcontrol *kctl, struct snd_ctl_elem_info *uinfo)
+{
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = elem->count;
+	uinfo->value.enumerated.items = elem->opt->len;
+	if (uinfo->value.enumerated.item > uinfo->value.enumerated.items - 1) {
+		uinfo->value.enumerated.item = uinfo->value.enumerated.items - 1;
+	}
+	strcpy(uinfo->value.enumerated.name, elem->opt->texts[uinfo->value.enumerated.item]);
+	return 0;
+}
+
+static int scarlett_ctl_enum_get(struct snd_kcontrol *kctl, struct snd_ctl_elem_value *ucontrol)
+{
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	int err, val;
+
+	err = get_ctl_value(elem, 0, &val);
+	if (err < 0)
+		return err;
+
+// snd_printk(KERN_WARNING "enum %s: %x %x\n", ucontrol->id.name, val, elem->opt->len);
+	if ( (elem->opt->start == -1)&&(val > elem->opt->len) ) {
+// >= 0x20 ???
+		val = 0;
+	} else {
+		val = clamp(val - elem->opt->start, 0, elem->opt->len-1);
+	}
+	ucontrol->value.enumerated.item[0] = val;
+
+	return 0;
+}
+
+static int scarlett_ctl_enum_put(struct snd_kcontrol *kctl, struct snd_ctl_elem_value *ucontrol)
+{
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	int changed = 0;
+	int err, oval, val;
+	
+	err = get_ctl_value(elem, 0, &oval);
+	if (err < 0)
+		return err;
+	
+	val = ucontrol->value.integer.value[0];
+#if 0 // TODO?
+	if (val == -1) {
+		val = elem->enum->len + 1; /* only true for master, not for mixer [also master must be used] */
+		// ... or? > 0x20,  18i8: 0x22
+	} else
+#endif
+	val = val + elem->opt->start;
+	if (oval != val) {
+		err = set_ctl_value(elem, 0, val);
+		if (err < 0)
+			return err;
+		
+		changed = 1;
+	}
+	
+	return changed;
+}
+
+static int scarlett_ctl_save_get(struct snd_kcontrol *kctl, struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.enumerated.item[0] = 0;
+	return 0;
+}
+
+static int scarlett_ctl_save_put(struct snd_kcontrol *kctl, struct snd_ctl_elem_value *ucontrol)
+{
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	int err;
+	
+	if (ucontrol->value.integer.value[0] > 0) {
+		char buf[1] = { 0xa5 };
+		
+		err = set_ctl_urb2(elem->mixer->chip, UAC2_CS_MEM, 0x005a, 0x3c, buf, 1);
+		if (err < 0)
+			return err;
+		
+		snd_printk(KERN_INFO "Scarlett: Saved settings to hardware.\n");
+	}
+	
+	return 0; // (?)
+}
+
+#ifdef WITH_METER
+static int scarlett_ctl_meter_info(struct snd_kcontrol *kctl, struct snd_ctl_elem_info *uinfo)
+{
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = elem->count;
 #ifdef WITH_LOGSCALEMETER
 	uinfo->value.integer.min = 0;
 	uinfo->value.integer.max = 194;
 #else
 	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = 0xffff;
+	uinfo->value.integer.max = 255; // 0xffff ?
 #endif
 	uinfo->value.integer.step = 1;
 	return 0;
 }
-
-
-#ifdef WITH_LOGSCALEMETER
-static const DECLARE_TLV_DB_SCALE(db_scale_s18i6_peak, -9700, 50, 1);
 #endif
 
-static struct snd_kcontrol_new usb_s18i6_peakmeter_ctl = {
+static int scarlett_ctl_meter_get(struct snd_kcontrol *kctl, struct snd_ctl_elem_value *ucontrol)
+{
+	struct scarlett_mixer_elem_info *elem = kctl->private_data;
+	unsigned char buf[2 * MAX_CHANNELS] = {0, };
+	int err, val, i;
+
+	err = get_ctl_urb2(elem->mixer->chip, UAC2_CS_MEM, elem->wValue, elem->index, buf, elem->val_len * elem->count);
+	if (err < 0) {
+		snd_printd(KERN_ERR "cannot get current value for mem %x: err = %d\n",
+			   elem->wValue, err);
+		return err;
+	}
+
+	if (elem->val_len == 1) { /* single U8 */
+		ucontrol->value.enumerated.item[0] = clamp((int)buf[0], 0, 1);
+	} else { /* multiple S16 */
+		for (i = 0; i < elem->count; i++) {
+			val = buf[2*i] | ((unsigned int)buf[2*i + 1] << 8);
+			if (val >= 0x8000)
+				val -= 0x10000;
+			
+#ifdef WITH_LOGSCALEMETER
+			ucontrol->value.integer.value[i] = sig_to_db(val);
+#else
+			ucontrol->value.integer.value[i] = clamp(val / 256, 0, 255);
+#endif
+		}
+	}
+
+	return 0;
+}
+
+static struct snd_kcontrol_new usb_scarlett_ctl_switch = {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.name = "",
-	.info = s18i6_peak_info,
-	.get =  s18i6_peak_get,
-#ifdef WITH_LOGSCALEMETER
-	.access = SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_TLV_READ,
-	.tlv = { .p = db_scale_s18i6_peak }
-#else
-	.access = SNDRV_CTL_ELEM_ACCESS_READ,
-#endif
+	.info = scarlett_ctl_switch_info,
+	.get =  scarlett_ctl_switch_get,
+	.put =  scarlett_ctl_switch_put,
 };
-#endif
 
-static const DECLARE_TLV_DB_SCALE(db_scale_s18i6_gain, -12800, 100, 1);
+static const DECLARE_TLV_DB_SCALE(db_scale_scarlett_gain, -12800, 100, 1);
 
-static struct snd_kcontrol_new usb_s18i6_volume_ctl = {
+static struct snd_kcontrol_new usb_scarlett_ctl = {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE | SNDRV_CTL_ELEM_ACCESS_TLV_READ,
 	.name = "",
-	.info = s18i6_info,
-	.get =  s18i6_get,
-	.put =  s18i6_put,
-	.tlv = { .p = db_scale_s18i6_gain }
+	.info = scarlett_ctl_info,
+	.get =  scarlett_ctl_get,
+	.put =  scarlett_ctl_put,
+	.private_value = 6,  // max value
+	.tlv = { .p = db_scale_scarlett_gain }
 };
 
-static struct snd_kcontrol_new usb_s18i6_ctl = {
+static struct snd_kcontrol_new usb_scarlett_ctl_master = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE | SNDRV_CTL_ELEM_ACCESS_TLV_READ,
+	.name = "",
+	.info = scarlett_ctl_info,
+	.get =  scarlett_ctl_get,
+	.put =  scarlett_ctl_put,
+//	.private_value = 0,  // max value, not 6 but 0
+	.private_value = 6,  // max value
+	.tlv = { .p = db_scale_scarlett_gain }
+};
+
+static struct snd_kcontrol_new usb_scarlett_ctl_enum = {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.name = "",
-	.info = s18i6_info,
-	.get =  s18i6_get,
-	.put =  s18i6_put,
+	.info = scarlett_ctl_enum_info,
+	.get =  scarlett_ctl_enum_get,
+	.put =  scarlett_ctl_enum_put,
+	// .private_value
 };
 
-static struct snd_kcontrol_new usb_s18i6_func = {
+static struct snd_kcontrol_new usb_scarlett_ctl_sync = {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.access = SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
 	.name = "",
-	.info = s18i6_func_info,
-	.get =  s18i6_func_get,
-	.put =  s18i6_func_put,
+	.info = scarlett_ctl_enum_info,
+	.get =  scarlett_ctl_meter_get,
 };
-
-
-
-static int s18i6_add_func(struct usb_mixer_interface *mixer, int func_id, char *name)
-{
-	struct usb_mixer_elem_info *cval;
-	struct snd_kcontrol *kctl;
-
-	cval = kzalloc(sizeof(*cval), GFP_KERNEL);
-	if (! cval)
-		return -ENOMEM;
-
-	cval->mixer = mixer;
-	cval->id = func_id;
-	cval->control = 0;
-	cval->val_type = USB_MIXER_BOOLEAN;
-	cval->channels = 1;
-	cval->cmask = 0;
-
-	cval->min = 0;
-	cval->max = 1;
-	cval->res = 1;
-	cval->dBmin = cval->dBmax = 0;
-	cval->initialized = 1;
-
-	kctl = snd_ctl_new1(&usb_s18i6_func, cval);
-
-	if (! kctl) {
-		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
-		kfree(cval);
-		return -ENOMEM;
-	}
-	kctl->private_free = usb_mixer_elem_free;
-
-	sprintf(kctl->id.name, "%s", name);
-
-	snd_printdd(KERN_INFO "[%d] MU [%s] ch = %d, val = %d/%d\n",
-				cval->id, kctl->id.name, cval->channels, cval->min, cval->max);
-
-	snd_usb_mixer_add_control(mixer, kctl);
-
-	return 0;
-}
-
 
 #ifdef WITH_METER
-static int s18i6_add_peak_meter(struct usb_mixer_interface *mixer, int wValue, int chn, char *name)
-{
-	struct usb_mixer_elem_info *cval;
-	struct snd_kcontrol *kctl;
-
-	cval = kzalloc(sizeof(*cval), GFP_KERNEL);
-	if (! cval)
-		return -ENOMEM;
-
-	cval->mixer = mixer;
-	cval->id = 0x3c;
-	cval->control = wValue;
-	cval->val_type = USB_MIXER_S16;
-	cval->channels = chn;
-	cval->cmask = (1<<(chn+1))-1;
-
-	cval->min = 0;
-	cval->max = 65535;
-	cval->res = 1;
-	cval->dBmin = -128;
-	cval->dBmax = 0;
-	cval->initialized = 1;
-
-	kctl = snd_ctl_new1(&usb_s18i6_peakmeter_ctl, cval);
-
-	if (! kctl) {
-		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
-		kfree(cval);
-		return -ENOMEM;
-	}
-	kctl->private_free = usb_mixer_elem_free;
-
-	sprintf(kctl->id.name, "%s", name);
 #ifdef WITH_LOGSCALEMETER
-	strlcat(kctl->id.name, " Volume", sizeof(kctl->id.name));
+static const DECLARE_TLV_DB_SCALE(db_scale_scarlett_peak, -9700, 50, 1);
 #endif
 
-	snd_printdd(KERN_INFO "[%d] MU [%s] ch = %d, val = %d/%d\n",
-				cval->id, kctl->id.name, cval->channels, cval->min, cval->max);
+static struct snd_kcontrol_new usb_scarlett_ctl_meter = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+#ifdef WITH_LOGSCALEMETER
+	.access = SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE | SNDRV_CTL_ELEM_ACCESS_TLV_READ,
+	.tlv = { .p = db_scale_scarlett_peak },
+#else
+	.access = SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
+#endif
+	.name = "",
+	.info = scarlett_ctl_meter_info,
+	.get =  scarlett_ctl_meter_get,
+};
+#endif
 
-	snd_usb_mixer_add_control(mixer, kctl);
+static struct snd_kcontrol_new usb_scarlett_ctl_save = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "",
+	.info = scarlett_ctl_enum_info,
+	.get =  scarlett_ctl_save_get,
+	.get =  scarlett_ctl_save_put,
+};
+
+static int add_new_ctl(struct usb_mixer_interface *mixer,
+                       const struct snd_kcontrol_new *ncontrol,
+                       int index, int offset, int num,
+                       int val_len, int count, const char *name,
+                       const struct scarlett_enum_info *opt,
+                       struct scarlett_mixer_elem_info **elem_ret)
+{
+	struct snd_kcontrol *kctl;
+	struct scarlett_mixer_elem_info *elem;
+	int err;
+	
+	elem = kzalloc(sizeof(*elem), GFP_KERNEL);
+	if (!elem)
+		return -ENOMEM;
+	
+	elem->mixer = mixer;
+	elem->wValue = (offset << 8) | num;
+	elem->index = index;
+	elem->val_len = val_len;
+	elem->count = count;
+	elem->opt = opt;
+	
+	kctl = snd_ctl_new1(ncontrol, elem);
+	if (!kctl) {
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
+		kfree(elem);
+		return -ENOMEM;
+	}
+	kctl->private_free = scarlett_mixer_elem_free;
+	
+	snprintf(kctl->id.name, sizeof(kctl->id.name), "%s", name);
+	
+	err = snd_ctl_add(mixer->chip->card, kctl);
+	if (err < 0)
+		return err;
+	
+	if (elem_ret) {
+		*elem_ret = elem;
+	}
+	
+	return 0;
+}
+
+static int init_ctl(struct scarlett_mixer_elem_info *elem, int value)
+{
+	int err, channel;
+	
+	for (channel = 0; channel < elem->count; channel++) {
+		err = set_ctl_value(elem, channel, value);
+		if (err < 0)
+			return err;
+	}
+	
+	return 0;
+}
+
+#define INIT(value) \
+	err = init_ctl(elem, value); \
+	if (err < 0) \
+		return err;
+
+#define CTL_SWITCH(cmd, off, no, count, name) \
+	err = add_new_ctl(mixer, &usb_scarlett_ctl_switch, cmd, off, no, 2, count, name, NULL, &elem); \
+	if (err < 0) \
+		return err;
+
+// no multichannel enum, always count == 1  (at least for now)
+#define CTL_ENUM(cmd, off, no, name, opt) \
+	err = add_new_ctl(mixer, &usb_scarlett_ctl_enum, cmd, off, no, 2, 1, name, opt, &elem); \
+	if (err < 0) \
+		return err;
+
+#define CTL_MIXER(cmd, off, no, count, name) \
+	err = add_new_ctl(mixer, &usb_scarlett_ctl, cmd, off, no, 2, count, name, NULL, &elem); \
+	if (err < 0) \
+		return err; \
+	INIT(-32768); /* -128*256 */
+
+#define CTL_MASTER(cmd, off, no, count, name) \
+	err = add_new_ctl(mixer, &usb_scarlett_ctl_master, cmd, off, no, 2, count, name, NULL, &elem); \
+	if (err < 0) \
+		return err; \
+	INIT(0);
+
+#define CTL_PEAK(cmd, off, no, count, name)  /* but UAC2_CS_MEM */ \
+	err = add_new_ctl(mixer, &usb_scarlett_ctl_meter, cmd, off, no, 2, count, name, NULL, NULL); \
+	if (err < 0) \
+		return err;
+
+static int add_output_ctls(struct usb_mixer_interface *mixer,
+                           int index, const char *name,
+                           const struct scarlett_device_info *info)
+{
+	int err;
+	char mx[45];
+	struct scarlett_mixer_elem_info *elem;
+	
+	snprintf(mx, 45, "Master %d (%s) Playback Switch", index+1, name); /* mute */
+	CTL_SWITCH(0x0a, 0x01, 2*index+1, 2, mx);
+	
+	snprintf(mx, 45, "Master %d (%s) Playback Volume", index+1, name);
+	CTL_MASTER(0x0a, 0x02, 2*index+1, 2, mx);
+	
+	snprintf(mx, 45, "Master %dL (%s) Source Playback Enum", index+1, name);
+	CTL_ENUM  (0x33, 0x00, 2*index, mx, &info->opt_master);
+	INIT      (info->mix_start);
+
+	snprintf(mx, 45, "Master %dR (%s) Source Playback Enum", index+1, name);
+	CTL_ENUM  (0x33, 0x00, 2*index+1, mx, &info->opt_master);
+	INIT      (info->mix_start + 1);
 
 	return 0;
 }
+
+#define CTLS_OUTPUT(index, name) \
+	err = add_output_ctls(mixer, index, name, info); \
+	if (err < 0) \
+		return err;
+
+
+/********************** device-specific config *************************/
+static int scarlet_s18i6_controls(struct usb_mixer_interface *mixer,
+                                  const struct scarlett_device_info *info)
+{
+	struct scarlett_mixer_elem_info *elem;
+	int err;
+
+	CTLS_OUTPUT(0, "Monitor");
+	CTLS_OUTPUT(1, "Headphone");
+	CTLS_OUTPUT(2, "SPDIF");
+
+	CTL_ENUM  (0x01, 0x09, 1, "Input 1 Impedance Switch", &opt_impedance);
+	CTL_ENUM  (0x01, 0x09, 2, "Input 2 Impedance Switch", &opt_impedance);
+
+	return 0;
+}
+
+static int scarlet_s18i8_controls(struct usb_mixer_interface *mixer,
+                                  const struct scarlett_device_info *info)
+{
+	struct scarlett_mixer_elem_info *elem;
+	int err;
+
+	CTLS_OUTPUT(0, "Monitor");
+	CTLS_OUTPUT(1, "Headphone 1");
+	CTLS_OUTPUT(2, "Headphone 2");
+	CTLS_OUTPUT(3, "SPDIF");
+
+	CTL_ENUM  (0x01, 0x09, 1, "Input 1 Impedance Switch", &opt_impedance);
+	CTL_ENUM  (0x01, 0x0b, 1, "Input 1 Pad Switch", &opt_pad);
+
+	CTL_ENUM  (0x01, 0x09, 2, "Input 2 Impedance Switch", &opt_impedance);
+	CTL_ENUM  (0x01, 0x0b, 2, "Input 2 Pad Switch", &opt_pad);
+
+	CTL_ENUM  (0x01, 0x0b, 3, "Input 3 Pad Switch", &opt_pad);
+	CTL_ENUM  (0x01, 0x0b, 3, "Input 4 Pad Switch", &opt_pad);
+
+	return 0;
+}
+
+static const char *s18i6_texts[] = {
+	txtOff, /* 'off' == 0xff */
+	txtPcm1, txtPcm2, txtPcm3, txtPcm4,
+	txtPcm5, txtPcm6,
+	txtAnlg1, txtAnlg2, txtAnlg3, txtAnlg4,
+	txtAnlg5, txtAnlg6, txtAnlg7, txtAnlg8,
+	txtSpdif1, txtSpdif2,
+	txtAdat1, txtAdat2, txtAdat3, txtAdat4,
+	txtAdat5, txtAdat6, txtAdat7, txtAdat8,
+	txtMix1, txtMix2, txtMix3, txtMix4,
+	txtMix5, txtMix6
+};
+
+static const struct scarlett_device_info s18i6_info = {
+	.matrix_in = 18,
+	.matrix_out = 6,
+	.input_len = 18,
+	.output_len = 6,
+
+	.pcm_start = 0,
+	.analog_start = 6,
+	.spdif_start = 14,
+	.adat_start = 16,
+	.mix_start = 24,
+
+	.opt_master = {
+		.start = -1,
+		.len = 31,
+		.texts = s18i6_texts
+	},
+
+	.opt_matrix = {
+		.start = -1,
+		.len = 25,
+		.texts = s18i6_texts
+	},
+
+	.controls_fn = scarlet_s18i6_controls,
+	.matrix_mux_init = {
+		 6,  7,  8,  9, 10, 11, 12, 13, // Analog -> 1..8
+		16, 17, 18, 19, 20, 21,     // ADAT[1..6] -> 9..14
+		14, 15,                          // SPDIF -> 15,16
+		0, 1                          // PCM[1,2] -> 17,18
+	}
+};
+
+static const char *s18i8_texts[] = {
+	txtOff, /* 'off' == 0xff  (orignal software: 0x22) */
+	txtPcm1, txtPcm2, txtPcm3, txtPcm4,
+	txtPcm5, txtPcm6, txtPcm7, txtPcm8,
+	txtAnlg1, txtAnlg2, txtAnlg3, txtAnlg4,
+	txtAnlg5, txtAnlg6, txtAnlg7, txtAnlg8,
+	txtSpdif1, txtSpdif2,
+	txtAdat1, txtAdat2, txtAdat3, txtAdat4,
+	txtAdat5, txtAdat6, txtAdat7, txtAdat8,
+	txtMix1, txtMix2, txtMix3, txtMix4,
+	txtMix5, txtMix6, txtMix7, txtMix8
+};
+
+static const struct scarlett_device_info s18i8_info = {
+	.matrix_in = 18,
+	.matrix_out = 8,
+	.input_len = 18,
+	.output_len = 8,
+
+	.pcm_start = 0,
+	.analog_start = 8,
+	.spdif_start = 16,
+	.adat_start = 18,
+	.mix_start = 26,
+
+	.opt_master = {
+		.start = -1,
+		.len = 35,
+		.texts = s18i8_texts
+	},
+
+	.opt_matrix = {
+		.start = -1,
+		.len = 27,
+		.texts = s18i8_texts
+	},
+
+	.controls_fn = scarlet_s18i8_controls,
+	.matrix_mux_init = {
+		 6,  7,  8,  9, 10, 11, 12, 13, // Analog -> 1..8
+		16, 17, 18, 19, 20, 21,     // ADAT[1..6] -> 9..14
+		14, 15,                          // SPDIF -> 15,16
+		0, 1                          // PCM[1,2] -> 17,18
+	}
+};
+
+/*
+int scarlett_reset(struct usb_mixer_interface *mixer)
+{
+	// TODO? save first-time init flag into device?
+
+	// unmute [master +] mixes (switches are currently not initialized)
+	// [set(get!) impedance: 0x01, 0x09, 1..2]
+	// [set(get!) 0x01, 0x08, 3..4]
+	// [set(get!) pad: 0x01, 0x0b, 1..4]
+
+	// matrix inputs (currently in scarlett_mixer_controls)
+}
+*/
+
+/*
+ * Create and initialize a mixer for the Focusrite(R) Scarlett
+ */
+int scarlett_mixer_controls(struct usb_mixer_interface *mixer)
+{
+	int err, i, o;
+	char mx[32];
+	const struct scarlett_device_info *info;
+	struct scarlett_mixer_elem_info *elem;
+
+	CTL_SWITCH(0x0a, 0x01, 0, 1, "Master Playback Switch");
+	CTL_MASTER(0x0a, 0x02, 0, 1, "Master Playback Volume");
+
+	switch (mixer->chip->usb_id) {
+	case USB_ID(0x1235, 0x8004): info = &s18i6_info; break;
+	case USB_ID(0x1235, 0x8014): info = &s18i8_info; break;
+	default: /* device not (yet) supported */
+		return -EINVAL;
+	}
+
+	err = (*info->controls_fn)(mixer, info);
+	if (err < 0)
+		return err;
+
+	for (i = 0; i < info->matrix_in; i++) {
+		snprintf(mx, 32, "Matrix %02d Input Playback Route", i+1);
+		CTL_ENUM  (0x32, 0x06, i, mx, &info->opt_matrix);
+		INIT      (info->matrix_mux_init[i]);
+
+		for (o = 0; o < info->matrix_out; o++) {
+			sprintf(mx, "Matrix %02d Mix %c Playback Volume", i+1, o+'A');
+			CTL_MIXER (0x3c, 0x00, (i<<3) + (o&0x07), 1, mx);
+		}
+	}
+
+	for (i = 0; i < info->matrix_in; i++) {
+		snprintf(mx, 32, "Input Source %02d Capture Route", i+1);
+		CTL_ENUM  (0x34, 0x00, i, mx, &info->opt_master);
+		INIT      (info->analog_start + i);
+	}
+
+	/* val_len == 1 needed here */
+	err = add_new_ctl(mixer, &usb_scarlett_ctl_enum, 0x28, 0x01, 0, 1,
+	                  1, "Sample Clock Source", &opt_clock, NULL);
+	if (err < 0)
+		return err;
+
+	/* val_len == 1 and UAC2_CS_MEM */
+	err = add_new_ctl(mixer, &usb_scarlett_ctl_sync, 0x3c, 0x00, 2, 1,
+	                  1, "Sample Clock Sync Status", &opt_sync, NULL);
+	if (err < 0)
+		return err;
+
+	/* val_len == 1 and UAC2_CS_MEM */
+	err = add_new_ctl(mixer, &usb_scarlett_ctl_save, 0x3c, 0x00, 0x5a, 1,
+	                  1, "Save To HW", &opt_save, NULL);
+	if (err < 0)
+		return err;
+
+#ifdef WITH_METER
+	CTL_PEAK  (0x3c, 0x00, 0, info->input_len, "Input Meter");
+	CTL_PEAK  (0x3c, 0x00, 1, info->matrix_out, "Matrix Meter");
+	CTL_PEAK  (0x3c, 0x00, 3, info->output_len, "PCM Meter");
 #endif
 
+// TODO(?) scarlett_reset(mixer);
+
+	return 0;
+}
+
+
+/**************************** OLD CODE ****************************/
+
+#if 0
 static int s18i6_first_time_reset(struct usb_mixer_interface *mixer)
 {
-	int i;
-	unsigned char buf[2];
 	/* routes and mute registers do not represent the actual state of the
 	 * device after power-cycles.
 	 *
@@ -1121,8 +1141,12 @@ static int s18i6_first_time_reset(struct usb_mixer_interface *mixer)
 	 * and retains r/w data after that.
 	 */
 
+// FIXME?  19 or 20 is not working.
+//	int marker = 6; // 18i6
+	int marker = 8; // 18i8
+
 	memset(buf, 0, sizeof(buf));
-	get_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0106, 0x0a00, buf, 1);
+	get_ctl_urb2(mixer->chip, UAC2_CS_CUR, (S18I6__MUTE << 8) + marker, S18I6_MASTER_VOLUME, buf, 1);
 	if (buf[0] == 0x01) {
 		snd_printk(KERN_INFO "Scarlett 18i6: already initialized (no device power-cycle).\n");
 		return 0;
@@ -1132,223 +1156,12 @@ static int s18i6_first_time_reset(struct usb_mixer_interface *mixer)
 
 	/* mark chip as initialized */
 	buf[0] = 0x01;
-	set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0106, 0x0a00, buf, 2);
+	set_ctl_urb2(mixer->chip, UAC2_CS_CUR, (S18I6__MUTE << 8) + marker, S18I6_MASTER_VOLUME, buf, 2);
 
 #if 0
 	memset(buf, 0, sizeof(buf));
-	get_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0106, 0x0a00, buf, 1);
+	get_ctl_urb2(mixer->chip, UAC2_CS_CUR, (S18I6__MUTE << 8) + marker, S18I6_MASTER_VOLUME, buf, 1);
 	snd_printk(KERN_ERR "18i6: check marker %x %x\n", buf[0], buf[1]);
 #endif
-
-	memset(buf, 0, sizeof(buf));
-
-	/* reset device */
-	for (i = 0; i < 18; ++i) {
-		buf[0] = 6 + i;
-		set_ctl_urb2(mixer->chip, UAC2_CS_CUR, i, 0x3400, buf, 2);
-	}
-
-	/* output buses and matrix mixer gains are skipped here
-	 * they can never be queried and are always re-initialized during setup
-	 */
-
-	/* mixer inputs */
-	for (i = 0; i < 8; ++i) { // Analog
-		buf[0] = 6 + i;
-		set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0600 + i , 0x3200, buf, 2);
-	}
-	for (i = 0; i < 6; ++i) { // ADAT
-		buf[0] = 0x10 + i;
-		set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0600 + i + 8 , 0x3200, buf, 2);
-	}
-	// SPDIF
-	buf[0] = 0x0e; set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x060e, 0x3200, buf, 2);
-	buf[0] = 0x0f; set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x060f, 0x3200, buf, 2);
-	// DAW
-	buf[0] = 0x00; set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0610, 0x3200, buf, 2);
-	buf[0] = 0x01; set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0611, 0x3200, buf, 2);
-
-	/* unmute buses */
-	buf[0] = 0;
-	for (i = 1; i < 5; ++i) { // ADAT
-		set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0100 + i, 0x0a00, buf, 2);
-	}
-
-	/* impedance & 8i6 hi/low gain */
-	buf[0] = 0;
-	for (i = 1; i < 5; ++i) { // ADAT
-		set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0800 + i, 0x0100, buf, 2);
-	}
-
-	return 0;
 }
-
-static int s18i6_add_mix_ctl(
-		struct usb_mixer_interface *mixer,
-		int wIndex, int wValue,
-		int type, int cmask, int channels,
-		char *name)
-{
-	struct usb_mixer_elem_info *cval;
-	struct snd_kcontrol *kctl;
-
-	cval = kzalloc(sizeof(*cval), GFP_KERNEL);
-	if (! cval)
-		return -ENOMEM;
-
-	cval->mixer = mixer;
-	cval->id = wIndex;
-	cval->control = wValue;
-	cval->val_type = type;
-	cval->cmask = cmask;
-	cval->channels = channels;
-
-	get_s18i6_get_min_max(cval,
-			(cval->id != 0x33 && cval->id != 0x3c) ? 1 : 0);
-
-	if ( (wIndex == 0x0a && wValue == 0x02) || wIndex == 0x3c)
-		kctl = snd_ctl_new1(&usb_s18i6_volume_ctl, cval);
-	else
-		kctl = snd_ctl_new1(&usb_s18i6_ctl, cval);
-
-	if (! kctl) {
-		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
-		kfree(cval);
-		return -ENOMEM;
-	}
-	kctl->private_free = usb_mixer_elem_free;
-
-	sprintf(kctl->id.name, "%s", name);
-
-	snd_printdd(KERN_INFO "[%d] MU [%s] ch = %d, val = %d/%d\n",
-				cval->id, kctl->id.name, cval->channels, cval->min, cval->max);
-
-	snd_usb_mixer_add_control(mixer, kctl);
-
-	return 0;
-}
-
-#define S18ADD(wI, wV, TY, CM, CN, LB) \
-	if ((err = s18i6_add_mix_ctl(mixer, wI, wV, TY, CM, CN, LB))) { return err; }
-
-
-static int s18i6_create_controls(struct usb_mixer_interface *mixer)
-{
-	int err, i, o;
-
-	S18ADD(0x28, 0x01, USB_MIXER_U8, 0, 1, "Clock Selector");
-
-	S18ADD(0x01, 0x09, USB_MIXER_BOOLEAN, 1, 1, "Impedance 1")
-	S18ADD(0x01, 0x09, USB_MIXER_BOOLEAN, 2, 1, "Impedance 2");
-
-	S18ADD(0x0a, 0x01, USB_MIXER_U8,  3, 2, "Mute Monitor Switch");
-	S18ADD(0x0a, 0x01, USB_MIXER_U8, 12, 2, "Mute Phones Switch");
-	S18ADD(0x0a, 0x01, USB_MIXER_U8,  0, 1, "Mute Master Switch");
-
-	/* bus attenuation */
-	S18ADD(0x0a, 0x02, USB_MIXER_S16,  0, 1, "Att Master Volume");
-	S18ADD(0x0a, 0x02, USB_MIXER_S16,  3, 2, "Att Monitor Volume");
-	S18ADD(0x0a, 0x02, USB_MIXER_S16, 12, 2, "Att Phones Volume");
-
-	/* output bus routing */
-	S18ADD(0x33, 0x00, USB_MIXER_U8,  0, 1, "Bus Monitor L");
-	S18ADD(0x33, 0x00, USB_MIXER_U8,  1, 1, "Bus Monitor R");
-
-	S18ADD(0x33, 0x00, USB_MIXER_U8,  2, 1, "Bus Phones L");
-	S18ADD(0x33, 0x00, USB_MIXER_U8,  4, 1, "Bus Phones R");
-
-	S18ADD(0x33, 0x00, USB_MIXER_U8,  8, 1, "Bus SPDIF L");
-	S18ADD(0x33, 0x00, USB_MIXER_U8, 16, 1, "Bus SPDIF R");
-
-	/* mixer source selection */
-	S18ADD(0x32, 0x06, USB_MIXER_U8, 0, 1, "Mixer In 01");
-	for (i = 0; i < 17; ++i) {
-		char mx[16];
-		sprintf(mx, "Mixer In %02d",i+2);
-		S18ADD(0x32, 0x06, USB_MIXER_U8, 1<<i, 1, mx);
-		if (err) return err;
-	}
-
-	/* mixer matrix */
-	for (i = 0; i < 18; ++i) {
-		for (o = 0; o < 6; ++o) {
-			char mx[16];
-			int mtx = (i<<3) + (o&0x07);
-			sprintf(mx, "Mx%02d>%d Volume",i+1,o+1);
-			S18ADD(0x3c, 0x0100 + mtx, USB_MIXER_S16, 0, 1, mx);
-			if (err) return err;
-		}
-	}
-
-#ifdef WITH_METER
-	s18i6_add_peak_meter(mixer, 0x0000, 18, "Mtr Input");
-	s18i6_add_peak_meter(mixer, 0x0001,  6, "Mtr Mix");
-	s18i6_add_peak_meter(mixer, 0x0003,  6, "Mtr DAW");
 #endif
-
-	s18i6_add_func(mixer, 1, "Save to HW");
-
-	return 0;
-}
-
-
-/*
- * Create a mixer for the Focusrite(R) Scarlett
- */
-int scarlett_mixer_create(struct snd_usb_audio *chip,
-				       struct usb_interface *iface,
-				       struct usb_driver *driver,
-				       const struct snd_usb_audio_quirk *quirk)
-{
-	int ctrlif = quirk->ifnum;
-	int ignore_error = 0;
-
-	static struct snd_device_ops dev_ops = {
-		.dev_free = snd_usb_mixer_dev_free
-	};
-	struct usb_mixer_interface *mixer;
-	struct snd_info_entry *entry;
-	int err = 0;
-
-	if (quirk->ifnum < 0)
-		return 0;
-
-	strcpy(chip->card->mixername, "Scarlett Mixer");
-
-	mixer = kzalloc(sizeof(*mixer), GFP_KERNEL);
-	if (!mixer)
-		return -ENOMEM;
-	mixer->chip = chip;
-	mixer->ignore_ctl_error = ignore_error;
-	mixer->id_elems = kcalloc(MAX_ID_ELEMS, sizeof(*mixer->id_elems),
-				  GFP_KERNEL);
-	if (!mixer->id_elems) {
-		kfree(mixer);
-		return -ENOMEM;
-	}
-
-	mixer->hostif = &usb_ifnum_to_if(chip->dev, ctrlif)->altsetting[0];
-	mixer->protocol = UAC_VERSION_2;
-
-	if (s18i6_create_controls(mixer))
-		goto _error;
-
-	s18i6_first_time_reset(mixer);
-
-	err = snd_device_new(chip->card, SNDRV_DEV_LOWLEVEL, mixer, &dev_ops);
-	if (err < 0)
-		goto _error;
-
-	if (list_empty(&chip->mixer_list) &&
-	    !snd_card_proc_new(chip->card, "usbmixer", &entry))
-		snd_info_set_text_ops(entry, chip, snd_usb_mixer_proc_read);
-
-	list_add(&mixer->list, &chip->mixer_list);
-
-	return 0;
-
-_error:
-	snd_usb_mixer_free(mixer);
-	return err;
-	return 0;
-}
