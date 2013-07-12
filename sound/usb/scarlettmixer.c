@@ -313,8 +313,7 @@ static int set_ctl_value(struct scarlett_mixer_elem_info *elem, int channel, int
 }
 
 /*
-  TODO: can't read back any volume (master/mixer), only cache works
-    [?]
+  TODO: can't read back any volume (master/mixer), only cache works [?]
     [return 0xfe for enums???]
 */
 static int get_ctl_value(struct scarlett_mixer_elem_info *elem, int channel, int *value)
@@ -1030,9 +1029,9 @@ static const struct scarlett_device_info s18i8_info = {
 
 	.controls_fn = scarlet_s18i8_controls,
 	.matrix_mux_init = {
-		 6,  7,  8,  9, 10, 11, 12, 13, // Analog -> 1..8
-		16, 17, 18, 19, 20, 21,     // ADAT[1..6] -> 9..14
-		14, 15,                          // SPDIF -> 15,16
+		 8,  9, 10, 11, 12, 13, 14, 15, // Analog -> 1..8
+		18, 19, 20, 21, 22, 23,     // ADAT[1..6] -> 9..14
+		16, 17,                          // SPDIF -> 15,16
 		0, 1                          // PCM[1,2] -> 17,18
 	}
 };
