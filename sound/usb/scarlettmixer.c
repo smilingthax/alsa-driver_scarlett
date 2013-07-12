@@ -163,6 +163,12 @@
 //#define WITH_METER
 ////#define WITH_LOGSCALEMETER
 
+#define LEVEL_BIAS 128  /* some gui mixers can't handle negative ctl values (alsamixergui, qasmixer, ...) */
+
+#ifndef LEVEL_BIAS
+	#define LEVEL_BIAS 0
+#endif
+
 struct scarlett_enum_info {
 	int start, len;
 	const char **texts;
@@ -520,8 +526,8 @@ static int scarlett_ctl_info(struct snd_kcontrol *kctl, struct snd_ctl_elem_info
 	
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = elem->count;
-	uinfo->value.integer.min = -128;
-	uinfo->value.integer.max = (int)kctl->private_value;
+	uinfo->value.integer.min = -128 + LEVEL_BIAS;
+	uinfo->value.integer.max = (int)kctl->private_value + LEVEL_BIAS;
 	uinfo->value.integer.step = 1;
 	return 0;
 }
@@ -536,7 +542,7 @@ static int scarlett_ctl_get(struct snd_kcontrol *kctl, struct snd_ctl_elem_value
 		if (err < 0)
 			return err;
 		
-		val = clamp(val / 256, -128, (int)kctl->private_value);
+		val = clamp(val / 256, -128, (int)kctl->private_value) + LEVEL_BIAS;
 		ucontrol->value.integer.value[i] = val;
 	}
 	
@@ -554,7 +560,7 @@ static int scarlett_ctl_put(struct snd_kcontrol *kctl, struct snd_ctl_elem_value
 		if (err < 0)
 			return err;
 		
-		val = ucontrol->value.integer.value[i];
+		val = ucontrol->value.integer.value[i] - LEVEL_BIAS;
 		val = val * 256;
 		if (oval != val) {
 			err = set_ctl_value(elem, i, val);
@@ -643,7 +649,7 @@ static int scarlett_ctl_save_put(struct snd_kcontrol *kctl, struct snd_ctl_elem_
 	struct scarlett_mixer_elem_info *elem = kctl->private_data;
 	int err;
 	
-	if (ucontrol->value.integer.value[0] > 0) {
+	if (ucontrol->value.enumerated.item[0] > 0) {
 		char buf[1] = { 0xa5 };
 		
 		err = set_ctl_urb2(elem->mixer->chip, UAC2_CS_MEM, 0x005a, 0x3c, buf, 1);
@@ -715,7 +721,7 @@ static struct snd_kcontrol_new usb_scarlett_ctl_switch = {
 	.put =  scarlett_ctl_switch_put,
 };
 
-static const DECLARE_TLV_DB_SCALE(db_scale_scarlett_gain, -12800, 100, 1);
+static const DECLARE_TLV_DB_SCALE(db_scale_scarlett_gain, -12800, 100, 0);
 
 static struct snd_kcontrol_new usb_scarlett_ctl = {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
@@ -759,7 +765,7 @@ static struct snd_kcontrol_new usb_scarlett_ctl_sync = {
 
 #ifdef WITH_METER
 #ifdef WITH_LOGSCALEMETER
-static const DECLARE_TLV_DB_SCALE(db_scale_scarlett_peak, -9700, 50, 1);
+static const DECLARE_TLV_DB_SCALE(db_scale_scarlett_peak, -9700, 50, 0);
 #endif
 
 static struct snd_kcontrol_new usb_scarlett_ctl_meter = {
