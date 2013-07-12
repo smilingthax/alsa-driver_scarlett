@@ -1088,6 +1088,11 @@ int scarlett_mixer_controls(struct usb_mixer_interface *mixer)
 		for (o = 0; o < info->matrix_out; o++) {
 			sprintf(mx, "Matrix %02d Mix %c Playback Volume", i+1, o+'A');
 			CTL_MIXER (0x3c, 0x00, (i<<3) + (o&0x07), 1, mx);
+			if (  ( (o == 0)&&(info->matrix_mux_init[i] == info->pcm_start) )||
+			      ( (o == 1)&&(info->matrix_mux_init[i] == info->pcm_start + 1) )  ) {
+				INIT      (0);   // init hack: enable PCM 1 / 2 on Mix A / B
+			}
+			
 		}
 	}
 
