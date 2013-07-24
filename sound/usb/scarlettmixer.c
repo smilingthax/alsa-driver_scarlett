@@ -1042,6 +1042,40 @@ static const struct scarlett_device_info s18i8_info = {
 	}
 };
 
+/*  untested...  specs says 18x8 matrix, but how do the other 12 outputs work? */
+static const struct scarlett_device_info s18i20_info = {
+	.matrix_in = 18,
+	.matrix_out = 8,
+	.input_len = 18,
+	.output_len = 8,
+
+	.pcm_start = 0,
+	.analog_start = 8,
+	.spdif_start = 16,
+	.adat_start = 18,
+	.mix_start = 26,
+
+	.opt_master = {
+		.start = -1,
+		.len = 35,
+		.texts = s18i8_texts
+	},
+
+	.opt_matrix = {
+		.start = -1,
+		.len = 27,
+		.texts = s18i8_texts
+	},
+
+	.controls_fn = scarlet_s18i8_controls,
+	.matrix_mux_init = {
+		 8,  9, 10, 11, 12, 13, 14, 15, // Analog -> 1..8
+		18, 19, 20, 21, 22, 23,     // ADAT[1..6] -> 9..14
+		16, 17,                          // SPDIF -> 15,16
+		0, 1                          // PCM[1,2] -> 17,18
+	}
+};
+
 /*
 int scarlett_reset(struct usb_mixer_interface *mixer)
 {
@@ -1072,6 +1106,7 @@ int scarlett_mixer_controls(struct usb_mixer_interface *mixer)
 	switch (mixer->chip->usb_id) {
 	case USB_ID(0x1235, 0x8004): info = &s18i6_info; break;
 	case USB_ID(0x1235, 0x8014): info = &s18i8_info; break;
+	case USB_ID(0x1235, 0x800c): info = &s18i20_info; break;
 	default: /* device not (yet) supported */
 		return -EINVAL;
 	}

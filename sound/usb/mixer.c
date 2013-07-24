@@ -2391,6 +2391,7 @@ int snd_usb_create_mixer(struct snd_usb_audio *chip, int ctrlif,
 	switch (chip->usb_id) {
 	case USB_ID(0x1235, 0x8004): /* Focusrite Scarlett 18i6 */
 	case USB_ID(0x1235, 0x8014): /* Focusrite Scarlett 18i8 */
+	case USB_ID(0x1235, 0x800c): /* Focusrite Scarlett 18i20 */
 		/* don't even try to parse UAC2 descriptors */
 		if ((err = scarlett_mixer_controls(mixer)) < 0)
 			goto _error;
