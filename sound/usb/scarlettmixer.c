@@ -368,6 +368,12 @@ static const char txtOff[] = "Off",
 	txtPcm3[] = "PCM 3", txtPcm4[] = "PCM 4",
 	txtPcm5[] = "PCM 5", txtPcm6[] = "PCM 6",
 	txtPcm7[] = "PCM 7", txtPcm8[] = "PCM 8",
+	txtPcm9[] = "PCM 9", txtPcm10[] = "PCM 10",
+	txtPcm11[] = "PCM 11", txtPcm12[] = "PCM 12",
+	txtPcm13[] = "PCM 13", txtPcm14[] = "PCM 14",
+	txtPcm15[] = "PCM 15", txtPcm16[] = "PCM 16",
+	txtPcm17[] = "PCM 17", txtPcm18[] = "PCM 18",
+	txtPcm19[] = "PCM 19", txtPcm20[] = "PCM 20",
 	txtAnlg1[] = "Analog 1", txtAnlg2[] = "Analog 2",
 	txtAnlg3[] = "Analog 3", txtAnlg4[] = "Analog 4",
 	txtAnlg5[] = "Analog 5", txtAnlg6[] = "Analog 6",
@@ -380,7 +386,11 @@ static const char txtOff[] = "Off",
 	txtMix1[] = "Mix A", txtMix2[] = "Mix B",
 	txtMix3[] = "Mix C", txtMix4[] = "Mix D",
 	txtMix5[] = "Mix E", txtMix6[] = "Mix F",
-	txtMix7[] = "Mix G", txtMix8[] = "Mix H";
+	txtMix7[] = "Mix G", txtMix8[] = "Mix H",
+	txtMix9[] = "Mix I", txtMix10[] = "Mix J",
+	txtMix11[] = "Mix K", txtMix12[] = "Mix L",
+	txtMix13[] = "Mix M", txtMix14[] = "Mix N",
+	txtMix15[] = "Mix O", txtMix16[] = "Mix P";
 
 static const struct scarlett_enum_info opt_pad = {
 	.start = 0,
@@ -950,6 +960,37 @@ static int scarlet_s18i8_controls(struct usb_mixer_interface *mixer,
 	return 0;
 }
 
+static int scarlet_s18i20_controls(struct usb_mixer_interface *mixer,
+                                  const struct scarlett_device_info *info)
+{
+//	struct scarlett_mixer_elem_info *elem;
+	int err;
+
+	CTLS_OUTPUT(0, "Monitor");   // 1/2
+	CTLS_OUTPUT(1, "Line 3/4");
+	CTLS_OUTPUT(2, "Line 5/6");
+	CTLS_OUTPUT(3, "Line 7/8");  // = Headphone 1
+	CTLS_OUTPUT(4, "Line 9/10"); // = Headphone 2
+	CTLS_OUTPUT(5, "SPDIF");
+	CTLS_OUTPUT(6, "ADAT 1/2");
+	CTLS_OUTPUT(7, "ADAT 3/4");
+	CTLS_OUTPUT(8, "ADAT 5/6");
+	CTLS_OUTPUT(9, "ADAT 7/8");
+
+/* ? real hardware switches
+	CTL_ENUM  (0x01, 0x09, 1, "Input 1 Impedance Switch", &opt_impedance);
+	CTL_ENUM  (0x01, 0x0b, 1, "Input 1 Pad Switch", &opt_pad);
+
+	CTL_ENUM  (0x01, 0x09, 2, "Input 2 Impedance Switch", &opt_impedance);
+	CTL_ENUM  (0x01, 0x0b, 2, "Input 2 Pad Switch", &opt_pad);
+
+	CTL_ENUM  (0x01, 0x0b, 3, "Input 3 Pad Switch", &opt_pad);
+	CTL_ENUM  (0x01, 0x0b, 3, "Input 4 Pad Switch", &opt_pad);
+*/
+
+	return 0;
+}
+
 static const char *s18i6_texts[] = {
 	txtOff, /* 'off' == 0xff */
 	txtPcm1, txtPcm2, txtPcm3, txtPcm4,
@@ -997,7 +1038,7 @@ static const struct scarlett_device_info s18i6_info = {
 };
 
 static const char *s18i8_texts[] = {
-	txtOff, /* 'off' == 0xff  (orignal software: 0x22) */
+	txtOff, /* 'off' == 0xff  (original software: 0x22) */
 	txtPcm1, txtPcm2, txtPcm3, txtPcm4,
 	txtPcm5, txtPcm6, txtPcm7, txtPcm8,
 	txtAnlg1, txtAnlg2, txtAnlg3, txtAnlg4,
@@ -1042,36 +1083,54 @@ static const struct scarlett_device_info s18i8_info = {
 	}
 };
 
-/*  untested...  specs says 18x8 matrix, but how do the other 12 outputs work? */
+static const char *s18i20_texts[] = {
+	txtOff, /* 'off' == 0xff  (original software: 0x22) */
+	txtPcm1, txtPcm2, txtPcm3, txtPcm4,
+	txtPcm5, txtPcm6, txtPcm7, txtPcm8,
+	txtPcm9, txtPcm10, txtPcm11, txtPcm12,
+	txtPcm13, txtPcm14, txtPcm15, txtPcm16,
+	txtPcm17, txtPcm18, txtPcm19, txtPcm20,
+	txtAnlg1, txtAnlg2, txtAnlg3, txtAnlg4,
+	txtAnlg5, txtAnlg6, txtAnlg7, txtAnlg8,
+	txtSpdif1, txtSpdif2,
+	txtAdat1, txtAdat2, txtAdat3, txtAdat4,
+	txtAdat5, txtAdat6, txtAdat7, txtAdat8,
+	txtMix1, txtMix2, txtMix3, txtMix4,
+	txtMix5, txtMix6, txtMix7, txtMix8,
+	txtMix9, txtMix10, txtMix11, txtMix12,
+	txtMix13, txtMix14, txtMix15, txtMix16
+};
+
+/*  untested...  specs says 18x16 matrix, but how do the other 4 outputs work? */
 static const struct scarlett_device_info s18i20_info = {
 	.matrix_in = 18,
-	.matrix_out = 8,
+	.matrix_out = 16,
 	.input_len = 18,
-	.output_len = 8,
+	.output_len = 20,
 
 	.pcm_start = 0,
-	.analog_start = 8,
-	.spdif_start = 16,
-	.adat_start = 18,
-	.mix_start = 26,
+	.analog_start = 20,
+	.spdif_start = 28,
+	.adat_start = 30,
+	.mix_start = 38,
 
 	.opt_master = {
 		.start = -1,
-		.len = 35,
-		.texts = s18i8_texts
+		.len = 55,
+		.texts = s18i20_texts
 	},
 
 	.opt_matrix = {
 		.start = -1,
-		.len = 27,
-		.texts = s18i8_texts
+		.len = 39,
+		.texts = s18i20_texts
 	},
 
-	.controls_fn = scarlet_s18i8_controls,
+	.controls_fn = scarlet_s18i20_controls,
 	.matrix_mux_init = {
-		 8,  9, 10, 11, 12, 13, 14, 15, // Analog -> 1..8
-		18, 19, 20, 21, 22, 23,     // ADAT[1..6] -> 9..14
-		16, 17,                          // SPDIF -> 15,16
+		20, 21, 22, 23, 24, 25, 26, 27, // Analog -> 1..8
+		30, 31, 32, 33, 34, 35,     // ADAT[1..6] -> 9..14
+		28, 29,                          // SPDIF -> 15,16
 		0, 1                          // PCM[1,2] -> 17,18
 	}
 };
