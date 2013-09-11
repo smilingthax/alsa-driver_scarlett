@@ -921,6 +921,25 @@ static int add_output_ctls(struct usb_mixer_interface *mixer,
 
 
 /********************** device-specific config *************************/
+static int scarlet_s8i6_controls(struct usb_mixer_interface *mixer,
+                                 const struct scarlett_device_info *info)
+{
+	struct scarlett_mixer_elem_info *elem;
+	int err;
+
+	CTLS_OUTPUT(0, "Monitor");
+	CTLS_OUTPUT(1, "Headphone");
+	CTLS_OUTPUT(2, "SPDIF");
+
+	CTL_ENUM  (0x01, 0x09, 1, "Input 1 Impedance Switch", &opt_impedance);
+	CTL_ENUM  (0x01, 0x09, 2, "Input 2 Impedance Switch", &opt_impedance);
+
+	CTL_ENUM  (0x01, 0x0b, 3, "Input 3 Pad Switch", &opt_pad);
+	CTL_ENUM  (0x01, 0x0b, 4, "Input 4 Pad Switch", &opt_pad);
+
+	return 0;
+}
+
 static int scarlet_s18i6_controls(struct usb_mixer_interface *mixer,
                                   const struct scarlett_device_info *info)
 {
@@ -955,7 +974,7 @@ static int scarlet_s18i8_controls(struct usb_mixer_interface *mixer,
 	CTL_ENUM  (0x01, 0x0b, 2, "Input 2 Pad Switch", &opt_pad);
 
 	CTL_ENUM  (0x01, 0x0b, 3, "Input 3 Pad Switch", &opt_pad);
-	CTL_ENUM  (0x01, 0x0b, 3, "Input 4 Pad Switch", &opt_pad);
+	CTL_ENUM  (0x01, 0x0b, 4, "Input 4 Pad Switch", &opt_pad);
 
 	return 0;
 }
@@ -985,11 +1004,56 @@ static int scarlet_s18i20_controls(struct usb_mixer_interface *mixer,
 	CTL_ENUM  (0x01, 0x0b, 2, "Input 2 Pad Switch", &opt_pad);
 
 	CTL_ENUM  (0x01, 0x0b, 3, "Input 3 Pad Switch", &opt_pad);
-	CTL_ENUM  (0x01, 0x0b, 3, "Input 4 Pad Switch", &opt_pad);
+	CTL_ENUM  (0x01, 0x0b, 4, "Input 4 Pad Switch", &opt_pad);
 */
 
 	return 0;
 }
+
+static const char *s8i6_texts[] = {
+	txtOff, /* 'off' == 0xff */
+	txtPcm1, txtPcm2, txtPcm3, txtPcm4,
+	txtPcm5, txtPcm6, txtPcm7, txtPcm8,
+	txtPcm9, txtPcm10, txtPcm11, txtPcm12,
+	txtAnlg1, txtAnlg2, txtAnlg3, txtAnlg4,
+	txtSpdif1, txtSpdif2,
+	txtMix1, txtMix2, txtMix3, txtMix4,
+	txtMix5, txtMix6
+};
+
+/*  untested...  */
+static const struct scarlett_device_info s8i6_info = {
+	.matrix_in = 18,
+	.matrix_out = 6,
+	.input_len = 8,
+	.output_len = 6,
+
+	.pcm_start = 0,
+	.analog_start = 12,
+	.spdif_start = 16,
+	.adat_start = 18,
+	.mix_start = 18,
+
+	.opt_master = {
+		.start = -1,
+		.len = 25,
+		.texts = s8i6_texts
+	},
+
+	.opt_matrix = {
+		.start = -1,
+		.len = 19,
+		.texts = s8i6_texts
+	},
+
+	.controls_fn = scarlet_s8i6_controls,
+	.matrix_mux_init = {
+		12, 13, 14, 15,                 // Analog -> 1..4
+		16, 17,                          // SPDIF -> 5,6
+		0, 1, 2, 3, 4, 5, 6, 7,     // PCM[1..12] -> 7..18
+		8, 9, 10, 11
+	}
+};
 
 static const char *s18i6_texts[] = {
 	txtOff, /* 'off' == 0xff */
@@ -1163,6 +1227,7 @@ int scarlett_mixer_controls(struct usb_mixer_interface *mixer)
 	CTL_MASTER(0x0a, 0x02, 0, 1, "Master Playback Volume");
 
 	switch (mixer->chip->usb_id) {
+	case USB_ID(0x1235, 0x8002): info = &s8i6_info; break;
 	case USB_ID(0x1235, 0x8004): info = &s18i6_info; break;
 	case USB_ID(0x1235, 0x8014): info = &s18i8_info; break;
 	case USB_ID(0x1235, 0x800c): info = &s18i20_info; break;
@@ -1190,7 +1255,7 @@ int scarlett_mixer_controls(struct usb_mixer_interface *mixer)
 		}
 	}
 
-	for (i = 0; i < info->matrix_in; i++) {
+	for (i = 0; i < info->input_len; i++) {
 		snprintf(mx, 32, "Input Source %02d Capture Route", i+1);
 		CTL_ENUM  (0x34, 0x00, i, mx, &info->opt_master);
 		INIT      (info->analog_start + i);
