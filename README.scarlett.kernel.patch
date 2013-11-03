@@ -39,6 +39,8 @@ make M=sound/usb/ modules
 
 # Remove the previous audio module
 sudo modprobe -r snd-usb-audio
+# If modprobe won't remove the module make sure scarlett is disconnected.
+# If thats not enough try rebooting the machine with scarlett disconnected.
 
 # Apply the usb midi and patched usb audio modules
 sudo insmod sound/usb/snd-usbmidi-lib.ko
