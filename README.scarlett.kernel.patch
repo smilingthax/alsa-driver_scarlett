@@ -1,0 +1,52 @@
+# You should probably have your scarlett disconnected.
+# To apply, download the source and headers of your kernel using your package manager
+
+# Most likely
+sudo apt-get install linux-source-3.8.0 
+
+# Copy and untar to a build directory
+cp /usr/src/linux-source-3.8.0/linux-source-3.8.0.tar.bz2 ./
+tar -xf linux-source-3.8.0.tar.bz2 
+
+# Change into the linux directory and try a dry run of the patch
+cd linux-source-3.8.0
+patch --dry-run -p1 -i <path to scarlett.kernel.patch>
+
+# NOTE: It is not uncommon to have a few differences between
+# your version of the kernel and the one the patch was created
+# from. Your dry run should succeed though it may have offsets.
+# If it fails you can insert the patched code by hand in C.
+
+# Preform the actual patch
+patch  -p1 -i <path of scarlett.kernel.patch>
+
+# Configure and setup the kernel build.
+# This is too large of a topic to cover here. These are the steps I used.
+# Using some default settings.
+make oldconfig 
+
+# Copy the module symvers file (needed for compiling versioned modules)
+cp /usr/src/linux-headers-3.8.0-32-lowlatency/Module.symvers ./
+
+# Run make prepare
+make prepare
+
+# For my kernel I had to run make scripts as well for recordmcount
+make scripts
+
+# Build the scarlett patched usb audio modules
+make M=sound/usb/ modules
+
+# Remove the previous audio module
+sudo modprobe -r snd-usb-audio
+
+# Apply the usb midi and patched usb audio modules
+sudo insmod sound/usb/snd-usbmidi-lib.ko
+sudo insmod sound/usb/snd-usb-audio.ko
+
+# Plug in your scarlett and run alsamixer with the number of your card
+# If you don't know the number just run alsamixer with no args and
+# press f6 to switch cards.
+alsamixer -c 1
+
+# All of the hardware mixer options should show up!
