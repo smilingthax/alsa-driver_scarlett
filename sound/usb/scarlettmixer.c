@@ -1285,6 +1285,11 @@ int scarlett_mixer_controls(struct usb_mixer_interface *mixer)
 	CTL_PEAK  (0x3c, 0x00, 3, info->output_len, "PCM Meter");
 #endif
 
+	/* initialize sampling rate to 48000 */
+	err = set_ctl_urb2(mixer->chip, UAC2_CS_CUR, 0x0100, 0x29, "\x80\xbb\x00\x00", 4);
+	if (err < 0)
+		return err;
+
 // TODO(?) scarlett_reset(mixer);
 
 	return 0;
