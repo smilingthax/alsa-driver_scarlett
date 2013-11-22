@@ -386,11 +386,7 @@ static const char txtOff[] = "Off",
 	txtMix1[] = "Mix A", txtMix2[] = "Mix B",
 	txtMix3[] = "Mix C", txtMix4[] = "Mix D",
 	txtMix5[] = "Mix E", txtMix6[] = "Mix F",
-	txtMix7[] = "Mix G", txtMix8[] = "Mix H",
-	txtMix9[] = "Mix I", txtMix10[] = "Mix J",
-	txtMix11[] = "Mix K", txtMix12[] = "Mix L",
-	txtMix13[] = "Mix M", txtMix14[] = "Mix N",
-	txtMix15[] = "Mix O", txtMix16[] = "Mix P";
+	txtMix7[] = "Mix G", txtMix8[] = "Mix H";
 
 static const struct scarlett_enum_info opt_pad = {
 	.start = 0,
@@ -1160,15 +1156,12 @@ static const char *s18i20_texts[] = {
 	txtAdat1, txtAdat2, txtAdat3, txtAdat4,
 	txtAdat5, txtAdat6, txtAdat7, txtAdat8,
 	txtMix1, txtMix2, txtMix3, txtMix4,
-	txtMix5, txtMix6, txtMix7, txtMix8,
-	txtMix9, txtMix10, txtMix11, txtMix12,
-	txtMix13, txtMix14, txtMix15, txtMix16
+	txtMix5, txtMix6, txtMix7, txtMix8
 };
 
-/*  untested...  specs says 18x16 matrix, but how do the other 4 outputs work? */
 static const struct scarlett_device_info s18i20_info = {
 	.matrix_in = 18,
-	.matrix_out = 16,
+	.matrix_out = 8,
 	.input_len = 18,
 	.output_len = 20,
 
@@ -1180,7 +1173,7 @@ static const struct scarlett_device_info s18i20_info = {
 
 	.opt_master = {
 		.start = -1,
-		.len = 55,
+		.len = 47,
 		.texts = s18i20_texts
 	},
 
