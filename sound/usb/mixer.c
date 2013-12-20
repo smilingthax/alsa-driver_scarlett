@@ -2389,6 +2389,7 @@ int snd_usb_create_mixer(struct snd_usb_audio *chip, int ctrlif,
 	}
 
 	switch (chip->usb_id) {
+	case USB_ID(0x1235, 0x8012): /* Focusrite Scarlett 6i6 */
 	case USB_ID(0x1235, 0x8002): /* Focusrite Scarlett 8i6 */
 	case USB_ID(0x1235, 0x8004): /* Focusrite Scarlett 18i6 */
 	case USB_ID(0x1235, 0x8014): /* Focusrite Scarlett 18i8 */
